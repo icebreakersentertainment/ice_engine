@@ -1,0 +1,5 @@
+#name terrain
+#type program
+
+#include "terrain.vert"
+#include "terrain.frag"

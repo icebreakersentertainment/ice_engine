@@ -1,0 +1,219 @@
+<html>
+<head>
+	<title></title>
+
+<link rel="stylesheet" href="jquery-ui-1.10.4/css/ui-lightness/jquery-ui-1.10.4.custom.css">
+<link rel="stylesheet" href="css/console.css">
+<script src="js/jquery-2.1.1.js"></script>
+<script src="jquery-ui-1.10.4/js/jquery-ui-1.10.4.custom.js"></script>
+
+<script src="js/jquery.console.js"></script>
+<script src="js/debug_callbacks.js"></script>
+
+<script>
+// Global variables
+var previousState = 0;
+var state = 0;
+
+var setGlQueueSizeFlag = false;
+var setThreadQueueSizeFlag = false;
+var numThingsToLoad = 0;
+var threadQueueSize = 0;
+var glQueueSize = 0;
+
+function createProgressBar(start, finish) {
+	$( "#loadingProgressbar" ).progressbar({
+		value: start,
+		max: finish
+	});
+}
+
+function setProgressBarValue(value) {
+	$( "#loadingProgressbar" ).progressbar( "option", "value", value );
+}
+
+// In JavaScript register the callback function.
+window.setMessageCallback('getVersion', function(name, args) {
+	$('#version').text( 'Version ' + args[0] );
+});
+
+window.setMessageCallback('getState', function(name, args) {
+	previousState = state;
+	state = args[0];
+	
+	if (state == 4) {
+		$('#loading').css('display', '');
+		$('#buttons').css('display', 'none');
+		$('body').css('background', 'black');
+		
+		if (state != previousState) {
+			setThreadQueueSizeFlag = true;
+			setGlQueueSizeFlag = true;
+		}
+		
+		//game.getThreadPoolQueueSize();
+		//game.getOpenGlThreadPoolQueueSize();
+		
+	} else {
+		$('#loading').css('display', 'none');
+		//$('#buttons').css('display', 'none');
+		$('body').css('background', '');
+	}
+});
+
+
+window.setMessageCallback('getThreadPoolQueueSize', function(name, args) {
+	threadQueueSize = Number( (args[0]).toFixed(1) );
+	$("#threadPoolQueueSize").text( threadQueueSize );
+	
+	if (state == 4) {
+		if (setThreadQueueSizeFlag) {
+			numThingsToLoad += threadQueueSize;
+			setThreadQueueSizeFlag = false;
+			
+			if (!setGlQueueSizeFlag && !setThreadQueueSizeFlag) {
+				createProgressBar(0, numThingsToLoad);
+			}
+		} else {
+			var progress = numThingsToLoad - (threadQueueSize + glQueueSize);
+			setProgressBarValue( progress );
+		}
+	}
+});
+
+window.setMessageCallback('getOpenGlThreadPoolQueueSize', function(name, args) {
+	glQueueSize = Number( (args[0]).toFixed(1) );
+	$("#openGlQueueCount").text( glQueueSize );
+	
+	if (state == 4) {
+		if (setGlQueueSizeFlag) {
+			numThingsToLoad += glQueueSize;
+			setGlQueueSizeFlag = false;
+			
+			if (!setGlQueueSizeFlag && !setThreadQueueSizeFlag) {
+				createProgressBar(0, numThingsToLoad);
+			}
+		} else {
+			var progress = numThingsToLoad - (threadQueueSize + glQueueSize);
+			setProgressBarValue( progress );
+		}
+	}
+});
+
+</script>
+
+<script>
+function update() {
+	game.getState();
+	
+	game.getFps();
+	game.getThreadPoolQueueSize();
+	game.getThreadPoolWorkerCount();
+	game.getThreadPoolActiveWorkerCount();
+	game.getThreadPoolInactiveWorkerCount();
+	game.getOpenGlThreadPoolQueueSize();
+	
+	game.getTimeForPhysics();
+	game.getTimeForTick();
+	game.getTimeForRender();
+	game.getTimeForMisc();
+	game.getTimeForInput();
+	game.getTimeForGuiUpdate();
+	game.getTimeForAngelScript();
+	
+	camera.getX();
+	camera.getY();
+	camera.getZ();
+}
+</script>
+
+<script>
+$(document).ready(function() {
+	game.getVersion();
+	
+	// Setup our console
+	var console1 = $('<div id="console" class="console1 hidden">');
+	$('body').append(console1);
+	 
+	var controller1 = console1.console({
+		promptLabel: '> ',
+		commandValidate: function(line) {
+			console.log("HERE: " + line);
+			if (line === "") {
+				return false;
+			} else {
+				return true;
+			}
+		},
+		commandHandle: function(line) {
+			console.log("HERE2: " + line);
+			return [{
+				msg: "Unable to find command '" + line + "'",
+				className: "jquery-console-message-type"
+			}];
+			
+			//return [{msg:"=> [12,42]", className:"jquery-console-message-value"},
+			//		{msg:":: [a]", className:"jquery-console-message-type"}]
+		},
+		autofocus:true,
+		animateScroll:true,
+		promptHistory:true,
+		charInsertTrigger: function(keycode, line) {
+			console.log("HERE3: " + keycode + " | " + line);
+			return true;
+		}
+	});
+});
+</script>
+
+</head>
+
+<body>
+	<div id='loading' style="float: left; display: none;">
+		<br><br><br><br><br><br><br><br><br>
+		Loading...
+		<div id='loadingProgressbar' style='height: 15px; width: 200px;'></div>
+	</div>
+	
+	<div style="position: fixed; top: 5px; right: 5px;">
+		<div id="info">
+			<span id="fps">N/A</span>
+			<span id="posX">?.?</span>
+			<span id="posY">?.?</span>
+			<span id="posZ">?.?</span>
+			<br>
+			WorkQueueCount: <span id="threadPoolQueueSize">0</span>
+			( <span id="threadPoolActiveWorkerCount">0</span> / <span id="threadPoolWorkerCount">0</span> | <span id="threadPoolInactiveWorkerCount">0</span> )
+			<br>
+			OpenGlQueueCount: <span id="openGlQueueCount">0</span>
+		</div>
+		
+		<div id="timeInfo">
+			timeForPhysics: <span id="timeForPhysics">0</span>
+			<br>
+			timeForTick: <span id="timeForTick">0</span>
+			<br>
+			timeForRender: <span id="timeForRender">0</span>
+			<br>
+			timeForMisc: <span id="timeForMisc">0</span>
+			<br>
+			timeForInput: <span id="timeForInput">0</span>
+			<br>
+			timeForGuiUpdate: <span id="timeForGuiUpdate">0</span>
+			<br>
+			timeForAngelScript: <span id="timeForAngelScript">0</span>
+		</div>
+	</div>
+	
+	<div id="buttons" style="float: left">
+		<br><br><br><br><br><br><br><br><br>
+		<input type="button" value="New Game" onclick="game.startNewGame();">
+		<input type="button" value="Options" onclick=''>
+		<input type="button" value="Exit" onclick=''>
+	</div>
+	
+	<div id='version' style='position: fixed; bottom: 0; right: 0;'>Version</div>
+</body>
+
+</html>
+
