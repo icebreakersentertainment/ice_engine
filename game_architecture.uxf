@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<diagram program="umlet" version="14.2">
+  <zoom_level>10</zoom_level>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>280</x>
+      <y>0</y>
+      <w>210</w>
+      <h>190</h>
+    </coordinates>
+    <panel_attributes>GameEngine::GameEngineFactory
+--
+--
++createGameEngine(): GameEngine::IGameEngine</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>280</x>
+      <y>210</y>
+      <w>210</w>
+      <h>190</h>
+    </coordinates>
+    <panel_attributes>GameEngine::IGameEngine
+--
+--
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>710</x>
+      <y>0</y>
+      <w>210</w>
+      <h>190</h>
+    </coordinates>
+    <panel_attributes>GameEngine::Scene
+--
+-entities: entityx::EntityManager
+-systems: entityx::SystemManager
+-events: entityx::EventManager
+--</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>270</x>
+      <y>540</y>
+      <w>220</w>
+      <h>100</h>
+    </coordinates>
+    <panel_attributes>GameEngine::PositionComponent
+--
+-pos: glm::vec3
+-orientation: glm::quat</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>270</x>
+      <y>650</y>
+      <w>220</w>
+      <h>100</h>
+    </coordinates>
+    <panel_attributes>GameEngine::PhysicsComponent
+--</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>270</x>
+      <y>760</y>
+      <w>220</w>
+      <h>100</h>
+    </coordinates>
+    <panel_attributes>GameEngine::AudioComponent
+--</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>270</x>
+      <y>870</y>
+      <w>220</w>
+      <h>100</h>
+    </coordinates>
+    <panel_attributes>GameEngine::GraphicsComponent
+--</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>270</x>
+      <y>980</y>
+      <w>220</w>
+      <h>100</h>
+    </coordinates>
+    <panel_attributes>GameEngine::ScriptComponent
+--
+-script : IScript*</panel_attributes>
+    <additional_attributes/>
+  </element>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>640</x>
+      <y>210</y>
+      <w>370</w>
+      <h>260</h>
+    </coordinates>
+    <panel_attributes>GameEngine::GameEngine : GameEngine::IGameEngine
+--
+--
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+</diagram>

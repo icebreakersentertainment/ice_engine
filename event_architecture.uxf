@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<diagram program="umlet" version="14.2">
+  <zoom_level>10</zoom_level>
+  <element>
+    <id>UMLClass</id>
+    <coordinates>
+      <x>380</x>
+      <y>130</y>
+      <w>210</w>
+      <h>190</h>
+    </coordinates>
+    <panel_attributes>EventSystem::EventManager : entityx::EventManager
+--
+--
+</panel_attributes>
+    <additional_attributes/>
+  </element>
+</diagram>
