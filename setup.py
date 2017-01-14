@@ -23,18 +23,37 @@ parser = argparse.ArgumentParser(usage = 'Usage: %(prog)s <options> release|debu
 
 parser.add_argument('-a', '--architecture', help='The architecture type')
 parser.add_argument('buildType', nargs='?', default='release', help='The build type to setup for - must be either "release" or "debug"')
+parser.add_argument('compiler', nargs='?', default='gcc', help='The to use (i.e. gcc, clang, etc)')
 
 architecture = 'x64'
 buildType = None
+compiler = 'gcc'
+compilerVersion = '6'
+platform = 'linux'
+sharedLibraryExt = 'so'
+staticLibraryExt = 'a'
+extension = 'tar.gz'
+downloadDepsUrl = 'https://artifact-repo.module9games.com/files'
+dependenciesDirectory = 'deps/'
+librariesDirectory = 'lib/'
 
-# Default to 32 bit in windows
+# Set defaults
 if isWindows:
 	architecture = 'x86'
+	compiler = 'msvc'
+	platform = 'windows'
+	sharedLibraryExt = 'dll'
+	staticLibraryExt = 'lib'
+	extension = 'zip'
+if isMac:
+	platform = 'mac'
 
 args = parser.parse_args()
 
 if args.architecture is not None:
 	architecture = args.architecture
+if args.compiler is not None:
+	compiler = args.compiler
 
 buildType = args.buildType
 
@@ -43,6 +62,9 @@ if (buildType != 'release' and buildType != 'debug'):
 	exit()
 if (architecture is not None and architecture != 'x86' and architecture != 'x64'):
 	print('Invalid architecture - must be either "x86" or "x64"')
+	exit()
+if (compiler is not None and compiler != 'gcc' and compiler != 'clang' and compiler != 'msvc'):
+	print('Invalid compiler - must be either "gcc", "clang" or "msvc"')
 	exit()
 
 ### Validate the architecture
@@ -56,6 +78,19 @@ if (architecture == 'x86' and isMac):
 	print('x86 architecture is not yet implemented in setup.py for Mac - sorry!')
 	exit()
 
+### Validate the compiler
+if (compiler == 'msvc' and isLinux):
+	print('msvc compiler is not available for Linux')
+	exit()
+if (compiler == 'msvc' and isMac):
+	print('msvc compiler is not available for Mac')
+	exit()
+
+if (compiler == 'msvc'):
+	compilerVersion = '13'
+if (compiler == 'clang'):
+	compilerVersion = '2'
+
 # Mac not ready yet...
 if (isMac):
 	print('Mac is not yet implemented in setup.py - sorry!')
@@ -66,69 +101,27 @@ if (buildType == 'debug'):
 	print('Debug build type is not ready yet - sorry!')
 	exit()
 
-# Handling libudev.so.0 missing (happens in newer linux distros)
-# Easy way:
-# 	64 bit:
-# 		sudo ln -sf /lib/x86_64-linux-gnu/libudev.so.1 /lib/x86_64-linux-gnu/libudev.so.0
-# 	32 bit:
-# 		sudo ln -sf /lib/i386-linux-gnu/libudev.so.1 /lib/i386-linux-gnu/libudev.so.0
-#
-# Hard way:
-# 	Unfortunately, I couldn't figure out where to put the libudev.so.0 sym link locally.
+dependencies = dict()
+dependencies['boost'] = {'name': 'Boost', 'version': '1.63.0', 'extension': extension}
+dependencies['glm'] = {'name': 'GLM', 'version': '0.9.8.3', 'extension': extension}
+dependencies['angelscript'] = {'name': 'Angelscript', 'version': '2.31.2', 'extension': extension}
+dependencies['assimp'] = {'name': 'Asset Importer', 'version': 'v3.1', 'extension': extension}
+dependencies['bgfx'] = {'name': 'BGFX', 'version': 'master', 'extension': extension}
+dependencies['bullet'] = {'name': 'Bullet', 'version': '2.85.1', 'extension': extension}
+dependencies['entityx'] = {'name': 'Entityx', 'version': 'master', 'extension': extension}
+dependencies['glew'] = {'name': 'GLEW', 'version': '2.0.0', 'extension': extension}
+dependencies['sdl'] = {'name': 'SDL', 'version': '2.0.5', 'extension': extension}
+dependencies['sqlite'] = {'name': 'SQLite', 'version': '3.16.2', 'extension': extension}
 
-sharedLibraryExt = 'so'
-staticLibraryExt = 'a'
-#downloadGlrDepsUrl = 'http://dl.bintray.com/jarrettchisholm/generic/'
-downloadGlrDepsUrl = 'http://icebreakersentertainment.com/downloads/glr/deps/'
-downloadDarkHorizonDepsUrl = 'http://icebreakersentertainment.com/downloads/dark_horizon/deps/'
-
-boostName = 'boost.tar.gz'
-freeImageName = 'freeimage.tar.gz'
-assImpName = 'assimp.tar.gz'
-cef3Name = 'cef3.tar.gz'
-glmName = 'glm.tar.gz'
-glewName = 'glew.tar.gz'
-sfmlName = 'sfml.tar.gz'
-angelscriptName = 'angelscript.tar.gz'
-entityxName = 'entityx.tar.gz'
-threadPool11Name = 'threadpool11.tar.gz'
-sqlite3Name = 'sqlite3.tar.gz'
-
-if isLinux:
-	
-	downloadGlrDepsUrl += 'linux/{0}/{1}/'.format(buildType, architecture)
-	downloadDarkHorizonDepsUrl += 'linux/{0}/{1}/'.format(buildType, architecture)
-
-if isWindows:
-	sharedLibraryExt = 'dll'
-	staticLibraryExt = 'lib'
-	
-	downloadGlrDepsUrl += 'windows/{0}/{1}/'.format(buildType, architecture)
-	downloadDarkHorizonDepsUrl += 'windows/{0}/{1}/'.format(buildType, architecture)
-
-if isMac:
-	downloadGlrDepsUrl += 'macosx/{0}/{1}/'.format(buildType, architecture)
-	downloadDarkHorizonDepsUrl += 'macosx/{0}/{1}/'.format(buildType, architecture)
-
-files = dict()
-# Format
-# Note: The only reason for the 'Regex for Dir' is because I can't delete from bintray at the moment, so I can't rename the directory in the zipped file and reupload.
-#
-# [Display Name]			= [URL, 															Save Filename,				Regex for Dir, 		New Name for Dir]
-files['Boost 1.55'] 		= ['{0}{1}'.format(downloadGlrDepsUrl, boostName), 					'boost.tar.gz', 			'boost', 			'boost']
-files['FreeImage 3.17.0'] 	= ['{0}{1}'.format(downloadGlrDepsUrl, freeImageName), 				'freeimage.tar.gz', 		'freeimage', 		'freeimage']
-files['AssImp 3.1.1'] 		= ['{0}{1}'.format(downloadGlrDepsUrl, assImpName), 				'assimp.tar.gz', 			'assimp', 			'assimp']
-files['CEF3 3.2357.1271'] 	= ['{0}{1}'.format(downloadGlrDepsUrl, cef3Name), 					'cef3.tar.gz', 				'cef', 				'cef3']
-files['GLM 0.9.5.2'] 		= ['{0}{1}'.format(downloadGlrDepsUrl, glmName), 					'glm.tar.gz', 				'glm', 				'glm']
-files['GLEW 1.12.0'] 		= ['{0}{1}'.format(downloadGlrDepsUrl, glewName), 					'glew.tar.gz', 				'glew', 			'glew']
-files['SFML 2.1'] 			= ['{0}{1}'.format(downloadGlrDepsUrl, sfmlName), 					'sfml.tar.gz', 				'sfml', 			'sfml']
-files['Angelscript 2.29.2'] = ['{0}{1}'.format(downloadDarkHorizonDepsUrl, angelscriptName), 	'angelscript.tar.gz', 		'angelscript', 		'angelscript']
-files['Entity X'] 			= ['{0}{1}'.format(downloadDarkHorizonDepsUrl, entityxName), 		'entityx.tar.gz', 			'entityx', 			'entityx']
-files['Thread Pool 11 2.0'] = ['{0}{1}'.format(downloadDarkHorizonDepsUrl, threadPool11Name), 	'threadpool11.tar.gz', 		'threadpool11',		'threadpool11']
-files['Sqlite 3'] 			= ['{0}{1}'.format(downloadDarkHorizonDepsUrl, sqlite3Name), 		'sqlite3.tar.gz', 			'sqlite3', 			'sqlite3']
-
-dependenciesDirectory = 'deps/'
-librariesDirectory = 'lib/'
+def getFilename(name, version):
+	return '{0}_{1}_{2}_{3}{4}.{5}'.format(
+		name,
+		version,
+		buildType,
+		compiler,
+		compilerVersion,
+		extension
+	)
 
 def copyFile(fromFile, toFile):
 	try:
@@ -169,18 +162,23 @@ def download():
 	if (not os.path.exists(dependenciesDirectory)):
 		os.makedirs(dependenciesDirectory)
 	
-	for k in files.keys():
-		print('Downloading ' + k)
+	for k in dependencies.keys():
+		print('Downloading ' + dependencies[k]['name'])
 		
-		response = urllib2.urlopen(files[k][0])
+		filename = getFilename(k, dependencies[k]['version'])
+		
+		url = '{0}/{1}/{2}/{3}'.format(downloadDepsUrl, k, platform, filename)
+		print('url: ' + url)
+		
+		response = urllib2.urlopen(url)
 		
 		contentLength = response.headers["Content-Length"]
 		
 		data = ''
 		chunk = 4096
 		savedSize = 0
-		with open(dependenciesDirectory + files[k][1], 'wb+') as f:
-			while 1:
+		with open(dependenciesDirectory + filename, 'wb+') as f:
+			while True:
 				data = response.read(chunk)
 				if not data:
 					print("\n")
@@ -196,14 +194,15 @@ def download():
 def extract():
 	"""Extract external library files"""
 	
-	for k in files.keys():
-		print('Extracting ' + k)
+	for k in dependencies.keys():
+		name = dependencies[k]['name']
+		print('Extracting ' + name)
 		
-		with tarfile.TarFile.open(dependenciesDirectory + files[k][1], 'r:gz') as f:
+		with tarfile.TarFile.open(dependenciesDirectory + getFilename(k, dependencies[k]['version']), 'r:gz') as f:
 			f.extractall(path=dependenciesDirectory)
-			folders = [f for f in glob.glob(dependenciesDirectory + files[k][2] + '*') if os.path.isdir(f)]
+			folders = [f for f in glob.glob(dependenciesDirectory + k + '*') if os.path.isdir(f)]
 			for f in folders:
-				os.rename(f, dependenciesDirectory+files[k][3])
+				os.rename(f, dependenciesDirectory+k)
 
 def build():
 	"""Build any dependencies"""
@@ -244,5 +243,5 @@ checkSystemDependencies()
 installSystemDependencies()
 download()
 extract()
-build()
+#build()
 install()
