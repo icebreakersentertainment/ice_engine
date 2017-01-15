@@ -4,7 +4,7 @@
 #include <string>
 
 #include <GL/glew.h>
-#include <SDL.h>
+#include <SDL2/SDL.h>
 
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>

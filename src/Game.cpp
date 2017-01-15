@@ -2,7 +2,7 @@
 #include <sstream>
 #include <utility>
 
-#include <boost/filesystem.hpp>
+//#include <boost/filesystem.hpp>
 
 #include "Game.hpp"
 
@@ -28,7 +28,7 @@
 namespace game
 {
 
-namespace fs = boost::filesystem;
+//namespace fs = boost::filesystem;
 
 glm::detail::float32 Game::rotationX = 0.0f;
 glm::detail::float32 Game::rotationY = 0.0f;
@@ -368,7 +368,7 @@ void Game::initializeThreadingSubSystem()
 void Game::initializeDataStoreSubSystem()
 {
 	LOG_DEBUG( "Load data store..." );
-	dataStore_ = std::unique_ptr<pyliteserializer::SqliteDataStore>( new pyliteserializer::SqliteDataStore(std::string("../data/dark_horizon.db")) );
+	//dataStore_ = std::unique_ptr<pyliteserializer::SqliteDataStore>( new pyliteserializer::SqliteDataStore(std::string("../data/dark_horizon.db")) );
 }
 
 void Game::initializeEntitySubSystem()
@@ -434,7 +434,7 @@ void Game::test()
 	}
 	*/
 	{
-		auto model = model::import(std::string("test_model"), std::string("../../assets/SnowWolf/ModelFormats/DAE/SnowWolf.dae"));
+		auto model = model::import(std::string("test_model"), std::string("../../assets/PlainsWolf/Model Formats/DAE/PLainsWolf.dae"));
 		
 		std::cout << model->meshes.size() << " meshes." << std::endl;
 		
@@ -450,7 +450,7 @@ void Game::test()
 		}
 		
 		auto meshId = graphicsEngine_->createAnimatedMesh(model->meshes[0].vertices, model->meshes[0].indices, model->meshes[0].colors, model->meshes[0].normals, model->meshes[0].textureCoordinates, boneIds, boneWeights);
-		auto textureId = graphicsEngine_->createTexture2d( std::string("../../assets/SnowWolf/Textures/") + model->textures[0].filename );
+		auto textureId = graphicsEngine_->createTexture2d( std::string("../../assets/PlainsWolf/Textures/") + model->textures[0].filename );
 		
 		auto renderableId = graphicsEngine_->createRenderable(meshId, textureId);
 		

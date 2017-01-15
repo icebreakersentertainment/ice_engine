@@ -3,7 +3,7 @@
 
 #include <sstream>
 
-#include "FreeImage.h"
+#include <FreeImage.h>
 
 #include <GL/glew.h>
 

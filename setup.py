@@ -1,4 +1,4 @@
-#! /bin/python
+#! /usr/bin/python
 
 import urllib2
 import tarfile
@@ -112,6 +112,8 @@ dependencies['entityx'] = {'name': 'Entityx', 'version': 'master', 'extension': 
 dependencies['glew'] = {'name': 'GLEW', 'version': '2.0.0', 'extension': extension}
 dependencies['sdl'] = {'name': 'SDL', 'version': '2.0.5', 'extension': extension}
 dependencies['sqlite'] = {'name': 'SQLite', 'version': '3.16.2', 'extension': extension}
+dependencies['ctpl'] = {'name': 'CTPL', 'version': 'v.0.0.2', 'extension': extension}
+dependencies['freeimage'] = {'name': 'Free Image', 'version': '3.17.0', 'extension': extension}
 
 def getFilename(name, version):
 	return '{0}_{1}_{2}_{3}{4}.{5}'.format(

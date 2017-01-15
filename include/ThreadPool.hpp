@@ -1,7 +1,7 @@
 #ifndef THREADPOOL_H_
 #define THREADPOOL_H_
 
-#include "threadpool11/threadpool11.h"
+#include <ctpl/ctpl.h>
 
 #include "IThreadPool.hpp"
 
@@ -27,7 +27,7 @@ public:
 	virtual void decreaseWorkerCountBy(unsigned int n);
 	
 private:
-	std::unique_ptr<threadpool11::Pool> pool_;
+	std::unique_ptr<ctpl::thread_pool> pool_;
 	
 	void initialize(int numThreads);
 };

@@ -11,13 +11,13 @@ namespace as_wrapper
 class AsObject
 {
 public:
-	AsObject(asIScriptObject* object, asIObjectType* type, asIScriptContext* ctx);
+	AsObject(asIScriptObject* object, asITypeInfo* type, asIScriptContext* ctx);
 	virtual ~AsObject();
 	
 	void callMethod(const std::string& methodDeclaration);
 private:
 	asIScriptObject* object_;
-	asIObjectType* type_;
+	asITypeInfo* type_;
 	asIScriptContext* ctx_;
 };
 

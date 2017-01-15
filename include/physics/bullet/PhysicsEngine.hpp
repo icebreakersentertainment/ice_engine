@@ -4,7 +4,7 @@
 #include <memory>
 #include <vector>
 
-#include <btBulletDynamicsCommon.h>
+#include <bullet/btBulletDynamicsCommon.h>
 
 #include "physics/IPhysicsEngine.hpp"
 

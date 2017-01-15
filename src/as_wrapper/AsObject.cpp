@@ -3,7 +3,7 @@
 namespace as_wrapper
 {
 
-AsObject::AsObject(asIScriptObject* object, asIObjectType* type, asIScriptContext* ctx) : object_(object), type_(type), ctx_(ctx)
+AsObject::AsObject(asIScriptObject* object, asITypeInfo* type, asIScriptContext* ctx) : object_(object), type_(type), ctx_(ctx)
 {
 }
 

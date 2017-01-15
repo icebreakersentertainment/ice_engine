@@ -23,7 +23,7 @@
 
 #include "physics/IPhysicsEngine.hpp"
 
-#include "data_store/SqliteDataStore.hpp"
+//#include "data_store/SqliteDataStore.hpp"
 
 #include "entities/EntityFactory.hpp"
 #include "entities/GraphicsComponentFactory.hpp"
@@ -167,7 +167,7 @@ private:
 	std::unique_ptr<ThreadPool> threadPool_;
 	std::unique_ptr<OpenGlLoader> openGlLoader_;
 	
-	std::unique_ptr<pyliteserializer::SqliteDataStore> dataStore_;
+	//std::unique_ptr<pyliteserializer::SqliteDataStore> dataStore_;
 	
 	// test
 	bool inConsole_;

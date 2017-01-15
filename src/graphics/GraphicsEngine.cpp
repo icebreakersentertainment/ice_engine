@@ -4,8 +4,8 @@
 
 #include "graphics/GraphicsEngine.hpp"
 
-#include <SDL_opengl.h>
-#include <SDL_syswm.h>
+#include <SDL2/SDL_opengl.h>
+#include <SDL2/SDL_syswm.h>
 
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>

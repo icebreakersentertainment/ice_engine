@@ -160,7 +160,7 @@ void World::setPlayer(Player* player)
 void World::newWorld()
 {
 	LOG_DEBUG( "Loading prototype campaign data store..." );
-	dataStore_ = std::unique_ptr<pyliteserializer::SqliteDataStore>( new pyliteserializer::SqliteDataStore(std::string("../data/dark_horizon_prototype_campaign.db")) );
+	//dataStore_ = std::unique_ptr<pyliteserializer::SqliteDataStore>( new pyliteserializer::SqliteDataStore(std::string("../data/dark_horizon_prototype_campaign.db")) );
 	
 	// Load world data
 	regions_ = std::vector<Region>();
@@ -169,15 +169,15 @@ void World::newWorld()
 	//	regions_[i].setId(i+1);
 	//}
 	
-	dataStore_->loadBulk( regions_, std::string() );
+	//dataStore_->loadBulk( regions_, std::string() );
 	
-	for (auto& r : regions_)
-	{		
-		std::cout << "Region: " << r.getName() << std::endl;
-	}
+	//for (auto& r : regions_)
+	//{		
+	//	std::cout << "Region: " << r.getName() << std::endl;
+	//}
 	
 	// Testing loading
-	regions_[0].loadMeshes();
+	//regions_[0].loadMeshes();
 	
 	// populate world
 

@@ -15,7 +15,7 @@
 //#include "GlrInclude.hpp"
 
 #include "as_wrapper/AngelScript.h"
-#include "data_store/SqliteDataStore.hpp"
+//#include "data_store/SqliteDataStore.hpp"
 #include "Player.hpp"
 
 #include "world/Region.hpp"
@@ -77,7 +77,7 @@ private:
 	IOpenGlLoader* openGlLoader_;
 	utilities::Properties* properties_;
 	
-	std::unique_ptr<pyliteserializer::SqliteDataStore> dataStore_;
+	//std::unique_ptr<pyliteserializer::SqliteDataStore> dataStore_;
 	std::vector<Region> regions_;
 
 	void initialize();

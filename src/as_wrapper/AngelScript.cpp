@@ -2,7 +2,7 @@
 #include <iostream>
 #include <stdio.h>
 
-#include <boost/filesystem.hpp>
+//#include <boost/filesystem.hpp>
 
 #include "as_wrapper/AngelScript.h"
 
@@ -14,7 +14,7 @@
 #include "logger/Logger.hpp"
 
 
-namespace fs = boost::filesystem;
+//namespace fs = boost::filesystem;
 
 namespace as_wrapper
 {
@@ -685,7 +685,7 @@ AsObject* AngelScript::createAsObject(const std::string& moduleName, const std::
 {
 	// Get the object type
 	asIScriptModule* module = engine_->GetModule(moduleName.c_str());
-	asIObjectType* type = engine_->GetObjectTypeById( module->GetTypeIdByDecl(className.c_str()) );
+	asITypeInfo* type = engine_->GetTypeInfoById( module->GetTypeIdByDecl(className.c_str()) );
 	
 	// Get the factory function from the object type
 	const std::string declaration = className + " @" + className + "()";
