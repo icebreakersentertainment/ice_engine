@@ -47,6 +47,7 @@ find_library(BULLET_LINEAR_MATH_LIBRARY NAMES libLinearMath.a PATHS ${PROJECT_LI
 
 find_package(Threads REQUIRED)
 find_package(OpenGL REQUIRED)
+find_package(X11 REQUIRED)
 
 include_directories(./deps/glm/include)
 include_directories(./deps/glew/include)
@@ -125,6 +126,9 @@ target_link_libraries(hercules ${BULLET_LINEAR_MATH_LIBRARY} )
 
 target_link_libraries(hercules Threads::Threads)
 target_link_libraries(hercules ${OPENGL_gl_LIBRARY})
+target_link_libraries(hercules ${X11_LIBRARIES})
+target_link_libraries(hercules ${X11_Xext_LIB})
+target_link_libraries(hercules ${X11_Xxf86vm_LIB})
 target_link_libraries(hercules ${CMAKE_DL_LIBS})
 
 set_target_properties(hercules PROPERTIES
