@@ -135,5 +135,9 @@ set_target_properties(hercules PROPERTIES
   COMPILE_FLAGS ${SHARED_COMPILE_FLAGS}
 )
 
+# Disable Position Independent Executable - this is starting to be enabled by default,
+# which is causing issues
+target_link_libraries(hercules "-no-pie")
+
 # Set install dir
 install(TARGETS hercules DESTINATION /usr/lib)
