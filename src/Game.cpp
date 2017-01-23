@@ -170,7 +170,7 @@ void Game::initialize()
 void Game::initializeLoggingSubSystem()
 {
 	// Initialize the log using the specified log file
-	cs_logger::Logger::getInstance( std::string("darkhorizon.log") );
+	cs_logger::Logger::getInstance( std::string("hercules.log") );
 }
 
 void Game::loadProperties()
