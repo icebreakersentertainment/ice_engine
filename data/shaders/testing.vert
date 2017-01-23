@@ -1,5 +1,6 @@
 #version 330 core
-  
+#extension GL_ARB_shading_language_420pack : enable
+
 uniform mat4 projectionMatrix;
 uniform mat4 viewMatrix;
 uniform mat4 modelMatrix;
