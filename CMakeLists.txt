@@ -1,6 +1,18 @@
 cmake_minimum_required(VERSION 3.1.0)
+
+IF(DEFINED CMAKE_BUILD_TYPE)
+  set(
+    CMAKE_BUILD_TYPE ${CMAKE_BUILD_TYPE} CACHE STRING
+    "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel."
+  )
+else()
+  set(
+    CMAKE_BUILD_TYPE Release CACHE STRING
+    "Choose the type of build, options are: Debug Release RelWithDebInfo MinSizeRel."
+  )
+endif()
+
 project (hercules)
-set(CMAKE_BUILD_TYPE Release)
 set(CMAKE_CXX_STANDARD 14)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
