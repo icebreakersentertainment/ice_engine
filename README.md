@@ -3,7 +3,7 @@ Hercules
 
 To clone:
 
-    git clone --recursive ssh://git@module9games.com/opt/git/hercules.git
+    git clone ssh://git@module9games.com/opt/git/hercules.git
 
 Build prerequisites:
 
