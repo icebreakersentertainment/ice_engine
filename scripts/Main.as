@@ -11,11 +11,11 @@ class Main : IMain
 	{
 		println("Executing initialize() method.");
 		
-		Entity@ e = createEntity();
+		//Entity@ e = createEntity();
 		//PhysicsComponent@ pc = PhysicsComponent();
-		GraphicsComponent@ gc = GraphicsComponent();
+		//GraphicsComponent@ gc = GraphicsComponent();
 		//e.addComponent(pc);
-		e.addComponent(gc);
+		//e.addComponent(gc);
 	}
 	
 	void destroy()

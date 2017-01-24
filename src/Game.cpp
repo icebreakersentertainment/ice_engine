@@ -434,7 +434,7 @@ void Game::test()
 	}
 	*/
 	{
-		auto model = model::import(std::string("test_model"), std::string("../../assets/PlainsWolf/Model Formats/DAE/PLainsWolf.dae"));
+		auto model = model::import(std::string("test_model"), std::string("../../mimic_assets/models/scoutship/scoutship.dae"));
 		
 		std::cout << model->meshes.size() << " meshes." << std::endl;
 		
@@ -450,10 +450,11 @@ void Game::test()
 		}
 		
 		auto meshId = graphicsEngine_->createAnimatedMesh(model->meshes[0].vertices, model->meshes[0].indices, model->meshes[0].colors, model->meshes[0].normals, model->meshes[0].textureCoordinates, boneIds, boneWeights);
-		auto textureId = graphicsEngine_->createTexture2d( std::string("../../assets/PlainsWolf/Textures/") + model->textures[0].filename );
-		
+		std::cout << "Created animated mesh" << std::endl;
+		auto textureId = graphicsEngine_->createTexture2d( std::string("../../mimic_assets/models/scoutship/") + model->textures[0].filename );
+		std::cout << "Created texture" << std::endl;
 		auto renderableId = graphicsEngine_->createRenderable(meshId, textureId);
-		
+		std::cout << "Created renderable" << std::endl;
 		graphicsEngine_->scale(renderableId, 0.03f);
 		graphicsEngine_->translate(renderableId, 0, -3.0f, 0);
 		
@@ -463,7 +464,7 @@ void Game::test()
 		boneData = model->boneData;
 		
 		skeletonId = graphicsEngine_->createSkeleton( 100 );
-		
+		std::cout << "Created skeleton" << std::endl;
 		graphicsEngine_->assign(renderableId, skeletonId);
 	}
 }
