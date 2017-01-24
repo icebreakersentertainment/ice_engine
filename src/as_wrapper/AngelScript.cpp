@@ -629,7 +629,7 @@ int AngelScript::addScript(const std::string& script)
 
 	// TODO: maybe make this a constant or something..?  Or make the directory an instance variable?
 	//std::string file = fs::current_path().string() + std::string("/scripts/") + script;
-	std::string file = std::string("../scripts/") + script;
+	std::string file = std::string("../data/scripts/") + script;
 	
 	int r = builder_->AddSectionFromFile(file.c_str());
 	if ( r < 0 )
