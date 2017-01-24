@@ -796,8 +796,13 @@ std::string GraphicsEngine::getShaderErrorMessage(GLuint shader)
 {
 	GLint infoLogLength;
 	glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &infoLogLength);
+	
+	if (infoLogLength == 0)
+	{
+		return std::string();
+	}
 
-	GLchar* strInfoLog = new GLchar[infoLogLength + 1];
+	GLchar* strInfoLog = new GLchar[infoLogLength];
 	glGetShaderInfoLog(shader, infoLogLength, nullptr, strInfoLog);
 
 	std::stringstream message;
@@ -812,8 +817,13 @@ std::string GraphicsEngine::getShaderProgramErrorMessage(GLuint shaderProgram)
 {
 	GLint infoLogLength;
 	glGetProgramiv(shaderProgram, GL_INFO_LOG_LENGTH, &infoLogLength);
+	
+	if (infoLogLength == 0)
+	{
+		return std::string();
+	}
 
-	GLchar* strInfoLog = new GLchar[infoLogLength + 1];
+	GLchar* strInfoLog = new GLchar[infoLogLength ];
 	glGetProgramInfoLog(shaderProgram, infoLogLength, nullptr, strInfoLog);
 
 	std::stringstream message;
