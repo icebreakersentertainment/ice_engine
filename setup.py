@@ -2,6 +2,7 @@
 
 import urllib2
 import tarfile
+import zipfile
 import sys, os
 import platform
 import glob
@@ -23,7 +24,7 @@ parser = argparse.ArgumentParser(usage = 'Usage: %(prog)s <options> release|debu
 
 parser.add_argument('-a', '--architecture', help='The architecture type')
 parser.add_argument('buildType', nargs='?', default='release', help='The build type to setup for - must be either "release" or "debug"')
-parser.add_argument('compiler', nargs='?', default='gcc', help='The to use (i.e. gcc, clang, etc)')
+parser.add_argument('compiler', nargs='?', default=None, help='The to use (i.e. gcc, clang, etc)')
 
 architecture = 'x64'
 buildType = None
@@ -87,7 +88,7 @@ if (compiler == 'msvc' and isMac):
 	exit()
 
 if (compiler == 'msvc'):
-	compilerVersion = '13'
+	compilerVersion = '14'
 if (compiler == 'clang'):
 	compilerVersion = '2'
 
@@ -100,6 +101,13 @@ if (isMac):
 if (buildType == 'debug'):
 	print('Debug build type is not ready yet - sorry!')
 	exit()
+
+print('Setup running')
+print('-------------')
+print('  Platform: ' + platform)
+print('Build Type: ' + buildType)
+print('  Compiler: ' + compiler + ' (Version ' + compilerVersion + ')')
+print('')
 
 dependencies = dict()
 dependencies['boost'] = {'name': 'Boost', 'version': '1.63.0', 'extension': extension}
@@ -200,11 +208,20 @@ def extract():
 		name = dependencies[k]['name']
 		print('Extracting ' + name)
 		
-		with tarfile.TarFile.open(dependenciesDirectory + getFilename(k, dependencies[k]['version']), 'r:gz') as f:
-			f.extractall(path=dependenciesDirectory)
-			folders = [f for f in glob.glob(dependenciesDirectory + k + '*') if os.path.isdir(f)]
-			for f in folders:
-				os.rename(f, dependenciesDirectory+k)
+		filename = dependenciesDirectory + getFilename(k, dependencies[k]['version'])
+
+		if not isWindows:
+			with tarfile.TarFile.open(filename, 'r:gz') as f:
+				f.extractall(path=dependenciesDirectory)
+				folders = [f for f in glob.glob(dependenciesDirectory + k + '*') if os.path.isdir(f)]
+				for f in folders:
+					os.rename(f, dependenciesDirectory+k)
+		else:
+			with zipfile.ZipFile(filename) as f:
+				f.extractall(path=dependenciesDirectory)
+				folders = [f for f in glob.glob(dependenciesDirectory + k + '*') if os.path.isdir(f)]
+				for f in folders:
+					os.rename(f, dependenciesDirectory+k)
 
 def build():
 	"""Build any dependencies"""
