@@ -1,4 +1,5 @@
 #include <cstddef>
+#include <sstream>
 #include <thread>
 
 #define GLM_FORCE_RADIANS

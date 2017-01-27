@@ -1,6 +1,7 @@
 #include <vector>
 #include <iostream>
 #include <fstream>
+#include <sstream>
 
 // C++ importer interface
 #include <assimp/cimport.h>

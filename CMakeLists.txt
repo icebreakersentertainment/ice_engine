@@ -32,7 +32,7 @@ if(MSVC)
     set(HERCULES_COMPILER_FLAGS "/EHsc /MP")
     set(HERCULES_LINKER_FLAGS "")
   endif()
-  set(BOOST_FILENAME_PREFIX "")
+  set(BOOST_FILENAME_PREFIX "lib")
   set(BOOST_FILENAME_POSTFIX "-vc140-mt-1_63")
 endif()
 
@@ -61,6 +61,16 @@ find_library(BOOST_SYSTEM_LIBRARY NAMES
   ${BOOST_FILENAME_PREFIX}boost_system${BOOST_FILENAME_POSTFIX}.lib
   PATHS ${PROJECT_LINK_LIBRARY_DIRECTORIES}
 )
+find_library(BOOST_CHRONO_LIBRARY NAMES
+  ${BOOST_FILENAME_PREFIX}boost_chrono${BOOST_FILENAME_POSTFIX}.so.${BOOST_VERSION}
+  ${BOOST_FILENAME_PREFIX}boost_chrono${BOOST_FILENAME_POSTFIX}.lib
+  PATHS ${PROJECT_LINK_LIBRARY_DIRECTORIES}
+)
+find_library(BOOST_ATOMIC_LIBRARY NAMES
+  ${BOOST_FILENAME_PREFIX}boost_atomic${BOOST_FILENAME_POSTFIX}.so.${BOOST_VERSION}
+  ${BOOST_FILENAME_PREFIX}boost_atomic${BOOST_FILENAME_POSTFIX}.lib
+  PATHS ${PROJECT_LINK_LIBRARY_DIRECTORIES}
+)
 find_library(BOOST_PROGRAM_OPTIONS_LIBRARY NAMES
   ${BOOST_FILENAME_PREFIX}boost_program_options${BOOST_FILENAME_POSTFIX}.so.${BOOST_VERSION}
   ${BOOST_FILENAME_PREFIX}boost_program_options${BOOST_FILENAME_POSTFIX}.lib
@@ -84,6 +94,11 @@ find_library(BOOST_LOG_LIBRARY NAMES
 find_library(BOOST_LOG_SETUP_LIBRARY NAMES
   ${BOOST_FILENAME_PREFIX}boost_log_setup${BOOST_FILENAME_POSTFIX}.so.${BOOST_VERSION}
   ${BOOST_FILENAME_PREFIX}boost_log_setup${BOOST_FILENAME_POSTFIX}.lib
+  PATHS ${PROJECT_LINK_LIBRARY_DIRECTORIES}
+)
+find_library(BOOST_DATE_TIME_LIBRARY NAMES
+  ${BOOST_FILENAME_PREFIX}boost_date_time${BOOST_FILENAME_POSTFIX}.so.${BOOST_VERSION}
+  ${BOOST_FILENAME_PREFIX}boost_date_time${BOOST_FILENAME_POSTFIX}.lib
   PATHS ${PROJECT_LINK_LIBRARY_DIRECTORIES}
 )
 find_library(BOOST_REGEX_LIBRARY NAMES
@@ -129,11 +144,14 @@ include_directories(./deps/freeimage/include)
 configure_file(${BGFX_LIBRARY} ./ COPYONLY)
 configure_file(${FREEIMAGE_LIBRARY} ./ COPYONLY)
 configure_file(${BOOST_SYSTEM_LIBRARY} ./ COPYONLY)
+configure_file(${BOOST_CHRONO_LIBRARY} ./ COPYONLY)
+configure_file(${BOOST_ATOMIC_LIBRARY} ./ COPYONLY)
 configure_file(${BOOST_PROGRAM_OPTIONS_LIBRARY} ./ COPYONLY)
 configure_file(${BOOST_FILESYSTEM_LIBRARY} ./ COPYONLY)
 configure_file(${BOOST_THREAD_LIBRARY} ./ COPYONLY)
 configure_file(${BOOST_LOG_LIBRARY} ./ COPYONLY)
 configure_file(${BOOST_LOG_SETUP_LIBRARY} ./ COPYONLY)
+configure_file(${BOOST_DATE_TIME_LIBRARY} ./ COPYONLY)
 configure_file(${BOOST_REGEX_LIBRARY} ./ COPYONLY)
 configure_file(${BOOST_UNIT_TEST_FRAMEWORK_LIBRARY} ./ COPYONLY)
 configure_file(${ASSIMP_LIBRARY} ./ COPYONLY)
@@ -170,11 +188,14 @@ target_link_libraries(hercules ${SQLITE_LIBRARY} )
 target_link_libraries(hercules ${BGFX_LIBRARY} )
 target_link_libraries(hercules ${FREEIMAGE_LIBRARY} )
 target_link_libraries(hercules ${BOOST_SYSTEM_LIBRARY} )
+target_link_libraries(hercules ${BOOST_CHRONO_LIBRARY} )
+target_link_libraries(hercules ${BOOST_ATOMIC_LIBRARY} )
 target_link_libraries(hercules ${BOOST_PROGRAM_OPTIONS_LIBRARY} )
 target_link_libraries(hercules ${BOOST_FILESYSTEM_LIBRARY} )
 target_link_libraries(hercules ${BOOST_THREAD_LIBRARY} )
 target_link_libraries(hercules ${BOOST_LOG_LIBRARY} )
 target_link_libraries(hercules ${BOOST_LOG_SETUP_LIBRARY} )
+target_link_libraries(hercules ${BOOST_DATE_TIME_LIBRARY} )
 target_link_libraries(hercules ${BOOST_UNIT_TEST_FRAMEWORK_LIBRARY} )
 target_link_libraries(hercules ${BOOST_REGEX_LIBRARY} )
 target_link_libraries(hercules ${ASSIMP_LIBRARY} )
@@ -194,6 +215,12 @@ target_link_libraries(hercules ${X11_LIBRARIES})
 target_link_libraries(hercules ${X11_Xext_LIB})
 target_link_libraries(hercules ${X11_Xxf86vm_LIB})
 target_link_libraries(hercules ${CMAKE_DL_LIBS})
+
+if(WIN32)
+  target_link_libraries(hercules winmm)
+  target_link_libraries(hercules imm32)
+  target_link_libraries(hercules version)
+endif()
 
 # Disable Position Independent Executable - this is starting to be enabled by default,
 # which is causing issues

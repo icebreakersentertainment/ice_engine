@@ -10,6 +10,12 @@
 #include <algorithm>
 #include <cctype>
 
+#include <boost/config.hpp>
+#include <boost/program_options/detail/config_file.hpp>
+#include <boost/program_options/parsers.hpp>
+
+namespace pod = boost::program_options::detail;
+
 #include "utilities/Properties.hpp"
 
 namespace utilities

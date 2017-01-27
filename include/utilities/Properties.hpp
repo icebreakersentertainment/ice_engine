@@ -1,14 +1,8 @@
 #ifndef PROPERTIES_H_
 #define PROPERTIES_H_
 
-#include <string.h>
+#include <string>
 #include <map>
-
-#include <boost/config.hpp>
-#include <boost/program_options/detail/config_file.hpp>
-#include <boost/program_options/parsers.hpp>
-
-namespace pod = boost::program_options::detail;
 
 namespace utilities
 {
