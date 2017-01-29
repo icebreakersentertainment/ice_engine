@@ -53,7 +53,7 @@ set(PROJECT_LINK_LIBRARY_DIRECTORIES
   ./deps/glew/lib
 )
 
-find_library(SQLITE_LIBRARY NAMES sqlite3 PATHS ${PROJECT_LINK_LIBRARY_DIRECTORIES})
+find_library(SQLITE_LIBRARY NAMES sqlite3.a sqlite3.so sqlite3.lib sqlite3.dll PATHS ${PROJECT_LINK_LIBRARY_DIRECTORIES})
 find_library(BGFX_LIBRARY NAMES bgfx-shared-libRelease bgfxRelease PATHS ${PROJECT_LINK_LIBRARY_DIRECTORIES})
 find_library(FREEIMAGE_LIBRARY NAMES freeimage-3.17.0 FreeImage PATHS ${PROJECT_LINK_LIBRARY_DIRECTORIES})
 find_library(BOOST_SYSTEM_LIBRARY NAMES
@@ -142,7 +142,11 @@ include_directories(./deps/ctpl/include)
 include_directories(./deps/freeimage/include)
 
 configure_file(${BGFX_LIBRARY} ./ COPYONLY)
-configure_file(${FREEIMAGE_LIBRARY} ./ COPYONLY)
+if(WIN32)
+  configure_file(${FREEIMAGE_LIBRARY} ./ COPYONLY)
+else()
+  configure_file(${FREEIMAGE_LIBRARY} ./libfreeimage.so.3 COPYONLY)
+endif()
 configure_file(${BOOST_SYSTEM_LIBRARY} ./ COPYONLY)
 configure_file(${BOOST_CHRONO_LIBRARY} ./ COPYONLY)
 configure_file(${BOOST_ATOMIC_LIBRARY} ./ COPYONLY)
