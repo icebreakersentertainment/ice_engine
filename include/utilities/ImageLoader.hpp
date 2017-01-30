@@ -91,13 +91,26 @@ public:
 		FREE_IMAGE_FORMAT format = FreeImage_GetFileType(filename, 0);
 		FIBITMAP* imageBitmap = FreeImage_Load(format, filename);
 
+		if (imageBitmap == nullptr)
+		{
+			std::stringstream ss;
+			ss << "Unable to load image data from file '" << filename << "'.";
+			LOG_ERROR( ss.str() );
+			throw std::runtime_error(ss.str());
+		}
+		
 		LOG_DEBUG( "image loaded." );
 
 		FIBITMAP* temp = imageBitmap;
 		if ( hasAlpha )
+		{
 			imageBitmap = FreeImage_ConvertTo32Bits(imageBitmap);
+		}
 		else
+		{
 			imageBitmap = FreeImage_ConvertTo24Bits(imageBitmap);
+		}
+		
 		FreeImage_Unload(temp);
 
 		int w = FreeImage_GetWidth(imageBitmap);

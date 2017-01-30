@@ -451,7 +451,7 @@ void Game::test()
 		
 		auto meshId = graphicsEngine_->createAnimatedMesh(model->meshes[0].vertices, model->meshes[0].indices, model->meshes[0].colors, model->meshes[0].normals, model->meshes[0].textureCoordinates, boneIds, boneWeights);
 		std::cout << "Created animated mesh" << std::endl;
-		auto textureId = graphicsEngine_->createTexture2d( std::string("../../mimic_assets/models/scoutship/") + model->textures[0].filename );
+		auto textureId = graphicsEngine_->createTexture2d( std::string("../assets/models/scoutship/") + model->textures[0].filename );
 		std::cout << "Created texture" << std::endl;
 		auto renderableId = graphicsEngine_->createRenderable(meshId, textureId);
 		std::cout << "Created renderable" << std::endl;
