@@ -390,9 +390,10 @@ std::unique_ptr< Model > importModelData(const std::string& name, const std::str
 	// Error checking
 	if ( scene == nullptr )
 	{		
-		std::string msg = std::string("Unable to import model...");
-		LOG_ERROR( msg );
-		throw std::runtime_error(msg);
+		std::stringstream ss;
+		ss << "Unable to import model data from file '" << filename << "'.";
+		LOG_ERROR( ss.str() );
+		throw std::runtime_error(ss.str());
 	}
 	else if ( scene->HasTextures() )
 	{

@@ -434,7 +434,7 @@ void Game::test()
 	}
 	*/
 	{
-		auto model = model::import(std::string("test_model"), std::string("../../mimic_assets/models/scoutship/scoutship.dae"));
+		auto model = model::import(std::string("test_model"), std::string("../assets/models/scoutship/scoutship.dae"));
 		
 		std::cout << model->meshes.size() << " meshes." << std::endl;
 		
