@@ -904,10 +904,9 @@ void Game::run()
 	timeForGuiUpdate_ = 0;
 	timeForAngelScript_ = 0;
 	
-	LOG_DEBUG( "Running engine..." );
-
-
 	test();
+	
+	LOG_INFO( "We have liftoff..." );
 	// start our clock
 	/*
 	sf::Clock clock;
@@ -1075,16 +1074,19 @@ void Game::run()
 		}
 
 		// test animation
-		
+		/*
 		transformations = std::vector< glm::mat4 >(100, glm::mat4(1.0));
 		auto animatedBoneNodes = animations[0].animatedBoneNodes;
 		auto duration = animations[0].duration;
 		auto ticksPerSecond = animations[0].ticksPerSecond;
 		runningTime += 0.01;
 		model::animateSkeleton(transformations, globalInverseTransformation, animatedBoneNodes, rootBoneNode, boneData[0], duration, ticksPerSecond, runningTime, 0, 0);
-		
 		graphicsEngine_->update(skeletonId, &transformations[0], 100 * sizeof(glm::mat4));
+		*/
 
+		transformations = std::vector< glm::mat4 >(100, glm::mat4(1.0));
+		graphicsEngine_->update(skeletonId, &transformations[0], 100 * sizeof(glm::mat4));
+		
 		if ( retVal == -1 )
 		{
 			running_ = false;
@@ -1132,7 +1134,6 @@ void Game::run()
 			timeForRender_ = clock.getElapsedTime().asMilliseconds() - c.asMilliseconds();
 			//openGlLoader_->unblock();
 			*/
-			
 			graphicsEngine_->render( 0.01f );
 		}
 		
