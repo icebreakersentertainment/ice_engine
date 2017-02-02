@@ -25,6 +25,8 @@
 #include "angel_script/TestAtom.hpp"
 #include "angel_script/ClassFactory.hpp"
 
+#include "utilities/fs/FileSystem.hpp"
+
 namespace game
 {
 
@@ -143,6 +145,8 @@ void Game::initialize()
 	
 	LOG_INFO( "Initializing..." );
 	
+	initializeFileSystemSubSystem();
+	
 	loadProperties();
 	
 	initializeDataStoreSubSystem();
@@ -171,6 +175,13 @@ void Game::initializeLoggingSubSystem()
 {
 	// Initialize the log using the specified log file
 	cs_logger::Logger::getInstance( std::string("hercules.log") );
+}
+
+void Game::initializeFileSystemSubSystem()
+{
+	LOG_DEBUG( "initialize file system." );
+	
+	fileSystem_ = std::make_unique<utilities::fs::FileSystem>();
 }
 
 void Game::loadProperties()
@@ -209,7 +220,7 @@ void Game::initializeGraphicsSubSystem()
 	auto width = properties_->getIntValue( std::string("window.width") );
 	auto height = properties_->getIntValue( std::string("window.height") );
 	
-	graphicsEngine_ = graphics::GraphicsFactory::createGraphicsEngine( width, height );
+	graphicsEngine_ = graphics::GraphicsFactory::createGraphicsEngine( width, height, fileSystem_.get() );
 	
 	graphicsEngine_->addEventListener(this);
 	

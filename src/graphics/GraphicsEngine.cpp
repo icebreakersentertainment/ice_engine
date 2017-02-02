@@ -7,9 +7,6 @@
 #include <SDL2/SDL_opengl.h>
 #include <SDL2/SDL_syswm.h>
 
-#include <boost/filesystem.hpp>
-#include <boost/filesystem/fstream.hpp>
-
 #define GLM_FORCE_RADIANS
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/string_cast.hpp>
@@ -20,10 +17,12 @@
 namespace graphics
 {
 
-GraphicsEngine::GraphicsEngine(glm::detail::uint32 width, glm::detail::uint32 height)
+GraphicsEngine::GraphicsEngine(glm::detail::uint32 width, glm::detail::uint32 height, utilities::fs::IFileSystem* fileSystem)
 {
 	width_ = width;
 	height_ = height;
+	
+	fileSystem_ = fileSystem;
 	
 	auto errorCode = SDL_Init( SDL_INIT_VIDEO );
 	
@@ -652,8 +651,8 @@ void GraphicsEngine::update(const SkeletonId skeletonId, const void* data, glm::
 
 GLuint GraphicsEngine::createShaderProgram(std::string vertexShaderUri, std::string fragmentShaderUri)
 {
-	auto vertexShaderSource = loadShaderSource(vertexShaderUri);
-	auto fragmentShaderSource = loadShaderSource(fragmentShaderUri);
+	auto vertexShaderSource = fileSystem_->readAll(vertexShaderUri);
+	auto fragmentShaderSource = fileSystem_->readAll(fragmentShaderUri);
 	
 	return createShaderProgramFromSource(vertexShaderSource, fragmentShaderSource);
 }
@@ -681,32 +680,6 @@ GLuint GraphicsEngine::createShaderProgramFromSource(std::string vertexShaderSou
 	glDeleteShader(fragmentShader);
 	
 	return shaderProgram;
-}
-
-std::string GraphicsEngine::loadShaderSource(std::string shaderUri)
-{
-	auto path = boost::filesystem::path(shaderUri);
-	
-	if (!boost::filesystem::exists(path))
-	{
-		auto message = std::string("Unable to load shader - file does not exist: ") + shaderUri;
-		LOG_ERROR( message );
-		throw std::runtime_error(message);
-	}
-	
-	boost::filesystem::ifstream file(path);
-	
-	auto contents = std::string("");
-	auto line = std::string("");
-
-	while ( getline(file, line))
-	{
-		contents += line + '\n';
-	}
-
-	file.close();
-	
-	return contents;
 }
 
 GLuint GraphicsEngine::createShaderProgram(GLuint vertexShader, GLuint fragmentShader)

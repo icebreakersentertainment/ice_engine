@@ -8,6 +8,8 @@
 
 #include "IGraphicsEngine.hpp"
 
+#include "utilities/fs/IFileSystem.hpp"
+
 namespace graphics
 {
 
@@ -15,7 +17,7 @@ class GraphicsFactory
 {
 public:
 
-	static std::unique_ptr<IGraphicsEngine> createGraphicsEngine(glm::detail::uint32 width, glm::detail::uint32 height);
+	static std::unique_ptr<IGraphicsEngine> createGraphicsEngine(glm::detail::uint32 width, glm::detail::uint32 height, utilities::fs::IFileSystem* fileSystem);
 
 private:
 	GraphicsFactory();

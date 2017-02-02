@@ -13,6 +13,8 @@
 #include "graphics/IGraphicsEngine.hpp"
 #include "graphics/Event.hpp"
 
+#include "utilities/fs/IFileSystem.hpp"
+
 namespace graphics
 {
 
@@ -70,7 +72,7 @@ struct Camera
 class GraphicsEngine : public IGraphicsEngine
 {
 public:
-	GraphicsEngine(glm::detail::uint32 width, glm::detail::uint32 height);
+	GraphicsEngine(glm::detail::uint32 width, glm::detail::uint32 height, utilities::fs::IFileSystem* fileSystem);
 	virtual ~GraphicsEngine();
 	
 	virtual void setViewport(glm::detail::uint32 width, glm::detail::uint32 height);
@@ -164,7 +166,7 @@ private:
 	glm::mat4 view_;
 	glm::mat4 projection_;
 	
-	std::string loadShaderSource(std::string shaderUri);
+	utilities::fs::IFileSystem* fileSystem_;
 	
 	GLuint createShaderProgram(std::string vertexShaderUri, std::string fragmentShaderUri);
 	GLuint createShaderProgramFromSource(std::string vertexShaderSource, std::string fragmentShaderSource);

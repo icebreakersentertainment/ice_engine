@@ -10,6 +10,7 @@
 #include "extras/FpsCamera.hpp"
 
 #include "utilities/Properties.hpp"
+#include "utilities/fs/IFileSystem.hpp"
 
 #include "IGame.hpp"
 #include "Player.hpp"
@@ -92,7 +93,9 @@ private:
 	
 	// For some reason, AngelScript will crash with a SegFault when registering objects if I don't use a pointer here (instead of storing it on the stack)
 	std::unique_ptr<as_wrapper::AngelScript> angelScript_;
-
+	
+	std::unique_ptr<utilities::fs::IFileSystem> fileSystem_;
+	
 	bool running_;
 	GameState state_;
 
@@ -146,6 +149,7 @@ private:
 	// Initialization stuff
 	void initializeLoggingSubSystem();
 	void loadProperties();
+	void initializeFileSystemSubSystem();
 	void initializeSoundSubSystem();
 	void initializePhysicsSubSystem();
 	void initializeGraphicsSubSystem();

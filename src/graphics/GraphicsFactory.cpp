@@ -16,9 +16,9 @@ GraphicsFactory::~GraphicsFactory()
 {
 }
 
-std::unique_ptr<IGraphicsEngine> GraphicsFactory::createGraphicsEngine(glm::detail::uint32 width, glm::detail::uint32 height)
+std::unique_ptr<IGraphicsEngine> GraphicsFactory::createGraphicsEngine(glm::detail::uint32 width, glm::detail::uint32 height, utilities::fs::IFileSystem* fileSystem)
 {
-	auto ptr = std::unique_ptr< IGraphicsEngine >( new GraphicsEngine(width, height) );
+	auto ptr = std::unique_ptr< IGraphicsEngine >( new GraphicsEngine(width, height, fileSystem) );
 	
 	return std::move( ptr );
 }
