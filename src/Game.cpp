@@ -179,38 +179,38 @@ void Game::initializeLoggingSubSystem()
 
 void Game::initializeFileSystemSubSystem()
 {
-	LOG_DEBUG( "initialize file system." );
+	LOG_INFO( "initialize file system." );
 	
 	fileSystem_ = std::make_unique<utilities::fs::FileSystem>();
 }
 
 void Game::loadProperties()
 {
-	LOG_DEBUG( "Load settings..." );
+	LOG_INFO( "Load settings..." );
 	properties_ = std::unique_ptr< utilities::Properties >( new utilities::Properties(std::string("settings.ini")) );
 }
 
 void Game::initializeInputSubSystem()
 {
-	LOG_DEBUG( "initialize keyboard and mouse." );
+	LOG_INFO( "initialize keyboard and mouse." );
 	//sfmlWindow_ = (sf::Window*)window_->getInternalWindowPointer();
 	//sfmlWindow_->setKeyRepeatEnabled(false);
 }
 void Game::initializeSoundSubSystem()
 {
-	LOG_DEBUG( "initialize sound." );
+	LOG_INFO( "initialize sound." );
 }
 
 void Game::initializePhysicsSubSystem()
 {
-	LOG_DEBUG( "initialize physics." );
+	LOG_INFO( "initialize physics." );
 	
 	physicsEngine_ = physics::PhysicsFactory::createPhysicsEngine();
 }
 
 void Game::initializeGraphicsSubSystem()
 {
-	LOG_DEBUG( "initializing graphics." );
+	LOG_INFO( "initializing graphics." );
 	
 	
 	//properties_->getIntValue( std::string("window.depth") );
@@ -265,7 +265,7 @@ void Game::initializeGraphicsSubSystem()
 
 void Game::initializeScriptingSubSystem()
 {
-	LOG_DEBUG( "Initializing angelscript..." );
+	LOG_INFO( "Initializing angelscript..." );
 	// TODO: This is a bit hacky
 	//entities::GraphicsComponentFactory::sceneManager_ = smgr_;
 	
@@ -369,7 +369,7 @@ void Game::initializeScriptingSubSystem()
 
 void Game::initializeThreadingSubSystem()
 {
-	LOG_DEBUG( "Load thread pool..." );
+	LOG_INFO( "Load thread pool..." );
 	threadPool_ = std::unique_ptr<ThreadPool>( new ThreadPool() );
 	
 	LOG_DEBUG( "Load opengl loader..." );
@@ -378,13 +378,13 @@ void Game::initializeThreadingSubSystem()
 
 void Game::initializeDataStoreSubSystem()
 {
-	LOG_DEBUG( "Load data store..." );
+	LOG_INFO( "Load data store..." );
 	//dataStore_ = std::unique_ptr<pyliteserializer::SqliteDataStore>( new pyliteserializer::SqliteDataStore(std::string("../data/dark_horizon.db")) );
 }
 
 void Game::initializeEntitySubSystem()
 {
-	LOG_DEBUG( "Load entity system..." );
+	LOG_INFO( "Load entity system..." );
 	//entityEvents_ = entityx::ptr<entityx::EventManager>(new entityx::EventManager());
 	//entities_ = entityx::ptr<entityx::EntityManager>(new entityx::EntityManager(entityEvents_));
 }
@@ -482,12 +482,12 @@ void Game::test()
 
 void Game::loadEssentialGameData()
 {
-	LOG_DEBUG( "load essential game data." );
+	LOG_INFO( "load essential game data." );
 }
 
 void Game::loadUserInterface()
 {
-	LOG_DEBUG( "load user interface." );
+	LOG_INFO( "load user interface." );
 	
 	/*
 	igui_ = glrProgram_->getHtmlGui();
