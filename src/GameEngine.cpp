@@ -306,14 +306,14 @@ void GameEngine::initializeScriptingSubSystem()
 	// Global functions
 	angelScript_->registerGlobalFunction(
 		std::string("Entity@ getEntity(const string& in)"),
-		asMETHODPR(Game, getEntity, (const std::string&), entities::Entity*),
+		asMETHODPR(IGameEngine, getEntity, (const std::string&), entities::Entity*),
 		asCALL_THISCALL_ASGLOBAL,
 		this
 	);
 	
 	angelScript_->registerGlobalFunction(
 		std::string("Entity@ createEntity()"),
-		asMETHODPR(Game, createEntity, (), entities::Entity*),
+		asMETHODPR(IGameEngine, createEntity, (), entities::Entity*),
 		asCALL_THISCALL_ASGLOBAL,
 		this
 	);

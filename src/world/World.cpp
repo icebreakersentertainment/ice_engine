@@ -6,7 +6,6 @@
 #include <glm/gtx/string_cast.hpp>
 
 #include "world/World.hpp"
-#include "Game.hpp"
 #include "Constants.hpp"
 
 #include "noise/GameNoise.hpp"
@@ -21,7 +20,7 @@ namespace hercules
 namespace world
 {
 
-World::World(Game* game, /*glr::ISceneManager* smgr, glr::models::IModelManager* modelManager,*/ IThreadPool* threadPool, IOpenGlLoader* openGlLoader, utilities::Properties* properties)
+World::World(IGameEngine* game, /*glr::ISceneManager* smgr, glr::models::IModelManager* modelManager,*/ IThreadPool* threadPool, IOpenGlLoader* openGlLoader, utilities::Properties* properties)
 	: filename_(std::string()), game_(game), /*smgr_(smgr), modelManager_(modelManager),*/ threadPool_(threadPool), openGlLoader_(openGlLoader), properties_(properties)
 {
 	//assert(smgr_ != nullptr);

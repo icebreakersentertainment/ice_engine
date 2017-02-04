@@ -16,6 +16,8 @@
 
 #include "as_wrapper/AngelScript.h"
 //#include "data_store/SqliteDataStore.hpp"
+
+#include "IGameEngine.hpp"
 #include "Player.hpp"
 
 #include "world/Region.hpp"
@@ -27,14 +29,14 @@ namespace glmd = glm::detail;
 
 namespace hercules
 {
-class Game;
+
 namespace world
 {
 
 class World// : public virtual glr::terrain::ITerrainManagerEventListener
 {
 public:
-	World(Game* game, /*glr::ISceneManager* smgr, glr::models::IModelManager* modelManager,*/ IThreadPool* threadPool, IOpenGlLoader* openGlLoader, utilities::Properties* properties);
+	World(IGameEngine* game, /*glr::ISceneManager* smgr, glr::models::IModelManager* modelManager,*/ IThreadPool* threadPool, IOpenGlLoader* openGlLoader, utilities::Properties* properties);
 	virtual ~World();
 
 	void tick(glmd::float32 elapsedTime);
@@ -49,7 +51,7 @@ public:
 private:	
 	Player* player_;
 	std::string filename_;
-	Game* game_;
+	IGameEngine* game_;
 
 	// Testing nodes for models
 	//std::vector< glr::ISceneNode* > nodes_;	

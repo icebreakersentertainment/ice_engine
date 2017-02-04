@@ -34,17 +34,6 @@ namespace glmd = glm::detail;
 namespace hercules
 {
 
-// game states
-enum GameState
-{
-	GAME_STATE_UNKNOWN = 0,
-	GAME_STATE_STARTUP,
-	GAME_STATE_MAIN_MENU,
-	GAME_STATE_START_NEW_GAME,
-	GAME_STATE_LOAD_NEW_GAME,
-	GAME_STATE_IN_GAME
-};
-
 class GameEngine : public IGameEngine, public graphics::IEventListener
 {
 public:
@@ -53,14 +42,11 @@ public:
 
 	virtual void run();
 
-	GameState getState();
+	virtual GameState getState();
 
-	//virtual void receiveKeyboardEvent(sf::Event evt);
-	//virtual void receiveMouseEvent(sf::Event evt);
-	
-	entities::Entity* createEntity();
-	entities::Entity* createEntity(const std::string& name);
-	entities::Entity* getEntity(const std::string& name);
+	virtual entities::Entity* createEntity();
+	virtual entities::Entity* createEntity(const std::string& name);
+	virtual entities::Entity* getEntity(const std::string& name);
 	
 	/**
 	 * 
