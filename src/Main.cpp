@@ -1,6 +1,8 @@
+#include <iostream>
+
 #include "Main.hpp"
 
-#include "Game.hpp"
+#include "GameFactory.hpp"
 
 Main::Main()
 {
@@ -14,11 +16,11 @@ int main()
 {
 	try
 	{
-		game::Game game;
+		auto gameEngine = hercules::GameFactory::createGameEngine();
 		
-		game.setMainScript( std::string("Main"), std::string("Main.as") );
+		gameEngine->setBootstrapScript( std::string("Main"), std::string("Main.as") );
 		
-		game.run();
+		gameEngine->run();
 	}
 	catch (const std::exception& e)
 	{

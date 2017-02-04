@@ -1,5 +1,5 @@
-#ifndef GAME_H_
-#define GAME_H_
+#ifndef GAMEENGINE_H_
+#define GAMEENGINE_H_
 
 #include <memory>
 
@@ -12,7 +12,7 @@
 #include "utilities/Properties.hpp"
 #include "fs/IFileSystem.hpp"
 
-#include "IGame.hpp"
+#include "IGameEngine.hpp"
 #include "Player.hpp"
 #include "Camera.hpp"
 #include "ThreadPool.hpp"
@@ -31,7 +31,7 @@
 
 namespace glmd = glm::detail;
 
-namespace game
+namespace hercules
 {
 
 // game states
@@ -45,13 +45,13 @@ enum GameState
 	GAME_STATE_IN_GAME
 };
 
-class Game : public IGame, public graphics::IEventListener
+class GameEngine : public IGameEngine, public graphics::IEventListener
 {
 public:
-	Game();
-	virtual ~Game();
+	GameEngine();
+	virtual ~GameEngine();
 
-	void run();
+	virtual void run();
 
 	GameState getState();
 
@@ -65,7 +65,7 @@ public:
 	/**
 	 * 
 	 */
-	void setMainScript(const std::string& className, const std::string& filename);
+	virtual void setBootstrapScript(const std::string& className, const std::string& filename);
 	
 	// Implements the IEventListener interface
 	virtual bool processEvent(const graphics::Event& event);
@@ -179,4 +179,4 @@ private:
 
 }
 
-#endif /* GAME_H_ */
+#endif /* GAMEENGINE_H_ */

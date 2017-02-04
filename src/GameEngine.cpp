@@ -4,7 +4,7 @@
 
 //#include <boost/filesystem.hpp>
 
-#include "Game.hpp"
+#include "GameEngine.hpp"
 
 #include "Constants.hpp"
 
@@ -27,19 +27,19 @@
 
 #include "fs/FileSystem.hpp"
 
-namespace game
+namespace hercules
 {
 
 //namespace fs = boost::filesystem;
 
-glm::detail::float32 Game::rotationX = 0.0f;
-glm::detail::float32 Game::rotationY = 0.0f;
-glm::detail::int32 Game::mousePosX = 0;
-glm::detail::int32 Game::mousePosY = 0;
+glm::detail::float32 GameEngine::rotationX = 0.0f;
+glm::detail::float32 GameEngine::rotationY = 0.0f;
+glm::detail::int32 GameEngine::mousePosX = 0;
+glm::detail::int32 GameEngine::mousePosY = 0;
 
-glmd::uint32 Game::COMPONENT_TYPE_GRAPHICS = 0;
+glmd::uint32 GameEngine::COMPONENT_TYPE_GRAPHICS = 0;
 
-Game::Game()
+GameEngine::GameEngine()
 {
 	running_ = true;
 
@@ -53,7 +53,7 @@ Game::Game()
 	initialize();
 }
 
-Game::~Game()
+GameEngine::~GameEngine()
 {
 	//angelScript_->destroy();
 	
@@ -61,22 +61,22 @@ Game::~Game()
 		mainAsScript_->callMethod( std::string("void destroy()") );
 }
 
-GameState Game::getState()
+GameState GameEngine::getState()
 {
 	return state_;
 }
 
-void Game::exit()
+void GameEngine::exit()
 {
 	running_ = false;
 }
 
-void Game::setState(GameState state)
+void GameEngine::setState(GameState state)
 {
 	state_ = state;
 }
 
-void Game::startNewGame()
+void GameEngine::startNewGame()
 {
 	//DEBUG_LOG("--== Starting new game ==--")
 
@@ -101,7 +101,7 @@ void Game::startNewGame()
 	world_->newWorld();
 }
 
-void Game::tick(glmd::float32 elapsedTime)
+void GameEngine::tick(glmd::float32 elapsedTime)
 {
 	// Testing angelscript
 	if (mainAsScript_ != nullptr)
@@ -135,11 +135,11 @@ void Game::tick(glmd::float32 elapsedTime)
 	}
 }
 
-void Game::destroy()
+void GameEngine::destroy()
 {
 }
 
-void Game::initialize()
+void GameEngine::initialize()
 {
 	initializeLoggingSubSystem();
 	
@@ -171,44 +171,44 @@ void Game::initialize()
 	LOG_INFO( "Done initialization." );
 }
 
-void Game::initializeLoggingSubSystem()
+void GameEngine::initializeLoggingSubSystem()
 {
 	// Initialize the log using the specified log file
 	cs_logger::Logger::getInstance( std::string("hercules.log") );
 }
 
-void Game::initializeFileSystemSubSystem()
+void GameEngine::initializeFileSystemSubSystem()
 {
 	LOG_INFO( "initialize file system." );
 	
 	fileSystem_ = std::make_unique<fs::FileSystem>();
 }
 
-void Game::loadProperties()
+void GameEngine::loadProperties()
 {
 	LOG_INFO( "Load settings..." );
 	properties_ = std::unique_ptr< utilities::Properties >( new utilities::Properties(std::string("settings.ini")) );
 }
 
-void Game::initializeInputSubSystem()
+void GameEngine::initializeInputSubSystem()
 {
 	LOG_INFO( "initialize keyboard and mouse." );
 	//sfmlWindow_ = (sf::Window*)window_->getInternalWindowPointer();
 	//sfmlWindow_->setKeyRepeatEnabled(false);
 }
-void Game::initializeSoundSubSystem()
+void GameEngine::initializeSoundSubSystem()
 {
 	LOG_INFO( "initialize sound." );
 }
 
-void Game::initializePhysicsSubSystem()
+void GameEngine::initializePhysicsSubSystem()
 {
 	LOG_INFO( "initialize physics." );
 	
 	physicsEngine_ = physics::PhysicsFactory::createPhysicsEngine();
 }
 
-void Game::initializeGraphicsSubSystem()
+void GameEngine::initializeGraphicsSubSystem()
 {
 	LOG_INFO( "initializing graphics." );
 	
@@ -263,7 +263,7 @@ void Game::initializeGraphicsSubSystem()
 	*/
 }
 
-void Game::initializeScriptingSubSystem()
+void GameEngine::initializeScriptingSubSystem()
 {
 	LOG_INFO( "Initializing angelscript..." );
 	// TODO: This is a bit hacky
@@ -319,7 +319,7 @@ void Game::initializeScriptingSubSystem()
 	);
 	
 	// Set global constants
-	angelScript_->registerGlobalProperty(std::string("const uint COMPONENT_TYPE_GRAPHICS"), &Game::COMPONENT_TYPE_GRAPHICS);
+	angelScript_->registerGlobalProperty(std::string("const uint COMPONENT_TYPE_GRAPHICS"), &GameEngine::COMPONENT_TYPE_GRAPHICS);
 	
 	// TESTING - loading scripts and creating objects
 	angelScript_->loadScript(std::string("Main"), std::string("Main.as"));
@@ -367,7 +367,7 @@ void Game::initializeScriptingSubSystem()
 	*/
 }
 
-void Game::initializeThreadingSubSystem()
+void GameEngine::initializeThreadingSubSystem()
 {
 	LOG_INFO( "Load thread pool..." );
 	threadPool_ = std::unique_ptr<ThreadPool>( new ThreadPool() );
@@ -376,13 +376,13 @@ void Game::initializeThreadingSubSystem()
 	openGlLoader_ = std::unique_ptr<OpenGlLoader>( new OpenGlLoader() );
 }
 
-void Game::initializeDataStoreSubSystem()
+void GameEngine::initializeDataStoreSubSystem()
 {
 	LOG_INFO( "Load data store..." );
 	//dataStore_ = std::unique_ptr<pyliteserializer::SqliteDataStore>( new pyliteserializer::SqliteDataStore(std::string("../data/dark_horizon.db")) );
 }
 
-void Game::initializeEntitySubSystem()
+void GameEngine::initializeEntitySubSystem()
 {
 	LOG_INFO( "Load entity system..." );
 	//entityEvents_ = entityx::ptr<entityx::EventManager>(new entityx::EventManager());
@@ -394,7 +394,7 @@ std::vector<model::Animation> animations;
 model::BoneNode rootBoneNode;
 glm::mat4 globalInverseTransformation;
 graphics::SkeletonId skeletonId;
-void Game::test()
+void GameEngine::test()
 {
 	cameraId_ = graphicsEngine_->createCamera(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0.0f, 0.0f, 0.0f));
 	
@@ -480,12 +480,12 @@ void Game::test()
 	}
 }
 
-void Game::loadEssentialGameData()
+void GameEngine::loadEssentialGameData()
 {
 	LOG_INFO( "load essential game data." );
 }
 
-void Game::loadUserInterface()
+void GameEngine::loadUserInterface()
 {
 	LOG_INFO( "load user interface." );
 	
@@ -579,7 +579,7 @@ void Game::loadUserInterface()
 }
 
 /*
-void Game::receiveKeyboardEvent(sf::Event evt)
+void GameEngine::receiveKeyboardEvent(sf::Event evt)
 {
 	int wvmods = 0;
 	
@@ -653,15 +653,15 @@ void Game::receiveKeyboardEvent(sf::Event evt)
 */
 
 /*
-void Game::receiveMouseEvent(sf::Event evt)
+void GameEngine::receiveMouseEvent(sf::Event evt)
 {
 	switch (evt.type)
 	{
 	case sf::Event::MouseMoved:
-		//Game::rotationX = (-1.0f) * (glm::detail::float32)(evt.mouseMove.x - Game::mousePosX);
-		//Game::rotationY = (-1.0f) * (glm::detail::float32)(evt.mouseMove.y - Game::mousePosY);
-		//Game::mousePosX = evt.mouseMove.x;
-		//Game::mousePosY = evt.mouseMove.y;
+		//GameEngine::rotationX = (-1.0f) * (glm::detail::float32)(evt.mouseMove.x - GameEngine::mousePosX);
+		//GameEngine::rotationY = (-1.0f) * (glm::detail::float32)(evt.mouseMove.y - GameEngine::mousePosY);
+		//GameEngine::mousePosX = evt.mouseMove.x;
+		//GameEngine::mousePosY = evt.mouseMove.y;
 
 		//igui_->mouseMoved(evt.mouseMove.x, evt.mouseMove.y);
 		break;
@@ -714,19 +714,19 @@ void Game::receiveMouseEvent(sf::Event evt)
 }
 */
 
-entities::Entity* Game::createEntity()
+entities::Entity* GameEngine::createEntity()
 {
 	return new entities::Entity( entityx_.entities.create() );
 }
 
 // TODO: Do we need a name?
-entities::Entity* Game::createEntity(const std::string& name)
+entities::Entity* GameEngine::createEntity(const std::string& name)
 {
 	//return new Entity( name );
 	return nullptr;
 }
 
-entities::Entity* Game::getEntity(const std::string& name)
+entities::Entity* GameEngine::getEntity(const std::string& name)
 {
 	//std::cout << "getting entity with name '" << name << "'." << std::endl;
 	//glr::ISceneNode* node = smgr_->getSceneNode( name );
@@ -734,7 +734,7 @@ entities::Entity* Game::getEntity(const std::string& name)
 	return nullptr;
 }
 
-void Game::setMainScript(const std::string& className, const std::string& filename)
+void GameEngine::setBootstrapScript(const std::string& className, const std::string& filename)
 {
 	// Error check
 	if (mainAsScript_ != nullptr)
@@ -750,7 +750,7 @@ void Game::setMainScript(const std::string& className, const std::string& filena
 	mainAsScript_->callMethod( std::string("void initialize()") );
 }
 
-void Game::angelscriptTest()
+void GameEngine::angelscriptTest()
 {
 	angelScript_->loadScript( std::string("manipulate_scene_nodes"), std::string("manipulate_scene_nodes.as") );
 	
@@ -761,7 +761,7 @@ void Game::angelscriptTest()
 	angelScript_->releaseContext();
 }
 
-void Game::handleEvents()
+void GameEngine::handleEvents()
 {
 	graphicsEngine_->processEvents();
 	/*
@@ -795,7 +795,7 @@ void Game::handleEvents()
 	*/
 }
 
-bool Game::processEvent(const graphics::Event& event)
+bool GameEngine::processEvent(const graphics::Event& event)
 {
 	switch(event.type)
 	{
@@ -834,74 +834,74 @@ bool Game::processEvent(const graphics::Event& event)
 	return false;
 }
 
-glm::detail::float32 Game::getFps()
+glm::detail::float32 GameEngine::getFps()
 {
 	return currentFps_;
 }
 
-glm::detail::uint32 Game::getThreadPoolQueueSize()
+glm::detail::uint32 GameEngine::getThreadPoolQueueSize()
 {
 	return threadPool_->getWorkQueueCount();
 }
 
-glm::detail::uint32 Game::getThreadPoolWorkerCount()
+glm::detail::uint32 GameEngine::getThreadPoolWorkerCount()
 {
 	return threadPool_->getActiveWorkerCount() + threadPool_->getInactiveWorkerCount();
 }
 
-glm::detail::uint32 Game::getThreadPoolActiveWorkerCount()
+glm::detail::uint32 GameEngine::getThreadPoolActiveWorkerCount()
 {
 	return threadPool_->getActiveWorkerCount();
 }
 
-glm::detail::uint32 Game::getThreadPoolInactiveWorkerCount()
+glm::detail::uint32 GameEngine::getThreadPoolInactiveWorkerCount()
 {
 	return threadPool_->getInactiveWorkerCount();
 }
 
-glm::detail::uint32 Game::getOpenGlThreadPoolQueueSize()
+glm::detail::uint32 GameEngine::getOpenGlThreadPoolQueueSize()
 {
 	return openGlLoader_->getWorkQueueCount();
 }
 
-glm::detail::int32 Game::getTimeForPhysics()
+glm::detail::int32 GameEngine::getTimeForPhysics()
 {
 	return timeForPhysics_;
 }
 
-glm::detail::int32 Game::getTimeForTick()
+glm::detail::int32 GameEngine::getTimeForTick()
 {
 	return timeForTick_;
 }
 
-glm::detail::int32 Game::getTimeForRender()
+glm::detail::int32 GameEngine::getTimeForRender()
 {
 	return timeForRender_;
 }
 
-glm::detail::int32 Game::getTimeForMisc()
+glm::detail::int32 GameEngine::getTimeForMisc()
 {
 	return timeForMisc_;
 }
 
-glm::detail::int32 Game::getTimeForInput()
+glm::detail::int32 GameEngine::getTimeForInput()
 {
 	return timeForInput_;
 }
 
-glm::detail::int32 Game::getTimeForGuiUpdate()
+glm::detail::int32 GameEngine::getTimeForGuiUpdate()
 {
 	return timeForGuiUpdate_;
 }
 
-glm::detail::int32 Game::getTimeForAngelScript()
+glm::detail::int32 GameEngine::getTimeForAngelScript()
 {
 	return timeForAngelScript_;
 }
 
 glm::detail::float32 runningTime;
 std::vector< glm::mat4 > transformations;
-void Game::run()
+void GameEngine::run()
 {
 	setState(GAME_STATE_MAIN_MENU);
 
@@ -1025,10 +1025,10 @@ void Game::run()
 						sf::Mouse::setPosition(windowCenter);
 						sfmlWindow_->setMouseCursorVisible(false);
 						
-						Game::rotationX = (-1.0f) * (glm::detail::float32)(mousePos.x - windowCenter.x);
-						Game::rotationY = (-1.0f) * (glm::detail::float32)(mousePos.y - windowCenter.y);
-						Game::mousePosX = mousePos.x;
-						Game::mousePosY = mousePos.y;
+						GameEngine::rotationX = (-1.0f) * (glm::detail::float32)(mousePos.x - windowCenter.x);
+						GameEngine::rotationY = (-1.0f) * (glm::detail::float32)(mousePos.y - windowCenter.y);
+						GameEngine::mousePosX = mousePos.x;
+						GameEngine::mousePosY = mousePos.y;
 					
 						if ( sf::Keyboard::isKeyPressed(sf::Keyboard::W))
 							camera_->moveForward();
@@ -1042,16 +1042,16 @@ void Game::run()
 						if ( sf::Keyboard::isKeyPressed(sf::Keyboard::D))
 							camera_->moveRight();
 			
-						if ( Game::rotationX != 0.0f )
+						if ( GameEngine::rotationX != 0.0f )
 						{
-							camera_->rotate( Game::rotationX, glm::vec3(0.0f, 1.0f, 0.0f) );
-							Game::rotationX = 0.0f;
+							camera_->rotate( GameEngine::rotationX, glm::vec3(0.0f, 1.0f, 0.0f) );
+							GameEngine::rotationX = 0.0f;
 						}
 			
-						if ( Game::rotationY != 0.0f )
+						if ( GameEngine::rotationY != 0.0f )
 						{
-							camera_->rotate( Game::rotationY, glm::vec3(1.0f, 0.0f, 0.0f) );
-							Game::rotationY = 0.0f;
+							camera_->rotate( GameEngine::rotationY, glm::vec3(1.0f, 0.0f, 0.0f) );
+							GameEngine::rotationY = 0.0f;
 						}
 		
 						camera_->tick(deltaTime);
