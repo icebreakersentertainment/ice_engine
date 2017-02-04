@@ -3,7 +3,7 @@
 
 //#include <GL/glx.h>
 
-namespace game
+namespace hercules
 {
 
 OpenGlLoader::OpenGlLoader()

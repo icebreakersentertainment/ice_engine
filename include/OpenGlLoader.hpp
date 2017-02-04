@@ -6,7 +6,7 @@
 
 #include "IOpenGlLoader.hpp"
 
-namespace game
+namespace hercules
 {
 
 class OpenGlLoader : public IOpenGlLoader

@@ -1,6 +1,6 @@
 #include "world/Region.hpp"
 
-namespace game
+namespace hercules
 {
 namespace world
 {

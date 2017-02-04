@@ -5,7 +5,7 @@
 
 //#include "terrain/IFieldFunction.hpp"
 
-namespace gamenoise
+namespace herculesnoise
 {
 
 class GameNoise// : public glr::terrain::IFieldFunction

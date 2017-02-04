@@ -9,7 +9,7 @@
 #include "simplexnoise/simplexnoise1234.h"
 
 
-namespace gamenoise
+namespace herculesnoise
 {
 
 float GameNoise::maxX = 256.0f;

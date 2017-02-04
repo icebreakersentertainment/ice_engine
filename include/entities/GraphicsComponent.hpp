@@ -8,7 +8,7 @@
 #include "as_wrapper/glm_bindings/Vec3.h"
 #include "as_wrapper/ASRefObject.h"
 
-namespace game
+namespace hercules
 {
 namespace entities
 {

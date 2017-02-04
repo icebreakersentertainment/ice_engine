@@ -1,6 +1,6 @@
 #include "entities/GraphicsComponentFactory.hpp"
 
-namespace game
+namespace hercules
 {
 namespace entities
 {

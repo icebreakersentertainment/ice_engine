@@ -1,6 +1,6 @@
 #include "Player.hpp"
 
-namespace game
+namespace hercules
 {
 
 Player::Player()//Camera* camera) : camera_(camera)

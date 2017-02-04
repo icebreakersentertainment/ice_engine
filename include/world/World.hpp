@@ -25,7 +25,7 @@
 
 namespace glmd = glm::detail;
 
-namespace game
+namespace hercules
 {
 class Game;
 namespace world

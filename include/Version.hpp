@@ -3,7 +3,7 @@
 
 #include "utilities/Macros.hpp"
 
-namespace game
+namespace hercules
 {
 
 class Version

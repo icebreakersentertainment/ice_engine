@@ -1,7 +1,7 @@
 #ifndef IOPENGLLOADER_H_
 #define IOPENGLLOADER_H_
 
-namespace game
+namespace hercules
 {
 
 class IOpenGlLoader

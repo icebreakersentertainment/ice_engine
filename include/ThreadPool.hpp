@@ -5,7 +5,7 @@
 
 #include "IThreadPool.hpp"
 
-namespace game
+namespace hercules
 {
 
 class ThreadPool : public IThreadPool

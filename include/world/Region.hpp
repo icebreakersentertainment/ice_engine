@@ -10,7 +10,7 @@
 
 namespace glmd = glm::detail;
 
-namespace game
+namespace hercules
 {
 namespace world
 {

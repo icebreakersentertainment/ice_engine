@@ -16,7 +16,7 @@
 // TESTING
 //#include "models/Model.hpp"
 
-namespace game
+namespace hercules
 {
 namespace world
 {

@@ -3,7 +3,7 @@
 
 #include "entities/GraphicsComponent.hpp"
 
-namespace game
+namespace hercules
 {
 namespace entities
 {

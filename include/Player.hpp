@@ -3,7 +3,7 @@
 
 #include "Camera.hpp"
 
-namespace game
+namespace hercules
 {
 
 class Player

@@ -1,6 +1,6 @@
 #include "entities/EntityFactory.hpp"
 
-namespace game
+namespace hercules
 {
 namespace entities
 {

@@ -2,7 +2,7 @@
 
 #include "entities/Entity.hpp"
 
-namespace game
+namespace hercules
 {
 namespace entities
 {

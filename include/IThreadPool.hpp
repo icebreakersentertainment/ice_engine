@@ -3,7 +3,7 @@
 
 #include <functional>
 
-namespace game
+namespace hercules
 {
 
 class IThreadPool

@@ -2,7 +2,7 @@
 
 #include "Camera.hpp"
 
-namespace game
+namespace hercules
 {
 
 Camera::Camera()//std::unique_ptr<glr::extras::FpsCamera> camera) : //camera_(std::move(camera))

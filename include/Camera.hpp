@@ -10,7 +10,7 @@
 //#include "GlrInclude.hpp"
 #include "extras/FpsCamera.hpp"
 
-namespace game
+namespace hercules
 {
 
 class Camera

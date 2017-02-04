@@ -4,7 +4,7 @@
 // Required C++ libraries
 #include <fstream>
 
-namespace game
+namespace hercules
 {
 
 class IFileSerializable

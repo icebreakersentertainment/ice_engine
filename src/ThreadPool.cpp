@@ -1,6 +1,6 @@
 #include "ThreadPool.hpp"
 
-namespace game
+namespace hercules
 {
 
 ThreadPool::ThreadPool()
