@@ -1,10 +1,7 @@
-#include "utilities/fs/FileSystem.hpp"
+#include "fs/FileSystem.hpp"
 
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
-
-namespace utilities
-{
 
 namespace fs
 {
@@ -83,8 +80,6 @@ std::string FileSystem::readAll(const std::string& file)
 	f.close();
 	
 	return contents;
-}
-
 }
 
 }

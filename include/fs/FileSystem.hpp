@@ -3,9 +3,6 @@
 
 #include "IFileSystem.hpp"
 
-namespace utilities
-{
-
 namespace fs
 {
 
@@ -23,8 +20,6 @@ public:
 	
 	virtual std::string readAll(const std::string& file);
 };
-
-}
 
 }
 

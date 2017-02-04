@@ -25,7 +25,7 @@
 #include "angel_script/TestAtom.hpp"
 #include "angel_script/ClassFactory.hpp"
 
-#include "utilities/fs/FileSystem.hpp"
+#include "fs/FileSystem.hpp"
 
 namespace game
 {
@@ -181,7 +181,7 @@ void Game::initializeFileSystemSubSystem()
 {
 	LOG_INFO( "initialize file system." );
 	
-	fileSystem_ = std::make_unique<utilities::fs::FileSystem>();
+	fileSystem_ = std::make_unique<fs::FileSystem>();
 }
 
 void Game::loadProperties()

@@ -17,7 +17,7 @@
 namespace graphics
 {
 
-GraphicsEngine::GraphicsEngine(glm::detail::uint32 width, glm::detail::uint32 height, utilities::fs::IFileSystem* fileSystem)
+GraphicsEngine::GraphicsEngine(glm::detail::uint32 width, glm::detail::uint32 height, fs::IFileSystem* fileSystem)
 {
 	width_ = width;
 	height_ = height;
