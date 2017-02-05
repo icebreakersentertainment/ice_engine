@@ -30,8 +30,6 @@
 namespace hercules
 {
 
-//namespace fs = boost::filesystem;
-
 float32 GameEngine::rotationX = 0.0f;
 float32 GameEngine::rotationY = 0.0f;
 int32 GameEngine::mousePosX = 0;
