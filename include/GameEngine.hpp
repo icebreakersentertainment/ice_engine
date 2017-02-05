@@ -37,7 +37,7 @@ namespace hercules
 class GameEngine : public IGameEngine, public graphics::IEventListener
 {
 public:
-	GameEngine();
+	GameEngine(std::unique_ptr<utilities::Properties> properties);
 	virtual ~GameEngine();
 
 	virtual void run();
@@ -134,7 +134,6 @@ private:
 	
 	// Initialization stuff
 	void initializeLoggingSubSystem();
-	void loadProperties();
 	void initializeFileSystemSubSystem();
 	void initializeSoundSubSystem();
 	void initializePhysicsSubSystem();

@@ -39,7 +39,7 @@ glm::detail::int32 GameEngine::mousePosY = 0;
 
 glmd::uint32 GameEngine::COMPONENT_TYPE_GRAPHICS = 0;
 
-GameEngine::GameEngine()
+GameEngine::GameEngine(std::unique_ptr<utilities::Properties> properties) : properties_(std::move(properties))
 {
 	running_ = true;
 
@@ -147,8 +147,6 @@ void GameEngine::initialize()
 	
 	initializeFileSystemSubSystem();
 	
-	loadProperties();
-	
 	initializeDataStoreSubSystem();
 	
 	initializeThreadingSubSystem();
@@ -182,12 +180,6 @@ void GameEngine::initializeFileSystemSubSystem()
 	LOG_INFO( "initialize file system." );
 	
 	fileSystem_ = std::make_unique<fs::FileSystem>();
-}
-
-void GameEngine::loadProperties()
-{
-	LOG_INFO( "Load settings..." );
-	properties_ = std::unique_ptr< utilities::Properties >( new utilities::Properties(std::string("settings.ini")) );
 }
 
 void GameEngine::initializeInputSubSystem()

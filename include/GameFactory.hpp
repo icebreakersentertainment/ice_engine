@@ -4,6 +4,7 @@
 #include <memory>
 
 #include "IGameEngine.hpp"
+#include "utilities/Properties.hpp"
 
 namespace hercules
 {
@@ -12,7 +13,7 @@ class GameFactory
 {
 public:
 
-	static std::unique_ptr<IGameEngine> createGameEngine();
+	static std::unique_ptr<IGameEngine> createGameEngine(std::unique_ptr<utilities::Properties> properties);
 
 private:
 	GameFactory();

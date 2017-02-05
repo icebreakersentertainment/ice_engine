@@ -21,42 +21,36 @@ namespace pod = boost::program_options::detail;
 namespace utilities
 {
 
-Properties::Properties(std::string filename) : filename_(filename)
+Properties::Properties(fs::IFile* file)
 {
-	initialize();
-}
-
-Properties::~Properties()
-{
-}
-
-void Properties::initialize()
-{	
-	std::ifstream config( filename_.c_str() );
-	if(!config)
-	{
-		// TODO: proper error handling
-		std::cerr << "error" << std::endl;
-		return;
-	}
-
 	//parameters
 	std::set<std::string> options;
 	options.insert("*");
 	
-	try
-	{	  
-		for (pod::config_file_iterator i(config, options), e ; i != e; ++i)
-		{
-			//std::cout << i->string_key << " " << i->value[0] << std::endl;
-			parameters_[i->string_key] = i->value[0];
-		}
-		//std::cout << parameters_["StatLogServer.Path"] << std::endl;
-	}
-	catch(std::exception& e)	
+	std::istream& configInputStream = file->getInputStream();
+	 
+	for (pod::config_file_iterator i(configInputStream, options), e ; i != e; ++i)
 	{
-		std::cerr << "Exception: " << e.what() << std::endl;
+		parameters_[i->string_key] = i->value[0];
 	}
+}
+
+Properties::Properties(const std::string& properties)
+{
+	//parameters
+	std::set<std::string> options;
+	options.insert("*");
+	
+	std::istringstream configInputStream = std::istringstream(properties);
+	 
+	for (pod::config_file_iterator i(configInputStream, options), e ; i != e; ++i)
+	{
+		parameters_[i->string_key] = i->value[0];
+	}
+}
+
+Properties::~Properties()
+{
 }
 
 bool Properties::toBool(std::string str)

@@ -4,13 +4,16 @@
 #include <string>
 #include <map>
 
+#include <fs/IFile.hpp>
+
 namespace utilities
 {
 	
 class Properties
 {
 public:
-	Properties(std::string filename);
+	Properties(fs::IFile* file);
+	Properties(const std::string& properties);
 	virtual ~Properties();
 	
 	std::string getStringValue(const std::string& name, std::string defaultValue = std::string(""));

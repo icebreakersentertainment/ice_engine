@@ -1,4 +1,5 @@
 #include "fs/FileSystem.hpp"
+#include "fs/File.hpp"
 
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
@@ -10,21 +11,21 @@ FileSystem::FileSystem()
 {
 }
 	
-bool FileSystem::exists(const std::string& file)
+bool FileSystem::exists(const std::string& file) const
 {
 	auto path = boost::filesystem::path(file);
 	
 	return boost::filesystem::exists(path);
 }
 
-bool FileSystem::isDirectory(const std::string& file)
+bool FileSystem::isDirectory(const std::string& file) const
 {
 	auto path = boost::filesystem::path(file);
 	
 	return boost::filesystem::is_directory(path);
 }
 
-void FileSystem::deleteFile(const std::string& file)
+void FileSystem::deleteFile(const std::string& file) const
 {
 	auto path = boost::filesystem::path(file);
 	
@@ -41,7 +42,7 @@ void FileSystem::deleteFile(const std::string& file)
 	boost::filesystem::remove(path);
 }
 
-void FileSystem::makeDirectory(const std::string& directoryName)
+void FileSystem::makeDirectory(const std::string& directoryName) const
 {
 	auto path = boost::filesystem::path(directoryName);
 	
@@ -58,28 +59,16 @@ void FileSystem::makeDirectory(const std::string& directoryName)
 	boost::filesystem::create_directory(path);
 }
 
-std::string FileSystem::readAll(const std::string& file)
+std::string FileSystem::readAll(const std::string& file) const
 {
-	auto path = boost::filesystem::path(file);
+	auto f = this->open(file, FileFlags::READ);
 	
-	if (!boost::filesystem::exists(path))
-	{
-		throw std::runtime_error( std::string("Unable to read file - file does not exist: ") + file);
-	}
-	
-	boost::filesystem::ifstream f(path);
-	
-	auto contents = std::string();
-	auto line = std::string();
+	return f->readAll();
+}
 
-	while ( getline(f, line))
-	{
-		contents += line + '\n';
-	}
-
-	f.close();
-	
-	return contents;
+std::unique_ptr<IFile> FileSystem::open(const std::string& file, FileFlags flags) const
+{
+	return std::make_unique<File>( file, flags );
 }
 
 }
