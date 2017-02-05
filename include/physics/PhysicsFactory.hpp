@@ -3,11 +3,10 @@
 
 #include <memory>
 
-#define GLM_FORCE_RADIANS
-#include <glm/glm.hpp>
-
 #include "IPhysicsEngine.hpp"
 
+namespace hercules
+{
 namespace physics
 {
 
@@ -23,6 +22,7 @@ private:
 	virtual ~PhysicsFactory();
 };
 
+}
 }
 
 #endif /* PHYSICSFACTORY_H_ */

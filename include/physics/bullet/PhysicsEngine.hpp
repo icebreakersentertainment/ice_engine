@@ -8,6 +8,8 @@
 
 #include "physics/IPhysicsEngine.hpp"
 
+namespace hercules
+{
 namespace physics
 {
 namespace bullet
@@ -19,9 +21,9 @@ public:
 	PhysicsEngine();
 	virtual ~PhysicsEngine();
 	
-	virtual void tick(glm::detail::float32 delta);
+	virtual void tick(float32 delta);
 	
-	virtual ICollisionShape* createStaticPlane(const glm::vec3& planeNormal, glm::detail::float32 planeConstant);
+	virtual ICollisionShape* createStaticPlane(const glm::vec3& planeNormal, float32 planeConstant);
 
 private:
 	PhysicsEngine(const PhysicsEngine& other);
@@ -35,6 +37,7 @@ private:
 	std::vector< std::unique_ptr<ICollisionShape> > shapes_;
 };
 
+}
 }
 }
 

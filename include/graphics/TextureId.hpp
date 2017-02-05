@@ -3,9 +3,10 @@
 
 #include <iostream>
 
-#define GLM_FORCE_RADIANS
-#include <glm/glm.hpp>
+#include "Types.hpp"
 
+namespace hercules
+{
 namespace graphics
 {
 
@@ -13,11 +14,11 @@ class TextureId
 {
 public:
 	TextureId();
-	explicit TextureId(glm::detail::int32 id);
+	explicit TextureId(int32 id);
 	// We make the destructor non-virtual so that we can't extend this class easily
 	~TextureId();
 	
-	glm::detail::int32 getId() const;
+	int32 getId() const;
 	
 	bool operator == (const TextureId &other) const;
 	bool operator != (const TextureId &other) const;
@@ -32,8 +33,10 @@ public:
 	static const TextureId INVALID;
 
 private:
-	glm::detail::int32 id_;
+	int32 id_;
 };
+
+}
 
 }
 

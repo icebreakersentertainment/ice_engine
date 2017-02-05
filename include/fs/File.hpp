@@ -5,6 +5,8 @@
 
 #include "IFile.hpp"
 
+namespace hercules
+{
 namespace fs
 {
 
@@ -20,7 +22,7 @@ public:
 	
 	virtual void write(const char* data);
 	virtual void write(const std::string& file);
-	virtual std::string read(glm::detail::uint32 length = 256);
+	virtual std::string read(uint32 length = 256);
 	virtual std::string readAll();
 	
 	virtual std::istream& getInputStream();
@@ -34,6 +36,7 @@ private:
 	std::ofstream outputFileStream_;
 };
 
+}
 }
 
 #endif /* FILE_H_ */

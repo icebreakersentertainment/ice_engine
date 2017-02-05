@@ -5,6 +5,8 @@
 #include "physics/bullet/PhysicsEngine.hpp"
 #include "physics/bullet/StaticPlaneShape.hpp"
 
+namespace hercules
+{
 namespace physics
 {
 namespace bullet
@@ -29,12 +31,12 @@ PhysicsEngine::~PhysicsEngine()
 {
 }
 
-void PhysicsEngine::tick(glm::detail::float32 delta)
+void PhysicsEngine::tick(float32 delta)
 {
 	dynamicsWorld_->stepSimulation(delta, 10);
 }
 
-ICollisionShape* PhysicsEngine::createStaticPlane(const glm::vec3& planeNormal, glm::detail::float32 planeConstant)
+ICollisionShape* PhysicsEngine::createStaticPlane(const glm::vec3& planeNormal, float32 planeConstant)
 {
 	 auto shape = std::unique_ptr<ICollisionShape>( new StaticPlaneShape(planeNormal, planeConstant) );
 	 
@@ -45,5 +47,6 @@ ICollisionShape* PhysicsEngine::createStaticPlane(const glm::vec3& planeNormal, 
 	 return retValue;
 }
 
+}
 }
 }

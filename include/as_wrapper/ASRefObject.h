@@ -1,6 +1,8 @@
 #ifndef ASREFOBJECT_H_
 #define ASREFOBJECT_H_
 
+namespace hercules
+{
 namespace as_wrapper
 {
 
@@ -17,6 +19,7 @@ protected:
 	int refCount_;
 };
 
+}
 }
 
 #endif /* ASREFOBJECT_H_ */

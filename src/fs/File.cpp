@@ -5,6 +5,8 @@
 
 #include <boost/filesystem.hpp>
 
+namespace hercules
+{
 namespace fs
 {
 
@@ -83,7 +85,7 @@ void File::write(const std::string& file)
 	this->write(file.c_str());
 }
 
-std::string File::read(glm::detail::uint32 length)
+std::string File::read(uint32 length)
 {
 	if (!(flags_ & FileFlags::READ))
 	{
@@ -138,4 +140,5 @@ std::ostream& File::getOutputStream()
 	return *os;
 }
 
+}
 }

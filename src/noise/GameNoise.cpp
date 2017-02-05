@@ -9,7 +9,9 @@
 #include "simplexnoise/simplexnoise1234.h"
 
 
-namespace herculesnoise
+namespace hercules
+{
+namespace noise
 {
 
 float GameNoise::maxX = 256.0f;
@@ -65,7 +67,7 @@ float GameNoise::getSmoothNoise(float x, float y, float zoom, int octaves, float
 	return sum;
 }
 
-glm::detail::float32 GameNoise::getNoise(glm::detail::float32 x, glm::detail::float32 y, glm::detail::float32 z)
+float32 GameNoise::getNoise(float32 x, float32 y, float32 z)
 {
 	assert(x < maxX && y < maxY && z < maxZ);
 	
@@ -166,4 +168,5 @@ float GameNoise::getSmoothNoise(float x, float y, float z, float zoom, int octav
 	return sum;
 }
 
+}
 }

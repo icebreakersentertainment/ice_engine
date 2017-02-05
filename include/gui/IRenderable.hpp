@@ -1,6 +1,8 @@
 #ifndef IRENDERABLE_H_
 #define IRENDERABLE_H_
 
+namespace hercules
+{
 namespace gui
 {
 
@@ -13,6 +15,7 @@ public:
 	;
 };
 
+}
 }
 
 #endif /* IRENDERABLE_H_ */

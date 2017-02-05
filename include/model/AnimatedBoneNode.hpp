@@ -9,6 +9,10 @@
 #include <glm/glm.hpp>
 #include "glm/gtc/quaternion.hpp"
 
+#include "Types.hpp"
+
+namespace hercules
+{
 namespace model
 {
 
@@ -18,9 +22,9 @@ struct AnimatedBoneNode
 	{}
 	AnimatedBoneNode(
 		std::string name,
-		std::vector< glm::detail::float64 > positionTimes,
-		std::vector< glm::detail::float64 > rotationTimes,
-		std::vector< glm::detail::float64 > scalingTimes,
+		std::vector< float64 > positionTimes,
+		std::vector< float64 > rotationTimes,
+		std::vector< float64 > scalingTimes,
 		std::vector< glm::vec3 > positions,
 		std::vector< glm::quat > rotations,
 		std::vector< glm::vec3 > scalings
@@ -28,14 +32,15 @@ struct AnimatedBoneNode
 	{}
 
 	std::string name;
-	std::vector< glm::detail::float64 > positionTimes;
-	std::vector< glm::detail::float64 > rotationTimes;
-	std::vector< glm::detail::float64 > scalingTimes;
+	std::vector< float64 > positionTimes;
+	std::vector< float64 > rotationTimes;
+	std::vector< float64 > scalingTimes;
 	std::vector< glm::vec3 > positions;
 	std::vector< glm::quat > rotations;
 	std::vector< glm::vec3 > scalings;
 };
 
+}
 }
 
 #endif /* ANIMATEDBONENODE_H_ */

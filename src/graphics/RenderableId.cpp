@@ -1,5 +1,7 @@
 #include "graphics/RenderableId.hpp"
 
+namespace hercules
+{
 namespace graphics
 {
 
@@ -9,7 +11,7 @@ RenderableId::RenderableId() : id_(-1)
 {
 }
 
-RenderableId::RenderableId(glm::detail::int32 id) : id_(id)
+RenderableId::RenderableId(int32 id) : id_(id)
 {
 }
 
@@ -17,7 +19,7 @@ RenderableId::~RenderableId()
 {
 }
 
-glm::detail::int32 RenderableId::getId() const
+int32 RenderableId::getId() const
 {
 	return id_;
 }
@@ -58,4 +60,5 @@ std::ostream& operator << (std::ostream& os, const RenderableId& id)
 	return os;
 }
 
+}
 }

@@ -1,6 +1,8 @@
 #ifndef ICOLLISIONSHAPE_H_
 #define ICOLLISIONSHAPE_H_
 
+namespace hercules
+{
 namespace physics
 {
 
@@ -13,6 +15,7 @@ public:
 	;
 };
 
+}
 }
 
 #endif /* ICOLLISIONSHAPE_H_ */

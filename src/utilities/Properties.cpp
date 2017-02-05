@@ -18,6 +18,8 @@ namespace pod = boost::program_options::detail;
 
 #include "utilities/Properties.hpp"
 
+namespace hercules
+{
 namespace utilities
 {
 
@@ -73,7 +75,7 @@ std::string Properties::getStringValue(const std::string& name, std::string defa
 	return std::move(defaultValue);
 }
 
-int Properties::getIntValue(const std::string& name, int defaultValue)
+int32 Properties::getIntValue(const std::string& name, int32 defaultValue)
 {
 	auto it = parameters_.find(name);
 	
@@ -84,7 +86,7 @@ int Properties::getIntValue(const std::string& name, int defaultValue)
 	
 }
 
-long Properties::getLongValue(const std::string& name, long defaultValue)
+int64 Properties::getLongValue(const std::string& name, int64 defaultValue)
 {
 	auto it = parameters_.find(name);
 	
@@ -94,7 +96,7 @@ long Properties::getLongValue(const std::string& name, long defaultValue)
 	return defaultValue;
 }
 
-float Properties::getFloatValue(const std::string& name, float defaultValue)
+float32 Properties::getFloatValue(const std::string& name, float32 defaultValue)
 {
 	auto it = parameters_.find(name);
 	
@@ -104,7 +106,7 @@ float Properties::getFloatValue(const std::string& name, float defaultValue)
 	return defaultValue;
 }
 
-double Properties::getDoubleValue(const std::string& name, double defaultValue)
+float64 Properties::getDoubleValue(const std::string& name, float64 defaultValue)
 {
 	auto it = parameters_.find(name);
 	
@@ -124,4 +126,5 @@ bool Properties::getBoolValue(const std::string& name, bool defaultValue)
 	return defaultValue;
 }
 
+}
 }

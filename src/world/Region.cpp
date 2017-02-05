@@ -13,7 +13,7 @@ Region::~Region()
 {
 }
 
-void Region::tick(glmd::float32 elapsedTime)
+void Region::tick(float32 elapsedTime)
 {
 	// Not sure I need to call tick for locales...
 	//for (auto& l : locales_)

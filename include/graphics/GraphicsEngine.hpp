@@ -15,6 +15,8 @@
 
 #include "fs/IFileSystem.hpp"
 
+namespace hercules
+{
 namespace graphics
 {
 
@@ -72,24 +74,24 @@ struct Camera
 class GraphicsEngine : public IGraphicsEngine
 {
 public:
-	GraphicsEngine(glm::detail::uint32 width, glm::detail::uint32 height, fs::IFileSystem* fileSystem);
+	GraphicsEngine(uint32 width, uint32 height, fs::IFileSystem* fileSystem);
 	virtual ~GraphicsEngine();
 	
-	virtual void setViewport(glm::detail::uint32 width, glm::detail::uint32 height);
-	virtual void render(glm::detail::float32 delta);
+	virtual void setViewport(uint32 width, uint32 height);
+	virtual void render(float32 delta);
 	
 	virtual CameraId createCamera(glm::vec3 position, glm::vec3 lookAt = glm::vec3(0.0f, 0.0f, 0.0f));
 	
 	virtual MeshId createStaticMesh(
 		std::vector<glm::vec3> vertices,
-		std::vector<glm::detail::uint32> indices,
+		std::vector<uint32> indices,
 		std::vector<glm::vec4> colors,
 		std::vector<glm::vec3> normals,
 		std::vector<glm::vec2> textureCoordinates
 	);
 	virtual MeshId createAnimatedMesh(
 		std::vector<glm::vec3> vertices,
-		std::vector<glm::detail::uint32> indices,
+		std::vector<uint32> indices,
 		std::vector<glm::vec4> colors,
 		std::vector<glm::vec3> normals,
 		std::vector<glm::vec2> textureCoordinates,
@@ -98,13 +100,13 @@ public:
 	);
 	virtual MeshId createDynamicMesh(
 		std::vector<glm::vec3> vertices,
-		std::vector<glm::detail::uint32> indices,
+		std::vector<uint32> indices,
 		std::vector<glm::vec4> colors,
 		std::vector<glm::vec3> normals,
 		std::vector<glm::vec2> textureCoordinates
 	);
 	
-	virtual SkeletonId createSkeleton(glm::detail::uint32 numberOfBones);
+	virtual SkeletonId createSkeleton(uint32 numberOfBones);
 	
 	virtual TextureId createTexture2d(std::string uri);
 	
@@ -112,20 +114,20 @@ public:
 	
 	virtual void rotate(const CameraId cameraId, const glm::quat& quaternion, TransformSpace relativeTo = TransformSpace::TS_LOCAL);
 	virtual void rotate(const RenderableId renderableId, const glm::quat& quaternion, TransformSpace relativeTo = TransformSpace::TS_LOCAL);
-	virtual void rotate(const CameraId cameraId, const glm::detail::float32 degrees, const glm::vec3& axis, TransformSpace relativeTo = TransformSpace::TS_LOCAL);
-	virtual void rotate(const RenderableId renderableId, const glm::detail::float32 degrees, const glm::vec3& axis, TransformSpace relativeTo = TransformSpace::TS_LOCAL);
+	virtual void rotate(const CameraId cameraId, const float32 degrees, const glm::vec3& axis, TransformSpace relativeTo = TransformSpace::TS_LOCAL);
+	virtual void rotate(const RenderableId renderableId, const float32 degrees, const glm::vec3& axis, TransformSpace relativeTo = TransformSpace::TS_LOCAL);
 	
-	virtual void translate(const CameraId cameraId, const glm::detail::float32 x, const glm::detail::float32 y, const glm::detail::float32 z);
-	virtual void translate(const RenderableId renderableId, const glm::detail::float32 x, const glm::detail::float32 y, const glm::detail::float32 z);
+	virtual void translate(const CameraId cameraId, const float32 x, const float32 y, const float32 z);
+	virtual void translate(const RenderableId renderableId, const float32 x, const float32 y, const float32 z);
 	virtual void translate(const CameraId cameraId, const glm::vec3& trans);
 	virtual void translate(const RenderableId renderableId, const glm::vec3& trans);
 	
-	virtual void scale(const RenderableId renderableId, const glm::detail::float32 x, const glm::detail::float32 y, const glm::detail::float32 z);
+	virtual void scale(const RenderableId renderableId, const float32 x, const float32 y, const float32 z);
 	virtual void scale(const RenderableId renderableId, const glm::vec3& scale);
-	virtual void scale(const RenderableId renderableId, const glm::detail::float32 scale);
+	virtual void scale(const RenderableId renderableId, const float32 scale);
 	
-	virtual void position(const RenderableId renderableId, const glm::detail::float32 x, const glm::detail::float32 y, const glm::detail::float32 z);
-	virtual void position(const CameraId cameraId, const glm::detail::float32 x, const glm::detail::float32 y, const glm::detail::float32 z);
+	virtual void position(const RenderableId renderableId, const float32 x, const float32 y, const float32 z);
+	virtual void position(const CameraId cameraId, const float32 x, const float32 y, const float32 z);
 	virtual void position(const RenderableId renderableId, const glm::vec3& position);
 	virtual void position(const CameraId cameraId, const glm::vec3& position);
 	
@@ -134,7 +136,7 @@ public:
 	
 	virtual void assign(const RenderableId renderableId, const SkeletonId skeletonId);
 	
-	virtual void update(const SkeletonId skeletonId, const void* data, glm::detail::uint32 size);
+	virtual void update(const SkeletonId skeletonId, const void* data, uint32 size);
 	
 	virtual void setMouseRelativeMode(bool enabled);
 	virtual void setCursorVisible(bool visible);
@@ -146,8 +148,8 @@ public:
 private:
 	GraphicsEngine(const GraphicsEngine& other);
 	
-	glm::detail::uint32 width_;
-	glm::detail::uint32 height_;
+	uint32 width_;
+	uint32 height_;
 	
 	GLuint shaderProgram_;
 	
@@ -183,6 +185,7 @@ private:
 	static KeyCode convertSdlKeycode(const SDL_Keycode& sdlKeycode);
 };
 
+}
 }
 
 #endif /* GRAPHICSENGINE_H_ */

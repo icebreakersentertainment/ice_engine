@@ -10,6 +10,8 @@
 #include "model/BoneNode.hpp"
 #include "model/Animation.hpp"
 
+namespace hercules
+{
 namespace model
 {
 
@@ -22,6 +24,7 @@ struct AnimationSet
 	glm::mat4 globalInverseTransformation;
 };
 
+}
 }
 
 #endif /* ANIMATIONSET_H_ */

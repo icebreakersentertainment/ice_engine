@@ -9,6 +9,8 @@
 
 #include "logger/Logger.hpp"
 
+namespace hercules
+{
 namespace utilities
 {
 
@@ -158,6 +160,8 @@ public:
 		return retImage;
 	};
 };
+
+}
 
 }
 

@@ -1,11 +1,11 @@
 #include "extras/FpsCamera.hpp"
 
-namespace glr
+namespace hercules
 {
 namespace extras
 {
 	
-FpsCamera::FpsCamera()//ICamera* camera, glmd::float32 speed) : camera_(camera), speed_(speed)
+FpsCamera::FpsCamera()//ICamera* camera, float32 speed) : camera_(camera), speed_(speed)
 {
 	initialize();
 }
@@ -49,7 +49,7 @@ ICamera* FpsCamera::getCamera()
 	return camera_;
 }
 */
-void FpsCamera::rotate(const glm::detail::float32& degrees, const glm::vec3& axis)
+void FpsCamera::rotate(const float32& degrees, const glm::vec3& axis)
 {
 	/*
 	if ( axis == glm::vec3(0.0f, 1.0f, 0.0f) )
@@ -59,7 +59,7 @@ void FpsCamera::rotate(const glm::detail::float32& degrees, const glm::vec3& axi
 	*/
 }
 
-void FpsCamera::tick(glm::detail::float32 time)
+void FpsCamera::tick(float32 time)
 {
 	//camera_->tick(time);
 }

@@ -6,6 +6,8 @@
 
 #include "model/Model.hpp"
 
+namespace hercules
+{
 namespace model
 {
 
@@ -15,6 +17,7 @@ std::unique_ptr<Model> import(const std::string& name, const std::string& filena
 
 void save(const std::string& name, const std::string& filename, std::unique_ptr<Model> model);
 
+}
 }
 
 #endif /* MODELLOADER_H_ */

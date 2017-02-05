@@ -1,5 +1,7 @@
 #include "graphics/SkeletonId.hpp"
 
+namespace hercules
+{
 namespace graphics
 {
 
@@ -9,7 +11,7 @@ SkeletonId::SkeletonId() : id_(-1)
 {
 }
 
-SkeletonId::SkeletonId(glm::detail::int32 id) : id_(id)
+SkeletonId::SkeletonId(int32 id) : id_(id)
 {
 }
 
@@ -17,7 +19,7 @@ SkeletonId::~SkeletonId()
 {
 }
 
-glm::detail::int32 SkeletonId::getId() const
+int32 SkeletonId::getId() const
 {
 	return id_;
 }
@@ -58,4 +60,5 @@ std::ostream& operator << (std::ostream& os, const SkeletonId& id)
 	return os;
 }
 
+}
 }

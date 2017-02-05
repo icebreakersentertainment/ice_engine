@@ -4,15 +4,12 @@
 #include <string>
 #include <memory>
 
-#define GLM_FORCE_RADIANS
-#include "glm/glm.hpp"
+#include "Types.hpp"
 
 #include "utilities/Properties.hpp"
 
 #include "IThreadPool.hpp"
 #include "IOpenGlLoader.hpp"
-
-//#include "GlrInclude.hpp"
 
 #include "as_wrapper/AngelScript.h"
 //#include "data_store/SqliteDataStore.hpp"
@@ -25,11 +22,8 @@
 // TESTING
 //#include "terrain/ITerrainManagerEventListener.hpp"
 
-namespace glmd = glm::detail;
-
 namespace hercules
 {
-
 namespace world
 {
 
@@ -39,7 +33,7 @@ public:
 	World(IGameEngine* game, /*glr::ISceneManager* smgr, glr::models::IModelManager* modelManager,*/ IThreadPool* threadPool, IOpenGlLoader* openGlLoader, utilities::Properties* properties);
 	virtual ~World();
 
-	void tick(glmd::float32 elapsedTime);
+	void tick(float32 elapsedTime);
 	
 	void setPlayer(Player* player);
 	void newWorld();
@@ -56,7 +50,7 @@ private:
 	// Testing nodes for models
 	//std::vector< glr::ISceneNode* > nodes_;	
 	// Testing animations
-	glm::detail::float32 animationTime_;
+	float32 animationTime_;
 	// Testing loading and storing a model
 	//std::vector< glr::models::IModel* > models_;
 	
@@ -87,4 +81,5 @@ private:
 
 }
 }
+
 #endif /* WORLD_H_ */

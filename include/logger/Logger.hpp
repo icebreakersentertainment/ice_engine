@@ -30,6 +30,8 @@ using namespace logger::trivial;
 #define LOG_ERROR(x) BOOST_LOG_SEV(cs_logger::Logger::getInstance()->getLogger(), error) << x
 #define LOG_FATAL(x) BOOST_LOG_SEV(cs_logger::Logger::getInstance()->getLogger(), fatal) << x
 
+namespace hercules
+{
 namespace cs_logger
 {
 
@@ -67,6 +69,8 @@ private:
 	// singleton instance
 	static Logger* logger_;
 };
+
+}
 
 }
 

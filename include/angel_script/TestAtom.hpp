@@ -3,6 +3,8 @@
 
 #include "as_wrapper/ASRefObject.h"
 
+namespace hercules
+{
 namespace angel_script
 {
 
@@ -15,6 +17,7 @@ public:
 	void test();
 };
 
+}
 }
 
 #endif /* TESTATOM_H_ */

@@ -3,6 +3,8 @@
 
 #include "angel_script/TestAtom.hpp"
 
+namespace hercules
+{
 namespace angel_script
 {
 
@@ -18,6 +20,7 @@ private:
 	virtual ~ClassFactory();
 };
 
+}
 }
 
 #endif /* CLASSFACTORY_H_ */

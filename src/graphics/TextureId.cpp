@@ -1,5 +1,7 @@
 #include "graphics/TextureId.hpp"
 
+namespace hercules
+{
 namespace graphics
 {
 
@@ -9,7 +11,7 @@ TextureId::TextureId() : id_(-1)
 {
 }
 
-TextureId::TextureId(glm::detail::int32 id) : id_(id)
+TextureId::TextureId(int32 id) : id_(id)
 {
 }
 
@@ -17,7 +19,7 @@ TextureId::~TextureId()
 {
 }
 
-glm::detail::int32 TextureId::getId() const
+int32 TextureId::getId() const
 {
 	return id_;
 }
@@ -58,4 +60,5 @@ std::ostream& operator << (std::ostream& os, const TextureId& id)
 	return os;
 }
 
+}
 }

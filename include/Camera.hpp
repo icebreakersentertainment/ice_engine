@@ -26,9 +26,9 @@ public:
 	void moveLeft();
 	void moveRight();
 	
-	void rotate(const glm::detail::float32& degrees, const glm::vec3& axis);
+	void rotate(const float32& degrees, const glm::vec3& axis);
 
-	void tick(glm::detail::float32 time);
+	void tick(float32 time);
 	
 	//glr::extras::FpsCamera* getCamera();
 

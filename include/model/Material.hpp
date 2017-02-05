@@ -6,6 +6,10 @@
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 
+#include "Types.hpp"
+
+namespace hercules
+{
 namespace model
 {
 
@@ -17,10 +21,11 @@ struct Material
 	glm::vec4 diffuse;
 	glm::vec4 specular;
 	glm::vec4 emission;
-	glm::detail::float32 shininess;
-	glm::detail::float32 strength;
+	float32 shininess;
+	float32 strength;
 };
 
+}
 }
 
 #endif /* MATERIAL_H_ */

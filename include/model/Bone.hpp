@@ -6,6 +6,8 @@
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 
+namespace hercules
+{
 namespace model
 {
 
@@ -15,6 +17,7 @@ struct Bone
 	glm::mat4 boneOffset;
 };
 
+}
 }
 
 #endif /* BONE_H_ */

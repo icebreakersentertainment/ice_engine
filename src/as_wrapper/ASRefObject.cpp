@@ -1,5 +1,7 @@
 #include "as_wrapper/ASRefObject.h"
 
+namespace hercules
+{
 namespace as_wrapper
 {
 
@@ -25,4 +27,5 @@ void ASRefObject::releaseRef()
 		delete this;
 }
 
+}
 }

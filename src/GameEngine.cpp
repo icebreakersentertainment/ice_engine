@@ -32,12 +32,12 @@ namespace hercules
 
 //namespace fs = boost::filesystem;
 
-glm::detail::float32 GameEngine::rotationX = 0.0f;
-glm::detail::float32 GameEngine::rotationY = 0.0f;
-glm::detail::int32 GameEngine::mousePosX = 0;
-glm::detail::int32 GameEngine::mousePosY = 0;
+float32 GameEngine::rotationX = 0.0f;
+float32 GameEngine::rotationY = 0.0f;
+int32 GameEngine::mousePosX = 0;
+int32 GameEngine::mousePosY = 0;
 
-glmd::uint32 GameEngine::COMPONENT_TYPE_GRAPHICS = 0;
+uint32 GameEngine::COMPONENT_TYPE_GRAPHICS = 0;
 
 GameEngine::GameEngine(std::unique_ptr<utilities::Properties> properties) : properties_(std::move(properties))
 {
@@ -101,7 +101,7 @@ void GameEngine::startNewGame()
 	world_->newWorld();
 }
 
-void GameEngine::tick(glmd::float32 elapsedTime)
+void GameEngine::tick(float32 elapsedTime)
 {
 	// Testing angelscript
 	if (mainAsScript_ != nullptr)
@@ -397,7 +397,7 @@ void GameEngine::test()
 	vertices.push_back( glm::vec3(-0.5f, -0.5f, 0.0f) );
 	vertices.push_back( glm::vec3(-0.5f,  0.5f, 0.0f) );
 	
-	std::vector<glm::detail::uint32> indices;
+	std::vector<uint32> indices;
 	// First triangle
 	indices.push_back(0);
 	indices.push_back(1);
@@ -508,7 +508,7 @@ void GameEngine::loadUserInterface()
 	}
 	
 	{
-		std::function<glm::detail::uint32()> function = [this]() { return this->getThreadPoolQueueSize(); };
+		std::function<uint32()> function = [this]() { return this->getThreadPoolQueueSize(); };
 		gameGuiObject->addFunction(std::wstring(L"getThreadPoolQueueSize"), function);
 		function = [this]() { return this->getOpenGlThreadPoolQueueSize(); };
 		gameGuiObject->addFunction(std::wstring(L"getOpenGlThreadPoolQueueSize"), function);
@@ -521,7 +521,7 @@ void GameEngine::loadUserInterface()
 	}
 	
 	{
-		std::function<glm::detail::int32()> function = [this]() { return this->getTimeForPhysics(); };
+		std::function<int32()> function = [this]() { return this->getTimeForPhysics(); };
 		gameGuiObject->addFunction(std::wstring(L"getTimeForPhysics"), function);
 		function = [this]() { return this->getTimeForTick(); };
 		gameGuiObject->addFunction(std::wstring(L"getTimeForTick"), function);
@@ -548,7 +548,7 @@ void GameEngine::loadUserInterface()
 			return wStr;
 		};
 		gameGuiObject->addFunction(std::wstring(L"getVersion"), stringFunction);
-		std::function<glm::detail::uint32()> intFunction = [this]() { return static_cast<glm::detail::uint32>( this->getState() ); };
+		std::function<uint32()> intFunction = [this]() { return static_cast<uint32>( this->getState() ); };
 		gameGuiObject->addFunction(std::wstring(L"getState"), intFunction);
 	}
 	
@@ -650,8 +650,8 @@ void GameEngine::receiveMouseEvent(sf::Event evt)
 	switch (evt.type)
 	{
 	case sf::Event::MouseMoved:
-		//GameEngine::rotationX = (-1.0f) * (glm::detail::float32)(evt.mouseMove.x - GameEngine::mousePosX);
-		//GameEngine::rotationY = (-1.0f) * (glm::detail::float32)(evt.mouseMove.y - GameEngine::mousePosY);
+		//GameEngine::rotationX = (-1.0f) * (float32)(evt.mouseMove.x - GameEngine::mousePosX);
+		//GameEngine::rotationY = (-1.0f) * (float32)(evt.mouseMove.y - GameEngine::mousePosY);
 		//GameEngine::mousePosX = evt.mouseMove.x;
 		//GameEngine::mousePosY = evt.mouseMove.y;
 
@@ -695,8 +695,8 @@ void GameEngine::receiveMouseEvent(sf::Event evt)
 	case sf::Event::MouseWheelMoved:
 	{
 		// TODO: Make a constant for this
-		glmd::float32 mouseScrollWheelSensitivity = 15.0f;
-		//igui_->mouseWheel(evt.mouseWheel.x, evt.mouseWheel.y, 0, (glmd::int32)(mouseScrollWheelSensitivity * evt.mouseWheel.delta));
+		float32 mouseScrollWheelSensitivity = 15.0f;
+		//igui_->mouseWheel(evt.mouseWheel.x, evt.mouseWheel.y, 0, (int32)(mouseScrollWheelSensitivity * evt.mouseWheel.delta));
 	}
 	default:
 		break;
@@ -826,72 +826,72 @@ bool GameEngine::processEvent(const graphics::Event& event)
 	return false;
 }
 
-glm::detail::float32 GameEngine::getFps()
+float32 GameEngine::getFps()
 {
 	return currentFps_;
 }
 
-glm::detail::uint32 GameEngine::getThreadPoolQueueSize()
+uint32 GameEngine::getThreadPoolQueueSize()
 {
 	return threadPool_->getWorkQueueCount();
 }
 
-glm::detail::uint32 GameEngine::getThreadPoolWorkerCount()
+uint32 GameEngine::getThreadPoolWorkerCount()
 {
 	return threadPool_->getActiveWorkerCount() + threadPool_->getInactiveWorkerCount();
 }
 
-glm::detail::uint32 GameEngine::getThreadPoolActiveWorkerCount()
+uint32 GameEngine::getThreadPoolActiveWorkerCount()
 {
 	return threadPool_->getActiveWorkerCount();
 }
 
-glm::detail::uint32 GameEngine::getThreadPoolInactiveWorkerCount()
+uint32 GameEngine::getThreadPoolInactiveWorkerCount()
 {
 	return threadPool_->getInactiveWorkerCount();
 }
 
-glm::detail::uint32 GameEngine::getOpenGlThreadPoolQueueSize()
+uint32 GameEngine::getOpenGlThreadPoolQueueSize()
 {
 	return openGlLoader_->getWorkQueueCount();
 }
 
-glm::detail::int32 GameEngine::getTimeForPhysics()
+int32 GameEngine::getTimeForPhysics()
 {
 	return timeForPhysics_;
 }
 
-glm::detail::int32 GameEngine::getTimeForTick()
+int32 GameEngine::getTimeForTick()
 {
 	return timeForTick_;
 }
 
-glm::detail::int32 GameEngine::getTimeForRender()
+int32 GameEngine::getTimeForRender()
 {
 	return timeForRender_;
 }
 
-glm::detail::int32 GameEngine::getTimeForMisc()
+int32 GameEngine::getTimeForMisc()
 {
 	return timeForMisc_;
 }
 
-glm::detail::int32 GameEngine::getTimeForInput()
+int32 GameEngine::getTimeForInput()
 {
 	return timeForInput_;
 }
 
-glm::detail::int32 GameEngine::getTimeForGuiUpdate()
+int32 GameEngine::getTimeForGuiUpdate()
 {
 	return timeForGuiUpdate_;
 }
 
-glm::detail::int32 GameEngine::getTimeForAngelScript()
+int32 GameEngine::getTimeForAngelScript()
 {
 	return timeForAngelScript_;
 }
 
-glm::detail::float32 runningTime;
+float32 runningTime;
 std::vector< glm::mat4 > transformations;
 void GameEngine::run()
 {
@@ -919,8 +919,8 @@ void GameEngine::run()
 	sf::Time previousFpsTime = clock.getElapsedTime();
 	sf::Time lastGuiUpdateTime = sf::Time();
 	sf::Time lastAngelscriptUpdateTime = sf::Time();
-	glm::detail::float32 tempFps = 0.0f;
-	glm::detail::float32 deltaTime = 0.0f;
+	float32 tempFps = 0.0f;
+	float32 deltaTime = 0.0f;
 	*/
 	setState(GAME_STATE_MAIN_MENU);
 	
@@ -999,7 +999,7 @@ void GameEngine::run()
 				}
 				
 				{
-					physicsEngine_->tick(0.15);
+					physicsEngine_->tick(0.15f);
 				}
 			
 				{
@@ -1017,8 +1017,8 @@ void GameEngine::run()
 						sf::Mouse::setPosition(windowCenter);
 						sfmlWindow_->setMouseCursorVisible(false);
 						
-						GameEngine::rotationX = (-1.0f) * (glm::detail::float32)(mousePos.x - windowCenter.x);
-						GameEngine::rotationY = (-1.0f) * (glm::detail::float32)(mousePos.y - windowCenter.y);
+						GameEngine::rotationX = (-1.0f) * (float32)(mousePos.x - windowCenter.x);
+						GameEngine::rotationY = (-1.0f) * (float32)(mousePos.y - windowCenter.y);
 						GameEngine::mousePosX = mousePos.x;
 						GameEngine::mousePosY = mousePos.y;
 					
@@ -1099,7 +1099,7 @@ void GameEngine::run()
 			/*
 			previousTime = currentTime;
 			currentTime = clock.getElapsedTime();
-			deltaTime = (glmd::float32)(currentTime.asMilliseconds() - previousTime.asMilliseconds()) / 1000.0f;
+			deltaTime = (float32)(currentTime.asMilliseconds() - previousTime.asMilliseconds()) / 1000.0f;
 			tempFps++;
 
 			if (currentTime.asMilliseconds() - previousFpsTime.asMilliseconds() > 1000.0f)

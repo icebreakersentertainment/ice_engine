@@ -6,6 +6,8 @@
 
 #include "IFile.hpp"
 
+namespace hercules
+{
 namespace fs
 {
 
@@ -29,6 +31,7 @@ public:
 	virtual std::unique_ptr<IFile> open(const std::string& file, FileFlags flags) const = 0;
 };
 
+}
 }
 
 #endif /* IFILESYSTEM_H_ */

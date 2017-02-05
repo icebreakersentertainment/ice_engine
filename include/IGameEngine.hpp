@@ -3,6 +3,8 @@
 
 #include <string>
 
+#include "Platform.hpp"
+#include "Types.hpp"
 #include "entities/Entity.hpp"
 
 namespace hercules

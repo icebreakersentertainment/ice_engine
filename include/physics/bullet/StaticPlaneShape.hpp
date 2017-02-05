@@ -6,10 +6,14 @@
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 
+#include "Types.hpp"
+
 #include <btBulletDynamicsCommon.h>
 
 #include "physics/ICollisionShape.hpp"
 
+namespace hercules
+{
 namespace physics
 {
 namespace bullet
@@ -18,7 +22,7 @@ namespace bullet
 class StaticPlaneShape : public ICollisionShape
 {
 public:
-	StaticPlaneShape(const glm::vec3& planeNormal, glm::detail::float32 planeConstant);
+	StaticPlaneShape(const glm::vec3& planeNormal, float32 planeConstant);
 	virtual ~StaticPlaneShape();
 
 private:
@@ -27,6 +31,7 @@ private:
 	std::unique_ptr<btCollisionShape> shape_;
 };
 
+}
 }
 }
 

@@ -10,7 +10,8 @@
 
 #include "../utilities/Macros.hpp"
 
-
+namespace hercules
+{
 namespace as_wrapper
 {
 	
@@ -88,6 +89,7 @@ private:
 	int discardModules();
 };
 
+}
 }
 
 #endif /* ANGELSCRIPT_H_ */

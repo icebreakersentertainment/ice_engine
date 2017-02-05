@@ -4,6 +4,8 @@
 #include <string>
 #include <vector>
 
+namespace hercules
+{
 namespace as_wrapper
 {
 
@@ -26,6 +28,7 @@ private:
 	void destroy();
 };
 
+}
 }
 
 #endif /* ASCRIPTMODULE_H_ */

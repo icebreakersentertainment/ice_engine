@@ -6,6 +6,8 @@
 //#include "glw/TextureSettings.hpp"
 //#include "model/VertexBoneData.hpp"
 
+namespace hercules
+{
 namespace model
 {
 
@@ -14,6 +16,8 @@ struct Texture
 	std::string filename;
 	//glw::TextureSettings settings;
 };
+
+}
 
 }
 

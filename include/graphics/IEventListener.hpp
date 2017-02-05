@@ -3,6 +3,8 @@
 
 #include "Event.hpp"
 
+namespace hercules
+{
 namespace graphics
 {
 
@@ -16,6 +18,8 @@ public:
 	
 	virtual bool processEvent(const Event& event) = 0;
 };
+
+}
 
 }
 

@@ -90,7 +90,7 @@ void World::initializeTerrainManager()
 {
 	// Create our terrain manager
 	/*
-	glmd::int32 smoothingAlgorithm = properties_->getIntValue( std::string("glr.smoothing_algorithm"), 0 );
+	int32 smoothingAlgorithm = properties_->getIntValue( std::string("glr.smoothing_algorithm"), 0 );
 	
 	glr::terrain::TerrainSettings terrainSettings = glr::terrain::TerrainSettings();
 	
@@ -436,7 +436,7 @@ void World::loadWorld()
 }
 
 int counter;
-void World::tick(glmd::float32 elapsedTime)
+void World::tick(float32 elapsedTime)
 {
 	counter++;
 	if (counter > 100)

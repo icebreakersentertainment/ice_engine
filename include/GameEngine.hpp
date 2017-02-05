@@ -3,10 +3,6 @@
 
 #include <memory>
 
-#define GLM_FORCE_RADIANS
-#include <glm/glm.hpp>
-//#include <SFML/Window.hpp>
-
 #include "extras/FpsCamera.hpp"
 
 #include "utilities/Properties.hpp"
@@ -28,8 +24,6 @@
 
 #include "entities/EntityFactory.hpp"
 #include "entities/GraphicsComponentFactory.hpp"
-
-namespace glmd = glm::detail;
 
 namespace hercules
 {
@@ -85,7 +79,7 @@ private:
 	bool running_;
 	GameState state_;
 
-	void tick(glmd::float32 elapsedTime);
+	void tick(float32 elapsedTime);
 	void initialize();
 	void destroy();
 	void exit();
@@ -96,10 +90,10 @@ private:
 
 	void handleEvents();
 
-	static glm::detail::float32 rotationX;
-	static glm::detail::float32 rotationY;
-	static glm::detail::int32 mousePosX;
-	static glm::detail::int32 mousePosY;
+	static float32 rotationX;
+	static float32 rotationY;
+	static int32 mousePosX;
+	static int32 mousePosY;
 
 	// Testing
 	void test();
@@ -107,30 +101,30 @@ private:
 	void angelscriptTest();
 	as_wrapper::AsObject* mainAsScript_;
 
-	glm::detail::float32 currentFps_;
-	glm::detail::float32 getFps();
-	glm::detail::uint32 getThreadPoolQueueSize();
-	glm::detail::uint32 getOpenGlThreadPoolQueueSize();
-	glm::detail::uint32 getThreadPoolWorkerCount();
-	glm::detail::uint32 getThreadPoolActiveWorkerCount();
-	glm::detail::uint32 getThreadPoolInactiveWorkerCount();
+	float32 currentFps_;
+	float32 getFps();
+	uint32 getThreadPoolQueueSize();
+	uint32 getOpenGlThreadPoolQueueSize();
+	uint32 getThreadPoolWorkerCount();
+	uint32 getThreadPoolActiveWorkerCount();
+	uint32 getThreadPoolInactiveWorkerCount();
 	
 	// Keeping track of how long things take
-	glmd::int32 timeForPhysics_;
-	glmd::int32 timeForTick_;
-	glmd::int32 timeForRender_;
-	glmd::int32 timeForMisc_;
-	glmd::int32 timeForInput_;
-	glmd::int32 timeForGuiUpdate_;
-	glmd::int32 timeForAngelScript_;
+	int32 timeForPhysics_;
+	int32 timeForTick_;
+	int32 timeForRender_;
+	int32 timeForMisc_;
+	int32 timeForInput_;
+	int32 timeForGuiUpdate_;
+	int32 timeForAngelScript_;
 	
-	glm::detail::int32 getTimeForPhysics();
-	glm::detail::int32 getTimeForTick();
-	glm::detail::int32 getTimeForRender();
-	glm::detail::int32 getTimeForMisc();
-	glm::detail::int32 getTimeForInput();
-	glm::detail::int32 getTimeForGuiUpdate();
-	glm::detail::int32 getTimeForAngelScript();
+	int32 getTimeForPhysics();
+	int32 getTimeForTick();
+	int32 getTimeForRender();
+	int32 getTimeForMisc();
+	int32 getTimeForInput();
+	int32 getTimeForGuiUpdate();
+	int32 getTimeForAngelScript();
 	
 	// Initialization stuff
 	void initializeLoggingSubSystem();
@@ -150,7 +144,7 @@ private:
 	// Entity system
 	entityx::EntityX entityx_;
 	
-	static glmd::uint32 COMPONENT_TYPE_GRAPHICS;
+	static uint32 COMPONENT_TYPE_GRAPHICS;
 	
 	// testing
 	std::unique_ptr<ThreadPool> threadPool_;

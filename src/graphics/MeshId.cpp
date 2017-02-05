@@ -1,5 +1,7 @@
 #include "graphics/MeshId.hpp"
 
+namespace hercules
+{
 namespace graphics
 {
 
@@ -9,7 +11,7 @@ MeshId::MeshId() : id_(-1)
 {
 }
 
-MeshId::MeshId(glm::detail::int32 id) : id_(id)
+MeshId::MeshId(int32 id) : id_(id)
 {
 }
 
@@ -17,7 +19,7 @@ MeshId::~MeshId()
 {
 }
 
-glm::detail::int32 MeshId::getId() const
+int32 MeshId::getId() const
 {
 	return id_;
 }
@@ -58,4 +60,5 @@ std::ostream& operator << (std::ostream& os, const MeshId& id)
 	return os;
 }
 
+}
 }

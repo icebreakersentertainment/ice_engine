@@ -16,6 +16,8 @@
 
 //namespace fs = boost::filesystem;
 
+namespace hercules
+{
 namespace as_wrapper
 {
 
@@ -709,4 +711,5 @@ AsObject* AngelScript::createAsObject(const std::string& moduleName, const std::
 	return new AsObject(object, type, ctx);
 }
 
+}
 }

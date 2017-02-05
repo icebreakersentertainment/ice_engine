@@ -4,22 +4,24 @@
 #include <map>
 #include <string>
 
-#define GLM_FORCE_RADIANS
-#include <glm/glm.hpp>
+#include "Types.hpp"
 
 #include "model/AnimatedBoneNode.hpp"
 
+namespace hercules
+{
 namespace model
 {
 
 struct Animation
 {
 	std::string name;
-	glm::detail::float64 duration;
-	glm::detail::float64 ticksPerSecond;
+	float64 duration;
+	float64 ticksPerSecond;
 	std::map< std::string, AnimatedBoneNode > animatedBoneNodes;
 };
 
+}
 }
 
 #endif /* ANIMATION_H_ */

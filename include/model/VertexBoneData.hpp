@@ -4,6 +4,10 @@
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 
+#include "Types.hpp"
+
+namespace hercules
+{
 namespace model
 {
 
@@ -18,9 +22,9 @@ struct VertexBoneData
 		weights = glm::vec4(0.0f);
 	}
 	
-	void addBoneWeight( glm::detail::uint32 id, glm::detail::float32 weight )
+	void addBoneWeight( uint32 id, float32 weight )
 	{
-		for (glm::detail::uint32 i = 0; i < 4; i++)
+		for (uint32 i = 0; i < 4; i++)
 		{
 			if (weights[i] == 0.0f)
 			{
@@ -37,6 +41,8 @@ struct VertexBoneData
 		assert(0);
 	}
 };
+
+}
 
 }
 

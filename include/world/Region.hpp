@@ -3,12 +3,9 @@
 
 #include <string>
 
-#define GLM_FORCE_RADIANS
-#include "glm/glm.hpp"
+#include "Types.hpp"
 
 #include "utilities/Macros.hpp"
-
-namespace glmd = glm::detail;
 
 namespace hercules
 {
@@ -18,28 +15,28 @@ namespace world
 class Region
 {
 public:
-	Region(int id = 0, std::string name = std::string(), int worldId = 0);
+	Region(int32 id = 0, std::string name = std::string(), int32 worldId = 0);
 	virtual ~Region();
 
-	void tick(glmd::float32 elapsedTime);
+	void tick(float32 elapsedTime);
 
-	GETSET(int, id_, Id)
+	GETSET(int32, id_, Id)
 	GET(std::string, name_, Name)
 	SET_CONST_REF(std::string, name_, Name)
-	GETSET(int, worldId_, WorldId)
-	GETSET(int, x_, X)
-	GETSET(int, y_, Y)
+	GETSET(int32, worldId_, WorldId)
+	GETSET(int32, x_, X)
+	GETSET(int32, y_, Y)
 	
 private:
-	int id_;
+	int32 id_;
 	
 	std::string name_;
 	
-	int worldId_;
+	int32 worldId_;
 	
-	int x_;
+	int32 x_;
 	
-	int y_;
+	int32 y_;
 };
 
 }

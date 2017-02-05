@@ -43,7 +43,7 @@ void Camera::moveRight()
 	//camera_->moveRight();
 }
 
-void Camera::rotate(const glm::detail::float32& degrees, const glm::vec3& axis)
+void Camera::rotate(const float32& degrees, const glm::vec3& axis)
 {
 	//camera_->rotate( degrees / 5.5f, axis );
 }
@@ -51,7 +51,7 @@ void Camera::rotate(const glm::detail::float32& degrees, const glm::vec3& axis)
 /**
  *
  */
-void Camera::tick(glm::detail::float32 time)
+void Camera::tick(float32 time)
 {
 	//camera_->tick(time);
 }

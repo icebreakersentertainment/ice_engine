@@ -28,13 +28,15 @@
 #include "utilities/AssImpUtilities.hpp"
 #include "logger/Logger.hpp"
 
+namespace hercules
+{
 namespace model
 {
 
 namespace
 {
 
-Mesh importMesh(const std::string& name, const std::string& filename, glm::detail::uint32 index, const aiMesh* mesh, std::map< std::string, glm::detail::uint32 >& boneIndexMap)
+Mesh importMesh(const std::string& name, const std::string& filename, uint32 index, const aiMesh* mesh, std::map< std::string, uint32 >& boneIndexMap)
 {
 	Mesh data = Mesh();
 	
@@ -59,7 +61,7 @@ Mesh importMesh(const std::string& name, const std::string& filename, glm::detai
 	data.textureCoordinates.resize(mesh->mNumVertices);
 	data.colors.resize(mesh->mNumVertices);
 
-	for ( glm::detail::uint32 i = 0; i < mesh->mNumVertices; i++ )
+	for ( uint32 i = 0; i < mesh->mNumVertices; i++ )
 	{
 		data.vertices[i] = glm::vec3(mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z);
 		data.normals[i] = glm::vec3(mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z);
@@ -82,7 +84,7 @@ Mesh importMesh(const std::string& name, const std::string& filename, glm::detai
 	
 	data.indices.reserve(mesh->mNumVertices);
 	
-	for ( glm::detail::uint32 i = 0; i < mesh->mNumFaces; i++ )
+	for ( uint32 i = 0; i < mesh->mNumFaces; i++ )
 	{
 		const aiFace& face = mesh->mFaces[i];
 		
@@ -106,14 +108,14 @@ Mesh importMesh(const std::string& name, const std::string& filename, glm::detai
 		data.bones.resize( data.vertices.size() );
 		
 		// Load bone data
-		for (glm::detail::uint32 i = 0; i < mesh->mNumBones; i++)
+		for (uint32 i = 0; i < mesh->mNumBones; i++)
 		{
-			glm::detail::uint32 boneIndex = boneIndexMap[ mesh->mBones[i]->mName.C_Str() ];
+			uint32 boneIndex = boneIndexMap[ mesh->mBones[i]->mName.C_Str() ];
 			
-			for (glm::detail::uint32 j = 0; j < mesh->mBones[i]->mNumWeights; j++)
+			for (uint32 j = 0; j < mesh->mBones[i]->mNumWeights; j++)
 			{
-				glm::detail::uint32 vertexID = mesh->mBones[i]->mWeights[j].mVertexId;
-				glm::detail::float32 weight = mesh->mBones[i]->mWeights[j].mWeight;
+				uint32 vertexID = mesh->mBones[i]->mWeights[j].mVertexId;
+				float32 weight = mesh->mBones[i]->mWeights[j].mWeight;
 
 				temp++;
 				data.bones[ vertexID ].addBoneWeight( boneIndex, weight );
@@ -128,7 +130,7 @@ Mesh importMesh(const std::string& name, const std::string& filename, glm::detai
 	return data;
 }
 
-Texture importTexture(const std::string& name, const std::string& filename, glm::detail::uint32 index, const aiMaterial* material)
+Texture importTexture(const std::string& name, const std::string& filename, uint32 index, const aiMaterial* material)
 {
 	assert( material != nullptr );
 	
@@ -173,7 +175,7 @@ glm::mat4 convertAssImpMatrix(const aiMatrix4x4* m)
 	);
 }
 
-Material importMaterial(const std::string& name, const std::string& filename, glm::detail::uint32 index, const aiMaterial* material)
+Material importMaterial(const std::string& name, const std::string& filename, uint32 index, const aiMaterial* material)
 {	
 	assert( material != nullptr );
 		
@@ -223,7 +225,7 @@ Material importMaterial(const std::string& name, const std::string& filename, gl
 	return data;
 }
 
-BoneData importBones(const std::string& name, const std::string& filename, glm::detail::uint32 index, const aiMesh* mesh)
+BoneData importBones(const std::string& name, const std::string& filename, uint32 index, const aiMesh* mesh)
 {
 	assert( mesh != nullptr );
 	
@@ -231,9 +233,9 @@ BoneData importBones(const std::string& name, const std::string& filename, glm::
 	
 	LOG_DEBUG( "importing boneData." );
 	
-	for (glm::detail::uint32 i = 0; i < mesh->mNumBones; i++) {
+	for (uint32 i = 0; i < mesh->mNumBones; i++) {
 		Bone data = Bone();
-		glm::detail::uint32 boneIndex = 0;
+		uint32 boneIndex = 0;
 		
 		// Set the bone name
 		if (mesh->mBones[i]->mName.length > 0)
@@ -266,7 +268,7 @@ BoneNode importBoneNode( const aiNode* node )
 	boneNode.name = std::string( node->mName.C_Str() );
 	boneNode.transformation = convertAssImpMatrix( &(node->mTransformation) );
 	
-	for (glm::detail::uint32 i = 0; i < node->mNumChildren; i++)
+	for (uint32 i = 0; i < node->mNumChildren; i++)
 	{
 		boneNode.children.push_back( importBoneNode( node->mChildren[i] ) );
 	}
@@ -293,7 +295,7 @@ AnimationSet importAnimations(const std::string& name, const std::string& filena
 	const aiNode* assImpRootNode = scene->mRootNode;
 	animationSet.rootBoneNode = importBoneNode( assImpRootNode );
 	
-	for (glm::detail::uint32 i = 0; i < scene->mNumAnimations; i++)
+	for (uint32 i = 0; i < scene->mNumAnimations; i++)
 	{
 		// Load some basic animation data
 		Animation animation = Animation();
@@ -318,20 +320,20 @@ AnimationSet importAnimations(const std::string& name, const std::string& filena
 		animation.ticksPerSecond = scene->mAnimations[i]->mTicksPerSecond;
 		
 		// Load AnimatedBoneNodes for this animation
-		for (glm::detail::uint32 j = 0; j < scene->mAnimations[i]->mNumChannels; j++)
+		for (uint32 j = 0; j < scene->mAnimations[i]->mNumChannels; j++)
 		{
 			const aiNodeAnim* pNodeAnim = scene->mAnimations[i]->mChannels[j];
 			
 			AnimatedBoneNode abn = AnimatedBoneNode();
 			abn.name = std::string( pNodeAnim->mNodeName.C_Str() );
 
-			for (glm::detail::uint32 k = 0; k < pNodeAnim->mNumPositionKeys; k++)
+			for (uint32 k = 0; k < pNodeAnim->mNumPositionKeys; k++)
 			{
 				abn.positionTimes.push_back( pNodeAnim->mPositionKeys[k].mTime );
 				abn.positions.push_back( glm::vec3( pNodeAnim->mPositionKeys[k].mValue.x, pNodeAnim->mPositionKeys[k].mValue.y, pNodeAnim->mPositionKeys[k].mValue.z ) );
 			}
 			
-			for (glm::detail::uint32 k = 0; k < pNodeAnim->mNumRotationKeys; k++)
+			for (uint32 k = 0; k < pNodeAnim->mNumRotationKeys; k++)
 			{
 				const auto& rk = pNodeAnim->mRotationKeys[k];
 
@@ -342,7 +344,7 @@ AnimationSet importAnimations(const std::string& name, const std::string& filena
 				abn.rotations.push_back( rotation );
 			}
 			
-			for (glm::detail::uint32 k = 0; k < pNodeAnim->mNumScalingKeys; k++)
+			for (uint32 k = 0; k < pNodeAnim->mNumScalingKeys; k++)
 			{
 				abn.scalingTimes.push_back( pNodeAnim->mScalingKeys[k].mTime );
 				abn.scalings.push_back( glm::vec3( pNodeAnim->mScalingKeys[k].mValue.x, pNodeAnim->mScalingKeys[k].mValue.y, pNodeAnim->mScalingKeys[k].mValue.z ) );
@@ -456,7 +458,7 @@ std::unique_ptr< Model > importModelData(const std::string& name, const std::str
 		msg << "Model has " << model->meshes.size() << " meshes.";
 		LOG_DEBUG( msg.str() );
 		
-		for ( glm::detail::uint32 i=0; i < model->meshes.size(); i++ )
+		for ( uint32 i=0; i < model->meshes.size(); i++ )
 		{
 			model->meshes[i] = Mesh();
 			model->materials[i] = Material();
@@ -470,7 +472,7 @@ std::unique_ptr< Model > importModelData(const std::string& name, const std::str
 		}
 		
 		bool hasTextures = false;
-		for ( glm::detail::uint32 i=0; i < model->meshes.size(); i++ )
+		for ( uint32 i=0; i < model->meshes.size(); i++ )
 		{
 			if (model->textures[i].filename != std::string(""))
 			{
@@ -597,4 +599,5 @@ void save(const std::string& name, const std::string& filename, std::unique_ptr<
 	*/
 }
 
+}
 }

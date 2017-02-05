@@ -1,5 +1,7 @@
 #include "as_wrapper/AsObject.h"
 
+namespace hercules
+{
 namespace as_wrapper
 {
 
@@ -26,4 +28,5 @@ void AsObject::callMethod(const std::string& methodDeclaration)
 	ctx_->Execute();
 }
 
+}
 }

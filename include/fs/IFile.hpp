@@ -4,9 +4,10 @@
 #include <string>
 #include <iostream>
 
-#define GLM_FORCE_RADIANS
-#include <glm/glm.hpp>
+#include "Types.hpp"
 
+namespace hercules
+{
 namespace fs
 {
 
@@ -31,13 +32,14 @@ public:
 	
 	virtual void write(const char* data) = 0;
 	virtual void write(const std::string& file) = 0;
-	virtual std::string read(glm::detail::uint32 length = 256) = 0;
+	virtual std::string read(uint32 length = 256) = 0;
 	virtual std::string readAll() = 0;
 	
 	virtual std::istream& getInputStream() = 0;
 	virtual std::ostream& getOutputStream() = 0;
 };
 
+}
 }
 
 #endif /* IFILE_H_ */

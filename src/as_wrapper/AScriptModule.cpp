@@ -1,5 +1,7 @@
 #include "as_wrapper/AScriptModule.h"
 
+namespace hercules
+{
 namespace as_wrapper
 {
 
@@ -30,4 +32,5 @@ void AScriptModule::callMethod(std::string name, std::vector<Argument> arguments
 	
 }
 
+}
 }

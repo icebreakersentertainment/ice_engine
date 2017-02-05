@@ -1,5 +1,7 @@
 #include "angel_script/ClassFactory.hpp"
 
+namespace hercules
+{
 namespace angel_script
 {
 
@@ -23,4 +25,5 @@ angel_script::TestAtom* ClassFactory::atomRefFactory()
 	return new angel_script::TestAtom();
 }
 
+}
 }

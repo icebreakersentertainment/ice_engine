@@ -1,6 +1,8 @@
 #ifndef IGRAPHICSINTERFACE_H_
 #define IGRAPHICSINTERFACE_H_
 
+namespace hercules
+{
 namespace gui
 {
 
@@ -14,6 +16,7 @@ public:
 	;
 };
 
+}
 }
 
 #endif /* IGRAPHICSINTERFACE_H_ */

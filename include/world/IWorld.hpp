@@ -1,6 +1,8 @@
 #ifndef IWORLD_H_
 #define IWORLD_H_
 
+namespace hercules
+{
 namespace world
 {
 
@@ -12,6 +14,8 @@ public:
 	}
 	;
 };
+
+}
 
 }
 

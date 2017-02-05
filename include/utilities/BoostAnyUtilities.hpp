@@ -3,6 +3,8 @@
 
 #include <boost/any.hpp>
 
+namespace hercules
+{
 namespace utilities
 {
 
@@ -62,4 +64,6 @@ bool isWstring(const boost::any& operand)
 }
 
 }
+}
+
 #endif /* BOOSTANYUTILITIES_H_ */

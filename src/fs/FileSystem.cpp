@@ -4,6 +4,8 @@
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 
+namespace hercules
+{
 namespace fs
 {
 
@@ -71,4 +73,5 @@ std::unique_ptr<IFile> FileSystem::open(const std::string& file, FileFlags flags
 	return std::make_unique<File>( file, flags );
 }
 
+}
 }

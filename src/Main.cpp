@@ -20,7 +20,7 @@ int main()
 	std::string configData;
 	try
 	{
-		auto fileSystem = fs::FileSystem();
+		auto fileSystem = hercules::fs::FileSystem();
 		configData = fileSystem.readAll( std::string("settings.ini") );
 	}
 	catch (const std::exception& e)
@@ -31,7 +31,7 @@ int main()
 	// Start the game engine
 	try
 	{
-		auto properties = std::make_unique< utilities::Properties >(configData);
+		auto properties = std::make_unique< hercules::utilities::Properties >(configData);
 		auto gameEngine = hercules::GameFactory::createGameEngine(std::move(properties));
 		
 		gameEngine->setBootstrapScript( std::string("Main"), std::string("Main.as") );

@@ -7,6 +7,8 @@ namespace expr = boost::log::expressions;
 namespace attrs = boost::log::attributes;
 namespace keywords = boost::log::keywords;
 
+namespace hercules
+{
 namespace cs_logger
 {
 
@@ -108,4 +110,4 @@ src::severity_logger< severity_level >& Logger::getLogger()
 }
 
 }
-
+}

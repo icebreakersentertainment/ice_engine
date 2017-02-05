@@ -1,6 +1,8 @@
 #include "physics/PhysicsFactory.hpp"
 #include "physics/bullet/PhysicsEngine.hpp"
 
+namespace hercules
+{
 namespace physics
 {
 
@@ -23,4 +25,5 @@ std::unique_ptr<IPhysicsEngine> PhysicsFactory::createPhysicsEngine()
 	return std::move( ptr );
 }
 
+}
 }

@@ -14,10 +14,12 @@
 #include "logger/Logger.hpp"
 #include "utilities/ImageLoader.hpp"
 
+namespace hercules
+{
 namespace graphics
 {
 
-GraphicsEngine::GraphicsEngine(glm::detail::uint32 width, glm::detail::uint32 height, fs::IFileSystem* fileSystem)
+GraphicsEngine::GraphicsEngine(uint32 width, uint32 height, fs::IFileSystem* fileSystem)
 {
 	width_ = width;
 	height_ = height;
@@ -100,17 +102,17 @@ GraphicsEngine::~GraphicsEngine()
 	SDL_Quit();
 }
 	
-void GraphicsEngine::setViewport(glm::detail::uint32 width, glm::detail::uint32 height)
+void GraphicsEngine::setViewport(uint32 width, uint32 height)
 {
 	width_ = width;
 	height_ = height;
 	
-	projection_ = glm::perspective(glm::radians(60.0f), (glm::detail::float32)width / (glm::detail::float32)height, 0.1f, 500.f);
+	projection_ = glm::perspective(glm::radians(60.0f), (float32)width / (float32)height, 0.1f, 500.f);
 	
 	glViewport(0, 0, width_, height_);
 }
 
-void GraphicsEngine::render(glm::detail::float32 delta)
+void GraphicsEngine::render(float32 delta)
 {
 	glEnable(GL_DEPTH_TEST);
 	
@@ -150,7 +152,7 @@ void GraphicsEngine::render(glm::detail::float32 delta)
 	assert( pvmMatrixLocation >= 0);
 	//assert( normalMatrixLocation >= 0);
 	
-	glm::detail::uint32 i = 0;	
+	uint32 i = 0;	
 	for ( const auto& r : renderables_ )
 	{
 		const auto& graphicsData = graphicsData_[i];
@@ -203,7 +205,7 @@ CameraId GraphicsEngine::createCamera(glm::vec3 position, glm::vec3 lookAt)
 
 MeshId GraphicsEngine::createStaticMesh(
 	std::vector<glm::vec3> vertices,
-	std::vector<glm::detail::uint32> indices,
+	std::vector<uint32> indices,
 	std::vector<glm::vec4> colors,
 	std::vector<glm::vec3> normals,
 	std::vector<glm::vec2> textureCoordinates
@@ -245,7 +247,7 @@ MeshId GraphicsEngine::createStaticMesh(
 	glEnableVertexAttribArray(3);
 	
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vao.ebo.id);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(glm::detail::uint32), &indices[0], GL_STATIC_DRAW); 
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(uint32), &indices[0], GL_STATIC_DRAW); 
 	
 	glBindVertexArray(0);
 	
@@ -261,7 +263,7 @@ MeshId GraphicsEngine::createStaticMesh(
 
 MeshId GraphicsEngine::createAnimatedMesh(
 		std::vector<glm::vec3> vertices,
-		std::vector<glm::detail::uint32> indices,
+		std::vector<uint32> indices,
 		std::vector<glm::vec4> colors,
 		std::vector<glm::vec3> normals,
 		std::vector<glm::vec2> textureCoordinates,
@@ -317,7 +319,7 @@ MeshId GraphicsEngine::createAnimatedMesh(
 	glEnableVertexAttribArray(5);
 	
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vao.ebo.id);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(glm::detail::uint32), &indices[0], GL_STATIC_DRAW); 
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(uint32), &indices[0], GL_STATIC_DRAW); 
 	
 	glBindVertexArray(0);
 	
@@ -333,7 +335,7 @@ MeshId GraphicsEngine::createAnimatedMesh(
 
 MeshId GraphicsEngine::createDynamicMesh(
 	std::vector<glm::vec3> vertices,
-	std::vector<glm::detail::uint32> indices,
+	std::vector<uint32> indices,
 	std::vector<glm::vec4> colors,
 	std::vector<glm::vec3> normals,
 	std::vector<glm::vec2> textureCoordinates
@@ -371,7 +373,7 @@ MeshId GraphicsEngine::createDynamicMesh(
 	glEnableVertexAttribArray(3);
 	
 	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, vao.ebo.id);
-	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(glm::detail::uint32), &indices[0], GL_STATIC_DRAW); 
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, indices.size() * sizeof(uint32), &indices[0], GL_STATIC_DRAW); 
 	
 	glBindVertexArray(0);
 	
@@ -387,7 +389,7 @@ MeshId GraphicsEngine::createDynamicMesh(
 	return MeshId();
 }
 
-SkeletonId GraphicsEngine::createSkeleton(glm::detail::uint32 numberOfBones)
+SkeletonId GraphicsEngine::createSkeleton(uint32 numberOfBones)
 {
 	Ubo ubo;
 	
@@ -408,8 +410,8 @@ TextureId GraphicsEngine::createTexture2d(std::string uri)
 {
 	GlTexture2d texture;
 	
-	glm::detail::uint32 width = 0;
-	glm::detail::uint32 height = 0;
+	uint32 width = 0;
+	uint32 height = 0;
 	
 	auto il = utilities::ImageLoader();
 	auto image = il.loadImageData(uri);
@@ -489,7 +491,7 @@ void GraphicsEngine::rotate(const RenderableId renderableId, const glm::quat& qu
 	}
 }
 
-void GraphicsEngine::rotate(const CameraId cameraId, const glm::detail::float32 degrees, const glm::vec3& axis, TransformSpace relativeTo)
+void GraphicsEngine::rotate(const CameraId cameraId, const float32 degrees, const glm::vec3& axis, TransformSpace relativeTo)
 {
 	switch( relativeTo )
 	{
@@ -508,7 +510,7 @@ void GraphicsEngine::rotate(const CameraId cameraId, const glm::detail::float32 
 	}
 }
 
-void GraphicsEngine::rotate(const RenderableId renderableId, const glm::detail::float32 degrees, const glm::vec3& axis, TransformSpace relativeTo)
+void GraphicsEngine::rotate(const RenderableId renderableId, const float32 degrees, const glm::vec3& axis, TransformSpace relativeTo)
 {
 	const auto id = renderableId.getId();
 	
@@ -531,12 +533,12 @@ void GraphicsEngine::rotate(const RenderableId renderableId, const glm::detail::
 	}
 }
 
-void GraphicsEngine::translate(const CameraId cameraId, const glm::detail::float32 x, const glm::detail::float32 y, const glm::detail::float32 z)
+void GraphicsEngine::translate(const CameraId cameraId, const float32 x, const float32 y, const float32 z)
 {
 	camera_.position += glm::vec3(x, y, z);
 }
 
-void GraphicsEngine::translate(const RenderableId renderableId, const glm::detail::float32 x, const glm::detail::float32 y, const glm::detail::float32 z)
+void GraphicsEngine::translate(const RenderableId renderableId, const float32 x, const float32 y, const float32 z)
 {
 	const auto id = renderableId.getId();
 	
@@ -558,7 +560,7 @@ void GraphicsEngine::translate(const RenderableId renderableId, const glm::vec3&
 }
 
 
-void GraphicsEngine::scale(const RenderableId renderableId, const glm::detail::float32 x, const glm::detail::float32 y, const glm::detail::float32 z)
+void GraphicsEngine::scale(const RenderableId renderableId, const float32 x, const float32 y, const float32 z)
 {
 	const auto id = renderableId.getId();
 	
@@ -574,7 +576,7 @@ void GraphicsEngine::scale(const RenderableId renderableId, const glm::vec3& sca
 	graphicsData.scale = scale;
 }
 
-void GraphicsEngine::scale(const RenderableId renderableId, const glm::detail::float32 scale)
+void GraphicsEngine::scale(const RenderableId renderableId, const float32 scale)
 {
 	const auto id = renderableId.getId();
 	
@@ -582,7 +584,7 @@ void GraphicsEngine::scale(const RenderableId renderableId, const glm::detail::f
 	graphicsData.scale = glm::vec3(scale, scale, scale);
 }
 
-void GraphicsEngine::position(const RenderableId renderableId, const glm::detail::float32 x, const glm::detail::float32 y, const glm::detail::float32 z)
+void GraphicsEngine::position(const RenderableId renderableId, const float32 x, const float32 y, const float32 z)
 {
 	const auto id = renderableId.getId();
 	
@@ -590,7 +592,7 @@ void GraphicsEngine::position(const RenderableId renderableId, const glm::detail
 	graphicsData.position = glm::vec3(x, y, z);
 }
 
-void GraphicsEngine::position(const CameraId cameraId, const glm::detail::float32 x, const glm::detail::float32 y, const glm::detail::float32 z)
+void GraphicsEngine::position(const CameraId cameraId, const float32 x, const float32 y, const float32 z)
 {
 	camera_.position = glm::vec3(x, y, z);
 }
@@ -637,7 +639,7 @@ void GraphicsEngine::assign(const RenderableId renderableId, const SkeletonId sk
 	renderable.ubo = uniformBufferObjects_[skeletonId.getId()];
 }
 
-void GraphicsEngine::update(const SkeletonId skeletonId, const void* data, glm::detail::uint32 size)
+void GraphicsEngine::update(const SkeletonId skeletonId, const void* data, uint32 size)
 {
 	const auto& ubo = uniformBufferObjects_[skeletonId.getId()];
 	
@@ -967,4 +969,5 @@ void GraphicsEngine::removeEventListener(IEventListener* eventListener)
 	}
 }
 
+}
 }

@@ -1,5 +1,7 @@
 #include "graphics/CameraId.hpp"
 
+namespace hercules
+{
 namespace graphics
 {
 
@@ -9,7 +11,7 @@ CameraId::CameraId() : id_(-1)
 {
 }
 
-CameraId::CameraId(glm::detail::int32 id) : id_(id)
+CameraId::CameraId(int32 id) : id_(id)
 {
 }
 
@@ -17,7 +19,7 @@ CameraId::~CameraId()
 {
 }
 
-glm::detail::int32 CameraId::getId() const
+int32 CameraId::getId() const
 {
 	return id_;
 }
@@ -58,4 +60,5 @@ std::ostream& operator << (std::ostream& os, const CameraId& id)
 	return os;
 }
 
+}
 }

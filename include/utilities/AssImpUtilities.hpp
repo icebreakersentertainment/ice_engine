@@ -6,6 +6,8 @@
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 
+namespace hercules
+{
 namespace utilities
 {
 	
@@ -17,6 +19,7 @@ void color4ToVec4(const aiColor4D* c, glm::vec4& v)
 	v[3] = c->a;
 }
 
+}
 }
 
 #endif /* ASSIMPUTILITIES_H_ */

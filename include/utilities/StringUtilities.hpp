@@ -3,6 +3,8 @@
 
 #include <string>
 
+namespace hercules
+{
 namespace utilities
 {
 
@@ -22,6 +24,7 @@ std::wstring toWstring(const std::string& s)
 
 }
 
+}
 }
 
 #endif /* STRINGUTILITIES_H_ */

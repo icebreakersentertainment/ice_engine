@@ -9,6 +9,8 @@
 
 #include "model/BoneNode.hpp"
 
+namespace hercules
+{
 namespace model
 {
 
@@ -19,6 +21,7 @@ struct BoneNode
 	std::vector< BoneNode > children;
 };
 
+}
 }
 
 #endif /* BONENODE_H_ */

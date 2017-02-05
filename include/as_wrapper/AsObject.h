@@ -5,6 +5,8 @@
 
 #include <angelscript/angelscript.h>
 
+namespace hercules
+{
 namespace as_wrapper
 {
 
@@ -21,6 +23,7 @@ private:
 	asIScriptContext* ctx_;
 };
 
+}
 }
 
 #endif /* ASOBJECT_H_ */

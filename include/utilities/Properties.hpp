@@ -4,7 +4,12 @@
 #include <string>
 #include <map>
 
+#include "Types.hpp"
+
 #include <fs/IFile.hpp>
+
+namespace hercules
+{
 
 namespace utilities
 {
@@ -17,20 +22,21 @@ public:
 	virtual ~Properties();
 	
 	std::string getStringValue(const std::string& name, std::string defaultValue = std::string(""));
-	int getIntValue(const std::string& name, int defaultValue = 0);
-	long getLongValue(const std::string& name, long defaultValue = 0L);
-	float getFloatValue(const std::string& name, float defaultValue = 0.0f);
-	double getDoubleValue(const std::string& name, double defaultValue = 0.0);
+	int32 getIntValue(const std::string& name, int32 defaultValue = 0);
+	int64 getLongValue(const std::string& name, int64 defaultValue = 0L);
+	float32 getFloatValue(const std::string& name, float32 defaultValue = 0.0f);
+	float64 getDoubleValue(const std::string& name, float64 defaultValue = 0.0);
 	bool getBoolValue(const std::string& name, bool defaultValue = false);
 
 private:
-	std::string filename_;
 	std::map<std::string, std::string> parameters_;
 	
 	void initialize();
 	
 	bool toBool(std::string str);
 };
+
+}
 
 }
 

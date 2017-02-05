@@ -2,6 +2,8 @@
 
 #include "angel_script/TestAtom.hpp"
 
+namespace hercules
+{
 namespace angel_script
 {
 
@@ -19,4 +21,4 @@ void TestAtom::test()
 }
 
 }
-
+}

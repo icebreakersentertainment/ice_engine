@@ -1,13 +1,14 @@
 #ifndef KEYBOARD_H_
 #define KEYBOARD_H_
 
-#define GLM_FORCE_RADIANS
-#include <glm/glm.hpp>
+#include "Types.hpp"
 
+namespace hercules
+{
 namespace graphics
 {
 
-typedef glm::detail::int32 KeyCode;
+typedef int32 KeyCode;
 
 enum
 {
@@ -33,8 +34,10 @@ struct KeySym
 {
 	ScanCode scancode;
 	KeyCode sym;
-	glm::detail::uint16 mod;
+	uint16 mod;
 };
+
+}
 
 }
 
