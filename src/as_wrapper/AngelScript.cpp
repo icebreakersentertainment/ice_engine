@@ -2,8 +2,6 @@
 #include <iostream>
 #include <stdio.h>
 
-//#include <boost/filesystem.hpp>
-
 #include "as_wrapper/AngelScript.h"
 
 #define AS_USE_STLNAMES = 1
@@ -35,10 +33,10 @@ void AngelScript::initialize()
 {
 	engine_ = asCreateScriptEngine(ANGELSCRIPT_VERSION);
 	// Set the message callback to receive information on errors in human readable form.
-	int r = engine_->SetMessageCallback(asMETHOD(AngelScript, MessageCallback), this, asCALL_THISCALL);
+	int32 r = engine_->SetMessageCallback(asMETHOD(AngelScript, MessageCallback), this, asCALL_THISCALL);
 
 	if ( r < 0 )
-		LOG_DEBUG( "shit 1" );
+		assert(0);
 
 	/* AngelScript doesn't have a built-in string type, as there is no definite standard
 	 * string type for C++ applications. Every developer is free to register it's own string type.
@@ -82,7 +80,7 @@ bool AngelScript::loadScripts()
 	// load modules/scripts
 	if ( this->startNewModule("test") >= 0 )
 	{
-		int r = 0;
+		int32 r = 0;
 		r += this->addScript("test.as");
 		r += this->addScript("test2.as");
 		r += this->buildModule();
@@ -99,7 +97,7 @@ bool AngelScript::loadScripts()
 
 bool AngelScript::registerGlobalFunction(const std::string& name, const asSFuncPtr& funcPointer, asDWORD callConv, void* objForThiscall)
 {
-	int r = engine_->RegisterGlobalFunction(name.c_str(), funcPointer, callConv, objForThiscall);
+	int32 r = engine_->RegisterGlobalFunction(name.c_str(), funcPointer, callConv, objForThiscall);
 	
 	if ( r < 0 )
 	{
@@ -112,7 +110,7 @@ bool AngelScript::registerGlobalFunction(const std::string& name, const asSFuncP
 
 void AngelScript::registerGlobalProperty(const std::string& declaration, void* pointer)
 {
-	int r = engine_->RegisterGlobalProperty(declaration.c_str(), pointer);
+	int32 r = engine_->RegisterGlobalProperty(declaration.c_str(), pointer);
 	
 	if ( r < 0 )
 	{
@@ -123,7 +121,7 @@ void AngelScript::registerGlobalProperty(const std::string& declaration, void* p
 
 bool AngelScript::registerClass(const std::string& name)
 {
-	int r = registerObjectType(name.c_str(), 0, asOBJ_REF);
+	int32 r = registerObjectType(name.c_str(), 0, asOBJ_REF);
 	
 	return (r == 0);
 }
@@ -143,28 +141,28 @@ bool AngelScript::registerClass(const std::string& name, const std::string& clas
 		
 bool AngelScript::registerClassFactory(const std::string& name, const std::string& classFactorySignature, const asSFuncPtr& classFactoryFuncPointer)
 {
-	int r = registerObjectBehaviour(name.c_str(), asBEHAVE_FACTORY, classFactorySignature.c_str(), classFactoryFuncPointer, asCALL_CDECL);
+	int32 r = registerObjectBehaviour(name.c_str(), asBEHAVE_FACTORY, classFactorySignature.c_str(), classFactoryFuncPointer, asCALL_CDECL);
 	
 	return (r == 0);
 }
 
 bool AngelScript::registerClassAddRef(const std::string& name, const std::string& addRefSignature, const asSFuncPtr& addRefFuncPointer)
 {
-	int r = registerObjectBehaviour(name.c_str(), asBEHAVE_ADDREF, addRefSignature.c_str(), addRefFuncPointer, asCALL_THISCALL);
+	int32 r = registerObjectBehaviour(name.c_str(), asBEHAVE_ADDREF, addRefSignature.c_str(), addRefFuncPointer, asCALL_THISCALL);
 	
 	return (r == 0);
 }
 
 bool AngelScript::registerClassReleaseRef(const std::string& name, const std::string& releaseRefSignature, const asSFuncPtr& releaseRefFuncPointer)
 {
-	int r = registerObjectBehaviour(name.c_str(), asBEHAVE_RELEASE, releaseRefSignature.c_str(), releaseRefFuncPointer, asCALL_THISCALL);
+	int32 r = registerObjectBehaviour(name.c_str(), asBEHAVE_RELEASE, releaseRefSignature.c_str(), releaseRefFuncPointer, asCALL_THISCALL);
 	
 	return (r == 0);
 }
 		
 bool AngelScript::registerClassMethod(const std::string& className, const std::string& methodSignature, const asSFuncPtr& funcPointer)
 {
-	int r = registerObjectMethod(className.c_str(), methodSignature.c_str(), funcPointer, asCALL_THISCALL);
+	int32 r = registerObjectMethod(className.c_str(), methodSignature.c_str(), funcPointer, asCALL_THISCALL);
 	
 	return (r == 0);
 }
@@ -174,7 +172,7 @@ bool AngelScript::loadScript(const std::string& name, const std::string& filenam
 	// load modules/scripts
 	if ( this->startNewModule(name) >= 0 )
 	{
-		int r = 0;
+		int32 r = 0;
 		r += this->addScript(filename);
 		
 		r += this->buildModule();
@@ -198,7 +196,7 @@ bool AngelScript::loadScripts(const std::string& directory)
 	// load modules/scripts
 	if ( this->startNewModule("test") >= 0 )
 	{
-		int r = 0;
+		int32 r = 0;
 		r += this->addScript("test.as");
 		//r += this->addScript("test2.as");
 		r += this->buildModule();
@@ -224,7 +222,7 @@ AScriptModule* getScript(const std::string& name)
 	return nullptr;
 }
 
-int AngelScript::registerObjectType(const std::string& obj, int byteSize, asDWORD flags)
+int32 AngelScript::registerObjectType(const std::string& obj, int32 byteSize, asDWORD flags)
 {
 	//LOG_DEBUG( std::string("create angelscript wrapper1: ") + obj + " " + byteSize + " " + flags );
 	if ( engine_->RegisterObjectType(obj.c_str(), byteSize, flags) < 0 )
@@ -252,7 +250,7 @@ int AngelScript::registerObjectType(const std::string& obj, int byteSize, asDWOR
 	return 0;
 }
 
-int AngelScript::registerObjectMethod(const std::string& obj, const std::string& declaration,
+int32 AngelScript::registerObjectMethod(const std::string& obj, const std::string& declaration,
 									  const asSFuncPtr& funcPointer, asDWORD callConv)
 {
 	if ( engine_->RegisterObjectMethod(obj.c_str(), declaration.c_str(), funcPointer, callConv) < 0 )
@@ -277,10 +275,10 @@ int AngelScript::registerObjectMethod(const std::string& obj, const std::string&
 	return 0;
 }
 
-int AngelScript::registerObjectBehaviour(const std::string& obj, asEBehaviours behaviour,
+int32 AngelScript::registerObjectBehaviour(const std::string& obj, asEBehaviours behaviour,
 										 const std::string& declaration, const asSFuncPtr& funcPointer, asDWORD callConv)
 {
-	int r = engine_->RegisterObjectBehaviour(obj.c_str(), behaviour, declaration.c_str(), funcPointer, callConv);
+	int32 r = engine_->RegisterObjectBehaviour(obj.c_str(), behaviour, declaration.c_str(), funcPointer, callConv);
 
 	if ( r < 0 )
 	{
@@ -448,63 +446,63 @@ bool AngelScript::initContext(const std::string& function, const std::string& mo
 	return true;
 }
 
-int AngelScript::setArgDWord(asUINT arg, asDWORD value)
+int32 AngelScript::setArgDWord(asUINT arg, asDWORD value)
 {
 	if ( ctx_ == nullptr )
 		return -1;
 	return ctx_->SetArgDWord(arg, value);
 }
 
-int AngelScript::setArgQWord(asUINT arg, asQWORD value)
+int32 AngelScript::setArgQWord(asUINT arg, asQWORD value)
 {
 	if ( ctx_ == nullptr )
 		return -1;
 	return ctx_->SetArgQWord(arg, value);
 }
 
-int AngelScript::setArgFloat(asUINT arg, float value)
+int32 AngelScript::setArgFloat(asUINT arg, float32 value)
 {
 	if ( ctx_ == nullptr )
 		return -1;
 	return ctx_->SetArgFloat(arg, value);
 }
 
-int AngelScript::setArgDouble(asUINT arg, double value)
+int32 AngelScript::setArgDouble(asUINT arg, float64 value)
 {
 	if ( ctx_ == nullptr )
 		return -1;
 	return ctx_->SetArgDouble(arg, value);
 }
 
-int AngelScript::setArgAddress(asUINT arg, void* addr)
+int32 AngelScript::setArgAddress(asUINT arg, void* addr)
 {
 	if ( ctx_ == nullptr )
 		return -1;
 	return ctx_->SetArgAddress(arg, addr);
 }
 
-int AngelScript::setArgByte(asUINT arg, asBYTE value)
+int32 AngelScript::setArgByte(asUINT arg, asBYTE value)
 {
 	if ( ctx_ == nullptr )
 		return -1;
 	return ctx_->SetArgByte(arg, value);
 }
 
-int AngelScript::setArgObject(asUINT arg, void* obj)
+int32 AngelScript::setArgObject(asUINT arg, void* obj)
 {
 	if ( ctx_ == nullptr )
 		return -1;
 	return ctx_->SetArgObject(arg, obj);
 }
 
-int AngelScript::setArgWord(asUINT arg, asWORD value)
+int32 AngelScript::setArgWord(asUINT arg, asWORD value)
 {
 	if ( ctx_ == nullptr )
 		return -1;
 	return ctx_->SetArgWord(arg, value);
 }
 
-int AngelScript::run()
+int32 AngelScript::run()
 {
 	// error check
 	if ( ctx_ == nullptr )
@@ -515,7 +513,7 @@ int AngelScript::run()
 	}
 
 	LOG_DEBUG( "Executing function." );
-	int r = ctx_->Execute();
+	int32 r = ctx_->Execute();
 	
 	if ( r != asEXECUTION_FINISHED )
 	{
@@ -555,14 +553,14 @@ asQWORD AngelScript::getReturnQWord()
 	return ctx_->GetReturnQWord();
 }
 
-float AngelScript::getReturnFloat()
+float32 AngelScript::getReturnFloat()
 {
 	if ( ctx_ == nullptr )
 		return 0;
 	return ctx_->GetReturnFloat();
 }
 
-double AngelScript::getReturnDouble()
+float64 AngelScript::getReturnDouble()
 {
 	if ( ctx_ == nullptr )
 		return 0;
@@ -606,9 +604,9 @@ void AngelScript::releaseContext()
 	}
 }
 
-int AngelScript::startNewModule(const std::string& module)
+int32 AngelScript::startNewModule(const std::string& module)
 {
-	int r = builder_->StartNewModule(engine_, module.c_str());
+	int32 r = builder_->StartNewModule(engine_, module.c_str());
 
 	if ( r < 0 )
 	{
@@ -623,7 +621,7 @@ int AngelScript::startNewModule(const std::string& module)
 	return 0;
 }
 
-int AngelScript::addScript(const std::string& script)
+int32 AngelScript::addScript(const std::string& script)
 {
 	// error check
 	if ( script.length() > 150 )
@@ -633,7 +631,7 @@ int AngelScript::addScript(const std::string& script)
 	//std::string file = fs::current_path().string() + std::string("/scripts/") + script;
 	std::string file = std::string("../data/scripts/") + script;
 	
-	int r = builder_->AddSectionFromFile(file.c_str());
+	int32 r = builder_->AddSectionFromFile(file.c_str());
 	if ( r < 0 )
 	{
 		// The builder wasn't able to load the file. Maybe the file
@@ -649,9 +647,9 @@ int AngelScript::addScript(const std::string& script)
 	return 0;
 }
 
-int AngelScript::buildModule()
+int32 AngelScript::buildModule()
 {
-	int r = builder_->BuildModule();
+	int32 r = builder_->BuildModule();
 
 	if ( r < 0 )
 	{
@@ -666,9 +664,9 @@ int AngelScript::buildModule()
 	return 0;
 }
 
-int AngelScript::discardModule(const std::string& name)
+int32 AngelScript::discardModule(const std::string& name)
 {
-	int r = engine_->DiscardModule( name.c_str() );
+	int32 r = engine_->DiscardModule( name.c_str() );
 
 	if ( r < 0 )
 	{
@@ -678,7 +676,7 @@ int AngelScript::discardModule(const std::string& name)
 	return r;
 }
 
-int AngelScript::discardModules()
+int32 AngelScript::discardModules()
 {
 	return discardModule( std::string("test"));
 }

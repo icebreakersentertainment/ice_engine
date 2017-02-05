@@ -8,7 +8,7 @@
 #include "AScriptModule.h"
 #include "AsObject.h"
 
-#include "../utilities/Macros.hpp"
+#include "Types.hpp"
 
 namespace hercules
 {
@@ -41,33 +41,33 @@ public:
 	void unloadScripts();
 	
 	AScriptModule* getScript(const std::string& name);
-	int discardModule(const std::string& name);
+	int32 discardModule(const std::string& name);
 	
 	AsObject* createAsObject(const std::string& moduleName, const std::string& className);
 
 	// More 'advanced' functions for angel script
-	int registerObjectType(const std::string& obj, int byteSize, asDWORD flags);
-	int registerObjectMethod(const std::string& obj, const std::string& declaration, const asSFuncPtr& funcPointer, asDWORD callConv);
-	int registerObjectBehaviour(const std::string& obj, asEBehaviours behaviour, const std::string& declaration, const asSFuncPtr& funcPointer, asDWORD callConv);
+	int32 registerObjectType(const std::string& obj, int32 byteSize, asDWORD flags);
+	int32 registerObjectMethod(const std::string& obj, const std::string& declaration, const asSFuncPtr& funcPointer, asDWORD callConv);
+	int32 registerObjectBehaviour(const std::string& obj, asEBehaviours behaviour, const std::string& declaration, const asSFuncPtr& funcPointer, asDWORD callConv);
 
 	void MessageCallback(const asSMessageInfo* msg, void* param);
 	static void print(const std::string& msg);
 	static void println(const std::string& msg);
 
 	bool initContext(const std::string& function, const std::string& module);
-	int setArgDWord(asUINT arg, asDWORD value);
-	int setArgQWord(asUINT arg, asQWORD value);
-	int setArgFloat(asUINT arg, float value);
-	int setArgDouble(asUINT arg, double value);
-	int setArgAddress(asUINT arg, void* addr);
-	int setArgByte(asUINT arg, asBYTE value);
-	int setArgObject(asUINT arg, void* obj);
-	int setArgWord(asUINT arg, asWORD value);
-	int run();
+	int32 setArgDWord(asUINT arg, asDWORD value);
+	int32 setArgQWord(asUINT arg, asQWORD value);
+	int32 setArgFloat(asUINT arg, float32 value);
+	int32 setArgDouble(asUINT arg, float64 value);
+	int32 setArgAddress(asUINT arg, void* addr);
+	int32 setArgByte(asUINT arg, asBYTE value);
+	int32 setArgObject(asUINT arg, void* obj);
+	int32 setArgWord(asUINT arg, asWORD value);
+	int32 run();
 	asDWORD getReturnDWord();
 	asQWORD getReturnQWord();
-	float getReturnFloat();
-	double getReturnDouble();
+	float32 getReturnFloat();
+	float64 getReturnDouble();
 	void* getReturnAddress();
 	asBYTE getReturnByte();
 	void* getReturnObject();
@@ -77,16 +77,16 @@ public:
 private:
 	void initialize();
 	void destroy();
-	//int loadScript(const std::string& script);
+	//int32 loadScript(const std::string& script);
 
 	asIScriptEngine* engine_;
 	CScriptBuilder* builder_;
 	asIScriptContext* ctx_;
 
-	int startNewModule(const std::string& module);
-	int addScript(const std::string& script);
-	int buildModule();
-	int discardModules();
+	int32 startNewModule(const std::string& module);
+	int32 addScript(const std::string& script);
+	int32 buildModule();
+	int32 discardModules();
 };
 
 }

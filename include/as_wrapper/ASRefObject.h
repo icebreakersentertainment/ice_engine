@@ -1,6 +1,8 @@
 #ifndef ASREFOBJECT_H_
 #define ASREFOBJECT_H_
 
+#include "Types.hpp"
+
 namespace hercules
 {
 namespace as_wrapper
@@ -16,7 +18,7 @@ public:
 	void releaseRef();
 
 protected:
-	int refCount_;
+	int32 refCount_;
 };
 
 }

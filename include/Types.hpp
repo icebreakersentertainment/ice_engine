@@ -1,16 +1,14 @@
 #ifndef HERCULESTYPES_H_
 #define HERCULESTYPES_H_
 
-#include "Types.hpp"
-
 namespace hercules
 {
 
 typedef unsigned char byte;
 typedef signed char sbyte;
-typedef uint8_t uint8;
-typedef int8_t int8;
-typedef int8_t sint8;
+typedef unsigned char uint8;
+typedef signed char int8;
+typedef signed char sint8;
 typedef unsigned short uint16;
 typedef signed short sint16;
 typedef unsigned int uint;
