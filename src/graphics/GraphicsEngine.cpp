@@ -139,8 +139,6 @@ void GraphicsEngine::render(float32 delta)
 		  GLsizei actualLength = 0;
 		  glGetActiveUniform(shaderProgram_, unif, nameData.size(), &actualLength, &arraySize, &type, &nameData[0]);
 		  std::string name((char*)&nameData[0], actualLength);
-		  
-		  std::cout << name << std::endl;
 		}
 	}
 	
