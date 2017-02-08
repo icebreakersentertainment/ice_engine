@@ -4,6 +4,7 @@
 
 #include "fs/FileSystem.hpp"
 #include "utilities/Properties.hpp"
+#include "logger/Logger.hpp"
 #include "GameFactory.hpp"
 
 Main::Main()
@@ -28,11 +29,13 @@ int main()
 		std::cerr << "Unable to load settings file: " << e.what() << std::endl;
 	}
 	
+	auto logger = std::make_unique< hercules::logger::Logger >();
+	
 	// Start the game engine
 	try
 	{
 		auto properties = std::make_unique< hercules::utilities::Properties >(configData);
-		auto gameEngine = hercules::GameFactory::createGameEngine(std::move(properties));
+		auto gameEngine = hercules::GameFactory::createGameEngine(std::move(properties), std::move(logger));
 		
 		gameEngine->setBootstrapScript( std::string("Main"), std::string("Main.as") );
 		

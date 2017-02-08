@@ -10,8 +10,6 @@
 
 #include "noise/GameNoise.hpp"
 
-#include "logger/Logger.hpp"
-
 // TESTING
 //#include "models/Model.hpp"
 
@@ -104,7 +102,6 @@ void World::initializeTerrainManager()
 			if (fieldFunction_.get() == nullptr)
 			{
 				const std::string message = std::string("Dual Contouring algorithm requires a field function.");
-				LOG_ERROR(message);
 				throw glr::exception::InvalidArgumentException(message);
 			}
 			
@@ -113,7 +110,6 @@ void World::initializeTerrainManager()
 		
 		default:
 			const std::string message = std::string("Invalid smoothing algorithm set for terrain manager.");
-			LOG_ERROR(message);
 			throw glr::exception::InvalidArgumentException(message);
 	}
 	
@@ -139,7 +135,6 @@ void World::setPlayer(Player* player)
 	if (player_ != nullptr)
 	{
 		std::string msg = "Player has already been set.";
-		LOG_ERROR(msg);
 		throw std::runtime_error(msg);
 	}
 
@@ -159,7 +154,6 @@ void World::setPlayer(Player* player)
 
 void World::newWorld()
 {
-	LOG_DEBUG( "Loading prototype campaign data store..." );
 	//dataStore_ = std::unique_ptr<pyliteserializer::SqliteDataStore>( new pyliteserializer::SqliteDataStore(std::string("../data/dark_horizon_prototype_campaign.db")) );
 	
 	// Load world data

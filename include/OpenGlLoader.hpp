@@ -15,15 +15,15 @@ public:
 	OpenGlLoader();
 	virtual ~OpenGlLoader();
 	
-	virtual void postWork(const std::function<void()>& work);
-	virtual void waitAll();
+	virtual void postWork(const std::function<void()>& work) override;
+	virtual void waitAll() override;
 	
-	virtual unsigned int getWorkQueueCount() const;
+	virtual unsigned int getWorkQueueCount() const override;
 	
-	virtual void tick();
+	virtual void tick() override;
 	
-	virtual void block();
-	virtual void unblock();
+	virtual void block() override;
+	virtual void unblock() override;
 	
 private:
 	mutable std::mutex enqueuedWorkMutex_;

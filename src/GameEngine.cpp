@@ -37,7 +37,13 @@ int32 GameEngine::mousePosY = 0;
 
 uint32 GameEngine::COMPONENT_TYPE_GRAPHICS = 0;
 
-GameEngine::GameEngine(std::unique_ptr<utilities::Properties> properties) : properties_(std::move(properties))
+GameEngine::GameEngine(
+	std::unique_ptr<utilities::Properties> properties,
+	std::unique_ptr<hercules::logger::ILogger> logger
+)
+	: 
+	properties_(std::move(properties)),
+	logger_(std::move(logger))
 {
 	running_ = true;
 
@@ -141,7 +147,7 @@ void GameEngine::initialize()
 {
 	initializeLoggingSubSystem();
 	
-	LOG_INFO( "Initializing..." );
+	logger_->info( "Initializing..." );
 	
 	initializeFileSystemSubSystem();
 	
@@ -164,43 +170,46 @@ void GameEngine::initialize()
 	
 	loadUserInterface();
 
-	LOG_INFO( "Done initialization." );
+	logger_->info( "Done initialization." );
 }
 
 void GameEngine::initializeLoggingSubSystem()
 {
 	// Initialize the log using the specified log file
-	cs_logger::Logger::getInstance( std::string("hercules.log") );
+	if (logger_.get() == nullptr)
+	{
+		logger_ = std::make_unique< logger::Logger >( std::string("hercules.log") );
+	}
 }
 
 void GameEngine::initializeFileSystemSubSystem()
 {
-	LOG_INFO( "initialize file system." );
+	logger_->info( "initialize file system." );
 	
 	fileSystem_ = std::make_unique<fs::FileSystem>();
 }
 
 void GameEngine::initializeInputSubSystem()
 {
-	LOG_INFO( "initialize keyboard and mouse." );
+	logger_->info( "initialize keyboard and mouse." );
 	//sfmlWindow_ = (sf::Window*)window_->getInternalWindowPointer();
 	//sfmlWindow_->setKeyRepeatEnabled(false);
 }
 void GameEngine::initializeSoundSubSystem()
 {
-	LOG_INFO( "initialize sound." );
+	logger_->info( "initialize sound." );
 }
 
 void GameEngine::initializePhysicsSubSystem()
 {
-	LOG_INFO( "initialize physics." );
+	logger_->info( "initialize physics." );
 	
 	physicsEngine_ = physics::PhysicsFactory::createPhysicsEngine();
 }
 
 void GameEngine::initializeGraphicsSubSystem()
 {
-	LOG_INFO( "initializing graphics." );
+	logger_->info( "initializing graphics." );
 	
 	
 	//properties_->getIntValue( std::string("window.depth") );
@@ -210,17 +219,17 @@ void GameEngine::initializeGraphicsSubSystem()
 	auto width = properties_->getIntValue( std::string("window.width") );
 	auto height = properties_->getIntValue( std::string("window.height") );
 	
-	graphicsEngine_ = graphics::GraphicsFactory::createGraphicsEngine( width, height, fileSystem_.get() );
+	graphicsEngine_ = graphics::GraphicsFactory::createGraphicsEngine( width, height, fileSystem_.get(), logger_.get() );
 	
 	graphicsEngine_->addEventListener(this);
 	
 	/*
-	LOG_DEBUG( "create glr program." );
+	logger_->debug( "create glr program." );
 	glr::ProgramSettings settings = glr::ProgramSettings();
 	settings.defaultTextureDir = std::string( Constants::MODELS_DIRECTORY );
 	glrProgram_ = std::unique_ptr<glr::GlrProgram>( new glr::GlrProgram(settings) );
 
-	LOG_DEBUG( "create window." );
+	logger_->debug( "create window." );
 	window_ = glrProgram_->createWindow(
 		Constants::GAME_NAME,
 		Constants::GAME_NAME,
@@ -234,16 +243,16 @@ void GameEngine::initializeGraphicsSubSystem()
 	assert(glrProgram_->getOpenGlDevice() != nullptr);
 	assert(glrProgram_->getOpenGlDevice()->getShaderProgramManager() != nullptr);
 	
-	LOG_DEBUG( "create scene manager." );
+	logger_->debug( "create scene manager." );
 
 	smgr_ = glrProgram_->getSceneManager();
 	
 	assert(smgr_ != nullptr);
 	
-	LOG_DEBUG( "Initializing custom shaders..." );
+	logger_->debug( "Initializing custom shaders..." );
 	smgr_->getShaderProgramManager()->loadShaderPrograms(std::string("./data/shaders"));
 	
-	LOG_DEBUG( "create camera." );
+	logger_->debug( "create camera." );
 	glr::ICamera* camera = smgr_->createCamera();
 	camera->setPosition(13.0f, 8.0f, -6.0f);
 	camera->lookAt( glm::vec3(24.0f, 3.0f, 24.0f) );
@@ -255,13 +264,13 @@ void GameEngine::initializeGraphicsSubSystem()
 
 void GameEngine::initializeScriptingSubSystem()
 {
-	LOG_INFO( "Initializing angelscript..." );
+	logger_->info( "Initializing angelscript..." );
 	// TODO: This is a bit hacky
 	//entities::GraphicsComponentFactory::sceneManager_ = smgr_;
 	
-	LOG_DEBUG( "create angelscript wrapper." );
+	logger_->debug( "create angelscript wrapper." );
 
-	angelScript_ = std::unique_ptr<as_wrapper::AngelScript>( new as_wrapper::AngelScript() );
+	angelScript_ = std::unique_ptr<as_wrapper::AngelScript>( new as_wrapper::AngelScript(logger_.get()) );
 	
 	// Register Classes available to scripts
 	angelScript_->registerClass(
@@ -338,7 +347,7 @@ void GameEngine::initializeScriptingSubSystem()
 	
 	if ( !success )
 	{
-		LOG_WARN( "Warning: Not all object/method registration completed successfully!" );
+		logger_->warn( "Warning: Not all object/method registration completed successfully!" );
 	}
 
 	// load all of the scripts
@@ -359,22 +368,22 @@ void GameEngine::initializeScriptingSubSystem()
 
 void GameEngine::initializeThreadingSubSystem()
 {
-	LOG_INFO( "Load thread pool..." );
+	logger_->info( "Load thread pool..." );
 	threadPool_ = std::unique_ptr<ThreadPool>( new ThreadPool() );
 	
-	LOG_DEBUG( "Load opengl loader..." );
+	logger_->debug( "Load opengl loader..." );
 	openGlLoader_ = std::unique_ptr<OpenGlLoader>( new OpenGlLoader() );
 }
 
 void GameEngine::initializeDataStoreSubSystem()
 {
-	LOG_INFO( "Load data store..." );
+	logger_->info( "Load data store..." );
 	//dataStore_ = std::unique_ptr<pyliteserializer::SqliteDataStore>( new pyliteserializer::SqliteDataStore(std::string("../data/dark_horizon.db")) );
 }
 
 void GameEngine::initializeEntitySubSystem()
 {
-	LOG_INFO( "Load entity system..." );
+	logger_->info( "Load entity system..." );
 	//entityEvents_ = entityx::ptr<entityx::EventManager>(new entityx::EventManager());
 	//entities_ = entityx::ptr<entityx::EntityManager>(new entityx::EntityManager(entityEvents_));
 }
@@ -435,7 +444,7 @@ void GameEngine::test()
 	}
 	*/
 	{
-		auto model = model::import(std::string("test_model"), std::string("../assets/models/scoutship/scoutship.dae"));
+		auto model = model::import(std::string("test_model"), std::string("../assets/models/scoutship/scoutship.dae"), logger_.get());
 		
 		std::cout << model->meshes.size() << " meshes." << std::endl;
 		
@@ -472,24 +481,24 @@ void GameEngine::test()
 
 void GameEngine::loadEssentialGameData()
 {
-	LOG_INFO( "load essential game data." );
+	logger_->info( "load essential game data." );
 }
 
 void GameEngine::loadUserInterface()
 {
-	LOG_INFO( "load user interface." );
+	logger_->info( "load user interface." );
 	
 	/*
 	igui_ = glrProgram_->getHtmlGui();
 	
 	std::string htmlUrlPath = std::string("file://") + fs::current_path().string();
 
-	LOG_DEBUG( "loading main.html" );
+	logger_->debug( "loading main.html" );
 	mainGui_ = igui_->loadFromFile(htmlUrlPath + std::string("/data/ui/main.html"));
 	
 	auto gameGuiObject = mainGui_->createGuiObject(std::wstring(L"game"));
 	
-	LOG_DEBUG( "creating main.html gui objects." );	
+	logger_->debug( "creating main.html gui objects." );	
 	{
 		auto guiObject = mainGui_->createGuiObject(std::wstring(L"camera"));
 		std::function<float()> function = [this]() { return camera_->getCamera()->getCamera()->getPosition().x; };
@@ -550,7 +559,7 @@ void GameEngine::loadUserInterface()
 		gameGuiObject->addFunction(std::wstring(L"getState"), intFunction);
 	}
 	
-	LOG_DEBUG( "Finished creating main.html gui objects." );
+	logger_->debug( "Finished creating main.html gui objects." );
 	
 	try
 	{
@@ -560,7 +569,7 @@ void GameEngine::loadUserInterface()
 	{
 		std::stringstream msg;
 		msg << "Unable to load guis: " << e.what();
-		LOG_ERROR( msg.str() );
+		logger_->error( msg.str() );
 		assert(0);
 	}
 
@@ -907,7 +916,7 @@ void GameEngine::run()
 	
 	test();
 	
-	LOG_INFO( "We have liftoff..." );
+	logger_->info( "We have liftoff..." );
 	// start our clock
 	/*
 	sf::Clock clock;
@@ -1066,7 +1075,7 @@ void GameEngine::run()
 			
 			default:
 				std::string message = std::string("Game is in an unknown state!");
-				LOG_ERROR(message);
+				logger_->error(message);
 				assert(0);
 				// TODO: Throw exception
 				// throw exception::InvalidStateException(message);

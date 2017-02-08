@@ -9,17 +9,12 @@
 
 #include "as_wrapper/glm_bindings/Vec3.h"
 
-#include "logger/Logger.hpp"
-
-
-//namespace fs = boost::filesystem;
-
 namespace hercules
 {
 namespace as_wrapper
 {
 
-AngelScript::AngelScript()
+AngelScript::AngelScript(logger::ILogger* logger) : logger_(logger)
 {
 	initialize();
 }
@@ -86,10 +81,10 @@ bool AngelScript::loadScripts()
 		r += this->buildModule();
 		if ( r < 0 )
 		{
-			LOG_WARN( "An error occured while loading scripts!" );
+			logger_->warn( "An error occured while loading scripts!" );
 			return false;
 		}
-		LOG_DEBUG( "All scripts loaded successfully!" );
+		logger_->debug( "All scripts loaded successfully!" );
 	}
 	
 	return true;
@@ -101,7 +96,7 @@ bool AngelScript::registerGlobalFunction(const std::string& name, const asSFuncP
 	
 	if ( r < 0 )
 	{
-		LOG_WARN( "An error occured while registering global function '" + name + "'." );
+		logger_->warn( "An error occured while registering global function '" + name + "'." );
 		return false;
 	}
 	
@@ -114,7 +109,7 @@ void AngelScript::registerGlobalProperty(const std::string& declaration, void* p
 	
 	if ( r < 0 )
 	{
-		LOG_WARN( "An error occured while registering global property '" + declaration + "'." );
+		logger_->warn( "An error occured while registering global property '" + declaration + "'." );
 		assert(0);
 	}
 }
@@ -178,11 +173,11 @@ bool AngelScript::loadScript(const std::string& name, const std::string& filenam
 		r += this->buildModule();
 		if ( r < 0 )
 		{
-			LOG_WARN( "An error occured while loading script '" + filename + "'." );
+			logger_->warn( "An error occured while loading script '" + filename + "'." );
 			
 			return false;
 		}
-		LOG_DEBUG( "Script '" + filename + "' loaded successfully." );
+		logger_->debug( "Script '" + filename + "' loaded successfully." );
 	}
 	
 	return true;
@@ -202,11 +197,11 @@ bool AngelScript::loadScripts(const std::string& directory)
 		r += this->buildModule();
 		if ( r < 0 )
 		{
-			LOG_DEBUG( "An error occured while loading scripts!" );
+			logger_->debug( "An error occured while loading scripts!" );
 			return false;
 		}
 		
-		LOG_DEBUG( "All scripts loaded successfully!" );
+		logger_->debug( "All scripts loaded successfully!" );
 	}
 	
 	return true;
@@ -224,10 +219,10 @@ AScriptModule* getScript(const std::string& name)
 
 int32 AngelScript::registerObjectType(const std::string& obj, int32 byteSize, asDWORD flags)
 {
-	//LOG_DEBUG( std::string("create angelscript wrapper1: ") + obj + " " + byteSize + " " + flags );
+	//logger_->debug( std::string("create angelscript wrapper1: ") + obj + " " + byteSize + " " + flags );
 	if ( engine_->RegisterObjectType(obj.c_str(), byteSize, flags) < 0 )
 	{
-		LOG_DEBUG( "create angelscript wrapper2." );
+		logger_->debug( "create angelscript wrapper2." );
 		// debug message
 
 		std::string msg = std::string();
@@ -242,7 +237,7 @@ int32 AngelScript::registerObjectType(const std::string& obj, int32 byteSize, as
 			msg += obj;
 		}
 		
-		LOG_WARN( msg );
+		logger_->warn( msg );
 		
 		return -1;
 	}
@@ -267,7 +262,7 @@ int32 AngelScript::registerObjectMethod(const std::string& obj, const std::strin
 			msg += obj;
 		}
 		
-		LOG_WARN( msg );
+		logger_->warn( msg );
 
 		return -1;
 	}
@@ -296,45 +291,45 @@ int32 AngelScript::registerObjectBehaviour(const std::string& obj, asEBehaviours
 			msg += declaration;
 		}
 
-		LOG_WARN( msg );
+		logger_->warn( msg );
 
 		
 		switch ( r )
 		{
 			case asWRONG_CONFIG_GROUP:
-				LOG_WARN("Error returned was: asWRONG_CONFIG_GROUP");
+				logger_->warn("Error returned was: asWRONG_CONFIG_GROUP");
 				break;
 	
 			case asINVALID_ARG:
-				LOG_WARN("Error returned was: asINVALID_ARG");
+				logger_->warn("Error returned was: asINVALID_ARG");
 				break;
 	
 			case asNOT_SUPPORTED:
-				LOG_WARN("Error returned was: asNOT_SUPPORTED");
+				logger_->warn("Error returned was: asNOT_SUPPORTED");
 				break;
 	
 			case asWRONG_CALLING_CONV:
-				LOG_WARN("Error returned was: asWRONG_CALLING_CONV");
+				logger_->warn("Error returned was: asWRONG_CALLING_CONV");
 				break;
 	
 			case asINVALID_TYPE:
-				LOG_WARN("Error returned was: asINVALID_TYPE");
+				logger_->warn("Error returned was: asINVALID_TYPE");
 				break;
 	
 			case asINVALID_DECLARATION:
-				LOG_WARN("Error returned was: asINVALID_DECLARATION");
+				logger_->warn("Error returned was: asINVALID_DECLARATION");
 				break;
 	
 			case asILLEGAL_BEHAVIOUR_FOR_TYPE:
-				LOG_WARN("Error returned was: asILLEGAL_BEHAVIOUR_FOR_TYPE");
+				logger_->warn("Error returned was: asILLEGAL_BEHAVIOUR_FOR_TYPE");
 				break;
 	
 			case asALREADY_REGISTERED:
-				LOG_WARN("Error returned was: asALREADY_REGISTERED");
+				logger_->warn("Error returned was: asALREADY_REGISTERED");
 				break;
 				
 			default:
-				LOG_WARN("Unknown error type returned.");
+				logger_->warn("Unknown error type returned.");
 				break;
 		}
 
@@ -382,15 +377,15 @@ bool AngelScript::initContext(const std::string& function, const std::string& mo
 	// error check
 	if ( function.length() > 150 )
 	{
-		LOG_WARN( "Function length is too long." );
+		logger_->warn( "Function length is too long." );
 		return false;
 	}
-	LOG_DEBUG( "Releasing old context." );
+	logger_->debug( "Releasing old context." );
 	releaseContext();
-	LOG_DEBUG( "Creating new context." );
+	logger_->debug( "Creating new context." );
 	ctx_ = engine_->CreateContext();
 
-	LOG_DEBUG( "Finding the module that is to be used." );
+	logger_->debug( "Finding the module that is to be used." );
 	// Find the function that is to be called.
 	asIScriptModule* mod = engine_->GetModule( module.c_str() );
 	if ( mod == nullptr )
@@ -407,12 +402,12 @@ bool AngelScript::initContext(const std::string& function, const std::string& mo
 			msg += module;
 		}
 
-		LOG_WARN( msg );
+		logger_->warn( msg );
 		
 		return false;
 	}
 	
-	LOG_DEBUG( "Getting function by the declaration." );
+	logger_->debug( "Getting function by the declaration." );
 	asIScriptFunction* func = mod->GetFunctionByDecl( function.c_str() );
 	if ( func == nullptr )
 	{
@@ -430,17 +425,17 @@ bool AngelScript::initContext(const std::string& function, const std::string& mo
 			msg += function;
 		}
 
-		LOG_WARN( msg );
+		logger_->warn( msg );
 
 		return false;
 	}
 
-	LOG_DEBUG( "Preparing function: " << function);
+	logger_->debug( "Preparing function: " + function);
 	ctx_->Prepare(func);
 
 	if ( function.length() > 80 )
 	{
-		LOG_WARN( std::string("Preparing function: Function name too long.") );
+		logger_->warn( std::string("Preparing function: Function name too long.") );
 	}
 	
 	return true;
@@ -507,12 +502,12 @@ int32 AngelScript::run()
 	// error check
 	if ( ctx_ == nullptr )
 	{
-		LOG_ERROR( "Context is null!" );
+		logger_->error( "Context is null!" );
 		// TODO: Throw exception
 		return -1;
 	}
 
-	LOG_DEBUG( "Executing function." );
+	logger_->debug( "Executing function." );
 	int32 r = ctx_->Execute();
 	
 	if ( r != asEXECUTION_FINISHED )
@@ -521,20 +516,20 @@ int32 AngelScript::run()
 		if ( r == asEXECUTION_EXCEPTION )
 		{
 			// An exception occurred, let the script writer know what happened so it can be corrected.
-			LOG_ERROR( "An exception occurred: " );
-			LOG_ERROR( std::string(ctx_->GetExceptionString()) );
-			LOG_ERROR( "Please correct the code and try again." );
+			logger_->error( "An exception occurred: " );
+			logger_->error( std::string(ctx_->GetExceptionString()) );
+			logger_->error( "Please correct the code and try again." );
 		}
 		else
 		{
-			LOG_ERROR( "An exception occurred!" );
+			logger_->error( "An exception occurred!" );
 		}
 		
 		// TODO: Throw exception
 		return -1;
 	}
 
-	LOG_DEBUG( "Function executed successfully!" );
+	logger_->debug( "Function executed successfully!" );
 
 	return 0;
 }
@@ -612,7 +607,7 @@ int32 AngelScript::startNewModule(const std::string& module)
 	{
 		// If the code fails here it is usually because there
 		// is no more memory to allocate the module
-		LOG_ERROR( "Unrecoverable error while starting a new module." );
+		logger_->error( "Unrecoverable error while starting a new module." );
 		//updateAll("Unrecoverable error while starting a new module.");
 		
 		// TODO: Throw exception
@@ -637,7 +632,7 @@ int32 AngelScript::addScript(const std::string& script)
 		// The builder wasn't able to load the file. Maybe the file
 		// has been removed, or the wrong name was given, or some
 		// preprocessing commands are incorrectly written.
-		LOG_ERROR( "Please correct the errors in the script and try again." );
+		logger_->error( "Please correct the errors in the script and try again." );
 		//updateAll("Please correct the errors in the script and try again.");
 		
 		// TODO: Throw exception
@@ -655,7 +650,7 @@ int32 AngelScript::buildModule()
 	{
 		// An error occurred. Instruct the script writer to fix the
 		// compilation errors that were listed in the output stream.
-		LOG_ERROR( "Please correct the errors in the script and try again." );
+		logger_->error( "Please correct the errors in the script and try again." );
 		
 		// TODO: Throw exception
 		return -1;
@@ -670,7 +665,7 @@ int32 AngelScript::discardModule(const std::string& name)
 
 	if ( r < 0 )
 	{
-		LOG_WARN( "Unable to discard module!" );
+		logger_->warn( "Unable to discard module!" );
 	}
 
 	return r;

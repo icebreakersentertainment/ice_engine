@@ -11,7 +11,6 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/string_cast.hpp>
 
-#include "logger/Logger.hpp"
 #include "utilities/ImageLoader.hpp"
 
 namespace hercules
@@ -19,19 +18,19 @@ namespace hercules
 namespace graphics
 {
 
-GraphicsEngine::GraphicsEngine(uint32 width, uint32 height, fs::IFileSystem* fileSystem)
+GraphicsEngine::GraphicsEngine(uint32 width, uint32 height, fs::IFileSystem* fileSystem, logger::ILogger* logger)
 {
 	width_ = width;
 	height_ = height;
 	
 	fileSystem_ = fileSystem;
+	logger_ = logger;
 	
 	auto errorCode = SDL_Init( SDL_INIT_VIDEO );
 	
 	if (errorCode != 0)
 	{
 		auto message = std::string("Unable to initialize SDL: ") + SDL_GetError();
-		LOG_ERROR(message);
 		throw std::runtime_error(message);
 	}
 	
@@ -45,7 +44,6 @@ GraphicsEngine::GraphicsEngine(uint32 width, uint32 height, fs::IFileSystem* fil
 	if (sdlWindow_ == nullptr)
 	{
 		auto message = std::string("Unable to create window: ") + SDL_GetError();
-		LOG_ERROR(message);
 		throw std::runtime_error(message);
 	}
 
@@ -54,7 +52,6 @@ GraphicsEngine::GraphicsEngine(uint32 width, uint32 height, fs::IFileSystem* fil
 	if (openglContext_ == nullptr)
 	{
 		auto message = std::string("Unable to create OpenGL context: ") + SDL_GetError();
-		LOG_ERROR(message);
 		throw std::runtime_error(message);
 	}
 	
@@ -65,7 +62,6 @@ GraphicsEngine::GraphicsEngine(uint32 width, uint32 height, fs::IFileSystem* fil
 	if (result != GLEW_OK)
 	{
 		auto msg = std::string("Failed to initialize GLEW.");
-		LOG_ERROR( msg );
 		throw std::runtime_error(msg);
 	}
 	
@@ -411,7 +407,7 @@ TextureId GraphicsEngine::createTexture2d(std::string uri)
 	uint32 width = 0;
 	uint32 height = 0;
 	
-	auto il = utilities::ImageLoader();
+	auto il = utilities::ImageLoader(logger_);
 	auto image = il.loadImageData(uri);
 	
 	auto format = utilities::getOpenGlImageFormat(image->format);
@@ -461,7 +457,6 @@ void GraphicsEngine::rotate(const CameraId cameraId, const glm::quat& quaternion
 			
 		default:
 			std::string message = std::string("Invalid TransformSpace type.");
-			LOG_ERROR( message );
 			throw std::runtime_error(message);
 	}
 }
@@ -484,7 +479,6 @@ void GraphicsEngine::rotate(const RenderableId renderableId, const glm::quat& qu
 			
 		default:
 			std::string message = std::string("Invalid TransformSpace type.");
-			LOG_ERROR( message );
 			throw std::runtime_error(message);
 	}
 }
@@ -503,7 +497,6 @@ void GraphicsEngine::rotate(const CameraId cameraId, const float32 degrees, cons
 			
 		default:
 			std::string message = std::string("Invalid TransformSpace type.");
-			LOG_ERROR( message );
 			throw std::runtime_error(message);
 	}
 }
@@ -526,7 +519,6 @@ void GraphicsEngine::rotate(const RenderableId renderableId, const float32 degre
 			
 		default:
 			std::string message = std::string("Invalid TransformSpace type.");
-			LOG_ERROR( message );
 			throw std::runtime_error(message);
 	}
 }
@@ -702,7 +694,6 @@ GLuint GraphicsEngine::createShaderProgram(GLuint vertexShader, GLuint fragmentS
 			// Cleanup
 			glDeleteProgram(shaderProgram);
 	
-			LOG_ERROR( message.str() );
 			throw std::runtime_error(message.str());
 		}
 		else
@@ -715,7 +706,7 @@ GLuint GraphicsEngine::createShaderProgram(GLuint vertexShader, GLuint fragmentS
 				message << "Results of linking shader program: ";
 				message << "\n" << s;
 		
-				LOG_WARN( message.str() );
+				logger_->warn( message.str() );
 			}
 		}
 	}
@@ -744,7 +735,6 @@ GLuint GraphicsEngine::compileShader(std::string source, GLenum type)
 			// Cleanup
 			glDeleteShader(shader);
 	
-			LOG_ERROR( message.str() );
 			throw std::runtime_error(message.str());
 		}
 		else
@@ -757,7 +747,7 @@ GLuint GraphicsEngine::compileShader(std::string source, GLenum type)
 				message << "Results of shader compilation: ";
 				message << "\n" << s;
 		
-				LOG_WARN( message.str() );
+				logger_->warn( message.str() );
 			}
 		}
 	}
@@ -814,7 +804,6 @@ void GraphicsEngine::setMouseRelativeMode(bool enabled)
 	if (result != 0)
 	{
 		auto message = std::string("Unable to set relative mouse mode: ") + SDL_GetError();
-		LOG_ERROR(message);
 		throw std::runtime_error(message);
 	}
 }
@@ -827,7 +816,6 @@ void GraphicsEngine::setCursorVisible(bool visible)
 	if (result < 0)
 	{
 		auto message = std::string("Unable to set mouse cursor visible\\invisible: ") + SDL_GetError();
-		LOG_ERROR(message);
 		throw std::runtime_error(message);
 	}
 }
@@ -898,7 +886,6 @@ Event GraphicsEngine::convertSdlEvent(const SDL_Event& event)
 			break;
 		
 		default:
-			LOG_DEBUG( "Unrecognized SDL event " << event.type);
 			e.type = UNKNOWN;
 			break;
 	}

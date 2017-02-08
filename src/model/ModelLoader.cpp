@@ -26,7 +26,6 @@
 #include "model/Material.hpp"
 
 #include "utilities/AssImpUtilities.hpp"
-#include "logger/Logger.hpp"
 
 namespace hercules
 {
@@ -36,22 +35,22 @@ namespace model
 namespace
 {
 
-Mesh importMesh(const std::string& name, const std::string& filename, uint32 index, const aiMesh* mesh, std::map< std::string, uint32 >& boneIndexMap)
+Mesh importMesh(const std::string& name, const std::string& filename, uint32 index, const aiMesh* mesh, std::map< std::string, uint32 >& boneIndexMap, logger::ILogger* logger)
 {
 	Mesh data = Mesh();
 	
-	LOG_DEBUG( "importing mesh '" << filename << "'." );
+	logger->debug( "importing mesh '" + filename + "'." );
 	
 	// Set the mesh name
 	if (mesh->mName.length > 0)
 		data.name = std::string( mesh->mName.C_Str() );
 	else
 		data.name = name + "_mesh_" + std::to_string(index);
-	LOG_DEBUG( "mesh name: " << data.name );
+	logger->debug( "mesh name: " + data.name );
 
 	if (mesh->mNormals == 0)
 	{
-		LOG_WARN( "Unable to import mesh - it does not have any normals." );
+		logger->warn( "Unable to import mesh - it does not have any normals." );
 		return data;
 	}
 
@@ -91,7 +90,6 @@ Mesh importMesh(const std::string& name, const std::string& filename, uint32 ind
 		if ( face.mNumIndices != 3 )
 		{
 			const auto msg = std::string("Unable to import model...Unsupported number of indices per face (") + std::to_string(face.mNumIndices) + std::string(").");
-			LOG_ERROR( msg );
 			throw std::runtime_error(msg);
 		}
 		
@@ -125,18 +123,18 @@ Mesh importMesh(const std::string& name, const std::string& filename, uint32 ind
 	
 	//std::cout << "Load results: " << mesh->mNumVertices << " " << mesh->mNumBones << " " << temp << " " << data.bones.size() << std::endl;
 
-	LOG_DEBUG( "done importing mesh '" << filename << "'." );
+	logger->debug( "done importing mesh '" + filename + "'." );
 	
 	return data;
 }
 
-Texture importTexture(const std::string& name, const std::string& filename, uint32 index, const aiMaterial* material)
+Texture importTexture(const std::string& name, const std::string& filename, uint32 index, const aiMaterial* material, logger::ILogger* logger)
 {
 	assert( material != nullptr );
 	
 	Texture data = Texture();
 
-	LOG_DEBUG( "Loading texture." );
+	logger->debug( "Loading texture." );
 
 	aiReturn texFound = AI_SUCCESS;
 	aiString texPath;
@@ -148,18 +146,18 @@ Texture importTexture(const std::string& name, const std::string& filename, uint
 		// Error check
 		if (texFound != AI_SUCCESS)
 		{
-			LOG_WARN( "Texture not found for model filename: " << filename );
+			logger->warn( "Texture not found for model filename: " + filename );
 			return data;
 		}
 
-		LOG_DEBUG( "Texture has filename: " << texPath.data );
+		logger->debug( std::string("Texture has filename: ") + texPath.data );
 		
 		data.filename = texPath.data;
 		
 	}
 	else
 	{
-		LOG_DEBUG( "No texture specified." );
+		logger->debug( "No texture specified." );
 	}
 	
 	return data;
@@ -175,19 +173,19 @@ glm::mat4 convertAssImpMatrix(const aiMatrix4x4* m)
 	);
 }
 
-Material importMaterial(const std::string& name, const std::string& filename, uint32 index, const aiMaterial* material)
+Material importMaterial(const std::string& name, const std::string& filename, uint32 index, const aiMaterial* material, logger::ILogger* logger)
 {	
 	assert( material != nullptr );
 		
 	Material data = Material();
 
-	LOG_DEBUG( "importing material." );
+	logger->debug( "importing material." );
 	aiColor4D c;
 	
 	// Set the material name
 	data.name = name + "_material_" + std::to_string(index);
 
-	LOG_DEBUG( "material name: " << data.name );
+	logger->debug( "material name: " + data.name );
 
 	data.diffuse[0] = 0.8f;
 	data.diffuse[1] = 0.8f;
@@ -220,18 +218,18 @@ Material importMaterial(const std::string& name, const std::string& filename, ui
 	if ( AI_SUCCESS == aiGetMaterialColor(material, AI_MATKEY_COLOR_EMISSIVE, &c) )
 		utilities::color4ToVec4(&c, data.emission);
 	
-	LOG_DEBUG( "done importing material." );
+	logger->debug( "done importing material." );
 	
 	return data;
 }
 
-BoneData importBones(const std::string& name, const std::string& filename, uint32 index, const aiMesh* mesh)
+BoneData importBones(const std::string& name, const std::string& filename, uint32 index, const aiMesh* mesh, logger::ILogger* logger)
 {
 	assert( mesh != nullptr );
 	
 	BoneData boneData = BoneData();
 	
-	LOG_DEBUG( "importing boneData." );
+	logger->debug( "importing boneData." );
 	
 	for (uint32 i = 0; i < mesh->mNumBones; i++) {
 		Bone data = Bone();
@@ -243,7 +241,7 @@ BoneData importBones(const std::string& name, const std::string& filename, uint3
 		else
 			data.name = std::string( name ) + "_bone_" + std::to_string(index);
 		
-		LOG_DEBUG( "bone name: " << data.name );
+		logger->debug( "bone name: " + data.name );
 		
 		if (boneData.boneIndexMap.find(data.name) == boneData.boneIndexMap.end()) {
 			boneIndex = boneData.boneIndexMap.size();
@@ -257,7 +255,7 @@ BoneData importBones(const std::string& name, const std::string& filename, uint3
 		boneData.boneTransform[boneIndex].boneOffset = convertAssImpMatrix( &(mesh->mBones[i]->mOffsetMatrix) );
 	} 
 
-	LOG_DEBUG( "done importing boneData." );
+	logger->debug( "done importing boneData." );
 	
 	return boneData;
 }
@@ -276,7 +274,7 @@ BoneNode importBoneNode( const aiNode* node )
 	return boneNode;
 }
 
-AnimationSet importAnimations(const std::string& name, const std::string& filename, const aiScene* scene)
+AnimationSet importAnimations(const std::string& name, const std::string& filename, const aiScene* scene, logger::ILogger* logger)
 {
 	assert( scene != nullptr );
 	
@@ -284,7 +282,7 @@ AnimationSet importAnimations(const std::string& name, const std::string& filena
 	
 	std::stringstream msg;
 	msg << "importing " << scene->mNumAnimations << " animation(s).";
-	LOG_DEBUG( msg.str() );
+	logger->debug( msg.str() );
 	
 	glm::mat4 globalInverseTransformation = convertAssImpMatrix( &(scene->mRootNode->mTransformation) );
 	globalInverseTransformation = glm::inverse( globalInverseTransformation );
@@ -304,10 +302,10 @@ AnimationSet importAnimations(const std::string& name, const std::string& filena
 		// Error check - animations with no name are not allowed
 		if (animation.name.compare( std::string("") ) == 0)
 		{
-			LOG_WARN( "Animations with no name are not allowed." );
+			logger->warn( "Animations with no name are not allowed." );
 			
 			animation.name = name + "_animation_" + std::to_string(i);
-			LOG_WARN( "Setting animation name to: " << animation.name );
+			logger->warn( "Setting animation name to: " + animation.name );
 			// TODO: should we throw an exception?
 			//throw std::runtime_error(msg);
 			
@@ -358,7 +356,7 @@ AnimationSet importAnimations(const std::string& name, const std::string& filena
 			else 
 			{
 				// Warning - animated bone node already exists!
-				LOG_WARN( "Animated bone node with name '" << abn.name << "' already exists!" );
+				logger->warn( "Animated bone node with name '" + abn.name + "' already exists!" );
 			}
 		}
 		
@@ -370,18 +368,18 @@ AnimationSet importAnimations(const std::string& name, const std::string& filena
 		else 
 		{
 			// Warning - animation already exists!
-			LOG_WARN( "Animation with name '" << animation.name << "' already exists!" );
+			logger->warn( "Animation with name '" + animation.name + "' already exists!" );
 		}
 	}
 
-	LOG_DEBUG( "done importing animation." );
+	logger->debug( "done importing animation." );
 	
 	return animationSet;
 }
 
-std::unique_ptr< Model > importModelData(const std::string& name, const std::string& filename)
+std::unique_ptr< Model > importModelData(const std::string& name, const std::string& filename, logger::ILogger* logger)
 {
-	LOG_DEBUG( "Importing model data from file '" << filename << "'." );
+	logger->debug( "Importing model data from file '" + filename + "'." );
 
 	auto model = std::unique_ptr< Model >( new Model() );
 
@@ -394,7 +392,6 @@ std::unique_ptr< Model > importModelData(const std::string& name, const std::str
 	{		
 		std::stringstream ss;
 		ss << "Unable to import model data from file '" << filename << "'.";
-		LOG_ERROR( ss.str() );
 		throw std::runtime_error(ss.str());
 	}
 	else if ( scene->HasTextures() )
@@ -403,7 +400,6 @@ std::unique_ptr< Model > importModelData(const std::string& name, const std::str
 		aiReleaseImport(scene);
 		
 		std::string msg = std::string("Support for meshes with embedded textures is not implemented.");
-		LOG_ERROR( msg );
 		throw std::runtime_error(msg);
 	}
 	
@@ -414,7 +410,7 @@ std::unique_ptr< Model > importModelData(const std::string& name, const std::str
 		model->textures.resize( scene->mNumMeshes );
 		model->boneData.resize( scene->mNumMeshes );
 		
-		auto animationSet = importAnimations(name, filename, scene);
+		auto animationSet = importAnimations(name, filename, scene, logger);
 		
 		// Create bone structure (tree structure)
 		model->rootBoneNode = animationSet.rootBoneNode;
@@ -456,7 +452,7 @@ std::unique_ptr< Model > importModelData(const std::string& name, const std::str
 		
 		std::stringstream msg;
 		msg << "Model has " << model->meshes.size() << " meshes.";
-		LOG_DEBUG( msg.str() );
+		logger->debug( msg.str() );
 		
 		for ( uint32 i=0; i < model->meshes.size(); i++ )
 		{
@@ -465,10 +461,10 @@ std::unique_ptr< Model > importModelData(const std::string& name, const std::str
 			model->textures[i] = Texture();
 			model->boneData[i] = BoneData();
 			
-			model->boneData[i] = importBones( name, filename, i, scene->mMeshes[i] );
-			model->meshes[i] = importMesh( name, filename, i, scene->mMeshes[i], model->boneData[i].boneIndexMap );
-			model->materials[i] = importMaterial( name, filename, i, scene->mMaterials[ scene->mMeshes[i]->mMaterialIndex ] );
-			model->textures[i] = importTexture( name, filename, i, scene->mMaterials[ scene->mMeshes[i]->mMaterialIndex ] );
+			model->boneData[i] = importBones( name, filename, i, scene->mMeshes[i], logger );
+			model->meshes[i] = importMesh( name, filename, i, scene->mMeshes[i], model->boneData[i].boneIndexMap, logger );
+			model->materials[i] = importMaterial( name, filename, i, scene->mMaterials[ scene->mMeshes[i]->mMaterialIndex ], logger );
+			model->textures[i] = importTexture( name, filename, i, scene->mMaterials[ scene->mMeshes[i]->mMaterialIndex ], logger );
 		}
 		
 		bool hasTextures = false;
@@ -483,7 +479,7 @@ std::unique_ptr< Model > importModelData(const std::string& name, const std::str
 		
 		if (!hasTextures)
 		{
-			LOG_WARN( "Model does not have any texture - either assign it a texture, or use a shader that doesn't need textures." );
+			logger->warn( "Model does not have any texture - either assign it a texture, or use a shader that doesn't need textures." );
 		}
 	}
 	catch (const std::exception& e)
@@ -496,29 +492,29 @@ std::unique_ptr< Model > importModelData(const std::string& name, const std::str
 		throw e;
 	}
 
-	LOG_DEBUG( "Done importing model data for file '" << filename << "'." );
+	logger->debug( "Done importing model data for file '" + filename + "'." );
 	
 	return std::move(model);
 }
 
 }
 
-std::unique_ptr<Model> load(const std::string& name, const std::string& filename)
+std::unique_ptr<Model> load(const std::string& name, const std::string& filename, logger::ILogger* logger)
 {
-	LOG_DEBUG( "Loading model '" << name << "' - " << filename << "." );
+	logger->debug( "Loading model '" + name + "' - " + filename + "." );
 	
 	std::unique_ptr<Model> model;
 	
 	//model = loadModelData(name, filename);
 
-	LOG_DEBUG( "Done loading model '" << name << "'." );
+	logger->debug( "Done loading model '" + name + "'." );
 	
 	return std::move(model);
 }
 
-std::unique_ptr<Model> import(const std::string& name, const std::string& filename)
+std::unique_ptr<Model> import(const std::string& name, const std::string& filename, logger::ILogger* logger)
 {
-	LOG_DEBUG( "Importing model '" << name << "' - " << filename << "." );
+	logger->debug( "Importing model '" + name + "' - " + filename + "." );
 	
 	// get a handle to the predefined STDOUT log stream and attach
 	// it to the logging system. It remains active for all further
@@ -532,9 +528,9 @@ std::unique_ptr<Model> import(const std::string& name, const std::string& filena
 	std::unique_ptr<Model> model;
 	try
 	{
-		model = importModelData(name, filename);
+		model = importModelData(name, filename, logger);
 
-		LOG_DEBUG( "Done importing model '" << name << "'." );
+		logger->debug( "Done importing model '" + name + "'." );
 	}
 	catch (const std::exception& e)
 	{
@@ -558,10 +554,10 @@ std::unique_ptr<Model> import(const std::string& name, const std::string& filena
 	return std::move(model);
 }
 
-void save(const std::string& name, const std::string& filename, std::unique_ptr<Model> model)
+void save(const std::string& name, const std::string& filename, std::unique_ptr<Model> model, logger::ILogger* logger)
 {
 	/*
-	LOG_DEBUG( "Saving model '" << name << "' - " << filename << "." );
+	logger->debug( "Saving model '" + name + "' - " + filename + "." );
 	
 	// get a handle to the predefined STDOUT log stream and attach
 	// it to the logging system. It remains active for all further
@@ -576,7 +572,7 @@ void save(const std::string& name, const std::string& filename, std::unique_ptr<
 	{
 		saveModelData(name, filename, model);
 
-		LOG_DEBUG( "Done saving model '" << name << "'." );
+		logger->debug( "Done saving model '" + name + "'." );
 	}
 	catch (const std::exception& e)
 	{

@@ -9,34 +9,11 @@ namespace keywords = boost::log::keywords;
 
 namespace hercules
 {
-namespace cs_logger
+namespace logger
 {
 
 Logger::Logger(const std::string& fileName)
 {
-	initialize(fileName);
-}
-
-Logger::Logger(Logger const&)
-{
-}
-
-Logger::~Logger()
-{
-
-}
-
-Logger* Logger::logger_ = nullptr;
-Logger* Logger::getInstance(const std::string& logFile)
-{
-	if ( Logger::logger_ == nullptr )
-		Logger::logger_ = new Logger(logFile);
-
-	return Logger::logger_;
-}
-
-void Logger::initialize(const std::string& fileName)
-{	
 	boost::log::register_simple_formatter_factory< boost::log::trivial::severity_level, char >("Severity");
 	
 	boost::log::add_file_log( 
@@ -53,60 +30,73 @@ void Logger::initialize(const std::string& fileName)
 	boost::log::add_common_attributes();
 }
 
-void Logger::logInfo(const std::string& message)
+Logger::Logger(const Logger& other)
 {
-	BOOST_LOG_SEV(log_, info) << message;
+	throw std::runtime_error("Cannot copy Logger class.");
 }
 
-void Logger::logDebug(const std::string& message)
+Logger& Logger::operator=(const Logger& other)
 {
-	BOOST_LOG_SEV(log_, debug) << message;
+	throw std::runtime_error("Cannot reassign Logger class.");
 }
 
-void Logger::logWarn(const std::string& message)
+Logger::~Logger()
 {
-	BOOST_LOG_SEV(log_, warning) << message;
 }
 
-void Logger::logError(const std::string& message)
+void Logger::info(const std::string& message)
 {
-	BOOST_LOG_SEV(log_, error) << message;
+	BOOST_LOG_SEV(log_, boost::log::trivial::severity_level::info) << message;
 }
 
-void Logger::logFatal(const std::string& message)
+void Logger::debug(const std::string& message)
 {
-	BOOST_LOG_SEV(log_, fatal) << message;
+#ifdef DEBUG
+	BOOST_LOG_SEV(log_, boost::log::trivial::severity_level::debug) << message;
+#endif
+}
+
+void Logger::warn(const std::string& message)
+{
+	BOOST_LOG_SEV(log_, boost::log::trivial::severity_level::warning) << message;
+}
+
+void Logger::error(const std::string& message)
+{
+	BOOST_LOG_SEV(log_, boost::log::trivial::severity_level::error) << message;
+}
+
+void Logger::fatal(const std::string& message)
+{
+	BOOST_LOG_SEV(log_, boost::log::trivial::severity_level::fatal) << message;
 }
 
 // Wide String versions
-void Logger::logInfo(const std::wstring& message)
+void Logger::info(const std::wstring& message)
 {
-	BOOST_LOG_SEV(log_, info) << message;
+	BOOST_LOG_SEV(log_, boost::log::trivial::severity_level::info) << message;
 }
 
-void Logger::logDebug(const std::wstring& message)
+void Logger::debug(const std::wstring& message)
 {
-	BOOST_LOG_SEV(log_, debug) << message;
+#ifdef DEBUG
+	BOOST_LOG_SEV(log_, boost::log::trivial::severity_level::debug) << message;
+#endif
 }
 
-void Logger::logWarn(const std::wstring& message)
+void Logger::warn(const std::wstring& message)
 {
-	BOOST_LOG_SEV(log_, warning) << message;
+	BOOST_LOG_SEV(log_, boost::log::trivial::severity_level::warning) << message;
 }
 
-void Logger::logError(const std::wstring& message)
+void Logger::error(const std::wstring& message)
 {
-	BOOST_LOG_SEV(log_, error) << message;
+	BOOST_LOG_SEV(log_, boost::log::trivial::severity_level::error) << message;
 }
 
-void Logger::logFatal(const std::wstring& message)
+void Logger::fatal(const std::wstring& message)
 {
-	BOOST_LOG_SEV(log_, fatal) << message;
-}
-
-src::severity_logger< severity_level >& Logger::getLogger()
-{
-	return log_;
+	BOOST_LOG_SEV(log_, boost::log::trivial::severity_level::fatal) << message;
 }
 
 }

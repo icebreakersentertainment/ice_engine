@@ -7,7 +7,7 @@
 
 #include <GL/glew.h>
 
-#include "logger/Logger.hpp"
+#include "logger/ILogger.hpp"
 
 namespace hercules
 {
@@ -74,7 +74,7 @@ inline GLint getOpenGlImageFormat( Format format )
 class ImageLoader
 {
 public:
-	ImageLoader()
+	ImageLoader(logger::ILogger* logger) : logger_(logger)
 	{
 	};
 	
@@ -89,7 +89,7 @@ public:
 
 	std::unique_ptr<Image> loadImageData(const char* filename, bool hasAlpha = true)
 	{
-		LOG_DEBUG( "Loading image." );
+		logger_->debug( "Loading image." );
 		FREE_IMAGE_FORMAT format = FreeImage_GetFileType(filename, 0);
 		FIBITMAP* imageBitmap = FreeImage_Load(format, filename);
 
@@ -97,11 +97,10 @@ public:
 		{
 			std::stringstream ss;
 			ss << "Unable to load image data from file '" << filename << "'.";
-			LOG_ERROR( ss.str() );
 			throw std::runtime_error(ss.str());
 		}
 		
-		LOG_DEBUG( "image loaded." );
+		logger_->debug( "image loaded." );
 
 		FIBITMAP* temp = imageBitmap;
 		if ( hasAlpha )
@@ -120,7 +119,7 @@ public:
 		
 		std::stringstream msg;
 		msg << "The size of the image '" << filename << "' is: " << w << "*" << h;
-		LOG_DEBUG( msg.str() );
+		logger_->debug( msg.str() );
 
 		char* pixels = (char*) FreeImage_GetBits(imageBitmap);
 
@@ -159,6 +158,9 @@ public:
 
 		return retImage;
 	};
+
+private:
+	logger::ILogger* logger_;
 };
 
 }

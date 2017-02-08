@@ -6,6 +6,7 @@
 #include "IGraphicsEngine.hpp"
 
 #include "fs/IFileSystem.hpp"
+#include "logger/ILogger.hpp"
 
 namespace hercules
 {
@@ -16,7 +17,12 @@ class GraphicsFactory
 {
 public:
 
-	static std::unique_ptr<IGraphicsEngine> createGraphicsEngine(uint32 width, uint32 height, fs::IFileSystem* fileSystem);
+	static std::unique_ptr<IGraphicsEngine> createGraphicsEngine(
+		uint32 width,
+		uint32 height,
+		fs::IFileSystem* fileSystem,
+		logger::ILogger* logger
+	);
 
 private:
 	GraphicsFactory();

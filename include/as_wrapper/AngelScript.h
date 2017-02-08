@@ -8,6 +8,7 @@
 #include "AScriptModule.h"
 #include "AsObject.h"
 
+#include "logger/ILogger.hpp"
 #include "Types.hpp"
 
 namespace hercules
@@ -18,7 +19,7 @@ namespace as_wrapper
 class AngelScript
 {
 public:
-	AngelScript();
+	AngelScript(logger::ILogger* logger);
 	virtual ~AngelScript();
 	
 	/* AngelScript methods that need to be exposed */		
@@ -82,6 +83,8 @@ private:
 	asIScriptEngine* engine_;
 	CScriptBuilder* builder_;
 	asIScriptContext* ctx_;
+	
+	logger::ILogger* logger_;
 
 	int32 startNewModule(const std::string& module);
 	int32 addScript(const std::string& script);

@@ -8,7 +8,7 @@ ThreadPool::ThreadPool()
 	initialize( std::thread::hardware_concurrency() );
 }
 
-ThreadPool::ThreadPool(int numThreads)
+ThreadPool::ThreadPool(uint32 numThreads)
 {
 	initialize( numThreads );
 }
@@ -18,14 +18,14 @@ ThreadPool::~ThreadPool()
 	this->joinAll();
 }
 
-void ThreadPool::initialize(int numThreads)
+void ThreadPool::initialize(uint32 numThreads)
 {
 	pool_ = std::unique_ptr<ctpl::thread_pool>( new ctpl::thread_pool((size_t)numThreads) );
 }
 
 void ThreadPool::postWork(const std::function<void()>& work)
 {
-	pool_->push( [&work] (int id) { work(); } );
+	pool_->push( [&work] (int32 id) { work(); } );
 }
 
 void ThreadPool::waitAll()
@@ -38,27 +38,27 @@ void ThreadPool::joinAll()
 	pool_->stop(true);
 }
 
-unsigned int ThreadPool::getWorkQueueCount()
+uint32 ThreadPool::getWorkQueueCount()
 {
 	return pool_->size();
 }
 
-unsigned int ThreadPool::getActiveWorkerCount()
+uint32 ThreadPool::getActiveWorkerCount()
 {
 	return (this->getWorkQueueCount() - this->getInactiveWorkerCount());
 }
 
-unsigned int ThreadPool::getInactiveWorkerCount()
+uint32 ThreadPool::getInactiveWorkerCount()
 {
 	return pool_->n_idle();
 }
 
-void ThreadPool::increaseWorkerCountBy(unsigned int n)
+void ThreadPool::increaseWorkerCountBy(uint32 n)
 {
 	pool_->resize((size_t)n);
 }
 
-void ThreadPool::decreaseWorkerCountBy(unsigned int n)
+void ThreadPool::decreaseWorkerCountBy(uint32 n)
 {
 	pool_->resize((size_t)n);
 }

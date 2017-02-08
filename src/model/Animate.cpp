@@ -4,8 +4,6 @@
 
 #include "model/Animate.hpp"
 
-#include "logger/Logger.hpp"
-
 namespace hercules
 {
 namespace model
@@ -47,7 +45,6 @@ uint32 findPosition(float32 animationTime, const AnimatedBoneNode& animatedBoneN
 	}
 
 	std::string msg = std::string("Unable to find appropriate position time - this shouldn't happen.");
-	LOG_ERROR( msg );
 	throw std::runtime_error( msg );
 }
 
@@ -85,7 +82,6 @@ uint32 findRotation(float32 animationTime, const AnimatedBoneNode& animatedBoneN
 	}
 	
 	std::string msg = std::string("Unable to find appropriate rotation time - this shouldn't happen.");
-	LOG_ERROR( msg );
 	throw std::runtime_error( msg );
 }
 
@@ -124,7 +120,6 @@ uint32 findScaling(float32 animationTime, const AnimatedBoneNode& animatedBoneNo
 	}
 	
 	std::string msg = std::string("Unable to find appropriate scaling time - this shouldn't happen.");
-	LOG_ERROR( msg );
 	throw std::runtime_error( msg );
 }
 

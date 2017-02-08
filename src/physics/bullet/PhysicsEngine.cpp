@@ -1,6 +1,6 @@
 #include <exception>
 
-#include "logger/Logger.hpp"
+#include "logger/ILogger.hpp"
 
 #include "physics/bullet/PhysicsEngine.hpp"
 #include "physics/bullet/StaticPlaneShape.hpp"

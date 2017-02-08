@@ -12,24 +12,24 @@ class ThreadPool : public IThreadPool
 {
 public:
 	ThreadPool();
-	ThreadPool(int numThreads);
+	ThreadPool(uint32 numThreads);
 	virtual ~ThreadPool();
 	
-	virtual void postWork(const std::function<void()>& work);
-	virtual void waitAll();
-	virtual void joinAll();
+	virtual void postWork(const std::function<void()>& work) override;
+	virtual void waitAll() override;
+	virtual void joinAll() override;
 	
-	virtual unsigned int getActiveWorkerCount();
-	virtual unsigned int getInactiveWorkerCount();
+	virtual uint32 getActiveWorkerCount() override;
+	virtual uint32 getInactiveWorkerCount() override;
 	
-	virtual unsigned int getWorkQueueCount();
-	virtual void increaseWorkerCountBy(unsigned int n);
-	virtual void decreaseWorkerCountBy(unsigned int n);
+	virtual uint32 getWorkQueueCount() override;
+	virtual void increaseWorkerCountBy(uint32 n) override;
+	virtual void decreaseWorkerCountBy(uint32 n) override;
 	
 private:
 	std::unique_ptr<ctpl::thread_pool> pool_;
 	
-	void initialize(int numThreads);
+	void initialize(uint32 numThreads);
 };
 
 }

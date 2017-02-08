@@ -21,9 +21,9 @@ public:
 	PhysicsEngine();
 	virtual ~PhysicsEngine();
 	
-	virtual void tick(float32 delta);
+	virtual void tick(float32 delta) override;
 	
-	virtual ICollisionShape* createStaticPlane(const glm::vec3& planeNormal, float32 planeConstant);
+	virtual ICollisionShape* createStaticPlane(const glm::vec3& planeNormal, float32 planeConstant) override;
 
 private:
 	PhysicsEngine(const PhysicsEngine& other);

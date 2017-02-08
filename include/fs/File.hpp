@@ -16,17 +16,17 @@ public:
 	File(const std::string& file, FileFlags flags);
 	virtual ~File();
 	
-	virtual bool isOpen() const;
-	virtual bool eof() const;
-	virtual void close();
+	virtual bool isOpen() const override;
+	virtual bool eof() const override;
+	virtual void close() override;
 	
-	virtual void write(const char* data);
-	virtual void write(const std::string& file);
-	virtual std::string read(uint32 length = 256);
-	virtual std::string readAll();
+	virtual void write(const char* data) override;
+	virtual void write(const std::string& file) override;
+	virtual std::string read(uint32 length = 256) override;
+	virtual std::string readAll() override;
 	
-	virtual std::istream& getInputStream();
-	virtual std::ostream& getOutputStream();
+	virtual std::istream& getInputStream() override;
+	virtual std::ostream& getOutputStream() override;
 
 private:
 	std::string file_;

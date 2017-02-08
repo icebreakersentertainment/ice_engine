@@ -14,6 +14,7 @@
 #include "graphics/Event.hpp"
 
 #include "fs/IFileSystem.hpp"
+#include "logger/ILogger.hpp"
 
 namespace hercules
 {
@@ -74,13 +75,13 @@ struct Camera
 class GraphicsEngine : public IGraphicsEngine
 {
 public:
-	GraphicsEngine(uint32 width, uint32 height, fs::IFileSystem* fileSystem);
+	GraphicsEngine(uint32 width, uint32 height, fs::IFileSystem* fileSystem, logger::ILogger* logger);
 	virtual ~GraphicsEngine();
 	
-	virtual void setViewport(uint32 width, uint32 height);
-	virtual void render(float32 delta);
+	virtual void setViewport(uint32 width, uint32 height) override;
+	virtual void render(float32 delta) override;
 	
-	virtual CameraId createCamera(glm::vec3 position, glm::vec3 lookAt = glm::vec3(0.0f, 0.0f, 0.0f));
+	virtual CameraId createCamera(glm::vec3 position, glm::vec3 lookAt = glm::vec3(0.0f, 0.0f, 0.0f)) override;
 	
 	virtual MeshId createStaticMesh(
 		std::vector<glm::vec3> vertices,
@@ -88,7 +89,7 @@ public:
 		std::vector<glm::vec4> colors,
 		std::vector<glm::vec3> normals,
 		std::vector<glm::vec2> textureCoordinates
-	);
+	) override;
 	virtual MeshId createAnimatedMesh(
 		std::vector<glm::vec3> vertices,
 		std::vector<uint32> indices,
@@ -97,53 +98,53 @@ public:
 		std::vector<glm::vec2> textureCoordinates,
 		std::vector<glm::ivec4> boneIds,
 		std::vector<glm::vec4> boneWeights
-	);
+	) override;
 	virtual MeshId createDynamicMesh(
 		std::vector<glm::vec3> vertices,
 		std::vector<uint32> indices,
 		std::vector<glm::vec4> colors,
 		std::vector<glm::vec3> normals,
 		std::vector<glm::vec2> textureCoordinates
-	);
+	) override;
 	
-	virtual SkeletonId createSkeleton(uint32 numberOfBones);
+	virtual SkeletonId createSkeleton(uint32 numberOfBones) override;
 	
-	virtual TextureId createTexture2d(std::string uri);
+	virtual TextureId createTexture2d(std::string uri) override;
 	
-	virtual RenderableId createRenderable(MeshId meshId, TextureId textureId);
+	virtual RenderableId createRenderable(MeshId meshId, TextureId textureId) override;
 	
-	virtual void rotate(const CameraId cameraId, const glm::quat& quaternion, TransformSpace relativeTo = TransformSpace::TS_LOCAL);
-	virtual void rotate(const RenderableId renderableId, const glm::quat& quaternion, TransformSpace relativeTo = TransformSpace::TS_LOCAL);
-	virtual void rotate(const CameraId cameraId, const float32 degrees, const glm::vec3& axis, TransformSpace relativeTo = TransformSpace::TS_LOCAL);
-	virtual void rotate(const RenderableId renderableId, const float32 degrees, const glm::vec3& axis, TransformSpace relativeTo = TransformSpace::TS_LOCAL);
+	virtual void rotate(const CameraId cameraId, const glm::quat& quaternion, TransformSpace relativeTo = TransformSpace::TS_LOCAL) override;
+	virtual void rotate(const RenderableId renderableId, const glm::quat& quaternion, TransformSpace relativeTo = TransformSpace::TS_LOCAL) override;
+	virtual void rotate(const CameraId cameraId, const float32 degrees, const glm::vec3& axis, TransformSpace relativeTo = TransformSpace::TS_LOCAL) override;
+	virtual void rotate(const RenderableId renderableId, const float32 degrees, const glm::vec3& axis, TransformSpace relativeTo = TransformSpace::TS_LOCAL) override;
 	
-	virtual void translate(const CameraId cameraId, const float32 x, const float32 y, const float32 z);
-	virtual void translate(const RenderableId renderableId, const float32 x, const float32 y, const float32 z);
-	virtual void translate(const CameraId cameraId, const glm::vec3& trans);
-	virtual void translate(const RenderableId renderableId, const glm::vec3& trans);
+	virtual void translate(const CameraId cameraId, const float32 x, const float32 y, const float32 z) override;
+	virtual void translate(const RenderableId renderableId, const float32 x, const float32 y, const float32 z) override;
+	virtual void translate(const CameraId cameraId, const glm::vec3& trans) override;
+	virtual void translate(const RenderableId renderableId, const glm::vec3& trans) override;
 	
-	virtual void scale(const RenderableId renderableId, const float32 x, const float32 y, const float32 z);
-	virtual void scale(const RenderableId renderableId, const glm::vec3& scale);
-	virtual void scale(const RenderableId renderableId, const float32 scale);
+	virtual void scale(const RenderableId renderableId, const float32 x, const float32 y, const float32 z) override;
+	virtual void scale(const RenderableId renderableId, const glm::vec3& scale) override;
+	virtual void scale(const RenderableId renderableId, const float32 scale) override;
 	
-	virtual void position(const RenderableId renderableId, const float32 x, const float32 y, const float32 z);
-	virtual void position(const CameraId cameraId, const float32 x, const float32 y, const float32 z);
-	virtual void position(const RenderableId renderableId, const glm::vec3& position);
-	virtual void position(const CameraId cameraId, const glm::vec3& position);
+	virtual void position(const RenderableId renderableId, const float32 x, const float32 y, const float32 z) override;
+	virtual void position(const CameraId cameraId, const float32 x, const float32 y, const float32 z) override;
+	virtual void position(const RenderableId renderableId, const glm::vec3& position) override;
+	virtual void position(const CameraId cameraId, const glm::vec3& position) override;
 	
-	virtual void lookAt(const RenderableId renderableId, const glm::vec3& lookAt);
-	virtual void lookAt(const CameraId cameraId, const glm::vec3& lookAt);
+	virtual void lookAt(const RenderableId renderableId, const glm::vec3& lookAt) override;
+	virtual void lookAt(const CameraId cameraId, const glm::vec3& lookAt) override;
 	
-	virtual void assign(const RenderableId renderableId, const SkeletonId skeletonId);
+	virtual void assign(const RenderableId renderableId, const SkeletonId skeletonId) override;
 	
-	virtual void update(const SkeletonId skeletonId, const void* data, uint32 size);
+	virtual void update(const SkeletonId skeletonId, const void* data, uint32 size) override;
 	
-	virtual void setMouseRelativeMode(bool enabled);
-	virtual void setCursorVisible(bool visible);
+	virtual void setMouseRelativeMode(bool enabled) override;
+	virtual void setCursorVisible(bool visible) override;
 	
-	virtual void processEvents();
-	virtual void addEventListener(IEventListener* eventListener);
-	virtual void removeEventListener(IEventListener* eventListener);
+	virtual void processEvents() override;
+	virtual void addEventListener(IEventListener* eventListener) override;
+	virtual void removeEventListener(IEventListener* eventListener) override;
 
 private:
 	GraphicsEngine(const GraphicsEngine& other);
@@ -169,6 +170,7 @@ private:
 	glm::mat4 projection_;
 	
 	fs::IFileSystem* fileSystem_;
+	logger::ILogger* logger_;
 	
 	GLuint createShaderProgram(std::string vertexShaderUri, std::string fragmentShaderUri);
 	GLuint createShaderProgramFromSource(std::string vertexShaderSource, std::string fragmentShaderSource);

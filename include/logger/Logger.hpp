@@ -10,6 +10,8 @@
 #include <boost/log/sources/severity_logger.hpp>
 #include <boost/log/sources/record_ostream.hpp>
 
+#include "logger/ILogger.hpp"
+
 namespace logger = boost::log;
 namespace sinks = boost::log::sinks;
 namespace src = boost::log::sources;
@@ -19,55 +21,33 @@ namespace keywords = boost::log::keywords;
 
 using namespace logger::trivial;
 
-#ifdef DEBUG
-#define LOG_DEBUG(x) BOOST_LOG_SEV(cs_logger::Logger::getInstance()->getLogger(), debug) << x
-#else
-#define LOG_DEBUG(x)
-#endif
-
-#define LOG_INFO(x) BOOST_LOG_SEV(cs_logger::Logger::getInstance()->getLogger(), info) << x
-#define LOG_WARN(x) BOOST_LOG_SEV(cs_logger::Logger::getInstance()->getLogger(), warning) << x
-#define LOG_ERROR(x) BOOST_LOG_SEV(cs_logger::Logger::getInstance()->getLogger(), error) << x
-#define LOG_FATAL(x) BOOST_LOG_SEV(cs_logger::Logger::getInstance()->getLogger(), fatal) << x
-
 namespace hercules
 {
-namespace cs_logger
+namespace logger
 {
 
-class Logger
+class Logger : public ILogger
 {	
 public:
-	static Logger* getInstance(const std::string& logFile = std::string("default.log"));
-
-	void logInfo(const std::string& message);
-	void logDebug(const std::string& message);
-	void logWarn(const std::string& message);
-	void logError(const std::string& message);
-	void logFatal(const std::string& message);
+	Logger(const std::string& fileName = std::string("hercules.log"));
+	Logger(const Logger& other);
+	Logger& operator=(const Logger& other);
+	virtual ~Logger();
 	
-	void logInfo(const std::wstring& message);
-	void logDebug(const std::wstring& message);
-	void logWarn(const std::wstring& message);
-	void logError(const std::wstring& message);
-	void logFatal(const std::wstring& message);
+	virtual void info(const std::string& message) override;
+	virtual void debug(const std::string& message) override;
+	virtual void warn(const std::string& message) override;
+	virtual void error(const std::string& message) override;
+	virtual void fatal(const std::string& message) override;
 	
-	// Not super happy with this design - I'd rather not expose the boost log instance in this way - but I
-	// don't know how to make it any better...
-	src::severity_logger< severity_level >& getLogger();
+	virtual void info(const std::wstring& message) override;
+	virtual void debug(const std::wstring& message) override;
+	virtual void warn(const std::wstring& message) override;
+	virtual void error(const std::wstring& message) override;
+	virtual void fatal(const std::wstring& message) override;
 
 private:
-	Logger(const std::string& fileName);
-	Logger(Logger const&);
-	Logger& operator=(Logger const&);
-	virtual ~Logger();
-
-	void initialize(const std::string& fileName);
-
 	src::severity_logger< severity_level > log_;
-
-	// singleton instance
-	static Logger* logger_;
 };
 
 }

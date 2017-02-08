@@ -3,6 +3,8 @@
 
 #include <functional>
 
+#include "Types.hpp"
+
 namespace hercules
 {
 
@@ -18,12 +20,12 @@ public:
 	virtual void waitAll() = 0;
 	virtual void joinAll() = 0;
 	
-	virtual unsigned int getActiveWorkerCount() = 0;
-	virtual unsigned int getInactiveWorkerCount() = 0;
+	virtual uint32 getActiveWorkerCount() = 0;
+	virtual uint32 getInactiveWorkerCount() = 0;
 	
-	virtual unsigned int getWorkQueueCount() = 0;
-	virtual void increaseWorkerCountBy(unsigned int n) = 0;
-	virtual void decreaseWorkerCountBy(unsigned int n) = 0;
+	virtual uint32 getWorkQueueCount() = 0;
+	virtual void increaseWorkerCountBy(uint32 n) = 0;
+	virtual void decreaseWorkerCountBy(uint32 n) = 0;
 };
 
 }

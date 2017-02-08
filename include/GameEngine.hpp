@@ -6,6 +6,7 @@
 #include "extras/FpsCamera.hpp"
 
 #include "utilities/Properties.hpp"
+#include "logger/ILogger.hpp"
 #include "fs/IFileSystem.hpp"
 
 #include "IGameEngine.hpp"
@@ -31,24 +32,27 @@ namespace hercules
 class GameEngine : public IGameEngine, public graphics::IEventListener
 {
 public:
-	GameEngine(std::unique_ptr<utilities::Properties> properties);
+	GameEngine(
+		std::unique_ptr<utilities::Properties> properties,
+		std::unique_ptr<hercules::logger::ILogger> logger
+	);
 	virtual ~GameEngine();
 
 	virtual void run();
 
-	virtual GameState getState();
+	virtual GameState getState() override;
 
-	virtual entities::Entity* createEntity();
-	virtual entities::Entity* createEntity(const std::string& name);
-	virtual entities::Entity* getEntity(const std::string& name);
+	virtual entities::Entity* createEntity() override;
+	virtual entities::Entity* createEntity(const std::string& name) override;
+	virtual entities::Entity* getEntity(const std::string& name) override;
 	
 	/**
 	 * 
 	 */
-	virtual void setBootstrapScript(const std::string& className, const std::string& filename);
+	virtual void setBootstrapScript(const std::string& className, const std::string& filename) override;
 	
 	// Implements the IEventListener interface
-	virtual bool processEvent(const graphics::Event& event);
+	virtual bool processEvent(const graphics::Event& event) override;
 
 private:
 	//std::unique_ptr< glr::GlrProgram > glrProgram_;
@@ -66,6 +70,7 @@ private:
 	std::unique_ptr< physics::IPhysicsEngine > physicsEngine_;
 	
 	std::unique_ptr< utilities::Properties > properties_;
+	std::unique_ptr< logger::ILogger > logger_;
 	
 	std::unique_ptr<Player> player_;
 	
