@@ -458,7 +458,7 @@ void GameEngine::test()
 		auto renderableId = graphicsEngine_->createRenderable(meshId, textureId);
 		std::cout << "Created renderable" << std::endl;
 		graphicsEngine_->scale(renderableId, 0.03f);
-		graphicsEngine_->translate(renderableId, 0, -3.0f, 0);
+		graphicsEngine_->translate(renderableId, 6.0f, -4.0f, 0);
 		
 		animations = model->animations;
 		rootBoneNode = model->rootBoneNode;

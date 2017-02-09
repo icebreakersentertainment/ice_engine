@@ -65,8 +65,8 @@ GraphicsEngine::GraphicsEngine(uint32 width, uint32 height, fs::IFileSystem* fil
 		throw std::runtime_error(msg);
 	}
 	
-	auto vertexShaderUri = std::string("../data/shaders/testing.vert");
-	auto fragmentShaderUri = std::string("../data/shaders/testing.frag");
+	auto vertexShaderUri = std::string("../data/shaders/basic_with_texture.vert");
+	auto fragmentShaderUri = std::string("../data/shaders/basic_with_texture.frag");
 	
 	shaderProgram_ = createShaderProgram(vertexShaderUri, fragmentShaderUri);
 	
