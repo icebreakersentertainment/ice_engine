@@ -14,14 +14,13 @@
 #include "Camera.hpp"
 #include "ThreadPool.hpp"
 #include "OpenGlLoader.hpp"
-#include "world/World.hpp"
 
 #include "graphics/IGraphicsEngine.hpp"
 #include "graphics/IEventListener.hpp"
 
 #include "physics/IPhysicsEngine.hpp"
 
-//#include "data_store/SqliteDataStore.hpp"
+#include "as_wrapper/AngelScript.h"
 
 #include "entities/EntityFactory.hpp"
 #include "entities/GraphicsComponentFactory.hpp"
@@ -73,8 +72,6 @@ private:
 	std::unique_ptr< logger::ILogger > logger_;
 	
 	std::unique_ptr<Player> player_;
-	
-	std::unique_ptr<world::World> world_;
 	
 	// For some reason, AngelScript will crash with a SegFault when registering objects if I don't use a pointer here (instead of storing it on the stack)
 	std::unique_ptr<as_wrapper::AngelScript> angelScript_;

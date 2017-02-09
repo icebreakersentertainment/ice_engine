@@ -8,8 +8,6 @@
 
 #include "Constants.hpp"
 
-#include "Version.hpp"
-
 #include "graphics/GraphicsFactory.hpp"
 #include "graphics/Event.hpp"
 
@@ -98,11 +96,6 @@ void GameEngine::startNewGame()
 	// add player to the event listeners in the world
 
 	// Create world
-	world_ = std::unique_ptr<world::World>( new world::World(this, /*smgr_, glrProgram_->getModelManager(),*/ threadPool_.get(), openGlLoader_.get(), properties_.get()) );
-	
-	world_->setPlayer( player_.get() );
-	
-	world_->newWorld();
 }
 
 void GameEngine::tick(float32 elapsedTime)
@@ -122,7 +115,6 @@ void GameEngine::tick(float32 elapsedTime)
 	
 	
 		case GAME_STATE_IN_GAME:
-			world_->tick( elapsedTime );
 			
 			// TODO: Probably need to rethink how I do this?
 			//smgr_->getTerrainManager( nullptr )->update(1);
