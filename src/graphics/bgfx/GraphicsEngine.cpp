@@ -2,7 +2,11 @@
 #include <stdexcept>
 #include <system_error>
 
-#include "graphics/GraphicsEngine.hpp"
+#include "graphics/bgfx/GraphicsEngine.hpp"
+
+#include <bgfx/c99/platform.h>
+//#include <bgfx/bgfx.h>
+#include <bgfx/c99/bgfx.h>
 
 #include <SDL2/SDL_opengl.h>
 #include <SDL2/SDL_syswm.h>
@@ -12,10 +16,13 @@
 #include <glm/gtx/string_cast.hpp>
 
 #include "utilities/ImageLoader.hpp"
+#include "Platform.hpp"
 
 namespace hercules
 {
 namespace graphics
+{
+namespace bgfx
 {
 
 GraphicsEngine::GraphicsEngine(uint32 width, uint32 height, fs::IFileSystem* fileSystem, logger::ILogger* logger)
@@ -47,6 +54,40 @@ GraphicsEngine::GraphicsEngine(uint32 width, uint32 height, fs::IFileSystem* fil
 		throw std::runtime_error(message);
 	}
 
+	//::bgfx::sdlSetWindow(sdlWindow_);
+	SDL_SysWMinfo wmi;
+	SDL_VERSION(&wmi.version);
+	if (!SDL_GetWindowWMInfo(sdlWindow_, &wmi) )
+	{
+		auto message = std::string("Unable to get window information: ") + SDL_GetError();
+		throw std::runtime_error(message);
+	}
+
+	bgfx_platform_data_t pd;
+#if defined(PLATFORM_LINUX)
+	pd.ndt          = wmi.info.x11.display;
+	pd.nwh          = (void*)(uintptr_t)wmi.info.x11.window;
+#elif defined(PLATFORM_MAC)
+	pd.ndt          = NULL;
+	pd.nwh          = wmi.info.cocoa.window;
+#elif defined(PLATFORM_WINDOWS)
+	pd.ndt          = NULL;
+	pd.nwh          = wmi.info.win.window;
+#endif
+	pd.context      = NULL;
+	pd.backBuffer   = NULL;
+	pd.backBufferDS = NULL;
+	
+	bgfx_set_platform_data(&pd);
+	
+	auto bgfxInitResult = bgfx_init(BGFX_RENDERER_TYPE_COUNT, BGFX_PCI_ID_NONE, 0, nullptr, nullptr);
+	
+	if (bgfxInitResult == false)
+	{
+		auto message = std::string("Unable to initialize bgfx.");
+		throw std::runtime_error(message);
+	}
+	
 	openglContext_ = SDL_GL_CreateContext( sdlWindow_ );
 	
 	if (openglContext_ == nullptr)
@@ -64,11 +105,13 @@ GraphicsEngine::GraphicsEngine(uint32 width, uint32 height, fs::IFileSystem* fil
 		auto msg = std::string("Failed to initialize GLEW.");
 		throw std::runtime_error(msg);
 	}
-	
+
+	/*
 	auto vertexShaderUri = std::string("../data/shaders/basic_with_texture.vert");
 	auto fragmentShaderUri = std::string("../data/shaders/basic_with_texture.frag");
 	
 	shaderProgram_ = createShaderProgram(vertexShaderUri, fragmentShaderUri);
+	*/
 	
 	// Set up the model, view, and projection matrices
 	model_ = glm::scale(glm::mat4(1.0f), glm::vec3(0.5f));
@@ -95,6 +138,8 @@ GraphicsEngine::~GraphicsEngine()
 		sdlWindow_ = nullptr;
 	}
 
+	bgfx_shutdown();
+	
 	SDL_Quit();
 }
 	
@@ -106,10 +151,13 @@ void GraphicsEngine::setViewport(uint32 width, uint32 height)
 	projection_ = glm::perspective(glm::radians(60.0f), (float32)width / (float32)height, 0.1f, 500.f);
 	
 	glViewport(0, 0, width_, height_);
+	
+	bgfx_reset(width_, height_, BGFX_RESET_NONE);
 }
 
 void GraphicsEngine::render(float32 delta)
 {
+	/*
 	glEnable(GL_DEPTH_TEST);
 	
 	// Setup camera
@@ -181,10 +229,12 @@ void GraphicsEngine::render(float32 delta)
 	}
 	
 	SDL_GL_SwapWindow( sdlWindow_ );
+	*/
 }
 
 CameraId GraphicsEngine::createCamera(glm::vec3 position, glm::vec3 lookAt)
 {
+	/*
 	camera_ = Camera();
 	camera_.position = position;
 	camera_.orientation = glm::quat();
@@ -195,6 +245,9 @@ CameraId GraphicsEngine::createCamera(glm::vec3 position, glm::vec3 lookAt)
 	this->lookAt(cameraId, lookAt);
 	
 	return cameraId;
+	*/
+	
+	return CameraId(0);
 }
 
 MeshId GraphicsEngine::createStaticMesh(
@@ -205,6 +258,7 @@ MeshId GraphicsEngine::createStaticMesh(
 	std::vector<glm::vec2> textureCoordinates
 )
 {
+	/*
 	Vao vao;
 	
 	glGenVertexArrays(1, &vao.id);
@@ -253,6 +307,9 @@ MeshId GraphicsEngine::createStaticMesh(
 	auto index = vertexArrayObjects_.size() - 1;
 	
 	return MeshId(index);
+	*/
+	
+	return MeshId();
 }
 
 MeshId GraphicsEngine::createAnimatedMesh(
@@ -265,6 +322,7 @@ MeshId GraphicsEngine::createAnimatedMesh(
 		std::vector<glm::vec4> boneWeights
 	)
 {
+	/*
 	Vao vao;
 	
 	glGenVertexArrays(1, &vao.id);
@@ -325,6 +383,9 @@ MeshId GraphicsEngine::createAnimatedMesh(
 	auto index = vertexArrayObjects_.size() - 1;
 	
 	return MeshId(index);
+	*/
+	
+	return MeshId();
 }
 
 MeshId GraphicsEngine::createDynamicMesh(
@@ -385,6 +446,7 @@ MeshId GraphicsEngine::createDynamicMesh(
 
 SkeletonId GraphicsEngine::createSkeleton(uint32 numberOfBones)
 {
+	/*
 	Ubo ubo;
 	
 	glGenBuffers(1, &ubo.id);
@@ -398,10 +460,14 @@ SkeletonId GraphicsEngine::createSkeleton(uint32 numberOfBones)
 	auto index = uniformBufferObjects_.size() - 1;
 	
 	return SkeletonId(index);
+	*/
+	
+	return SkeletonId();
 }
 
 TextureId GraphicsEngine::createTexture2d(std::string uri)
 {
+	/*
 	GlTexture2d texture;
 	
 	uint32 width = 0;
@@ -422,10 +488,14 @@ TextureId GraphicsEngine::createTexture2d(std::string uri)
 	auto index = texture2dObjects_.size() - 1;
 	
 	return TextureId(index);
+	*/
+	
+	return TextureId();
 }
 
 RenderableId GraphicsEngine::createRenderable(MeshId meshId, TextureId textureId)
 {
+	/*
 	Renderable renderable;
 	
 	renderable.vao = vertexArrayObjects_[meshId.getId()];
@@ -441,10 +511,14 @@ RenderableId GraphicsEngine::createRenderable(MeshId meshId, TextureId textureId
 	graphicsData_.push_back(graphicsData);
 	
 	return RenderableId(index);
+	*/
+	
+	return RenderableId();
 }
 
 void GraphicsEngine::rotate(const CameraId cameraId, const glm::quat& quaternion, TransformSpace relativeTo)
 {
+	/*
 	switch( relativeTo )
 	{
 		case TransformSpace::TS_LOCAL:
@@ -459,10 +533,12 @@ void GraphicsEngine::rotate(const CameraId cameraId, const glm::quat& quaternion
 			std::string message = std::string("Invalid TransformSpace type.");
 			throw std::runtime_error(message);
 	}
+	*/
 }
 
 void GraphicsEngine::rotate(const RenderableId renderableId, const glm::quat& quaternion, TransformSpace relativeTo)
 {
+	/*
 	const auto id = renderableId.getId();
 	
 	auto& graphicsData = graphicsData_[id];
@@ -481,10 +557,12 @@ void GraphicsEngine::rotate(const RenderableId renderableId, const glm::quat& qu
 			std::string message = std::string("Invalid TransformSpace type.");
 			throw std::runtime_error(message);
 	}
+	*/
 }
 
 void GraphicsEngine::rotate(const CameraId cameraId, const float32 degrees, const glm::vec3& axis, TransformSpace relativeTo)
 {
+	/*
 	switch( relativeTo )
 	{
 		case TransformSpace::TS_LOCAL:
@@ -499,10 +577,12 @@ void GraphicsEngine::rotate(const CameraId cameraId, const float32 degrees, cons
 			std::string message = std::string("Invalid TransformSpace type.");
 			throw std::runtime_error(message);
 	}
+	*/
 }
 
 void GraphicsEngine::rotate(const RenderableId renderableId, const float32 degrees, const glm::vec3& axis, TransformSpace relativeTo)
 {
+	/*
 	const auto id = renderableId.getId();
 	
 	auto& graphicsData = graphicsData_[id];
@@ -521,88 +601,112 @@ void GraphicsEngine::rotate(const RenderableId renderableId, const float32 degre
 			std::string message = std::string("Invalid TransformSpace type.");
 			throw std::runtime_error(message);
 	}
+	*/
 }
 
 void GraphicsEngine::translate(const CameraId cameraId, const float32 x, const float32 y, const float32 z)
 {
+	/*
 	camera_.position += glm::vec3(x, y, z);
+	*/
 }
 
 void GraphicsEngine::translate(const RenderableId renderableId, const float32 x, const float32 y, const float32 z)
 {
+	/*
 	const auto id = renderableId.getId();
 	
 	auto& graphicsData = graphicsData_[id];
 	graphicsData.position += glm::vec3(x, y, z);
+	*/
 }
 
 void GraphicsEngine::translate(const CameraId cameraId, const glm::vec3& trans)
 {
+	/*
 	camera_.position += trans;
+	*/
 }
 
 void GraphicsEngine::translate(const RenderableId renderableId, const glm::vec3& trans)
 {
+	/*
 	const auto id = renderableId.getId();
 	
 	auto& graphicsData = graphicsData_[id];
 	graphicsData.position += trans;
+	*/
 }
 
 
 void GraphicsEngine::scale(const RenderableId renderableId, const float32 x, const float32 y, const float32 z)
 {
+	/*
 	const auto id = renderableId.getId();
 	
 	auto& graphicsData = graphicsData_[id];
 	graphicsData.scale = glm::vec3(x, y, z);
+	*/
 }
 
 void GraphicsEngine::scale(const RenderableId renderableId, const glm::vec3& scale)
 {
+	/*
 	const auto id = renderableId.getId();
 	
 	auto& graphicsData = graphicsData_[id];
 	graphicsData.scale = scale;
+	*/
 }
 
 void GraphicsEngine::scale(const RenderableId renderableId, const float32 scale)
 {
+	/*
 	const auto id = renderableId.getId();
 	
 	auto& graphicsData = graphicsData_[id];
 	graphicsData.scale = glm::vec3(scale, scale, scale);
+	*/
 }
 
 void GraphicsEngine::position(const RenderableId renderableId, const float32 x, const float32 y, const float32 z)
 {
+	/*
 	const auto id = renderableId.getId();
 	
 	auto& graphicsData = graphicsData_[id];
 	graphicsData.position = glm::vec3(x, y, z);
+	*/
 }
 
 void GraphicsEngine::position(const CameraId cameraId, const float32 x, const float32 y, const float32 z)
 {
+	/*
 	camera_.position = glm::vec3(x, y, z);
+	*/
 }
 
 void GraphicsEngine::position(const RenderableId renderableId, const glm::vec3& position)
 {
+	/*
 	const auto id = renderableId.getId();
 	
 	auto& graphicsData = graphicsData_[id];
 	graphicsData.scale = position;
+	*/
 }
 
 void GraphicsEngine::position(const CameraId cameraId, const glm::vec3& position)
 {
+	/*
 	camera_.position = position;
+	*/
 }
 
 
 void GraphicsEngine::lookAt(const RenderableId renderableId, const glm::vec3& lookAt)
 {
+	/*
 	const auto id = renderableId.getId();
 	
 	auto& graphicsData = graphicsData_[id];
@@ -611,26 +715,31 @@ void GraphicsEngine::lookAt(const RenderableId renderableId, const glm::vec3& lo
 	
 	const glm::mat4 lookAtMatrix = glm::lookAt(graphicsData.position, lookAt, glm::vec3(0.0f, 1.0f, 0.0f));
 	graphicsData.orientation =  glm::normalize( graphicsData.orientation * glm::quat_cast( lookAtMatrix ) );
+	*/
 }
 
 void GraphicsEngine::lookAt(const CameraId cameraId, const glm::vec3& lookAt)
 {
-	
+	/*
 	assert(lookAt != camera_.position);
 	
 	const glm::mat4 lookAtMatrix = glm::lookAt(camera_.position, lookAt, glm::vec3(0.0f, 1.0f, 0.0f));
 	camera_.orientation =  glm::normalize( camera_.orientation * glm::quat_cast( lookAtMatrix ) );
+	*/
 }
 
 void GraphicsEngine::assign(const RenderableId renderableId, const SkeletonId skeletonId)
 {
+	/*
 	auto& renderable = renderables_[renderableId.getId()];
 	
 	renderable.ubo = uniformBufferObjects_[skeletonId.getId()];
+	*/
 }
 
 void GraphicsEngine::update(const SkeletonId skeletonId, const void* data, uint32 size)
 {
+	/*
 	const auto& ubo = uniformBufferObjects_[skeletonId.getId()];
 	
 	glBindBuffer(GL_UNIFORM_BUFFER, ubo.id);
@@ -639,18 +748,24 @@ void GraphicsEngine::update(const SkeletonId skeletonId, const void* data, uint3
 	//void* d = glMapBufferRange(GL_UNIFORM_BUFFER, 0, size, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT);
 	//memcpy( d, data, size );
 	//glUnmapBuffer(GL_UNIFORM_BUFFER);
+	*/
 }
 
 GLuint GraphicsEngine::createShaderProgram(std::string vertexShaderUri, std::string fragmentShaderUri)
 {
+	/*
 	auto vertexShaderSource = fileSystem_->readAll(vertexShaderUri);
 	auto fragmentShaderSource = fileSystem_->readAll(fragmentShaderUri);
 	
 	return createShaderProgramFromSource(vertexShaderSource, fragmentShaderSource);
+	*/
+	
+	return 0;
 }
 
 GLuint GraphicsEngine::createShaderProgramFromSource(std::string vertexShaderSource, std::string fragmentShaderSource)
 {
+	/*
 	auto vertexShader = compileShader(vertexShaderSource, GL_VERTEX_SHADER);
 	auto fragmentShader = compileShader(fragmentShaderSource, GL_FRAGMENT_SHADER);
 	
@@ -672,10 +787,14 @@ GLuint GraphicsEngine::createShaderProgramFromSource(std::string vertexShaderSou
 	glDeleteShader(fragmentShader);
 	
 	return shaderProgram;
+	*/
+	
+	return 0;
 }
 
 GLuint GraphicsEngine::createShaderProgram(GLuint vertexShader, GLuint fragmentShader)
 {
+	/*
 	auto shaderProgram = glCreateProgram();
 	glAttachShader(shaderProgram, vertexShader);
 	glAttachShader(shaderProgram, fragmentShader);
@@ -712,10 +831,14 @@ GLuint GraphicsEngine::createShaderProgram(GLuint vertexShader, GLuint fragmentS
 	}
 	
 	return shaderProgram;
+	*/
+	
+	return 0;
 }
 
 GLuint GraphicsEngine::compileShader(std::string source, GLenum type)
 {
+	/*
 	auto shader = glCreateShader(type);
 	
 	{
@@ -753,10 +876,14 @@ GLuint GraphicsEngine::compileShader(std::string source, GLenum type)
 	}
 	
 	return shader;
+	*/
+	
+	return 0;
 }
 
 std::string GraphicsEngine::getShaderErrorMessage(GLuint shader)
 {
+	/*
 	GLint infoLogLength;
 	glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &infoLogLength);
 	
@@ -774,10 +901,14 @@ std::string GraphicsEngine::getShaderErrorMessage(GLuint shader)
 	delete[] strInfoLog;
 	
 	return message.str();
+	*/
+	
+	return std::string();
 }
 
 std::string GraphicsEngine::getShaderProgramErrorMessage(GLuint shaderProgram)
 {
+	/*
 	GLint infoLogLength;
 	glGetProgramiv(shaderProgram, GL_INFO_LOG_LENGTH, &infoLogLength);
 	
@@ -795,10 +926,14 @@ std::string GraphicsEngine::getShaderProgramErrorMessage(GLuint shaderProgram)
 	delete[] strInfoLog;
 	
 	return message.str();
+	*/
+	
+	return std::string();
 }
 
 void GraphicsEngine::setMouseRelativeMode(bool enabled)
 {
+	/*
 	auto result = SDL_SetRelativeMouseMode(static_cast<SDL_bool>(enabled));
 	
 	if (result != 0)
@@ -806,10 +941,12 @@ void GraphicsEngine::setMouseRelativeMode(bool enabled)
 		auto message = std::string("Unable to set relative mouse mode: ") + SDL_GetError();
 		throw std::runtime_error(message);
 	}
+	*/
 }
 
 void GraphicsEngine::setCursorVisible(bool visible)
 {
+	/*
 	auto toggle = (visible ? SDL_ENABLE : SDL_DISABLE);
 	auto result = SDL_ShowCursor(toggle);
 	
@@ -818,10 +955,12 @@ void GraphicsEngine::setCursorVisible(bool visible)
 		auto message = std::string("Unable to set mouse cursor visible\\invisible: ") + SDL_GetError();
 		throw std::runtime_error(message);
 	}
+	*/
 }
 
 void GraphicsEngine::processEvents()
 {
+	
 	SDL_Event evt;
 	while( SDL_PollEvent( &evt ) )
 	{
@@ -954,5 +1093,6 @@ void GraphicsEngine::removeEventListener(IEventListener* eventListener)
 	}
 }
 
+}
 }
 }

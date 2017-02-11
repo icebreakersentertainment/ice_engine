@@ -8,7 +8,7 @@
 #include "Types.hpp"
 
 #include "as_wrapper/glm_bindings/Vec3.h"
-#include "as_wrapper/ASRefObject.h"
+#include "as_wrapper/ASRefObject.hpp"
 
 namespace hercules
 {

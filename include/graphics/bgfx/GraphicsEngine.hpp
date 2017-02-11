@@ -20,6 +20,8 @@ namespace hercules
 {
 namespace graphics
 {
+namespace bgfx
+{
 
 struct Vbo
 {
@@ -187,6 +189,7 @@ private:
 	static KeyCode convertSdlKeycode(const SDL_Keycode& sdlKeycode);
 };
 
+}
 }
 }
 

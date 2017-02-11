@@ -1,5 +1,5 @@
 #include "graphics/GraphicsFactory.hpp"
-#include "graphics/GraphicsEngine.hpp"
+#include "graphics/bgfx/GraphicsEngine.hpp"
 
 namespace hercules
 {
@@ -25,7 +25,7 @@ std::unique_ptr<IGraphicsEngine> GraphicsFactory::createGraphicsEngine(
 	logger::ILogger* logger
 )
 {
-	auto ptr = std::unique_ptr< IGraphicsEngine >( new GraphicsEngine(width, height, fileSystem, logger) );
+	auto ptr = std::unique_ptr< IGraphicsEngine >( new bgfx::GraphicsEngine(width, height, fileSystem, logger) );
 	
 	return std::move( ptr );
 }

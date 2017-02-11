@@ -18,7 +18,7 @@
 
 #include "logger/Logger.hpp"
 
-#include "as_wrapper/AngelScript.h"
+#include "as_wrapper/AngelScript.hpp"
 
 #include "angel_script/TestAtom.hpp"
 #include "angel_script/ClassFactory.hpp"

@@ -20,7 +20,7 @@
 
 #include "physics/IPhysicsEngine.hpp"
 
-#include "as_wrapper/AngelScript.h"
+#include "as_wrapper/AngelScript.hpp"
 
 #include "entities/EntityFactory.hpp"
 #include "entities/GraphicsComponentFactory.hpp"

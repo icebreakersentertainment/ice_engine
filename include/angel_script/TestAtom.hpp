@@ -1,7 +1,7 @@
 #ifndef TESTATOM_H_
 #define TESTATOM_H_
 
-#include "as_wrapper/ASRefObject.h"
+#include "as_wrapper/ASRefObject.hpp"
 
 namespace hercules
 {
