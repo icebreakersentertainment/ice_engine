@@ -5,8 +5,8 @@
 
 #include "scriptbuilder/scriptbuilder.h"
 
-#include "AScriptModule.h"
-#include "AsObject.h"
+#include "AScriptModule.hpp"
+#include "AsObject.hpp"
 
 #include "logger/ILogger.hpp"
 #include "Types.hpp"

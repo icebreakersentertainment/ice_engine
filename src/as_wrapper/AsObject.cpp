@@ -1,4 +1,4 @@
-#include "as_wrapper/AsObject.h"
+#include "as_wrapper/AsObject.hpp"
 
 namespace hercules
 {

@@ -2,7 +2,7 @@
 #include <iostream>
 #include <stdio.h>
 
-#include "as_wrapper/AngelScript.h"
+#include "as_wrapper/AngelScript.hpp"
 
 #define AS_USE_STLNAMES = 1
 #include "as_wrapper/scriptstdstring/scriptstdstring.h"

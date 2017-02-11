@@ -1,4 +1,4 @@
-#include "as_wrapper/AScriptModule.h"
+#include "as_wrapper/AScriptModule.hpp"
 
 namespace hercules
 {
