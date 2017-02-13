@@ -4,9 +4,8 @@
 
 #include "graphics/bgfx/GraphicsEngine.hpp"
 
-#include <bgfx/c99/platform.h>
-//#include <bgfx/bgfx.h>
-#include <bgfx/c99/bgfx.h>
+#include <bgfx/platform.h>
+#include <bgfx/bgfx.h>
 
 #include <SDL2/SDL_opengl.h>
 #include <SDL2/SDL_syswm.h>
@@ -66,7 +65,7 @@ GraphicsEngine::GraphicsEngine(uint32 width, uint32 height, utilities::Propertie
 		throw std::runtime_error(message);
 	}
 
-	bgfx_platform_data_t pd;
+	::bgfx::PlatformData pd;
 #if defined(PLATFORM_LINUX)
 	pd.ndt          = wmi.info.x11.display;
 	pd.nwh          = (void*)(uintptr_t)wmi.info.x11.window;
@@ -81,9 +80,9 @@ GraphicsEngine::GraphicsEngine(uint32 width, uint32 height, utilities::Propertie
 	pd.backBuffer   = NULL;
 	pd.backBufferDS = NULL;
 	
-	bgfx_set_platform_data(&pd);
+	::bgfx::setPlatformData(pd);
 	
-	auto bgfxInitResult = bgfx_init(BGFX_RENDERER_TYPE_COUNT, BGFX_PCI_ID_NONE, 0, nullptr, nullptr);
+	auto bgfxInitResult = ::bgfx::init();
 	
 	if (bgfxInitResult == false)
 	{
@@ -109,7 +108,7 @@ GraphicsEngine::GraphicsEngine(uint32 width, uint32 height, utilities::Propertie
 		throw std::runtime_error(msg);
 	}
 	
-	bgfx_set_debug(BGFX_DEBUG_TEXT);
+	::bgfx::setDebug(BGFX_DEBUG_TEXT);
 
 	/*
 	auto vertexShaderUri = std::string("../data/shaders/basic_with_texture.vert");
@@ -143,7 +142,7 @@ GraphicsEngine::~GraphicsEngine()
 		sdlWindow_ = nullptr;
 	}
 
-	bgfx_shutdown();
+	::bgfx::shutdown();
 	
 	SDL_Quit();
 }
@@ -157,9 +156,9 @@ void GraphicsEngine::setViewport(uint32 width, uint32 height)
 	
 	glViewport(0, 0, width_, height_);
 	
-	bgfx_reset(width_, height_, BGFX_RESET_NONE);
+	::bgfx::reset(width_, height_, BGFX_RESET_NONE);
 	
-	bgfx_set_view_clear(0, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, 0x303030ff, 1.0f, 0);
+	::bgfx::setViewClear(0, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, 0x303030ff, 1.0f, 0);
 }
 
 void GraphicsEngine::render(float32 delta)
@@ -239,29 +238,29 @@ void GraphicsEngine::render(float32 delta)
 	*/
 	
 	// Set view 0 default viewport.
-	bgfx_set_view_rect(0, 0, 0, width_, height_);
+	::bgfx::setViewRect(0, 0, 0, width_, height_);
 
 	// This dummy draw call is here to make sure that view 0 is cleared
 	// if no other draw calls are submitted to view 0.
-	bgfx_touch(0);
+	::bgfx::touch(0);
 
 	// Use debug font to print information about this example.
-	bgfx_dbg_text_clear(0, false);
+	::bgfx::dbgTextClear();
 	
-	bgfx_dbg_text_printf(0, 1, 0x4f, "testing");
-	bgfx_dbg_text_printf(0, 2, 0x6f, "Description: Initialization and debug text.");
+	::bgfx::dbgTextPrintf(0, 1, 0x4f, "testing");
+	::bgfx::dbgTextPrintf(0, 2, 0x6f, "Description: Initialization and debug text.");
 
-	bgfx_dbg_text_printf(0, 4, 0x0f, "Color can be changed with ANSI \x1b[9;me\x1b[10;ms\x1b[11;mc\x1b[12;ma\x1b[13;mp\x1b[14;me\x1b[0m code too.");
+	::bgfx::dbgTextPrintf(0, 4, 0x0f, "Color can be changed with ANSI \x1b[9;me\x1b[10;ms\x1b[11;mc\x1b[12;ma\x1b[13;mp\x1b[14;me\x1b[0m code too.");
 
-	const auto* stats = bgfx_get_stats();
-	bgfx_dbg_text_printf(0, 6, 0x0f, "Backbuffer %dW x %dH in pixels, debug text %dW x %dH in characters."
+	const auto* stats = ::bgfx::getStats();
+	::bgfx::dbgTextPrintf(0, 6, 0x0f, "Backbuffer %dW x %dH in pixels, debug text %dW x %dH in characters."
 			, stats->width
 			, stats->height
 			, stats->textWidth
 			, stats->textHeight
 );
 	
-	bgfx_frame(false);
+	::bgfx::frame();(false);
 }
 
 CameraId GraphicsEngine::createCamera(glm::vec3 position, glm::vec3 lookAt)

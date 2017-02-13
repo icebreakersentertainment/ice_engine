@@ -227,6 +227,7 @@ if(WIN32)
   target_link_libraries(hercules winmm)
   target_link_libraries(hercules imm32)
   target_link_libraries(hercules version)
+  target_link_libraries(hercules Psapi)
 endif()
 
 # Disable Position Independent Executable - this is starting to be enabled by default,
