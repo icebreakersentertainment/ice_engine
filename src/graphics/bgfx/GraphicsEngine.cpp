@@ -25,11 +25,12 @@ namespace graphics
 namespace bgfx
 {
 
-GraphicsEngine::GraphicsEngine(uint32 width, uint32 height, fs::IFileSystem* fileSystem, logger::ILogger* logger)
+GraphicsEngine::GraphicsEngine(uint32 width, uint32 height, utilities::Properties* properties, fs::IFileSystem* fileSystem, logger::ILogger* logger)
 {
 	width_ = width;
 	height_ = height;
 	
+	properties_ = properties;
 	fileSystem_ = fileSystem;
 	logger_ = logger;
 	
@@ -46,7 +47,9 @@ GraphicsEngine::GraphicsEngine(uint32 width, uint32 height, fs::IFileSystem* fil
 	SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 3 );
 	SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
 	
-	sdlWindow_ = SDL_CreateWindow("Dark Horizon", 50, 50, width_, height_, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL);
+	auto windowTitle = properties_->getStringValue("window.title", "Hercules");
+	
+	sdlWindow_ = SDL_CreateWindow(windowTitle.c_str(), 50, 50, width_, height_, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL);
 	
 	if (sdlWindow_ == nullptr)
 	{
@@ -105,6 +108,8 @@ GraphicsEngine::GraphicsEngine(uint32 width, uint32 height, fs::IFileSystem* fil
 		auto msg = std::string("Failed to initialize GLEW.");
 		throw std::runtime_error(msg);
 	}
+	
+	bgfx_set_debug(BGFX_DEBUG_TEXT);
 
 	/*
 	auto vertexShaderUri = std::string("../data/shaders/basic_with_texture.vert");
@@ -153,6 +158,8 @@ void GraphicsEngine::setViewport(uint32 width, uint32 height)
 	glViewport(0, 0, width_, height_);
 	
 	bgfx_reset(width_, height_, BGFX_RESET_NONE);
+	
+	bgfx_set_view_clear(0, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, 0x303030ff, 1.0f, 0);
 }
 
 void GraphicsEngine::render(float32 delta)
@@ -230,6 +237,31 @@ void GraphicsEngine::render(float32 delta)
 	
 	SDL_GL_SwapWindow( sdlWindow_ );
 	*/
+	
+	// Set view 0 default viewport.
+	bgfx_set_view_rect(0, 0, 0, width_, height_);
+
+	// This dummy draw call is here to make sure that view 0 is cleared
+	// if no other draw calls are submitted to view 0.
+	bgfx_touch(0);
+
+	// Use debug font to print information about this example.
+	bgfx_dbg_text_clear(0, false);
+	
+	bgfx_dbg_text_printf(0, 1, 0x4f, "testing");
+	bgfx_dbg_text_printf(0, 2, 0x6f, "Description: Initialization and debug text.");
+
+	bgfx_dbg_text_printf(0, 4, 0x0f, "Color can be changed with ANSI \x1b[9;me\x1b[10;ms\x1b[11;mc\x1b[12;ma\x1b[13;mp\x1b[14;me\x1b[0m code too.");
+
+	const auto* stats = bgfx_get_stats();
+	bgfx_dbg_text_printf(0, 6, 0x0f, "Backbuffer %dW x %dH in pixels, debug text %dW x %dH in characters."
+			, stats->width
+			, stats->height
+			, stats->textWidth
+			, stats->textHeight
+);
+	
+	bgfx_frame(false);
 }
 
 CameraId GraphicsEngine::createCamera(glm::vec3 position, glm::vec3 lookAt)

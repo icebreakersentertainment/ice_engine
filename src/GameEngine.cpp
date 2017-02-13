@@ -211,7 +211,7 @@ void GameEngine::initializeGraphicsSubSystem()
 	auto width = properties_->getIntValue( std::string("window.width") );
 	auto height = properties_->getIntValue( std::string("window.height") );
 	
-	graphicsEngine_ = graphics::GraphicsFactory::createGraphicsEngine( width, height, fileSystem_.get(), logger_.get() );
+	graphicsEngine_ = graphics::GraphicsFactory::createGraphicsEngine( width, height, properties_.get(), fileSystem_.get(), logger_.get() );
 	
 	graphicsEngine_->addEventListener(this);
 	

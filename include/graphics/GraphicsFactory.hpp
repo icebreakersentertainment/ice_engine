@@ -5,6 +5,7 @@
 
 #include "IGraphicsEngine.hpp"
 
+#include "utilities/Properties.hpp"
 #include "fs/IFileSystem.hpp"
 #include "logger/ILogger.hpp"
 
@@ -20,6 +21,7 @@ public:
 	static std::unique_ptr<IGraphicsEngine> createGraphicsEngine(
 		uint32 width,
 		uint32 height,
+		utilities::Properties* properties,
 		fs::IFileSystem* fileSystem,
 		logger::ILogger* logger
 	);

@@ -2,6 +2,7 @@
 #define GRAPHICSENGINE_H_
 
 #include <string>
+#include <vector>
 
 #include <GL/glew.h>
 #include <SDL2/SDL.h>
@@ -13,6 +14,7 @@
 #include "graphics/IGraphicsEngine.hpp"
 #include "graphics/Event.hpp"
 
+#include "utilities/Properties.hpp"
 #include "fs/IFileSystem.hpp"
 #include "logger/ILogger.hpp"
 
@@ -77,7 +79,7 @@ struct Camera
 class GraphicsEngine : public IGraphicsEngine
 {
 public:
-	GraphicsEngine(uint32 width, uint32 height, fs::IFileSystem* fileSystem, logger::ILogger* logger);
+	GraphicsEngine(uint32 width, uint32 height, utilities::Properties* properties, fs::IFileSystem* fileSystem, logger::ILogger* logger);
 	virtual ~GraphicsEngine();
 	
 	virtual void setViewport(uint32 width, uint32 height) override;
@@ -171,6 +173,7 @@ private:
 	glm::mat4 view_;
 	glm::mat4 projection_;
 	
+	utilities::Properties* properties_;
 	fs::IFileSystem* fileSystem_;
 	logger::ILogger* logger_;
 	
