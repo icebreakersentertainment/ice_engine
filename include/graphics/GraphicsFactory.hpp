@@ -19,8 +19,6 @@ class GraphicsFactory
 public:
 
 	static std::unique_ptr<IGraphicsEngine> createGraphicsEngine(
-		uint32 width,
-		uint32 height,
 		utilities::Properties* properties,
 		fs::IFileSystem* fileSystem,
 		logger::ILogger* logger

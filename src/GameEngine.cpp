@@ -203,15 +203,11 @@ void GameEngine::initializeGraphicsSubSystem()
 {
 	logger_->info( "initializing graphics." );
 	
-	
 	//properties_->getIntValue( std::string("window.depth") );
 	//properties_->getBoolValue( std::string("window.fullscreen") );
 	//properties_->getBoolValue( std::string("window.vsync") );
 	
-	auto width = properties_->getIntValue( std::string("window.width") );
-	auto height = properties_->getIntValue( std::string("window.height") );
-	
-	graphicsEngine_ = graphics::GraphicsFactory::createGraphicsEngine( width, height, properties_.get(), fileSystem_.get(), logger_.get() );
+	graphicsEngine_ = graphics::GraphicsFactory::createGraphicsEngine( properties_.get(), fileSystem_.get(), logger_.get() );
 	
 	graphicsEngine_->addEventListener(this);
 	

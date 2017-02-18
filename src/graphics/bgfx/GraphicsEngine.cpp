@@ -4,14 +4,12 @@
 
 #include "graphics/bgfx/GraphicsEngine.hpp"
 
-#include <bgfx/platform.h>
-#include <bgfx/bgfx.h>
-
 #include <SDL2/SDL_opengl.h>
 #include <SDL2/SDL_syswm.h>
 
 #define GLM_FORCE_RADIANS
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/string_cast.hpp>
 
 #include "utilities/ImageLoader.hpp"
@@ -24,14 +22,14 @@ namespace graphics
 namespace bgfx
 {
 
-GraphicsEngine::GraphicsEngine(uint32 width, uint32 height, utilities::Properties* properties, fs::IFileSystem* fileSystem, logger::ILogger* logger)
+GraphicsEngine::GraphicsEngine(utilities::Properties* properties, fs::IFileSystem* fileSystem, logger::ILogger* logger)
 {
-	width_ = width;
-	height_ = height;
-	
 	properties_ = properties;
 	fileSystem_ = fileSystem;
 	logger_ = logger;
+	
+	width_ = properties->getIntValue(std::string("window.width"), 1024);
+	height_ = properties->getIntValue(std::string("window.height"), 768);
 	
 	auto errorCode = SDL_Init( SDL_INIT_VIDEO );
 	
@@ -110,17 +108,15 @@ GraphicsEngine::GraphicsEngine(uint32 width, uint32 height, utilities::Propertie
 	
 	::bgfx::setDebug(BGFX_DEBUG_TEXT);
 
-	/*
-	auto vertexShaderUri = std::string("../data/shaders/basic_with_texture.vert");
-	auto fragmentShaderUri = std::string("../data/shaders/basic_with_texture.frag");
+	auto vertexShaderFile = std::string("../data/shaders/basic.vs.sc");
+	auto fragmentShaderFile = std::string("../data/shaders/basic.fs.sc");
 	
-	shaderProgram_ = createShaderProgram(vertexShaderUri, fragmentShaderUri);
-	*/
+	shaderProgram_ = createShaderProgram(vertexShaderFile, fragmentShaderFile);
 	
 	// Set up the model, view, and projection matrices
 	model_ = glm::scale(glm::mat4(1.0f), glm::vec3(0.5f));
 	view_ = glm::mat4(1.0f);
-	setViewport(width, height);
+	setViewport(width_, height_);
 }
 
 GraphicsEngine::GraphicsEngine(const GraphicsEngine& other)
@@ -142,12 +138,20 @@ GraphicsEngine::~GraphicsEngine()
 		sdlWindow_ = nullptr;
 	}
 
+	for ( const auto& r : renderables_ )
+	{
+		::bgfx::destroyVertexBuffer(r.vao.vbh);
+		::bgfx::destroyIndexBuffer(r.vao.ibh);
+	}
+	
+	::bgfx::destroyProgram(shaderProgram_);
+
 	::bgfx::shutdown();
 	
 	SDL_Quit();
 }
 	
-void GraphicsEngine::setViewport(uint32 width, uint32 height)
+void GraphicsEngine::setViewport(const uint32 width, const uint32 height)
 {
 	width_ = width;
 	height_ = height;
@@ -161,7 +165,7 @@ void GraphicsEngine::setViewport(uint32 width, uint32 height)
 	::bgfx::setViewClear(0, BGFX_CLEAR_COLOR | BGFX_CLEAR_DEPTH, 0x303030ff, 1.0f, 0);
 }
 
-void GraphicsEngine::render(float32 delta)
+void GraphicsEngine::render(const float32 delta)
 {
 	/*
 	glEnable(GL_DEPTH_TEST);
@@ -237,13 +241,6 @@ void GraphicsEngine::render(float32 delta)
 	SDL_GL_SwapWindow( sdlWindow_ );
 	*/
 	
-	// Set view 0 default viewport.
-	::bgfx::setViewRect(0, 0, 0, width_, height_);
-
-	// This dummy draw call is here to make sure that view 0 is cleared
-	// if no other draw calls are submitted to view 0.
-	::bgfx::touch(0);
-
 	// Use debug font to print information about this example.
 	::bgfx::dbgTextClear();
 	
@@ -253,19 +250,53 @@ void GraphicsEngine::render(float32 delta)
 	::bgfx::dbgTextPrintf(0, 4, 0x0f, "Color can be changed with ANSI \x1b[9;me\x1b[10;ms\x1b[11;mc\x1b[12;ma\x1b[13;mp\x1b[14;me\x1b[0m code too.");
 
 	const auto* stats = ::bgfx::getStats();
-	::bgfx::dbgTextPrintf(0, 6, 0x0f, "Backbuffer %dW x %dH in pixels, debug text %dW x %dH in characters."
-			, stats->width
-			, stats->height
-			, stats->textWidth
-			, stats->textHeight
-);
+	::bgfx::dbgTextPrintf(0, 6, 0x0f, "Backbuffer %dW x %dH in pixels, debug text %dW x %dH in characters.",
+		stats->width,
+		stats->height,
+		stats->textWidth,
+		stats->textHeight
+	);
 	
-	::bgfx::frame();(false);
+	// Set view matrix
+	const glm::quat temp = glm::conjugate(camera_.orientation);
+
+	view_ = glm::mat4_cast(temp);
+	view_ = glm::translate(view_, glm::vec3(-camera_.position.x, -camera_.position.y, -camera_.position.z));
+	
+	::bgfx::setViewTransform(0, glm::value_ptr(view_), glm::value_ptr(projection_));
+	
+	// Set view 0 default viewport.
+	::bgfx::setViewRect(0, 0, 0, width_, height_);
+
+	// This dummy draw call is here to make sure that view 0 is cleared
+	// if no other draw calls are submitted to view 0.
+	::bgfx::touch(0);
+	
+	// Render stuff here
+	uint32 i = 0;	
+	for ( const auto& r : renderables_ )
+	{
+		const auto& graphicsData = graphicsData_[i];
+		
+		glm::mat4 newModel = glm::translate(model_, graphicsData.position);
+		newModel = newModel * glm::mat4_cast( graphicsData.orientation );
+		newModel = glm::scale(newModel, graphicsData.scale);
+		
+		::bgfx::setVertexBuffer(r.vao.vbh);
+		::bgfx::setIndexBuffer(r.vao.ibh);
+		
+		::bgfx::setTransform(glm::value_ptr(newModel));
+		
+		::bgfx::setState(0 | BGFX_STATE_DEFAULT | BGFX_STATE_PT_TRISTRIP);
+		
+		::bgfx::submit(0, shaderProgram_);
+	}
+	
+	::bgfx::frame();
 }
 
-CameraId GraphicsEngine::createCamera(glm::vec3 position, glm::vec3 lookAt)
+CameraId GraphicsEngine::createCamera(const glm::vec3& position, const glm::vec3& lookAt)
 {
-	/*
 	camera_ = Camera();
 	camera_.position = position;
 	camera_.orientation = glm::quat();
@@ -276,19 +307,39 @@ CameraId GraphicsEngine::createCamera(glm::vec3 position, glm::vec3 lookAt)
 	this->lookAt(cameraId, lookAt);
 	
 	return cameraId;
-	*/
-	
-	return CameraId(0);
 }
 
+::bgfx::VertexDecl vertexDeclaration;
 MeshId GraphicsEngine::createStaticMesh(
-	std::vector<glm::vec3> vertices,
-	std::vector<uint32> indices,
-	std::vector<glm::vec4> colors,
-	std::vector<glm::vec3> normals,
-	std::vector<glm::vec2> textureCoordinates
+	const std::vector<glm::vec3>& vertices,
+	const std::vector<uint32>& indices,
+	const std::vector<glm::vec4>& colors,
+	const std::vector<glm::vec3>& normals,
+	const std::vector<glm::vec2>& textureCoordinates
 )
 {
+	vertexDeclaration
+		.begin()
+		.add(::bgfx::Attrib::Position, 3, ::bgfx::AttribType::Float)
+		.add(::bgfx::Attrib::Color0, 4, ::bgfx::AttribType::Uint8, true)
+		.end();
+	
+	Vao vao;
+	
+	vao.vbh = ::bgfx::createVertexBuffer(
+		::bgfx::copy(&vertices[0], (vertices.size() * sizeof(glm::vec3))),
+		vertexDeclaration
+	);
+	
+	vao.ibh = ::bgfx::createIndexBuffer(
+		::bgfx::copy(&indices[0], (indices.size() * sizeof(uint32)))
+	);
+	
+	vertexArrayObjects_.push_back(vao);
+	auto index = vertexArrayObjects_.size() - 1;
+	
+	return MeshId(index);
+	
 	/*
 	Vao vao;
 	
@@ -339,18 +390,16 @@ MeshId GraphicsEngine::createStaticMesh(
 	
 	return MeshId(index);
 	*/
-	
-	return MeshId();
 }
 
 MeshId GraphicsEngine::createAnimatedMesh(
-		std::vector<glm::vec3> vertices,
-		std::vector<uint32> indices,
-		std::vector<glm::vec4> colors,
-		std::vector<glm::vec3> normals,
-		std::vector<glm::vec2> textureCoordinates,
-		std::vector<glm::ivec4> boneIds,
-		std::vector<glm::vec4> boneWeights
+		const std::vector<glm::vec3>& vertices,
+		const std::vector<uint32>& indices,
+		const std::vector<glm::vec4>& colors,
+		const std::vector<glm::vec3>& normals,
+		const std::vector<glm::vec2>& textureCoordinates,
+		const std::vector<glm::ivec4>& boneIds,
+		const std::vector<glm::vec4>& boneWeights
 	)
 {
 	/*
@@ -420,11 +469,11 @@ MeshId GraphicsEngine::createAnimatedMesh(
 }
 
 MeshId GraphicsEngine::createDynamicMesh(
-	std::vector<glm::vec3> vertices,
-	std::vector<uint32> indices,
-	std::vector<glm::vec4> colors,
-	std::vector<glm::vec3> normals,
-	std::vector<glm::vec2> textureCoordinates
+	const std::vector<glm::vec3>& vertices,
+	const std::vector<uint32>& indices,
+	const std::vector<glm::vec4>& colors,
+	const std::vector<glm::vec3>& normals,
+	const std::vector<glm::vec2>& textureCoordinates
 )
 {
 	/*
@@ -475,7 +524,7 @@ MeshId GraphicsEngine::createDynamicMesh(
 	return MeshId();
 }
 
-SkeletonId GraphicsEngine::createSkeleton(uint32 numberOfBones)
+SkeletonId GraphicsEngine::createSkeleton(const uint32 numberOfBones)
 {
 	/*
 	Ubo ubo;
@@ -496,7 +545,7 @@ SkeletonId GraphicsEngine::createSkeleton(uint32 numberOfBones)
 	return SkeletonId();
 }
 
-TextureId GraphicsEngine::createTexture2d(std::string uri)
+TextureId GraphicsEngine::createTexture2d(const std::string& uri)
 {
 	/*
 	GlTexture2d texture;
@@ -524,9 +573,8 @@ TextureId GraphicsEngine::createTexture2d(std::string uri)
 	return TextureId();
 }
 
-RenderableId GraphicsEngine::createRenderable(MeshId meshId, TextureId textureId)
+RenderableId GraphicsEngine::createRenderable(const MeshId meshId, const TextureId textureId)
 {
-	/*
 	Renderable renderable;
 	
 	renderable.vao = vertexArrayObjects_[meshId.getId()];
@@ -542,14 +590,10 @@ RenderableId GraphicsEngine::createRenderable(MeshId meshId, TextureId textureId
 	graphicsData_.push_back(graphicsData);
 	
 	return RenderableId(index);
-	*/
-	
-	return RenderableId();
 }
 
-void GraphicsEngine::rotate(const CameraId cameraId, const glm::quat& quaternion, TransformSpace relativeTo)
+void GraphicsEngine::rotate(const CameraId cameraId, const glm::quat& quaternion, const TransformSpace& relativeTo)
 {
-	/*
 	switch( relativeTo )
 	{
 		case TransformSpace::TS_LOCAL:
@@ -564,12 +608,10 @@ void GraphicsEngine::rotate(const CameraId cameraId, const glm::quat& quaternion
 			std::string message = std::string("Invalid TransformSpace type.");
 			throw std::runtime_error(message);
 	}
-	*/
 }
 
-void GraphicsEngine::rotate(const RenderableId renderableId, const glm::quat& quaternion, TransformSpace relativeTo)
+void GraphicsEngine::rotate(const RenderableId renderableId, const glm::quat& quaternion, const TransformSpace& relativeTo)
 {
-	/*
 	const auto id = renderableId.getId();
 	
 	auto& graphicsData = graphicsData_[id];
@@ -588,12 +630,10 @@ void GraphicsEngine::rotate(const RenderableId renderableId, const glm::quat& qu
 			std::string message = std::string("Invalid TransformSpace type.");
 			throw std::runtime_error(message);
 	}
-	*/
 }
 
-void GraphicsEngine::rotate(const CameraId cameraId, const float32 degrees, const glm::vec3& axis, TransformSpace relativeTo)
+void GraphicsEngine::rotate(const CameraId cameraId, const float32 degrees, const glm::vec3& axis, const TransformSpace& relativeTo)
 {
-	/*
 	switch( relativeTo )
 	{
 		case TransformSpace::TS_LOCAL:
@@ -608,12 +648,10 @@ void GraphicsEngine::rotate(const CameraId cameraId, const float32 degrees, cons
 			std::string message = std::string("Invalid TransformSpace type.");
 			throw std::runtime_error(message);
 	}
-	*/
 }
 
-void GraphicsEngine::rotate(const RenderableId renderableId, const float32 degrees, const glm::vec3& axis, TransformSpace relativeTo)
+void GraphicsEngine::rotate(const RenderableId renderableId, const float32 degrees, const glm::vec3& axis, const TransformSpace& relativeTo)
 {
-	/*
 	const auto id = renderableId.getId();
 	
 	auto& graphicsData = graphicsData_[id];
@@ -632,112 +670,88 @@ void GraphicsEngine::rotate(const RenderableId renderableId, const float32 degre
 			std::string message = std::string("Invalid TransformSpace type.");
 			throw std::runtime_error(message);
 	}
-	*/
 }
 
 void GraphicsEngine::translate(const CameraId cameraId, const float32 x, const float32 y, const float32 z)
 {
-	/*
 	camera_.position += glm::vec3(x, y, z);
-	*/
 }
 
 void GraphicsEngine::translate(const RenderableId renderableId, const float32 x, const float32 y, const float32 z)
 {
-	/*
 	const auto id = renderableId.getId();
 	
 	auto& graphicsData = graphicsData_[id];
 	graphicsData.position += glm::vec3(x, y, z);
-	*/
 }
 
 void GraphicsEngine::translate(const CameraId cameraId, const glm::vec3& trans)
 {
-	/*
 	camera_.position += trans;
-	*/
 }
 
 void GraphicsEngine::translate(const RenderableId renderableId, const glm::vec3& trans)
 {
-	/*
 	const auto id = renderableId.getId();
 	
 	auto& graphicsData = graphicsData_[id];
 	graphicsData.position += trans;
-	*/
 }
 
 
 void GraphicsEngine::scale(const RenderableId renderableId, const float32 x, const float32 y, const float32 z)
 {
-	/*
 	const auto id = renderableId.getId();
 	
 	auto& graphicsData = graphicsData_[id];
 	graphicsData.scale = glm::vec3(x, y, z);
-	*/
 }
 
 void GraphicsEngine::scale(const RenderableId renderableId, const glm::vec3& scale)
 {
-	/*
 	const auto id = renderableId.getId();
 	
 	auto& graphicsData = graphicsData_[id];
 	graphicsData.scale = scale;
-	*/
 }
 
 void GraphicsEngine::scale(const RenderableId renderableId, const float32 scale)
 {
-	/*
 	const auto id = renderableId.getId();
 	
 	auto& graphicsData = graphicsData_[id];
 	graphicsData.scale = glm::vec3(scale, scale, scale);
-	*/
 }
 
 void GraphicsEngine::position(const RenderableId renderableId, const float32 x, const float32 y, const float32 z)
 {
-	/*
 	const auto id = renderableId.getId();
 	
 	auto& graphicsData = graphicsData_[id];
 	graphicsData.position = glm::vec3(x, y, z);
-	*/
 }
 
 void GraphicsEngine::position(const CameraId cameraId, const float32 x, const float32 y, const float32 z)
 {
-	/*
 	camera_.position = glm::vec3(x, y, z);
-	*/
 }
 
 void GraphicsEngine::position(const RenderableId renderableId, const glm::vec3& position)
 {
-	/*
 	const auto id = renderableId.getId();
 	
 	auto& graphicsData = graphicsData_[id];
 	graphicsData.scale = position;
-	*/
 }
 
 void GraphicsEngine::position(const CameraId cameraId, const glm::vec3& position)
 {
-	/*
 	camera_.position = position;
-	*/
 }
 
 
 void GraphicsEngine::lookAt(const RenderableId renderableId, const glm::vec3& lookAt)
 {
-	/*
 	const auto id = renderableId.getId();
 	
 	auto& graphicsData = graphicsData_[id];
@@ -746,17 +760,14 @@ void GraphicsEngine::lookAt(const RenderableId renderableId, const glm::vec3& lo
 	
 	const glm::mat4 lookAtMatrix = glm::lookAt(graphicsData.position, lookAt, glm::vec3(0.0f, 1.0f, 0.0f));
 	graphicsData.orientation =  glm::normalize( graphicsData.orientation * glm::quat_cast( lookAtMatrix ) );
-	*/
 }
 
 void GraphicsEngine::lookAt(const CameraId cameraId, const glm::vec3& lookAt)
 {
-	/*
 	assert(lookAt != camera_.position);
 	
 	const glm::mat4 lookAtMatrix = glm::lookAt(camera_.position, lookAt, glm::vec3(0.0f, 1.0f, 0.0f));
 	camera_.orientation =  glm::normalize( camera_.orientation * glm::quat_cast( lookAtMatrix ) );
-	*/
 }
 
 void GraphicsEngine::assign(const RenderableId renderableId, const SkeletonId skeletonId)
@@ -768,7 +779,7 @@ void GraphicsEngine::assign(const RenderableId renderableId, const SkeletonId sk
 	*/
 }
 
-void GraphicsEngine::update(const SkeletonId skeletonId, const void* data, uint32 size)
+void GraphicsEngine::update(const SkeletonId skeletonId, const void* data, const uint32 size)
 {
 	/*
 	const auto& ubo = uniformBufferObjects_[skeletonId.getId()];
@@ -782,20 +793,31 @@ void GraphicsEngine::update(const SkeletonId skeletonId, const void* data, uint3
 	*/
 }
 
-GLuint GraphicsEngine::createShaderProgram(std::string vertexShaderUri, std::string fragmentShaderUri)
+::bgfx::ProgramHandle GraphicsEngine::createShaderProgram(const std::string& vertexShaderFile, const std::string& fragmentShaderFile)
 {
+	auto vertexShaderSource = fileSystem_->readAll(vertexShaderFile);
+	auto fragmentShaderSource = fileSystem_->readAll(fragmentShaderFile);
+	
+	return createShaderProgramFromSource(vertexShaderSource, fragmentShaderSource);
+	
 	/*
 	auto vertexShaderSource = fileSystem_->readAll(vertexShaderUri);
 	auto fragmentShaderSource = fileSystem_->readAll(fragmentShaderUri);
 	
 	return createShaderProgramFromSource(vertexShaderSource, fragmentShaderSource);
 	*/
-	
-	return 0;
 }
 
-GLuint GraphicsEngine::createShaderProgramFromSource(std::string vertexShaderSource, std::string fragmentShaderSource)
+::bgfx::ProgramHandle GraphicsEngine::createShaderProgramFromSource(const std::string& vertexShaderSource, const std::string& fragmentShaderSource)
 {
+	auto vertexShaderMemoryBuffer = ::bgfx::copy(vertexShaderSource.c_str(), vertexShaderSource.size());
+	auto fragmentShaderMemoryBuffer = ::bgfx::copy(fragmentShaderSource.c_str(), fragmentShaderSource.size());
+	
+	auto vertexShaderHandle = ::bgfx::createShader(vertexShaderMemoryBuffer);
+	auto fragmentShaderHandle = ::bgfx::createShader(fragmentShaderMemoryBuffer);
+	
+	return ::bgfx::createProgram(vertexShaderHandle, fragmentShaderHandle, true);
+	
 	/*
 	auto vertexShader = compileShader(vertexShaderSource, GL_VERTEX_SHADER);
 	auto fragmentShader = compileShader(fragmentShaderSource, GL_FRAGMENT_SHADER);
@@ -819,100 +841,9 @@ GLuint GraphicsEngine::createShaderProgramFromSource(std::string vertexShaderSou
 	
 	return shaderProgram;
 	*/
-	
-	return 0;
 }
 
-GLuint GraphicsEngine::createShaderProgram(GLuint vertexShader, GLuint fragmentShader)
-{
-	/*
-	auto shaderProgram = glCreateProgram();
-	glAttachShader(shaderProgram, vertexShader);
-	glAttachShader(shaderProgram, fragmentShader);
-	glLinkProgram(shaderProgram);
-	
-	{
-		GLint compiled = GL_FALSE;
-		glGetProgramiv(shaderProgram, GL_LINK_STATUS, &compiled);
-		
-		if (!compiled)
-		{
-			std::stringstream message;
-			message << "Could not link shader program: ";
-			message << "\n" << getShaderProgramErrorMessage(shaderProgram);
-	
-			// Cleanup
-			glDeleteProgram(shaderProgram);
-	
-			throw std::runtime_error(message.str());
-		}
-		else
-		{
-			auto s = getShaderProgramErrorMessage(shaderProgram);
-			
-			if (s.size() > 0)
-			{
-				std::stringstream message;
-				message << "Results of linking shader program: ";
-				message << "\n" << s;
-		
-				logger_->warn( message.str() );
-			}
-		}
-	}
-	
-	return shaderProgram;
-	*/
-	
-	return 0;
-}
-
-GLuint GraphicsEngine::compileShader(std::string source, GLenum type)
-{
-	/*
-	auto shader = glCreateShader(type);
-	
-	{
-		const char* s = source.c_str();
-		glShaderSource(shader, 1, &s, nullptr);
-		glCompileShader(shader);
-		
-		GLint compiled = GL_FALSE;
-		glGetShaderiv(shader, GL_COMPILE_STATUS, &compiled);
-		
-		if (!compiled)
-		{
-			std::stringstream message;
-			message << "Could not compile shader: ";
-			message << "\n" << getShaderErrorMessage(shader);
-	
-			// Cleanup
-			glDeleteShader(shader);
-	
-			throw std::runtime_error(message.str());
-		}
-		else
-		{
-			auto s = getShaderErrorMessage(shader);
-			
-			if (s.size() > 0)
-			{
-				std::stringstream message;
-				message << "Results of shader compilation: ";
-				message << "\n" << s;
-		
-				logger_->warn( message.str() );
-			}
-		}
-	}
-	
-	return shader;
-	*/
-	
-	return 0;
-}
-
-std::string GraphicsEngine::getShaderErrorMessage(GLuint shader)
+std::string GraphicsEngine::getShaderErrorMessage(const GLuint shader)
 {
 	/*
 	GLint infoLogLength;
@@ -937,7 +868,7 @@ std::string GraphicsEngine::getShaderErrorMessage(GLuint shader)
 	return std::string();
 }
 
-std::string GraphicsEngine::getShaderProgramErrorMessage(GLuint shaderProgram)
+std::string GraphicsEngine::getShaderProgramErrorMessage(const GLuint shaderProgram)
 {
 	/*
 	GLint infoLogLength;
@@ -962,7 +893,7 @@ std::string GraphicsEngine::getShaderProgramErrorMessage(GLuint shaderProgram)
 	return std::string();
 }
 
-void GraphicsEngine::setMouseRelativeMode(bool enabled)
+void GraphicsEngine::setMouseRelativeMode(const bool enabled)
 {
 	/*
 	auto result = SDL_SetRelativeMouseMode(static_cast<SDL_bool>(enabled));
@@ -975,7 +906,7 @@ void GraphicsEngine::setMouseRelativeMode(bool enabled)
 	*/
 }
 
-void GraphicsEngine::setCursorVisible(bool visible)
+void GraphicsEngine::setCursorVisible(const bool visible)
 {
 	/*
 	auto toggle = (visible ? SDL_ENABLE : SDL_DISABLE);

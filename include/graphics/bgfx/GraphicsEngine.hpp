@@ -7,6 +7,9 @@
 #include <GL/glew.h>
 #include <SDL2/SDL.h>
 
+#include <bgfx/platform.h>
+#include <bgfx/bgfx.h>
+
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -46,8 +49,8 @@ struct Ubo
 struct Vao
 {
 	GLuint id;
-	Vbo vbo[4];
-	Ebo ebo;
+	::bgfx::VertexBufferHandle vbh;
+	::bgfx::IndexBufferHandle ibh;
 };
 
 struct GlTexture2d
@@ -79,48 +82,48 @@ struct Camera
 class GraphicsEngine : public IGraphicsEngine
 {
 public:
-	GraphicsEngine(uint32 width, uint32 height, utilities::Properties* properties, fs::IFileSystem* fileSystem, logger::ILogger* logger);
+	GraphicsEngine(utilities::Properties* properties, fs::IFileSystem* fileSystem, logger::ILogger* logger);
 	virtual ~GraphicsEngine();
 	
-	virtual void setViewport(uint32 width, uint32 height) override;
-	virtual void render(float32 delta) override;
+	virtual void setViewport(const uint32 width, const uint32 height) override;
+	virtual void render(const float32 delta) override;
 	
-	virtual CameraId createCamera(glm::vec3 position, glm::vec3 lookAt = glm::vec3(0.0f, 0.0f, 0.0f)) override;
+	virtual CameraId createCamera(const glm::vec3& position, const glm::vec3& lookAt = glm::vec3(0.0f, 0.0f, 0.0f)) override;
 	
 	virtual MeshId createStaticMesh(
-		std::vector<glm::vec3> vertices,
-		std::vector<uint32> indices,
-		std::vector<glm::vec4> colors,
-		std::vector<glm::vec3> normals,
-		std::vector<glm::vec2> textureCoordinates
+		const std::vector<glm::vec3>& vertices,
+		const std::vector<uint32>& indices,
+		const std::vector<glm::vec4>& colors,
+		const std::vector<glm::vec3>& normals,
+		const std::vector<glm::vec2>& textureCoordinates
 	) override;
 	virtual MeshId createAnimatedMesh(
-		std::vector<glm::vec3> vertices,
-		std::vector<uint32> indices,
-		std::vector<glm::vec4> colors,
-		std::vector<glm::vec3> normals,
-		std::vector<glm::vec2> textureCoordinates,
-		std::vector<glm::ivec4> boneIds,
-		std::vector<glm::vec4> boneWeights
+		const std::vector<glm::vec3>& vertices,
+		const std::vector<uint32>& indices,
+		const std::vector<glm::vec4>& colors,
+		const std::vector<glm::vec3>& normals,
+		const std::vector<glm::vec2>& textureCoordinates,
+		const std::vector<glm::ivec4>& boneIds,
+		const std::vector<glm::vec4>& boneWeights
 	) override;
 	virtual MeshId createDynamicMesh(
-		std::vector<glm::vec3> vertices,
-		std::vector<uint32> indices,
-		std::vector<glm::vec4> colors,
-		std::vector<glm::vec3> normals,
-		std::vector<glm::vec2> textureCoordinates
+		const std::vector<glm::vec3>& vertices,
+		const std::vector<uint32>& indices,
+		const std::vector<glm::vec4>& colors,
+		const std::vector<glm::vec3>& normals,
+		const std::vector<glm::vec2>& textureCoordinates
 	) override;
 	
-	virtual SkeletonId createSkeleton(uint32 numberOfBones) override;
+	virtual SkeletonId createSkeleton(const uint32 numberOfBones) override;
 	
-	virtual TextureId createTexture2d(std::string uri) override;
+	virtual TextureId createTexture2d(const std::string& uri) override;
 	
-	virtual RenderableId createRenderable(MeshId meshId, TextureId textureId) override;
+	virtual RenderableId createRenderable(const MeshId meshId, const TextureId textureId) override;
 	
-	virtual void rotate(const CameraId cameraId, const glm::quat& quaternion, TransformSpace relativeTo = TransformSpace::TS_LOCAL) override;
-	virtual void rotate(const RenderableId renderableId, const glm::quat& quaternion, TransformSpace relativeTo = TransformSpace::TS_LOCAL) override;
-	virtual void rotate(const CameraId cameraId, const float32 degrees, const glm::vec3& axis, TransformSpace relativeTo = TransformSpace::TS_LOCAL) override;
-	virtual void rotate(const RenderableId renderableId, const float32 degrees, const glm::vec3& axis, TransformSpace relativeTo = TransformSpace::TS_LOCAL) override;
+	virtual void rotate(const CameraId cameraId, const glm::quat& quaternion, const TransformSpace& relativeTo = TransformSpace::TS_LOCAL) override;
+	virtual void rotate(const RenderableId renderableId, const glm::quat& quaternion, const TransformSpace& relativeTo = TransformSpace::TS_LOCAL) override;
+	virtual void rotate(const CameraId cameraId, const float32 degrees, const glm::vec3& axis, const TransformSpace& relativeTo = TransformSpace::TS_LOCAL) override;
+	virtual void rotate(const RenderableId renderableId, const float32 degrees, const glm::vec3& axis, const TransformSpace& relativeTo = TransformSpace::TS_LOCAL) override;
 	
 	virtual void translate(const CameraId cameraId, const float32 x, const float32 y, const float32 z) override;
 	virtual void translate(const RenderableId renderableId, const float32 x, const float32 y, const float32 z) override;
@@ -143,8 +146,8 @@ public:
 	
 	virtual void update(const SkeletonId skeletonId, const void* data, uint32 size) override;
 	
-	virtual void setMouseRelativeMode(bool enabled) override;
-	virtual void setCursorVisible(bool visible) override;
+	virtual void setMouseRelativeMode(const bool enabled) override;
+	virtual void setCursorVisible(const bool visible) override;
 	
 	virtual void processEvents() override;
 	virtual void addEventListener(IEventListener* eventListener) override;
@@ -156,7 +159,7 @@ private:
 	uint32 width_;
 	uint32 height_;
 	
-	GLuint shaderProgram_;
+	::bgfx::ProgramHandle shaderProgram_;
 	
 	SDL_Window* sdlWindow_;
 	SDL_GLContext openglContext_;
@@ -177,13 +180,11 @@ private:
 	fs::IFileSystem* fileSystem_;
 	logger::ILogger* logger_;
 	
-	GLuint createShaderProgram(std::string vertexShaderUri, std::string fragmentShaderUri);
-	GLuint createShaderProgramFromSource(std::string vertexShaderSource, std::string fragmentShaderSource);
-	GLuint createShaderProgram(GLuint vertexShader, GLuint fragmentShader);
-	GLuint compileShader(std::string source, GLenum type);
+	::bgfx::ProgramHandle createShaderProgram(const std::string& vertexShaderUri, const std::string& fragmentShaderUri);
+	::bgfx::ProgramHandle createShaderProgramFromSource(const std::string& vertexShaderSource, const std::string& fragmentShaderSource);
 	
-	std::string getShaderErrorMessage(GLuint shader);
-	std::string getShaderProgramErrorMessage(GLuint shaderProgram);
+	std::string getShaderErrorMessage(const GLuint shader);
+	std::string getShaderProgramErrorMessage(const GLuint shaderProgram);
 	
 	void handleEvent(const Event& event);
 	static Event convertSdlEvent(const SDL_Event& event);
