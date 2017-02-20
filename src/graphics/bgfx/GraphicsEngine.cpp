@@ -4,7 +4,6 @@
 
 #include "graphics/bgfx/GraphicsEngine.hpp"
 
-#include <SDL2/SDL_opengl.h>
 #include <SDL2/SDL_syswm.h>
 
 #define GLM_FORCE_RADIANS
@@ -31,7 +30,9 @@ GraphicsEngine::GraphicsEngine(utilities::Properties* properties, fs::IFileSyste
 	width_ = properties->getIntValue(std::string("window.width"), 1024);
 	height_ = properties->getIntValue(std::string("window.height"), 768);
 	
-	auto errorCode = SDL_Init( SDL_INIT_VIDEO );
+	logger_->info(std::string("Width and height set to ") + std::to_string(width_) + " x " + std::to_string(height_));
+	
+	auto errorCode = SDL_Init(SDL_INIT_EVENTS);
 	
 	if (errorCode != 0)
 	{
@@ -39,14 +40,14 @@ GraphicsEngine::GraphicsEngine(utilities::Properties* properties, fs::IFileSyste
 		throw std::runtime_error(message);
 	}
 	
-	SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE );
-	SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 3 );
-	SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 3 );
-	SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
+	//SDL_GL_SetAttribute( SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE );
+	//SDL_GL_SetAttribute( SDL_GL_CONTEXT_MAJOR_VERSION, 3 );
+	//SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 3 );
+	//SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
 	
 	auto windowTitle = properties_->getStringValue("window.title", "Hercules");
 	
-	sdlWindow_ = SDL_CreateWindow(windowTitle.c_str(), 50, 50, width_, height_, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL);
+	sdlWindow_ = SDL_CreateWindow(windowTitle.c_str(), 50, 50, width_, height_, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE);
 	
 	if (sdlWindow_ == nullptr)
 	{
@@ -54,7 +55,6 @@ GraphicsEngine::GraphicsEngine(utilities::Properties* properties, fs::IFileSyste
 		throw std::runtime_error(message);
 	}
 
-	//::bgfx::sdlSetWindow(sdlWindow_);
 	SDL_SysWMinfo wmi;
 	SDL_VERSION(&wmi.version);
 	if (!SDL_GetWindowWMInfo(sdlWindow_, &wmi) )
@@ -68,15 +68,15 @@ GraphicsEngine::GraphicsEngine(utilities::Properties* properties, fs::IFileSyste
 	pd.ndt          = wmi.info.x11.display;
 	pd.nwh          = (void*)(uintptr_t)wmi.info.x11.window;
 #elif defined(PLATFORM_MAC)
-	pd.ndt          = NULL;
+	pd.ndt          = nullptr;
 	pd.nwh          = wmi.info.cocoa.window;
 #elif defined(PLATFORM_WINDOWS)
-	pd.ndt          = NULL;
+	pd.ndt          = nullptr;
 	pd.nwh          = wmi.info.win.window;
 #endif
-	pd.context      = NULL;
-	pd.backBuffer   = NULL;
-	pd.backBufferDS = NULL;
+	pd.context      = nullptr;
+	pd.backBuffer   = nullptr;
+	pd.backBufferDS = nullptr;
 	
 	::bgfx::setPlatformData(pd);
 	
@@ -87,25 +87,7 @@ GraphicsEngine::GraphicsEngine(utilities::Properties* properties, fs::IFileSyste
 		auto message = std::string("Unable to initialize bgfx.");
 		throw std::runtime_error(message);
 	}
-	
-	openglContext_ = SDL_GL_CreateContext( sdlWindow_ );
-	
-	if (openglContext_ == nullptr)
-	{
-		auto message = std::string("Unable to create OpenGL context: ") + SDL_GetError();
-		throw std::runtime_error(message);
-	}
-	
-	glewExperimental = GL_TRUE; // Needed in core profile
-	
-	auto result = glewInit();
-	
-	if (result != GLEW_OK)
-	{
-		auto msg = std::string("Failed to initialize GLEW.");
-		throw std::runtime_error(msg);
-	}
-	
+
 	::bgfx::setDebug(BGFX_DEBUG_TEXT);
 
 	auto vertexShaderFile = std::string("../data/shaders/basic.vs.sc");
@@ -125,12 +107,6 @@ GraphicsEngine::GraphicsEngine(const GraphicsEngine& other)
 
 GraphicsEngine::~GraphicsEngine()
 {
-	if (openglContext_)
-	{
-		SDL_GL_DeleteContext(openglContext_);
-		openglContext_ = nullptr;
-	}
-	
 	if (sdlWindow_)
 	{
 		SDL_SetWindowFullscreen( sdlWindow_, 0 );
@@ -156,9 +132,11 @@ void GraphicsEngine::setViewport(const uint32 width, const uint32 height)
 	width_ = width;
 	height_ = height;
 	
+	SDL_SetWindowSize(sdlWindow_, width, height);
+	
 	projection_ = glm::perspective(glm::radians(60.0f), (float32)width / (float32)height, 0.1f, 500.f);
 	
-	glViewport(0, 0, width_, height_);
+	//glViewport(0, 0, width_, height_);
 	
 	::bgfx::reset(width_, height_, BGFX_RESET_NONE);
 	
@@ -250,11 +228,9 @@ void GraphicsEngine::render(const float32 delta)
 	::bgfx::dbgTextPrintf(0, 4, 0x0f, "Color can be changed with ANSI \x1b[9;me\x1b[10;ms\x1b[11;mc\x1b[12;ma\x1b[13;mp\x1b[14;me\x1b[0m code too.");
 
 	const auto* stats = ::bgfx::getStats();
-	::bgfx::dbgTextPrintf(0, 6, 0x0f, "Backbuffer %dW x %dH in pixels, debug text %dW x %dH in characters.",
+	::bgfx::dbgTextPrintf(0, 6, 0x0f, "Backbuffer %dW x %dH in pixels.",
 		stats->width,
-		stats->height,
-		stats->textWidth,
-		stats->textHeight
+		stats->height
 	);
 	
 	// Set view matrix
@@ -290,6 +266,8 @@ void GraphicsEngine::render(const float32 delta)
 		::bgfx::setState(0 | BGFX_STATE_DEFAULT | BGFX_STATE_PT_TRISTRIP);
 		
 		::bgfx::submit(0, shaderProgram_);
+		
+		i++;
 	}
 	
 	::bgfx::frame();
@@ -547,6 +525,13 @@ SkeletonId GraphicsEngine::createSkeleton(const uint32 numberOfBones)
 
 TextureId GraphicsEngine::createTexture2d(const std::string& uri)
 {
+	GlTexture2d texture;
+	
+	texture2dObjects_.push_back(texture);
+	auto index = texture2dObjects_.size() - 1;
+	
+	return TextureId(index);
+	
 	/*
 	GlTexture2d texture;
 	
@@ -569,8 +554,6 @@ TextureId GraphicsEngine::createTexture2d(const std::string& uri)
 	
 	return TextureId(index);
 	*/
-	
-	return TextureId();
 }
 
 RenderableId GraphicsEngine::createRenderable(const MeshId meshId, const TextureId textureId)
@@ -748,7 +731,6 @@ void GraphicsEngine::position(const CameraId cameraId, const glm::vec3& position
 {
 	camera_.position = position;
 }
-
 
 void GraphicsEngine::lookAt(const RenderableId renderableId, const glm::vec3& lookAt)
 {

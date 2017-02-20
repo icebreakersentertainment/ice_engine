@@ -162,7 +162,6 @@ private:
 	::bgfx::ProgramHandle shaderProgram_;
 	
 	SDL_Window* sdlWindow_;
-	SDL_GLContext openglContext_;
 	
 	std::vector<IEventListener*> eventListeners_;
 	std::vector<Renderable> renderables_;
