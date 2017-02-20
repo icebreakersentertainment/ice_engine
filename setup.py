@@ -115,6 +115,7 @@ dependencies['glm'] = {'name': 'GLM', 'version': '0.9.8.3', 'extension': extensi
 dependencies['angelscript'] = {'name': 'Angelscript', 'version': '2.31.2', 'extension': extension}
 dependencies['assimp'] = {'name': 'Asset Importer', 'version': 'v3.1', 'extension': extension}
 dependencies['bgfx'] = {'name': 'BGFX', 'version': 'master', 'extension': extension}
+dependencies['bx'] = {'name': 'BX', 'version': 'master', 'extension': extension}
 dependencies['bullet'] = {'name': 'Bullet', 'version': '2.85.1', 'extension': extension}
 dependencies['entityx'] = {'name': 'Entityx', 'version': 'master', 'extension': extension}
 dependencies['glew'] = {'name': 'GLEW', 'version': '2.0.0', 'extension': extension}

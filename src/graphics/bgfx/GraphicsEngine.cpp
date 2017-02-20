@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <exception>
 #include <stdexcept>
 #include <system_error>
@@ -87,11 +88,55 @@ GraphicsEngine::GraphicsEngine(utilities::Properties* properties, fs::IFileSyste
 		auto message = std::string("Unable to initialize bgfx.");
 		throw std::runtime_error(message);
 	}
+	
+	switch (::bgfx::getRendererType())
+	{
+		case ::bgfx::RendererType::Noop:
+			logger_->info("Render type: Noop");
+			break;
+			
+		case ::bgfx::RendererType::Direct3D9:
+			logger_->info("Render type: Direct3D9");
+			break;
+			
+		case ::bgfx::RendererType::Direct3D11:
+			logger_->info("Render type: Direct3D11");
+			break;
+			
+		case ::bgfx::RendererType::Direct3D12:
+			logger_->info("Render type: Direct3D12");
+			break;
+			
+		case ::bgfx::RendererType::Gnm:
+			logger_->info("Render type: Gnm");
+			break;
+			
+		case ::bgfx::RendererType::Metal:
+			logger_->info("Render type: Metal");
+			break;
+			
+		case ::bgfx::RendererType::OpenGL:
+			logger_->info("Render type: OpenGL");
+			break;
+			
+		case ::bgfx::RendererType::OpenGLES:
+			logger_->info("Render type: OpenGLES");
+			break;
+			
+		case ::bgfx::RendererType::Vulkan:
+			logger_->info("Render type: Vulkan");
+			break;
+	
+		case ::bgfx::RendererType::Count:
+			logger_->info("Render type: Count");
+			logger_->warn("Render type should not be Count!");
+			break;
+	}
 
 	::bgfx::setDebug(BGFX_DEBUG_TEXT);
 
-	auto vertexShaderFile = std::string("../data/shaders/basic.vs.sc");
-	auto fragmentShaderFile = std::string("../data/shaders/basic.fs.sc");
+	auto vertexShaderFile = std::string("../data/shaders/basic.vs.sc.bin");
+	auto fragmentShaderFile = std::string("../data/shaders/basic.fs.sc.bin");
 	
 	shaderProgram_ = createShaderProgram(vertexShaderFile, fragmentShaderFile);
 	
@@ -263,7 +308,7 @@ void GraphicsEngine::render(const float32 delta)
 		
 		::bgfx::setTransform(glm::value_ptr(newModel));
 		
-		::bgfx::setState(0 | BGFX_STATE_DEFAULT | BGFX_STATE_PT_TRISTRIP);
+		::bgfx::setState(BGFX_STATE_DEFAULT | BGFX_STATE_PT_TRISTRIP);
 		
 		::bgfx::submit(0, shaderProgram_);
 		
@@ -779,6 +824,9 @@ void GraphicsEngine::update(const SkeletonId skeletonId, const void* data, const
 {
 	auto vertexShaderSource = fileSystem_->readAll(vertexShaderFile);
 	auto fragmentShaderSource = fileSystem_->readAll(fragmentShaderFile);
+	
+	logger_->debug("Vertex shader source from file '" + vertexShaderFile + "':\n" + vertexShaderSource);
+	logger_->debug("Fragment shader source from file '" + fragmentShaderFile + "':\n" + fragmentShaderSource);
 	
 	return createShaderProgramFromSource(vertexShaderSource, fragmentShaderSource);
 	
