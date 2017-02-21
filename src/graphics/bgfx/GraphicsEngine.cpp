@@ -22,6 +22,102 @@ namespace graphics
 namespace bgfx
 {
 
+struct BgfxCallbackImplementation : public ::bgfx::CallbackI
+{
+	
+	
+	BgfxCallbackImplementation(logger::ILogger* logger) : logger_(logger)
+	{
+
+	}
+	
+	virtual void fatal(::bgfx::Fatal::Enum _code, const char *_str) override
+	{
+		auto code = std::string();
+		
+		switch (_code)
+		{
+			case ::bgfx::Fatal::Enum::DebugCheck:
+				code = std::string("Debug Check");
+				break;
+			
+			case ::bgfx::Fatal::Enum::InvalidShader:
+				code = std::string("Invalid Shader");
+				break;
+			
+			case ::bgfx::Fatal::Enum::UnableToInitialize:
+				code = std::string("Unable To Initialize");
+				break;
+			
+			case ::bgfx::Fatal::Enum::UnableToCreateTexture:
+				code = std::string("Unable To Create Texture");
+				break;
+			
+			case ::bgfx::Fatal::Enum::DeviceLost:
+				code = std::string("Device Lost");
+				break;
+			
+			case ::bgfx::Fatal::Enum::Count:
+				code = std::string("Count");
+				break;
+			
+			default:
+				code = std::string("Unknown");
+				break;
+		}
+		
+		logger_->fatal(code + ": " + _str);
+	}
+	
+	virtual void traceVargs(const char *_filePath, uint16_t _line, const char *_format, va_list _argList) override
+	{
+		// Hopefully this buffer is big enough...
+		char buffer[2048];
+		
+		sprintf(buffer, _format, _filePath, _line, _argList);
+		
+		logger_->fatal(buffer);
+	}
+	
+	virtual uint32_t cacheReadSize(uint64_t _id) override
+	{
+		return 0;
+	}
+	
+	virtual bool cacheRead(uint64_t _id, void *_data, uint32_t _size) override
+	{
+		return false;
+	}
+	
+	virtual void cacheWrite(uint64_t _id, const void *_data, uint32_t _size) override
+	{
+		
+	}
+	
+	virtual void screenShot(const char *_filePath, uint32_t _width, uint32_t _height, uint32_t _pitch, const void *_data, uint32_t _size, bool _yflip) override
+	{
+		
+	}
+	
+	virtual void captureBegin(uint32_t _width, uint32_t _height, uint32_t _pitch, ::bgfx::TextureFormat::Enum _format, bool _yflip) override
+	{
+		
+	}
+	
+	virtual void captureEnd() override
+	{
+		
+	}
+	
+	virtual void captureFrame(const void *_data, uint32_t _size) override
+	{
+		
+	}
+
+private:
+	logger::ILogger* logger_;
+};
+
 GraphicsEngine::GraphicsEngine(utilities::Properties* properties, fs::IFileSystem* fileSystem, logger::ILogger* logger)
 {
 	properties_ = properties;
@@ -55,6 +151,9 @@ GraphicsEngine::GraphicsEngine(utilities::Properties* properties, fs::IFileSyste
 		auto message = std::string("Unable to create window: ") + SDL_GetError();
 		throw std::runtime_error(message);
 	}
+	
+	// TODO: fix
+	auto bgfxCallbackImplementation = new BgfxCallbackImplementation(logger_);
 
 	SDL_SysWMinfo wmi;
 	SDL_VERSION(&wmi.version);
@@ -81,7 +180,7 @@ GraphicsEngine::GraphicsEngine(utilities::Properties* properties, fs::IFileSyste
 	
 	::bgfx::setPlatformData(pd);
 	
-	auto bgfxInitResult = ::bgfx::init();
+	auto bgfxInitResult = ::bgfx::init(::bgfx::RendererType::Count, BGFX_PCI_ID_NONE, 0, bgfxCallbackImplementation);
 	
 	if (bgfxInitResult == false)
 	{
@@ -135,8 +234,8 @@ GraphicsEngine::GraphicsEngine(utilities::Properties* properties, fs::IFileSyste
 
 	::bgfx::setDebug(BGFX_DEBUG_TEXT);
 
-	auto vertexShaderFile = std::string("../data/shaders/basic.vs.sc.bin");
-	auto fragmentShaderFile = std::string("../data/shaders/basic.fs.sc.bin");
+	auto vertexShaderFile = std::string("../data/shaders/basic.vs.sc.windows.bin");
+	auto fragmentShaderFile = std::string("../data/shaders/basic.fs.sc.windows.bin");
 	
 	shaderProgram_ = createShaderProgram(vertexShaderFile, fragmentShaderFile);
 	

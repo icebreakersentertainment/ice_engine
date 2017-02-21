@@ -57,10 +57,12 @@ GameEngine::GameEngine(
 
 GameEngine::~GameEngine()
 {
-	//angelScript_->destroy();
+	logger_->info("Shutting down.");
 	
 	if (mainAsScript_ != nullptr)
+	{
 		mainAsScript_->callMethod( std::string("void destroy()") );
+	}
 }
 
 GameState GameEngine::getState()
