@@ -1,3 +1,4 @@
+#include <array>
 #include <algorithm>
 #include <exception>
 #include <stdexcept>
@@ -975,33 +976,35 @@ std::string GraphicsEngine::compileShaderToFile(const std::string& shaderFile, c
 	ss << " --type f " << shaderTypeAsString;
 	ss << " --platform windows";
 	ss << " --profile ps_4_0 -O 3";
+	ss << " 2>&1";
 	
-    // execute external process shaderc or make TARGET=x
-    // to compile shader source into binary...
     bx::Error error;
     auto processReader = bx::ProcessReader();
     if (!processReader.open(ss.str().c_str(), &error))
     {
-		throw std::exception("Unable to load shader file.");
+		throw std::runtime_error("Unable to load shader file.");
 	}
 	else if (!error.isOk())
     {
 		auto msg = std::string("Unable to load shader file: ") + error.getMessage().getPtr();
-		throw std::exception(msg.c_str());
+		throw std::runtime_error(msg.c_str());
 	}
 	
-	char buffer[2048];
-	
-    int32_t numCharactersWritten = processReader.read(buffer, 2048, &error);
+	std::string commandOutput;
+	std::array<char, 128> buffer;
+	while (processReader.read(buffer.data(), 128, &error) != 0)
+	{
+		commandOutput += buffer.data();
+	}
     
     int32_t result = processReader.getExitCode();
     
     processReader.close();
 
-    if (0 != result)
+    if (result != 0)
     {
-		auto msg = std::string("Unable to compile shader file: ") + error.getMessage().getPtr();
-		throw std::exception(msg.c_str());
+		auto msg = std::string("Unable to compile shader file: ") + commandOutput;
+		throw std::runtime_error(msg.c_str());
     }
     
     return outputFile;
