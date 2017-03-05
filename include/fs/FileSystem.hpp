@@ -23,6 +23,8 @@ public:
 	virtual std::string readAll(const std::string& file) const override;
 	
 	virtual std::unique_ptr<IFile> open(const std::string& file, FileFlags flags) const override;
+	
+	virtual std::string generateTempFilename() const override;
 };
 
 }

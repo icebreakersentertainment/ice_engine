@@ -29,6 +29,8 @@ public:
 	virtual std::string readAll(const std::string& file) const = 0;
 	
 	virtual std::unique_ptr<IFile> open(const std::string& file, FileFlags flags) const = 0;
+	
+	virtual std::string generateTempFilename() const = 0;
 };
 
 }

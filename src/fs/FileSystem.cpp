@@ -73,5 +73,13 @@ std::unique_ptr<IFile> FileSystem::open(const std::string& file, FileFlags flags
 	return std::make_unique<File>( file, flags );
 }
 
+std::string FileSystem::generateTempFilename() const
+{
+	auto tempDirPath = boost::filesystem::temp_directory_path();
+	auto tempFile = tempDirPath / boost::filesystem::unique_path();
+	
+	return tempFile.string();
+}
+
 }
 }

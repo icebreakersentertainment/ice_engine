@@ -183,7 +183,7 @@ private:
 	::bgfx::ProgramHandle createShaderProgram(const std::string& vertexShaderUri, const std::string& fragmentShaderUri);
 	::bgfx::ProgramHandle createShaderProgramFromSource(const std::string& vertexShaderSource, const std::string& fragmentShaderSource);
 	
-	std::string compileShaderToFile(const std::string& shaderFile, const ShaderType shaderType) const;
+	std::string compileShaderToFile(const std::string& shaderFile, const ShaderType shaderType, const std::vector<std::string>& includeDirectories = std::vector<std::string>()) const;
 	
 	std::string getShaderErrorMessage(const GLuint shader);
 	std::string getShaderProgramErrorMessage(const GLuint shaderProgram);

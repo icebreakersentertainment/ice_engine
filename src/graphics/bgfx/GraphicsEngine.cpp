@@ -943,15 +943,16 @@ void GraphicsEngine::update(const SkeletonId skeletonId, const void* data, const
 	*/
 }
 
-std::string GraphicsEngine::compileShaderToFile(const std::string& shaderFile, const ShaderType shaderType) const
+std::string GraphicsEngine::compileShaderToFile(const std::string& shaderFile, const ShaderType shaderType, const std::vector<std::string>& includeDirectories) const
 {
 	if (!fileSystem_->exists(shaderFile))
 	{
 		auto msg = std::string("Shader file does not exist: ") + shaderFile;
-		throw std::exception( msg.c_str() );
+		throw std::runtime_error( msg.c_str() );
 	}
 	
-	auto outputFile = std::string(shaderFile  + ".bin");
+	// Get our parameters ready
+	auto outputFile = fileSystem_->generateTempFilename();
 	auto shaderTypeAsString = std::string("v");
 	switch (shaderType)
 	{
@@ -968,15 +969,33 @@ std::string GraphicsEngine::compileShaderToFile(const std::string& shaderFile, c
 			shaderTypeAsString = std::string("v");
 			break;
 	}
+	auto includes = std::string();
+	for (const auto& dir : includeDirectories)
+	{
+		includes += std::string("-i ") + dir;
+	}
+#if defined(PLATFORM_WINDOWS)
+    auto platform = std::string("windows");
+    auto extra = std::string("--profile ps_4_0 -O 3");
+#elif defined(PLATFORM_MAC)
+	auto platform = std::string("osx");
+    auto extra = std::string();
+#elif defined(PLATFORM_LINUX)
+	auto platform = std::string("linux");
+    auto extra = std::string();
+#endif
 	
 	std::stringstream ss;
 	ss << "shadercRelease";
 	ss << " -f " << shaderFile;
 	ss << " -o " << outputFile;
 	ss << " --type f " << shaderTypeAsString;
-	ss << " --platform windows";
-	ss << " --profile ps_4_0 -O 3";
+	ss << " --platform " << platform;
+	ss << " " << includes;
+	ss << " " << extra;
 	ss << " 2>&1";
+	
+	logger_->debug(std::string("Running shader compile command: ") + ss.str());
 	
     bx::Error error;
     auto processReader = bx::ProcessReader();
