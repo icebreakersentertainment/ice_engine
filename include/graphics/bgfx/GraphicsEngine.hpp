@@ -15,6 +15,7 @@
 #include <glm/gtc/quaternion.hpp>
 
 #include "graphics/IGraphicsEngine.hpp"
+#include "graphics/ShaderHandle.hpp"
 #include "graphics/Event.hpp"
 
 #include "utilities/Properties.hpp"
@@ -181,6 +182,8 @@ private:
 	
 	::bgfx::ProgramHandle createShaderProgram(const std::string& vertexShaderUri, const std::string& fragmentShaderUri);
 	::bgfx::ProgramHandle createShaderProgramFromSource(const std::string& vertexShaderSource, const std::string& fragmentShaderSource);
+	
+	std::string compileShaderToFile(const std::string& shaderFile, const ShaderType shaderType) const;
 	
 	std::string getShaderErrorMessage(const GLuint shader);
 	std::string getShaderProgramErrorMessage(const GLuint shaderProgram);

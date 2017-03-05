@@ -12,6 +12,8 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/string_cast.hpp>
 
+#include <bx/crtimpl.h>
+
 #include "utilities/ImageLoader.hpp"
 #include "Platform.hpp"
 
@@ -921,8 +923,11 @@ void GraphicsEngine::update(const SkeletonId skeletonId, const void* data, const
 
 ::bgfx::ProgramHandle GraphicsEngine::createShaderProgram(const std::string& vertexShaderFile, const std::string& fragmentShaderFile)
 {
-	auto vertexShaderSource = fileSystem_->readAll(vertexShaderFile);
-	auto fragmentShaderSource = fileSystem_->readAll(fragmentShaderFile);
+	const auto vertexShaderOutputFile = compileShaderToFile(vertexShaderFile, ShaderType::VERTEX);
+	const auto fragmentShaderOutputFile = compileShaderToFile(fragmentShaderFile, ShaderType::FRAGMENT);
+	
+	const auto vertexShaderSource = fileSystem_->readAll(vertexShaderOutputFile);
+	const auto fragmentShaderSource = fileSystem_->readAll(fragmentShaderOutputFile);
 	
 	logger_->debug("Vertex shader source from file '" + vertexShaderFile + "':\n" + vertexShaderSource);
 	logger_->debug("Fragment shader source from file '" + fragmentShaderFile + "':\n" + fragmentShaderSource);
@@ -935,6 +940,71 @@ void GraphicsEngine::update(const SkeletonId skeletonId, const void* data, const
 	
 	return createShaderProgramFromSource(vertexShaderSource, fragmentShaderSource);
 	*/
+}
+
+std::string GraphicsEngine::compileShaderToFile(const std::string& shaderFile, const ShaderType shaderType) const
+{
+	if (!fileSystem_->exists(shaderFile))
+	{
+		auto msg = std::string("Shader file does not exist: ") + shaderFile;
+		throw std::exception( msg.c_str() );
+	}
+	
+	auto outputFile = std::string(shaderFile  + ".bin");
+	auto shaderTypeAsString = std::string("v");
+	switch (shaderType)
+	{
+		case ShaderType::FRAGMENT:
+			shaderTypeAsString = std::string("f");
+			break;
+		
+		case ShaderType::COMPUTE:
+			shaderTypeAsString = std::string("c");
+			break;
+		
+		case ShaderType::VERTEX:
+		default:
+			shaderTypeAsString = std::string("v");
+			break;
+	}
+	
+	std::stringstream ss;
+	ss << "shadercRelease";
+	ss << " -f " << shaderFile;
+	ss << " -o " << outputFile;
+	ss << " --type f " << shaderTypeAsString;
+	ss << " --platform windows";
+	ss << " --profile ps_4_0 -O 3";
+	
+    // execute external process shaderc or make TARGET=x
+    // to compile shader source into binary...
+    bx::Error error;
+    auto processReader = bx::ProcessReader();
+    if (!processReader.open(ss.str().c_str(), &error))
+    {
+		throw std::exception("Unable to load shader file.");
+	}
+	else if (!error.isOk())
+    {
+		auto msg = std::string("Unable to load shader file: ") + error.getMessage().getPtr();
+		throw std::exception(msg.c_str());
+	}
+	
+	char buffer[2048];
+	
+    int32_t numCharactersWritten = processReader.read(buffer, 2048, &error);
+    
+    int32_t result = processReader.getExitCode();
+    
+    processReader.close();
+
+    if (0 != result)
+    {
+		auto msg = std::string("Unable to compile shader file: ") + error.getMessage().getPtr();
+		throw std::exception(msg.c_str());
+    }
+    
+    return outputFile;
 }
 
 ::bgfx::ProgramHandle GraphicsEngine::createShaderProgramFromSource(const std::string& vertexShaderSource, const std::string& fragmentShaderSource)

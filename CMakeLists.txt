@@ -144,6 +144,10 @@ include_directories(./deps/sqlite/include)
 include_directories(./deps/ctpl/include)
 include_directories(./deps/freeimage/include)
 
+if(MSVC)
+  include_directories(./deps/bx/include/compat/msvc)
+endif()
+
 if(WIN32)
   configure_file(${FREEIMAGE_LIBRARY} ./ COPYONLY)
   configure_file(${ASSIMP_LIBRARY} ./ COPYONLY)
