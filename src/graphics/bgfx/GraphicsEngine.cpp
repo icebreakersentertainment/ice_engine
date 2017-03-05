@@ -237,8 +237,8 @@ GraphicsEngine::GraphicsEngine(utilities::Properties* properties, fs::IFileSyste
 
 	::bgfx::setDebug(BGFX_DEBUG_TEXT);
 
-	auto vertexShaderFile = std::string("../data/shaders/basic.vs.sc.windows.bin");
-	auto fragmentShaderFile = std::string("../data/shaders/basic.fs.sc.windows.bin");
+	auto vertexShaderFile = std::string("../data/shaders/basic.vs.sc");
+	auto fragmentShaderFile = std::string("../data/shaders/basic.fs.sc");
 	
 	shaderProgram_ = createShaderProgram(vertexShaderFile, fragmentShaderFile);
 	
@@ -930,9 +930,6 @@ void GraphicsEngine::update(const SkeletonId skeletonId, const void* data, const
 	const auto vertexShaderSource = fileSystem_->readAll(vertexShaderOutputFile);
 	const auto fragmentShaderSource = fileSystem_->readAll(fragmentShaderOutputFile);
 	
-	logger_->debug("Vertex shader source from file '" + vertexShaderFile + "':\n" + vertexShaderSource);
-	logger_->debug("Fragment shader source from file '" + fragmentShaderFile + "':\n" + fragmentShaderSource);
-	
 	return createShaderProgramFromSource(vertexShaderSource, fragmentShaderSource);
 	
 	/*
@@ -945,6 +942,8 @@ void GraphicsEngine::update(const SkeletonId skeletonId, const void* data, const
 
 std::string GraphicsEngine::compileShaderToFile(const std::string& shaderFile, const ShaderType shaderType, const std::vector<std::string>& includeDirectories) const
 {
+	logger_->info("Compiling vertex shader source from file '" + shaderFile + "'.");
+	
 	if (!fileSystem_->exists(shaderFile))
 	{
 		auto msg = std::string("Shader file does not exist: ") + shaderFile;
@@ -953,11 +952,15 @@ std::string GraphicsEngine::compileShaderToFile(const std::string& shaderFile, c
 	
 	// Get our parameters ready
 	auto outputFile = fileSystem_->generateTempFilename();
+	auto extra = std::string();
 	auto shaderTypeAsString = std::string("v");
 	switch (shaderType)
 	{
 		case ShaderType::FRAGMENT:
 			shaderTypeAsString = std::string("f");
+#if defined(PLATFORM_WINDOWS)
+				extra = std::string("--profile ps_4_0");
+#endif
 			break;
 		
 		case ShaderType::COMPUTE:
@@ -967,6 +970,9 @@ std::string GraphicsEngine::compileShaderToFile(const std::string& shaderFile, c
 		case ShaderType::VERTEX:
 		default:
 			shaderTypeAsString = std::string("v");
+#if defined(PLATFORM_WINDOWS)
+				extra = std::string("--profile vs_4_0");
+#endif
 			break;
 	}
 	auto includes = std::string();
@@ -976,26 +982,24 @@ std::string GraphicsEngine::compileShaderToFile(const std::string& shaderFile, c
 	}
 #if defined(PLATFORM_WINDOWS)
     auto platform = std::string("windows");
-    auto extra = std::string("--profile ps_4_0 -O 3");
+    extra += std::string(" -O 3");
 #elif defined(PLATFORM_MAC)
 	auto platform = std::string("osx");
-    auto extra = std::string();
 #elif defined(PLATFORM_LINUX)
 	auto platform = std::string("linux");
-    auto extra = std::string();
 #endif
 	
 	std::stringstream ss;
 	ss << "shadercRelease";
 	ss << " -f " << shaderFile;
 	ss << " -o " << outputFile;
-	ss << " --type f " << shaderTypeAsString;
+	ss << " --type " << shaderTypeAsString;
 	ss << " --platform " << platform;
 	ss << " " << includes;
 	ss << " " << extra;
 	ss << " 2>&1";
 	
-	logger_->debug(std::string("Running shader compile command: ") + ss.str());
+	logger_->info(std::string("Running shader compile command: ") + ss.str());
 	
     bx::Error error;
     auto processReader = bx::ProcessReader();
@@ -1016,11 +1020,11 @@ std::string GraphicsEngine::compileShaderToFile(const std::string& shaderFile, c
 		commandOutput += buffer.data();
 	}
     
+    processReader.close();
+    
     int32_t result = processReader.getExitCode();
     
-    processReader.close();
-
-    if (result != 0)
+	if (result != EXIT_SUCCESS)
     {
 		auto msg = std::string("Unable to compile shader file: ") + commandOutput;
 		throw std::runtime_error(msg.c_str());
