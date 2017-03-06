@@ -990,7 +990,7 @@ std::string GraphicsEngine::compileShaderToFile(const std::string& shaderFile, c
 #endif
 	
 	std::stringstream ss;
-	ss << "shadercRelease";
+	ss << "./shadercRelease";
 	ss << " -f " << shaderFile;
 	ss << " -o " << outputFile;
 	ss << " --type " << shaderTypeAsString;
