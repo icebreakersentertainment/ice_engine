@@ -927,8 +927,8 @@ void GraphicsEngine::update(const SkeletonId skeletonId, const void* data, const
 	const auto vertexShaderOutputFile = compileShaderToFile(vertexShaderFile, ShaderType::VERTEX);
 	const auto fragmentShaderOutputFile = compileShaderToFile(fragmentShaderFile, ShaderType::FRAGMENT);
 	
-	const auto vertexShaderSource = fileSystem_->readAll(vertexShaderOutputFile);
-	const auto fragmentShaderSource = fileSystem_->readAll(fragmentShaderOutputFile);
+	const auto vertexShaderSource = fileSystem_->readAll(vertexShaderOutputFile, true);
+	const auto fragmentShaderSource = fileSystem_->readAll(fragmentShaderOutputFile, true);
 	
 	return createShaderProgramFromSource(vertexShaderSource, fragmentShaderSource);
 	
