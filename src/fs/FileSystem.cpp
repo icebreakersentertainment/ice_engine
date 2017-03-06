@@ -61,14 +61,21 @@ void FileSystem::makeDirectory(const std::string& directoryName) const
 	boost::filesystem::create_directory(path);
 }
 
-std::string FileSystem::readAll(const std::string& file) const
+std::string FileSystem::readAll(const std::string& file, const bool isBinary) const
 {
-	auto f = this->open(file, FileFlags::READ);
+	int32 flags = FileFlags::READ;
+	
+	if (isBinary)
+	{
+		flags |= FileFlags::BINARY;
+	}
+	
+	auto f = this->open(file, flags);
 	
 	return f->readAll();
 }
 
-std::unique_ptr<IFile> FileSystem::open(const std::string& file, FileFlags flags) const
+std::unique_ptr<IFile> FileSystem::open(const std::string& file, int32 flags) const
 {
 	return std::make_unique<File>( file, flags );
 }

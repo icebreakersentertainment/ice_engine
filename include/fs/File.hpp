@@ -13,7 +13,7 @@ namespace fs
 class File : public IFile
 {
 public:
-	File(const std::string& file, FileFlags flags);
+	File(const std::string& file, int32 flags);
 	virtual ~File();
 	
 	virtual bool isOpen() const override;
@@ -30,7 +30,7 @@ public:
 
 private:
 	std::string file_;
-	FileFlags flags_;
+	int32 flags_;
 	
 	std::ifstream inputFileStream_;
 	std::ofstream outputFileStream_;

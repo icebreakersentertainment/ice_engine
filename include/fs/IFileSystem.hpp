@@ -26,9 +26,9 @@ public:
 	
 	virtual void makeDirectory(const std::string& directoryName) const = 0;
 	
-	virtual std::string readAll(const std::string& file) const = 0;
+	virtual std::string readAll(const std::string& file, const bool isBinary = false) const = 0;
 	
-	virtual std::unique_ptr<IFile> open(const std::string& file, FileFlags flags) const = 0;
+	virtual std::unique_ptr<IFile> open(const std::string& file, int32 flags) const = 0;
 	
 	virtual std::string generateTempFilename() const = 0;
 };

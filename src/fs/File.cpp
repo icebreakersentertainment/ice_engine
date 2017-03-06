@@ -10,7 +10,7 @@ namespace hercules
 namespace fs
 {
 
-File::File(const std::string& file, FileFlags flags) : file_(file), flags_(flags)
+File::File(const std::string& file, int32 flags) : file_(file), flags_(flags)
 {
 	auto path = boost::filesystem::path(file_);
 	
@@ -19,13 +19,22 @@ File::File(const std::string& file, FileFlags flags) : file_(file), flags_(flags
 		throw std::runtime_error( std::string("Unable to open file - file does not exist: ") + file);
 	}
 	
+	std::ios_base::openmode openmode;
+	
+	if (flags_ & FileFlags::BINARY)
+	{
+		openmode |= std::ifstream::binary;
+	}
+	
 	if (flags_ & FileFlags::READ)
 	{
-		inputFileStream_ = std::ifstream(file_);
+		openmode |= std::ifstream::in;
+		inputFileStream_ = std::ifstream(file_, openmode);
 	}
 	else
 	{
-		outputFileStream_ = std::ofstream(file_);
+		openmode |= std::ofstream::out;
+		outputFileStream_ = std::ofstream(file_, openmode);
 	}
 }
 

@@ -11,11 +11,12 @@ namespace hercules
 namespace fs
 {
 
-enum FileFlags
+enum FileFlags : int32
 {
 	READ 	= 1 << 0,
 	WRITE 	= 1 << 1,
-	APPEND 	= 1 << 2
+	APPEND 	= 1 << 2,
+	BINARY 	= 1 << 3
 };
 
 class IFile

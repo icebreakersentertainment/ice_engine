@@ -953,7 +953,7 @@ std::string GraphicsEngine::compileShaderToFile(const std::string& shaderFile, c
 	// Get our parameters ready
 	auto outputFile = fileSystem_->generateTempFilename();
 	auto extra = std::string();
-	auto shaderTypeAsString = std::string("v");
+	auto shaderTypeAsString = std::string();
 	switch (shaderType)
 	{
 		case ShaderType::FRAGMENT:
@@ -964,7 +964,7 @@ std::string GraphicsEngine::compileShaderToFile(const std::string& shaderFile, c
 			break;
 		
 		case ShaderType::COMPUTE:
-			shaderTypeAsString = std::string("c");
+			throw std::runtime_error("Compute shaders not yet implemented.");
 			break;
 		
 		case ShaderType::VERTEX:
