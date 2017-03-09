@@ -1,0 +1,8 @@
+image: Visual Studio 2015 CTP 6
+build_script:
+- cmd: >-
+    python setup.py
+    mkdir build
+    cd build
+    cmake -G "Visual Studio 14" ..
+    msbuild /p:Configuration=Release hercules.sln
