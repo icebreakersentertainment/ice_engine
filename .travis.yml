@@ -11,18 +11,19 @@ services:
 
 before_install:
   - docker pull ubuntu:16.04
-  - docker run -it ubuntu bash
+  - docker run -v $(pwd):/root/build ubuntu:16.04 bash -c "\
+  add-apt-repository -y ppa:ubuntu-toolchain-r/test; \
+  apt-get update -qq; \
+  apt-get install build-essential libxxf86vm-dev; \
+  apt-get install gcc-6 g++-6; \
+  update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-6 20; \
+  update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-6 20; \
+  update-alternatives --config gcc; \
+  update-alternatives --config g++; \
+  "
 
 install:
-  - if test $CC = gcc; then sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test; fi
-  - sudo apt-get update -qq
-  - sudo apt-get install build-essential libxxf86vm-dev
-  - if test $CC = gcc; then sudo apt-get install gcc-6 g++-6; fi
-  - if test $CC = gcc; then sudo update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-6 20; fi
-  - if test $CC = gcc; then sudo update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-6 20; fi
-  - if test $CC = gcc; then sudo update-alternatives --config gcc; fi
-  - if test $CC = gcc; then sudo update-alternatives --config g++; fi
-  - python setup.py
+  - docker run -v $(pwd):/root/build ubuntu:16.04 bash -c "python setup.py"
 
 script: 
-- mkdir build && cd build && cmake .. && make
+- docker run -v $(pwd):/root/build ubuntu:16.04 bash -c "mkdir build && cd build && cmake .. && make"
