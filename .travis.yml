@@ -11,16 +11,17 @@ services:
 
 before_install:
   - docker pull ubuntu:16.04
-  - docker run -v $(pwd):/root/build ubuntu:16.04 bash -c "\
-  add-apt-repository -y ppa:ubuntu-toolchain-r/test; \
-  apt-get update -qq; \
-  apt-get install build-essential libxxf86vm-dev; \
-  apt-get install gcc-6 g++-6; \
-  update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-6 20; \
-  update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-6 20; \
-  update-alternatives --config gcc; \
-  update-alternatives --config g++; \
-  "
+  >-
+    docker run -v $(pwd):/root/build ubuntu:16.04 bash -c "
+    add-apt-repository -y ppa:ubuntu-toolchain-r/test;
+    apt-get update -qq;
+    apt-get install build-essential libxxf86vm-dev;
+    apt-get install gcc-6 g++-6;
+    update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-6 20;
+    update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-6 20;
+    update-alternatives --config gcc;
+    update-alternatives --config g++;
+    "
 
 install:
   - docker run -v $(pwd):/root/build ubuntu:16.04 bash -c "python setup.py"
