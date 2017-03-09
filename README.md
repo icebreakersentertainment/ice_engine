@@ -7,7 +7,7 @@ To clone:
 
     git clone ssh://git@module9games.com/opt/git/hercules.git
 
-Build prerequisites:
+Get/build prerequisites:
 
     python setup.py
 
