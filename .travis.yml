@@ -6,7 +6,7 @@ compiler:
   - gcc
 before_install:
   - if test $CC = gcc; then sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test; fi
-  - sudo add-apt-repository ppa:george-edison55/cmake-3.x
+  - sudo add-apt-repository -y ppa:george-edison55/cmake-3.x
   - sudo apt-get update -qq
   - sudo apt-get install build-essential libxxf86vm-dev cmake
   - if test $CC = gcc; then sudo apt-get install gcc-6 g++-6; fi
