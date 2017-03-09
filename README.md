@@ -5,7 +5,7 @@ Hercules
 
 To clone:
 
-    git clone ssh://git@module9games.com/opt/git/hercules.git
+    git clone https://github.com/jarrettchisholm/hercules.git
 
 Get/build prerequisites:
 
