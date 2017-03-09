@@ -1,6 +1,8 @@
 Hercules
 --------
 
+[![Build Status](https://travis-ci.org/jarrettchisholm/hercules.png)](https://travis-ci.org/jarrettchisholm/hercules)
+
 To clone:
 
     git clone ssh://git@module9games.com/opt/git/hercules.git
