@@ -11,7 +11,7 @@ services:
 
 before_install:
   - docker pull ubuntu:16.04
-  ->
+  - >-
     docker run -v $(pwd):/root/build ubuntu:16.04 bash -c "
     add-apt-repository -y ppa:ubuntu-toolchain-r/test;
     apt-get update -qq;
