@@ -3,6 +3,8 @@ Hercules
 
 [![Build Status](https://travis-ci.org/jarrettchisholm/hercules.png)](https://travis-ci.org/jarrettchisholm/hercules)
 
+**Note**: This project is incredibly young, and isn't in any kind of production ready state. 
+
 To clone:
 
     git clone https://github.com/jarrettchisholm/hercules.git
