@@ -18,8 +18,8 @@ before_install:
     apt-get -y install software-properties-common;
     add-apt-repository -y ppa:ubuntu-toolchain-r/test;
     apt-get update -qq;
-    apt-get install build-essential libxxf86vm-dev;
-    apt-get install gcc-6 g++-6;
+    apt-get install -y build-essential libxxf86vm-dev;
+    apt-get install -y gcc-6 g++-6;
     update-alternatives --install /usr/bin/gcc gcc /usr/bin/gcc-6 20;
     update-alternatives --install /usr/bin/g++ g++ /usr/bin/g++-6 20;
     update-alternatives --config gcc;
