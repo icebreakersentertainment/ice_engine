@@ -151,7 +151,7 @@ def checkSystemDependencies():
 	"""Check for required system dependencies, and if they are not present, inform the user and quit"""
 	
 	if isLinux:
-		packages = ['build-essential', 'libgtk2.0-dev', 'libgtkglext1-dev']
+		packages = ['build-essential']
 		
 		for p in packages:
 			devNull = open(os.devnull, "w")
