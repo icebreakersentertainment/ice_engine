@@ -29,7 +29,7 @@ before_install:
     update-alternatives --config g++;
     "
 install:
-  - docker run -v $(pwd):/root/hercules ubuntu:16.04 bash -c "python setup.py"
+  - docker run -v $(pwd):/root/hercules ubuntu:16.04 bash -c "which python; pwd; ls; ls /usr/local/bin; ls /usr/bin; python setup.py"
 
 script: 
 - docker run -v $(pwd):/root/hercules ubuntu:16.04 bash -c "mkdir build && cd build && cmake .. && make"
