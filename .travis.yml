@@ -15,7 +15,4 @@ before_install:
 install:
   - python setup.py
 script: 
-- mkdir build
-- cd build
-- cmake ..
-- make
+- mkdir build && cd build && cmake .. && make
