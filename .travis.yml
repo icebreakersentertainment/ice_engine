@@ -13,6 +13,7 @@ before_install:
   - docker pull ubuntu:16.04
   - >-
     docker run --privileged -v $(pwd):/root/build ubuntu:16.04 bash -c "
+    apt-get -y install python-software-properties;
     apt-get -y install software-properties-common;
     add-apt-repository -y ppa:ubuntu-toolchain-r/test;
     apt-get update -qq;
