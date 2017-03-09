@@ -14,7 +14,7 @@ services:
 
 before_install:
   - docker pull ubuntu:16.04
-  - docker create --name=hercules_docker -it -d ubuntu:16.04
+  - docker run --name=hercules_docker -it -d ubuntu:16.04
   - >-
     docker exec --privileged -it hercules_docker bash -c "
     apt-get update -qq;
