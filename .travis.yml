@@ -32,7 +32,7 @@ before_install:
 
 install:
   - docker exec --privileged -it hercules_docker bash -c "apt-get install -y libxxf86vm-dev libgl1-mesa-dev freeglut3-dev"
-  - docker exec -it hercules_docker bash -c "cd /root/hercules; python setup.py"
+  - docker exec -it hercules_docker bash -c "cd /root/hercules && python setup.py"
 
 script: 
 - docker exec -it hercules_docker bash -c "cd /root/hercules && mkdir build && cd build && cmake .. && make"
