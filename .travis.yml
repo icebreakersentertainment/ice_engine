@@ -14,7 +14,7 @@ services:
 
 before_install:
   - docker pull ubuntu:16.04
-  - docker run --name=hercules_docker -it -d ubuntu:16.04
+  - docker run --name=hercules_docker -it -d ubuntu:16.04 -v $(pwd):/root/hercules
   - >-
     docker exec --privileged -it hercules_docker bash -c "
     apt-get update -qq;
@@ -30,7 +30,7 @@ before_install:
     update-alternatives --config g++;
     "
 install:
-  - docker exec -it hercules_docker bash -c "cd /root/build; pwd; ls; python setup.py"
+  - docker exec -it hercules_docker bash -c "cd /root/hercules; pwd; ls; python setup.py"
 
 script: 
-- docker exec -it hercules_docker bash -c "cd /root/build && mkdir build && cd build && cmake .. && make"
+- docker exec -it hercules_docker bash -c "cd /root/hercules && mkdir build && cd build && cmake .. && make"
