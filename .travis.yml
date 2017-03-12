@@ -35,5 +35,12 @@ install:
   - docker exec -it hercules_docker bash -c "cd /root/hercules && python setup.py"
 
 script: 
-- docker exec -it hercules_docker bash -c "cd /root/hercules && mkdir build && cd build && cmake .. && make"
+- >-
+  docker exec -it hercules_docker bash -c "
+    cd /root/hercules && \
+    mkdir build && \
+    cd build && \
+    cmake -D HERCULES_BUILD_AS_LIBRARY=1 -D HERCULES_GRAPHICS_BACKEND=noop -D HERCULES_BUILD_TESTS=1 .. && \
+    make
+  "
 - docker exec -it hercules_docker bash -c "cd /root/hercules && && cd build && ctest"

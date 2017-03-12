@@ -40,18 +40,18 @@ endif()
 option(HERCULES_BUILD_AS_LIBRARY "HERCULES_BUILD_AS_LIBRARY" FALSE)
 option(HERCULES_BUILD_TESTS "HERCULES_BUILD_TESTS" FALSE)
 
-if(NOT DEFINED GRAPHICS_BACKEND)
-  #option(GRAPHICS_BACKEND "GRAPHICS_BACKEND" "noop")
+if(NOT DEFINED HERCULES_GRAPHICS_BACKEND)
+  #option(HERCULES_GRAPHICS_BACKEND "HERCULES_GRAPHICS_BACKEND" "noop")
   if(WIN32)
-    set(GRAPHICS_BACKEND "directx")
+    set(HERCULES_GRAPHICS_BACKEND "directx")
   else()
-    set(GRAPHICS_BACKEND "opengl")
+    set(HERCULES_GRAPHICS_BACKEND "opengl")
   endif()
 endif()
 
 # Dependencies
 set(PROJECT_LINK_LIBRARY_DIRECTORIES
-  ./deps/bgfx/lib/${GRAPHICS_BACKEND}
+  ./deps/bgfx/lib/${HERCULES_GRAPHICS_BACKEND}
   ./deps/bx/lib
   ./deps/angelscript/lib
   ./deps/freeimage/lib

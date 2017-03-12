@@ -7,7 +7,7 @@ build_script:
     
     cd build
     
-    cmake -G "Visual Studio 14" -D BUILD_AS_LIBRARY=1 -D HERCULES_BUILD_TESTS=1 ..
+    cmake -G "Visual Studio 14" -D HERCULES_BUILD_AS_LIBRARY=1 -D HERCULES_GRAPHICS_BACKEND=noop -D HERCULES_BUILD_TESTS=1 ..
     
     msbuild /p:Configuration=Release hercules.sln
 
