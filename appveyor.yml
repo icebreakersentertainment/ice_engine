@@ -5,9 +5,9 @@ build_script:
     
     mkdir build
     
-    mkdir build/tests
+    mkdir build\tests
     
-    mkdir build/tests/Release
+    mkdir build\tests\Release
     
     cd build
     
