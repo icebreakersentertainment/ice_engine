@@ -43,4 +43,4 @@ script:
     cmake -D HERCULES_BUILD_AS_LIBRARY=1 -D HERCULES_GRAPHICS_BACKEND=noop -D HERCULES_BUILD_TESTS=1 .. && \
     make
   "
-- docker exec -it hercules_docker bash -c "cd /root/hercules && && cd build && ctest"
+- docker exec -it hercules_docker bash -c "cd /root/hercules && cd build && ctest"
