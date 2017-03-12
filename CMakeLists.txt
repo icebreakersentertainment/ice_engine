@@ -39,9 +39,18 @@ endif()
 # Custom options
 option(BUILD_AS_LIBRARY "BUILD_AS_LIBRARY" FALSE)
 
+if(NOT DEFINED GRAPHICS_BACKEND)
+  #option(GRAPHICS_BACKEND "GRAPHICS_BACKEND" "noop")
+  if(WIN32)
+    set(GRAPHICS_BACKEND "directx")
+  else()
+    set(GRAPHICS_BACKEND "opengl")
+  endif()
+endif()
+
 # Dependencies
 set(PROJECT_LINK_LIBRARY_DIRECTORIES
-  ./deps/bgfx/lib
+  ./deps/bgfx/lib/${GRAPHICS_BACKEND}
   ./deps/bx/lib
   ./deps/angelscript/lib
   ./deps/freeimage/lib
