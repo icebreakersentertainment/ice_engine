@@ -37,7 +37,8 @@ if(MSVC)
 endif()
 
 # Custom options
-option(BUILD_AS_LIBRARY "BUILD_AS_LIBRARY" FALSE)
+option(HERCULES_BUILD_AS_LIBRARY "HERCULES_BUILD_AS_LIBRARY" FALSE)
+option(HERCULES_BUILD_TESTS "HERCULES_BUILD_TESTS" FALSE)
 
 if(NOT DEFINED GRAPHICS_BACKEND)
   #option(GRAPHICS_BACKEND "GRAPHICS_BACKEND" "noop")
@@ -117,11 +118,6 @@ find_library(BOOST_REGEX_LIBRARY NAMES
   ${BOOST_FILENAME_PREFIX}boost_regex${BOOST_FILENAME_POSTFIX}
   PATHS ${PROJECT_LINK_LIBRARY_DIRECTORIES}
 )
-find_library(BOOST_UNIT_TEST_FRAMEWORK_LIBRARY NAMES
-  ${BOOST_FILENAME_PREFIX}boost_unit_test_framework${BOOST_FILENAME_POSTFIX}.so.${BOOST_VERSION}
-  ${BOOST_FILENAME_PREFIX}boost_unit_test_framework${BOOST_FILENAME_POSTFIX}
-  PATHS ${PROJECT_LINK_LIBRARY_DIRECTORIES}
-)
 find_library(ASSIMP_LIBRARY NAMES libassimp.so.3 assimp PATHS ${PROJECT_LINK_LIBRARY_DIRECTORIES})
 find_library(GLEW_LIBRARY NAMES libGLEW.so.2.0 glew32 PATHS ${PROJECT_LINK_LIBRARY_DIRECTORIES})
 find_library(SDL_LIBRARY NAMES SDL2 PATHS ${PROJECT_LINK_LIBRARY_DIRECTORIES})
@@ -175,7 +171,6 @@ else()
   configure_file(${BOOST_LOG_SETUP_LIBRARY} ./ COPYONLY)
   configure_file(${BOOST_DATE_TIME_LIBRARY} ./ COPYONLY)
   configure_file(${BOOST_REGEX_LIBRARY} ./ COPYONLY)
-  configure_file(${BOOST_UNIT_TEST_FRAMEWORK_LIBRARY} ./ COPYONLY)
   configure_file(${ASSIMP_LIBRARY} ./ COPYONLY)
   configure_file(${GLEW_LIBRARY} ./ COPYONLY)
   configure_file(${ENTITYX_LIBRARY} ./ COPYONLY)
@@ -202,6 +197,7 @@ set(CMAKE_CXX_FLAGS_MINSIZEREL "${CMAKE_CXX_FLAGS_MINSIZEREL} ${HERCULES_COMPILE
 
 # Generate library
 if(BUILD_AS_LIBRARY OR BUILD_SHARED_LIBS)
+  list(REMOVE_ITEM SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/Main.cpp")
   add_library(hercules ${SOURCES})
 else()
   add_executable(hercules ${SOURCES})
@@ -220,7 +216,6 @@ target_link_libraries(hercules ${BOOST_THREAD_LIBRARY} )
 target_link_libraries(hercules ${BOOST_LOG_LIBRARY} )
 target_link_libraries(hercules ${BOOST_LOG_SETUP_LIBRARY} )
 target_link_libraries(hercules ${BOOST_DATE_TIME_LIBRARY} )
-target_link_libraries(hercules ${BOOST_UNIT_TEST_FRAMEWORK_LIBRARY} )
 target_link_libraries(hercules ${BOOST_REGEX_LIBRARY} )
 target_link_libraries(hercules ${ASSIMP_LIBRARY} )
 target_link_libraries(hercules ${GLEW_LIBRARY} )
@@ -245,6 +240,12 @@ if(WIN32)
   target_link_libraries(hercules imm32)
   target_link_libraries(hercules version)
   target_link_libraries(hercules Psapi)
+endif()
+
+if (HERCULES_BUILD_TESTS)
+  enable_testing()
+  # Test project dependency
+  add_subdirectory(tests)
 endif()
 
 # Disable Position Independent Executable - this is starting to be enabled by default,
