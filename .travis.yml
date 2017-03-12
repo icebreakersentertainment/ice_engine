@@ -36,3 +36,4 @@ install:
 
 script: 
 - docker exec -it hercules_docker bash -c "cd /root/hercules && mkdir build && cd build && cmake .. && make"
+- docker exec -it hercules_docker bash -c "cd /root/hercules && && cd build && ctest"
