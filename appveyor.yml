@@ -4,8 +4,11 @@ build_script:
     python setup.py
     
     mkdir build
+    
     # Workaround for `Release` directory being created as a file in Windows
+    
     mkdir build/tests
+    
     mkdir build/tests/Release
     
     cd build
