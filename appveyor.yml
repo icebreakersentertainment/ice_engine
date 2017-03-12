@@ -16,7 +16,4 @@ build_script:
     msbuild /p:Configuration=Release hercules.sln
 
 test_script:
-- cmd: >-
-    cd build
-    
-    ctest
+- cmd: ctest
