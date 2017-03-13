@@ -10,9 +10,7 @@ To clone:
 
     git clone https://github.com/jarrettchisholm/hercules.git
 
-Documentation:
-
-    [http://game-engine-hercules.readthedocs.io/en/latest/](http://game-engine-hercules.readthedocs.io/en/latest/)
+Documentation: [http://game-engine-hercules.readthedocs.io/en/latest/](http://game-engine-hercules.readthedocs.io/en/latest/)
 
 Get/build prerequisites:
 
