@@ -981,16 +981,19 @@ std::string GraphicsEngine::compileShaderToFile(const std::string& shaderFile, c
 		includes += std::string("-i ") + dir;
 	}
 #if defined(PLATFORM_WINDOWS)
+    auto executable = std::string("shadercRelease");
     auto platform = std::string("windows");
     extra += std::string(" -O 3");
 #elif defined(PLATFORM_MAC)
+	auto executable = std::string("./shadercRelease");
 	auto platform = std::string("osx");
 #elif defined(PLATFORM_LINUX)
+	auto executable = std::string("./shadercRelease");
 	auto platform = std::string("linux");
 #endif
 	
 	std::stringstream ss;
-	ss << "./shadercRelease";
+	ss << executable;
 	ss << " -f " << shaderFile;
 	ss << " -o " << outputFile;
 	ss << " --type " << shaderTypeAsString;
