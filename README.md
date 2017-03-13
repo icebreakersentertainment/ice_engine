@@ -6,11 +6,11 @@ Hercules
 
 **Note**: This project is incredibly young, and isn't in any kind of production ready state. 
 
+Documentation is available at [http://game-engine-hercules.readthedocs.io/en/latest/](http://game-engine-hercules.readthedocs.io/en/latest/).
+
 To clone:
 
     git clone https://github.com/jarrettchisholm/hercules.git
-
-Documentation: [http://game-engine-hercules.readthedocs.io/en/latest/](http://game-engine-hercules.readthedocs.io/en/latest/)
 
 Get/build prerequisites:
 
