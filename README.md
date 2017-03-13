@@ -33,6 +33,10 @@ To build on Windows:
 
     mkdir build
     cd build
+    
+    # Workaround for `Release` directory being created as a file in Windows
+    mkdir build/Release
+    
     cmake -G "Visual Studio 14" ..
     msbuild /p:Configuration=Release hercules.sln
 
@@ -41,6 +45,7 @@ To test on Windows:
     mkdir build
     
     # Workaround for `Release` directory being created as a file in Windows
+    mkdir build/Release
     mkdir build/tests
     mkdir build/tests/Release
     
