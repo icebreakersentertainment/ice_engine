@@ -12,7 +12,7 @@ To clone:
 
 Documentation:
 
-    http://game-engine-hercules.readthedocs.io/en/latest/
+    [http://game-engine-hercules.readthedocs.io/en/latest/](http://game-engine-hercules.readthedocs.io/en/latest/)
 
 Get/build prerequisites:
 
