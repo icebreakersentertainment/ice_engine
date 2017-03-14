@@ -162,6 +162,8 @@ private:
 	
 	::bgfx::ProgramHandle shaderProgram_;
 	
+	::bgfx::VertexDecl posColorVertexDeclaration_;
+	
 	SDL_Window* sdlWindow_;
 	
 	std::vector<IEventListener*> eventListeners_;
