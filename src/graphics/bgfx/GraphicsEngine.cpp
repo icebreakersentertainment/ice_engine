@@ -246,13 +246,6 @@ GraphicsEngine::GraphicsEngine(utilities::Properties* properties, fs::IFileSyste
 	model_ = glm::scale(glm::mat4(1.0f), glm::vec3(0.5f));
 	view_ = glm::mat4(1.0f);
 	setViewport(width_, height_);
-	
-	// Setup vertex declarations
-	posColorVertexDeclaration_
-		.begin()
-		.add(::bgfx::Attrib::Position, 3, ::bgfx::AttribType::Float)
-		.add(::bgfx::Attrib::Color0, 4, ::bgfx::AttribType::Uint8, true)
-		.end();
 }
 
 GraphicsEngine::GraphicsEngine(const GraphicsEngine& other)
@@ -441,6 +434,7 @@ CameraId GraphicsEngine::createCamera(const glm::vec3& position, const glm::vec3
 	return cameraId;
 }
 
+::bgfx::VertexDecl vertexDeclaration;
 MeshId GraphicsEngine::createStaticMesh(
 	const std::vector<glm::vec3>& vertices,
 	const std::vector<uint32>& indices,
@@ -449,75 +443,17 @@ MeshId GraphicsEngine::createStaticMesh(
 	const std::vector<glm::vec2>& textureCoordinates
 )
 {
-glm::vec3 s_cubeVertices[] =
-{
-	{-1.0f,  1.0f,  1.0f },
-	{ 1.0f,  1.0f,  1.0f },
-	{-1.0f, -1.0f,  1.0f },
-	{ 1.0f, -1.0f,  1.0f },
-	{-1.0f,  1.0f, -1.0f },
-	{ 1.0f,  1.0f, -1.0f },
-	{-1.0f, -1.0f, -1.0f },
-	{ 1.0f, -1.0f, -1.0f },
-};
-
-const uint16_t s_cubeTriList[] =
-{
-	0, 1, 2, // 0
-	1, 3, 2,
-	4, 6, 5, // 2
-	5, 6, 7,
-	0, 2, 4, // 4
-	4, 2, 6,
-	1, 5, 3, // 6
-	5, 7, 3,
-	0, 4, 1, // 8
-	4, 5, 1,
-	2, 3, 6, // 10
-	6, 3, 7,
-};
-
-const uint16_t s_cubeTriStrip[] =
-{
-	0, 1, 2,
-	3,
-	7,
-	1,
-	5,
-	0,
-	4,
-	2,
-	6,
-	7,
-	4,
-	5,
-};
-
-	Vao vao;
-
-	vao.vbh = ::bgfx::createVertexBuffer(
-		// Static data can be passed with bgfx::makeRef
-		::bgfx::copy(s_cubeVertices, sizeof(s_cubeVertices) )
-		, posColorVertexDeclaration_
-	);
-
-	// Create static index buffer.
-	vao.ibh = ::bgfx::createIndexBuffer(
-		// Static data can be passed with bgfx::makeRef
-		::bgfx::copy(s_cubeTriStrip, sizeof(s_cubeTriStrip) )
-	);
+	vertexDeclaration
+		.begin()
+		.add(::bgfx::Attrib::Position, 3, ::bgfx::AttribType::Float)
+		.add(::bgfx::Attrib::Color0, 4, ::bgfx::AttribType::Uint8, true)
+		.end();
 	
-	vertexArrayObjects_.push_back(vao);
-	auto index = vertexArrayObjects_.size() - 1;
-	
-	return MeshId(index);
-
-	/*
 	Vao vao;
 	
 	vao.vbh = ::bgfx::createVertexBuffer(
 		::bgfx::copy(&vertices[0], (vertices.size() * sizeof(glm::vec3))),
-		posColorVertexDeclaration_
+		vertexDeclaration
 	);
 	
 	vao.ibh = ::bgfx::createIndexBuffer(
@@ -528,7 +464,6 @@ const uint16_t s_cubeTriStrip[] =
 	auto index = vertexArrayObjects_.size() - 1;
 	
 	return MeshId(index);
-	*/
 	
 	/*
 	Vao vao;
