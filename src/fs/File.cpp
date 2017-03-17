@@ -19,7 +19,7 @@ File::File(const std::string& file, int32 flags) : file_(file), flags_(flags)
 		throw std::runtime_error( std::string("Unable to open file - file does not exist: ") + file);
 	}
 	
-	std::ios_base::openmode openmode;
+	std::ios_base::openmode openmode = std::ifstream::in;
 	
 	if (flags_ & FileFlags::BINARY)
 	{
@@ -28,11 +28,11 @@ File::File(const std::string& file, int32 flags) : file_(file), flags_(flags)
 	
 	if (flags_ & FileFlags::READ)
 	{
-		openmode |= std::ifstream::in;
 		inputFileStream_ = std::ifstream(file_, openmode);
 	}
 	else
 	{
+		openmode &= ~std::ifstream::in;
 		openmode |= std::ofstream::out;
 		outputFileStream_ = std::ofstream(file_, openmode);
 	}
@@ -116,7 +116,7 @@ std::string File::readAll()
 	
 	auto contents = std::string();
 	auto line = std::string();
-
+	
 	while ( std::getline(inputFileStream_, line))
 	{
 		contents += line + '\n';
