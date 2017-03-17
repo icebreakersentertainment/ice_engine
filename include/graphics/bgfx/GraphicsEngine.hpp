@@ -145,7 +145,7 @@ public:
 	
 	virtual void assign(const RenderableId renderableId, const SkeletonId skeletonId) override;
 	
-	virtual void update(const SkeletonId skeletonId, const void* data, uint32 size) override;
+	virtual void update(const SkeletonId skeletonId, const void* data, const uint32 size) override;
 	
 	virtual void setMouseRelativeMode(const bool enabled) override;
 	virtual void setCursorVisible(const bool visible) override;

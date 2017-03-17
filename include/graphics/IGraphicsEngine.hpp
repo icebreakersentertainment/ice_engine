@@ -95,7 +95,7 @@ public:
 	
 	virtual void assign(const RenderableId renderableId, const SkeletonId skeletonId) = 0;
 	
-	virtual void update(const SkeletonId skeletonId, const void* data, uint32 size) = 0;
+	virtual void update(const SkeletonId skeletonId, const void* data, const uint32 size) = 0;
 	
 	virtual void setMouseRelativeMode(const bool enabled) = 0;
 	virtual void setCursorVisible(const bool visible) = 0;
