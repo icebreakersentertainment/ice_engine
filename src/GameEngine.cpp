@@ -433,8 +433,6 @@ void GameEngine::test()
 		auto renderableId = graphicsEngine_->createRenderable(meshId, textureId);
 	}
 	*/
-	
-	/*
 	{
 		auto model = model::import(std::string("test_model"), std::string("../assets/models/scoutship/scoutship.dae"), logger_.get());
 		
@@ -468,17 +466,6 @@ void GameEngine::test()
 		skeletonId = graphicsEngine_->createSkeleton( 100 );
 		std::cout << "Created skeleton" << std::endl;
 		graphicsEngine_->assign(renderableId, skeletonId);
-	}
-	*/
-	
-	{
-		auto model = model::import(std::string("test_model"), std::string("../assets/models/scoutship/scoutship.dae"), logger_.get());
-		auto meshId = graphicsEngine_->createStaticMesh(model->meshes[0].vertices, model->meshes[0].indices, model->meshes[0].colors, model->meshes[0].normals, model->meshes[0].textureCoordinates);
-		auto textureId = graphicsEngine_->createTexture2d( std::string("../assets/models/scoutship/") + model->textures[0].filename );
-		auto renderableId = graphicsEngine_->createRenderable(meshId, textureId);
-		
-		graphicsEngine_->scale(renderableId, 0.03f);
-		graphicsEngine_->translate(renderableId, 6.0f, -4.0f, 0);
 	}
 }
 
