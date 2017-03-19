@@ -4,7 +4,7 @@ API
 .. toctree::
    :glob:
 
-   hercules
+   full-api
    *
    graphics/*
    physics/*
