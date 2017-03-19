@@ -1,4 +1,4 @@
-:mod:`hercules.graphics.IGraphicsEngine`
+:mod:`hercules::graphics::IGraphicsEngine`
 =======================
 .. doxygenclass:: hercules::graphics::IGraphicsEngine
    :members:

@@ -1,4 +1,4 @@
-:mod:`hercules.IGameEngine`
+:mod:`hercules::IGameEngine`
 =======================
 .. doxygenclass:: hercules::IGameEngine
    :members:

@@ -1,4 +1,4 @@
-:mod:`hercules.physics.IPhysicsEngine`
+:mod:`hercules::physics::IPhysicsEngine`
 =======================
 .. doxygenclass:: hercules::physics::IPhysicsEngine
    :members:
