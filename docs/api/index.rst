@@ -8,6 +8,6 @@ API
    *
    graphics/*
    physics/*
-   audio/*
+   audio/index
    scripting/*
 
