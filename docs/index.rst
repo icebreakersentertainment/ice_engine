@@ -10,6 +10,14 @@ Welcome to Hercules's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+Testing
+=======
+.. doxygenindex::
+.. doxygenfunction::
+.. doxygenstruct::
+.. doxygenenum::
+.. doxygentypedef::
+.. doxygenclass::
 
 
 Indices and tables
