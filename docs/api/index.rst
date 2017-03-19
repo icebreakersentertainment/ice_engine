@@ -6,4 +6,8 @@ API
 
    hercules
    *
+   graphics/*
+   physics/*
+   audio/*
+   scripting/*
 
