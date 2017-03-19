@@ -7,7 +7,6 @@ Welcome to Hercules's documentation!
    :maxdepth: 2
    :caption: User Documentation
 
-
 .. _dev-docs:
    
 .. toctree::
