@@ -6,8 +6,8 @@ API
 
    full-api
    *
-   graphics/*
-   physics/*
+   graphics/index
+   physics/index
    audio/index
-   scripting/*
+   scripting/index
 
