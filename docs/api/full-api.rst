@@ -1,5 +1,5 @@
-:mod:`hercules`
-=======================
+Full API
+========
 .. doxygennamespace:: hercules
    :members:
    :undoc-members:

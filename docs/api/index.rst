@@ -3,5 +3,6 @@ API
 
 .. toctree::
    
-   hercules
+   full-api
+   game-engine
 
