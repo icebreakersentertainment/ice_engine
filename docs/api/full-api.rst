@@ -1,4 +1,4 @@
-Full API
+:mod:`hercules`
 ========
 .. doxygennamespace:: hercules
    :members:
