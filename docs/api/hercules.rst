@@ -1,5 +1,6 @@
 :mod:`hercules`
 =======================
-.. automodule:: hercules
-    :members:
+.. doxygennamespace:: hercules
+   :members:
+   :undoc-members:
 
