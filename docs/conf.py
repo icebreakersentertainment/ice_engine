@@ -45,8 +45,8 @@ extensions = [
 ]
 
 # Breathe extension variables
-breathe_projects = { "ReadTheDocs-Breathe": "dox/doxyxml/" }
-breathe_default_project = "ReadTheDocs-Breathe"
+breathe_projects = { "Hercules": "dox/doxyxml/" }
+breathe_default_project = "Hercules"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
