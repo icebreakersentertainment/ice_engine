@@ -3,7 +3,7 @@
 
 namespace hercules
 {
-namespace Scripting
+namespace scripting
 {
 
 class IScriptingEngine
