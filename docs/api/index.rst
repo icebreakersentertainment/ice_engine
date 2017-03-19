@@ -4,5 +4,6 @@ API
 .. toctree::
    :glob:
 
+   hercules
    *
 
