@@ -42,19 +42,12 @@ option(HERCULES_BUILD_TESTS "HERCULES_BUILD_TESTS" FALSE)
 
 if(NOT DEFINED HERCULES_GRAPHICS_BACKEND)
   #option(HERCULES_GRAPHICS_BACKEND "HERCULES_GRAPHICS_BACKEND" "noop")
-  if(WIN32)
-    set(HERCULES_GRAPHICS_BACKEND "directx")
-    set(HERCULES_GRAPHICS_BACKEND "directx" PARENT_SCOPE)
-  else()
-    set(HERCULES_GRAPHICS_BACKEND "opengl")
-    set(HERCULES_GRAPHICS_BACKEND "opengl" PARENT_SCOPE)
-  endif()
+  set(HERCULES_GRAPHICS_BACKEND "opengl")
+  set(HERCULES_GRAPHICS_BACKEND "opengl" PARENT_SCOPE)
 endif()
 
 # Dependencies
 set(PROJECT_LINK_LIBRARY_DIRECTORIES
-  ./deps/bgfx/lib/${HERCULES_GRAPHICS_BACKEND}
-  ./deps/bx/lib
   ./deps/angelscript/lib
   ./deps/freeimage/lib
   ./deps/sqlite/lib
@@ -67,8 +60,6 @@ set(PROJECT_LINK_LIBRARY_DIRECTORIES
 )
 
 find_library(SQLITE_LIBRARY NAMES sqlite3.a sqlite3.so sqlite3.lib sqlite3.dll PATHS ${PROJECT_LINK_LIBRARY_DIRECTORIES})
-find_library(BGFX_LIBRARY NAMES bgfxRelease bgfx-shared-libRelease PATHS ${PROJECT_LINK_LIBRARY_DIRECTORIES})
-find_library(BX_LIBRARY NAMES bxRelease bx-shared-libRelease PATHS ${PROJECT_LINK_LIBRARY_DIRECTORIES})
 find_library(FREEIMAGE_LIBRARY NAMES freeimage-3.17.0 FreeImage PATHS ${PROJECT_LINK_LIBRARY_DIRECTORIES})
 find_library(BOOST_SYSTEM_LIBRARY NAMES
   ${BOOST_FILENAME_PREFIX}boost_system${BOOST_FILENAME_POSTFIX}.so.${BOOST_VERSION}
@@ -141,8 +132,6 @@ include_directories(./deps/assimp/include)
 include_directories(./deps/boost/include)
 include_directories(./deps/angelscript/include)
 include_directories(./deps/angelscript/include/angelscript)
-include_directories(./deps/bgfx/include)
-include_directories(./deps/bx/include)
 include_directories(./deps/bullet/include)
 include_directories(./deps/bullet/include/bullet)
 include_directories(./deps/entityx/include)
@@ -160,8 +149,6 @@ if(WIN32)
   configure_file(deps/glew/lib/glew32.dll ./${CMAKE_BUILD_TYPE}/ COPYONLY)
   configure_file(deps/assimp/lib/assimp.dll ./${CMAKE_BUILD_TYPE}/ COPYONLY)
 else()
-  configure_file(${BGFX_LIBRARY} ./ COPYONLY)
-  configure_file(${BX_LIBRARY} ./ COPYONLY)
   configure_file(${FREEIMAGE_LIBRARY} ./libfreeimage.so.3 COPYONLY)
   configure_file(${BOOST_SYSTEM_LIBRARY} ./ COPYONLY)
   configure_file(${BOOST_CHRONO_LIBRARY} ./ COPYONLY)
@@ -206,8 +193,6 @@ else()
 endif()
 
 target_link_libraries(hercules ${SQLITE_LIBRARY} )
-target_link_libraries(hercules ${BGFX_LIBRARY} )
-target_link_libraries(hercules ${BX_LIBRARY} )
 target_link_libraries(hercules ${FREEIMAGE_LIBRARY} )
 target_link_libraries(hercules ${BOOST_SYSTEM_LIBRARY} )
 target_link_libraries(hercules ${BOOST_CHRONO_LIBRARY} )
