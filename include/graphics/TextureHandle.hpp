@@ -10,6 +10,8 @@ namespace graphics
 
 class TextureHandle : public ResourceHandle
 {
+public:
+	using ResourceHandle::ResourceHandle;
 };
 
 }

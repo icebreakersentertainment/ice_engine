@@ -10,6 +10,8 @@ namespace graphics
 
 class MeshHandle : public ResourceHandle
 {
+public:
+	using ResourceHandle::ResourceHandle;
 };
 
 }

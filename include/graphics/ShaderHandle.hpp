@@ -22,6 +22,8 @@ enum struct ShaderType
 
 class ShaderHandle : public ResourceHandle
 {
+public:
+	using ResourceHandle::ResourceHandle;
 };
 
 }

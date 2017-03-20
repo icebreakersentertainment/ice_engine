@@ -198,7 +198,7 @@ CameraHandle GraphicsEngine::createCamera(const glm::vec3& position, const glm::
 	camera_.orientation = glm::quat();
 	//camera_.orientation = glm::normalize(camera_.orientation);
 	
-	auto cameraHandle = CameraHandle(0);
+	CameraHandle cameraHandle = CameraHandle(0);
 	
 	this->lookAt(cameraHandle, lookAt);
 	

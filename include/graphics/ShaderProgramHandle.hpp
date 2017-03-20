@@ -10,6 +10,8 @@ namespace graphics
 
 class ShaderProgramHandle : public ResourceHandle
 {
+public:
+	using ResourceHandle::ResourceHandle;
 };
 
 }

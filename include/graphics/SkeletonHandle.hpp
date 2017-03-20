@@ -10,6 +10,8 @@ namespace graphics
 
 class SkeletonHandle : public ResourceHandle
 {
+public:
+	using ResourceHandle::ResourceHandle;
 };
 
 }

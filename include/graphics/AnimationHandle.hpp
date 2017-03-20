@@ -10,6 +10,8 @@ namespace graphics
 
 class AnimationHandle : public ResourceHandle
 {
+public:
+	using ResourceHandle::ResourceHandle;
 };
 
 }

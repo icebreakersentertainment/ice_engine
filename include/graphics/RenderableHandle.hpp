@@ -10,6 +10,8 @@ namespace graphics
 
 class RenderableHandle : public ResourceHandle
 {
+public:
+	using ResourceHandle::ResourceHandle;
 };
 
 }

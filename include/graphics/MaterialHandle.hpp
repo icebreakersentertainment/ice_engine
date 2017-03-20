@@ -10,6 +10,8 @@ namespace graphics
 
 class MaterialHandle : public ResourceHandle
 {
+public:
+	using ResourceHandle::ResourceHandle;
 };
 
 }

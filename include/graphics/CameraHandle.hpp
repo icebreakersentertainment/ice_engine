@@ -10,6 +10,8 @@ namespace graphics
 
 class CameraHandle : public ResourceHandle
 {
+public:
+	using ResourceHandle::ResourceHandle;
 };
 
 }
