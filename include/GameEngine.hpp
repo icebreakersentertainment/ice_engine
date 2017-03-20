@@ -45,7 +45,7 @@ public:
 
 	virtual entities::Entity createEntity() override;
 	
-	virtual void assign(const entities::Entity entity, entities::GraphicsComponent component) override;
+	virtual void assign(const entities::Entity entity, const entities::GraphicsComponent& component) override;
 	
 	virtual void rotate(const entities::Entity entity, const float32 degrees, const glm::vec3& axis, const graphics::TransformSpace& relativeTo = graphics::TransformSpace::TS_LOCAL) override;
 	virtual void translate(const entities::Entity entity, const glm::vec3& translate) override;

@@ -259,12 +259,40 @@ void GameEngine::initializeGraphicsSubSystem()
 void GameEngine::initializeScriptingSubSystem()
 {
 	logger_->info( "Initializing angelscript..." );
-	// TODO: This is a bit hacky
-	//entities::GraphicsComponentFactory::sceneManager_ = smgr_;
 	
 	logger_->debug( "create angelscript wrapper." );
 
 	angelScript_ = std::unique_ptr<as_wrapper::AngelScript>( new as_wrapper::AngelScript(logger_.get()) );
+	
+	// Types available in the scripting engine
+	angelScript_->registerObjectType(std::string("Entity"), sizeof(entities::Entity), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<entities::Entity>());
+	angelScript_->registerClassMethod(std::string("Entity"), std::string("uint64 getId() const"), asMETHODPR(entities::Entity, getId, () const, uint64));
+	
+	angelScript_->registerObjectType(std::string("GraphicsComponent"), sizeof(entities::GraphicsComponent), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<entities::GraphicsComponent>());
+	//angelScript_->registerClassMethod(std::string("GraphicsComponent"), std::string("uint64 getId() const"), asMETHODPR(entities::GraphicsComponent, getId, () const, uint64));
+	
+	// IGameEngine functions available in the scripting engine
+	angelScript_->registerGlobalFunction(
+		std::string("Entity createEntity()"),
+		asMETHODPR(IGameEngine, createEntity, (), entities::Entity),
+		asCALL_THISCALL_ASGLOBAL,
+		this
+	);
+	
+	angelScript_->registerGlobalFunction(
+		std::string("void assign(const Entity, const GraphicsComponent& in)"),
+		asMETHODPR(IGameEngine, assign, (const entities::Entity, const entities::GraphicsComponent&), void),
+		asCALL_THISCALL_ASGLOBAL,
+		this
+	);
+	
+	// TESTING - loading scripts and creating objects
+	angelScript_->loadScript(std::string("Main"), std::string("Main.as"));
+	
+	auto asObject = angelScript_->createAsObject(std::string("Main"), std::string("Main"));
+	
+	asObject->callMethod( std::string("void tick()") );
+	
 	/*
 	// Register Classes available to scripts
 	angelScript_->registerClass(
@@ -711,16 +739,21 @@ entities::Entity GameEngine::createEntity()
 {
 	entityx::Entity e = entityx_.entities.create();
 	
+	logger_->debug( "Created entity with id: " + std::to_string(e.id().id()) );
+	
 	return entities::Entity( e.id().id() );
 }
 
-void GameEngine::assign(const entities::Entity entity, entities::GraphicsComponent component)
+void GameEngine::assign(const entities::Entity entity, const entities::GraphicsComponent& component)
 {
-	entityx_.entities.assign<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()), std::forward<entities::GraphicsComponent>(component));
+	logger_->debug( "Assigning graphics component to entity with id: " + std::to_string(entity.getId()) );
+	entityx_.entities.assign<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()), std::forward<const entities::GraphicsComponent>(component));
 }
 	
 void GameEngine::rotate(const entities::Entity entity, const float32 degrees, const glm::vec3& axis, const graphics::TransformSpace& relativeTo)
 {
+	logger_->debug( "Rotating entity with id: " + std::to_string(entity.getId()) );
+	
 	auto component = entityx_.entities.component<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
 	
 	switch( relativeTo )
@@ -740,39 +773,50 @@ void GameEngine::rotate(const entities::Entity entity, const float32 degrees, co
 
 void GameEngine::translate(const entities::Entity entity, const glm::vec3& translate)
 {
+	logger_->debug( "Translating entity with id: " + std::to_string(entity.getId()) );
+	
 	auto component = entityx_.entities.component<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
 	component->position += translate;
 }
 
 void GameEngine::setScale(const entities::Entity entity, const glm::vec3& scale)
 {
+	logger_->debug( "Set scale for entity with id: " + std::to_string(entity.getId()) );
+	
 	auto component = entityx_.entities.component<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
 	component->scale = scale;
 }
 
 void GameEngine::setScale(const entities::Entity entity, const float32 x, const float32 y, const float32 z)
 {
+	logger_->debug( "Set scale for entity with id: " + std::to_string(entity.getId()) );
+	
 	auto component = entityx_.entities.component<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
 	component->scale = glm::vec3(x, y, z);
 }
 
 void GameEngine::lookAt(const entities::Entity entity, const glm::vec3& lookAt)
 {
+	logger_->debug( "Set look at for entity with id: " + std::to_string(entity.getId()) );
+	
 	auto component = entityx_.entities.component<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
 	
 	const glm::mat4 lookAtMatrix = glm::lookAt(component->position, lookAt, glm::vec3(0.0f, 1.0f, 0.0f));
 	component->orientation =  glm::normalize( component->orientation * glm::quat_cast( lookAtMatrix ) );
 }
 
-	
 void GameEngine::setPosition(const entities::Entity entity, const glm::vec3& position)
 {
+	logger_->debug( "Set position for entity with id: " + std::to_string(entity.getId()) );
+	
 	auto component = entityx_.entities.component<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
 	component->position = position;
 }
 
 void GameEngine::setPosition(const entities::Entity entity, const float32 x, const float32 y, const float32 z)
 {
+	logger_->debug( "Set position for entity with id: " + std::to_string(entity.getId()) );
+	
 	auto component = entityx_.entities.component<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
 	component->position = glm::vec3(x, y, z);
 }

@@ -42,7 +42,7 @@ public:
 
 	virtual entities::Entity createEntity() = 0;
 	
-	virtual void assign(const entities::Entity entity, entities::GraphicsComponent component) = 0;
+	virtual void assign(const entities::Entity entity, const entities::GraphicsComponent& component) = 0;
 	
 	virtual void rotate(const entities::Entity entity, const float32 degrees, const glm::vec3& axis, const graphics::TransformSpace& relativeTo = graphics::TransformSpace::TS_LOCAL) = 0;
 	virtual void translate(const entities::Entity entity, const glm::vec3& translate) = 0;
