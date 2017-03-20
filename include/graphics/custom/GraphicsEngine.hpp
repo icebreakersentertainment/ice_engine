@@ -21,6 +21,8 @@ namespace hercules
 {
 namespace graphics
 {
+namespace custom
+{
 
 struct Vbo
 {
@@ -189,6 +191,7 @@ private:
 	static KeyCode convertSdlKeycode(const SDL_Keycode& sdlKeycode);
 };
 
+}
 }
 }
 

@@ -1,10 +1,7 @@
 #ifndef SHADER_HANDLE_H_
 #define SHADER_HANDLE_H_
 
-#include <iostream>
-
-#include "GraphicsResourceHandle.hpp"
-#include "Types.hpp"
+#include "ResourceHandle.hpp"
 
 namespace hercules
 {
@@ -16,17 +13,16 @@ enum struct ShaderType
 	UNKNOWN = 0,
 	
 	VERTEX,
+	TESSELLATION_CONTROL,
+	TESSELLATION_EVALUATION,
+	GEOMETRY,
 	FRAGMENT,
 	COMPUTE
 };
 
-class ShaderHandle : public GraphicsResourceHandle
+class ShaderHandle : public ResourceHandle
 {
-public:
-	static const ShaderHandle INVALID;
 };
-
-//const ShaderHandle ShaderHandle::INVALID = ShaderHandle();
 
 }
 

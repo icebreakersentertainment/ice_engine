@@ -18,6 +18,8 @@ namespace hercules
 {
 namespace graphics
 {
+namespace custom
+{
 
 GraphicsEngine::GraphicsEngine(utilities::Properties* properties, fs::IFileSystem* fileSystem, logger::ILogger* logger)
 {
@@ -958,5 +960,6 @@ void GraphicsEngine::removeEventListener(IEventListener* eventListener)
 	}
 }
 
+}
 }
 }
