@@ -12,6 +12,8 @@ class CameraHandle : public ResourceHandle
 {
 public:
 	using ResourceHandle::ResourceHandle;
+	
+	static const CameraHandle INVALID;
 };
 
 }

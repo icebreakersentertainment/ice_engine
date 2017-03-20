@@ -12,6 +12,8 @@ class SkeletonHandle : public ResourceHandle
 {
 public:
 	using ResourceHandle::ResourceHandle;
+	
+	static const SkeletonHandle INVALID;
 };
 
 }

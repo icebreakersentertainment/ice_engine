@@ -12,6 +12,8 @@ class MaterialHandle : public ResourceHandle
 {
 public:
 	using ResourceHandle::ResourceHandle;
+	
+	static const MaterialHandle INVALID;
 };
 
 }

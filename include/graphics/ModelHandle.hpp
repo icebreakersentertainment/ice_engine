@@ -10,6 +10,10 @@ namespace graphics
 
 class ModelHandle : public ResourceHandle
 {
+public:
+	using ResourceHandle::ResourceHandle;
+	
+	static const ModelHandle INVALID;
 };
 
 }

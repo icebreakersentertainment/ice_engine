@@ -12,6 +12,8 @@ class RenderableHandle : public ResourceHandle
 {
 public:
 	using ResourceHandle::ResourceHandle;
+	
+	static const RenderableHandle INVALID;
 };
 
 }

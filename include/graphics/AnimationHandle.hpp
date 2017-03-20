@@ -12,6 +12,8 @@ class AnimationHandle : public ResourceHandle
 {
 public:
 	using ResourceHandle::ResourceHandle;
+	
+	static const AnimationHandle INVALID;
 };
 
 }

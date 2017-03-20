@@ -3,6 +3,8 @@
 
 #include <memory>
 
+#include <entityx/entityx.h>
+
 #include "extras/FpsCamera.hpp"
 
 #include "utilities/Properties.hpp"
@@ -42,6 +44,17 @@ public:
 	virtual GameState getState() override;
 
 	virtual entities::Entity createEntity() override;
+	
+	virtual void assign(const entities::Entity entity, entities::GraphicsComponent component) override;
+	
+	virtual void rotate(const entities::Entity entity, const float32 degrees, const glm::vec3& axis, const graphics::TransformSpace& relativeTo = graphics::TransformSpace::TS_LOCAL) override;
+	virtual void translate(const entities::Entity entity, const glm::vec3& translate) override;
+	virtual void setScale(const entities::Entity entity, const glm::vec3& scale) override;
+	virtual void setScale(const entities::Entity entity, const float32 x, const float32 y, const float32 z) override;
+	virtual void lookAt(const entities::Entity entity, const glm::vec3& lookAt) override;
+	
+	virtual void setPosition(const entities::Entity entity, const glm::vec3& position) override;
+	virtual void setPosition(const entities::Entity entity, const float32 x, const float32 y, const float32 z) override;
 	
 	/**
 	 * 
@@ -143,6 +156,7 @@ private:
 	
 	// Entity system
 	entityx::EntityX entityx_;
+	std::vector<entities::Entity> entities_;
 	
 	static uint32 COMPONENT_TYPE_GRAPHICS;
 	

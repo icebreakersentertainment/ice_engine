@@ -12,6 +12,8 @@ class ShaderProgramHandle : public ResourceHandle
 {
 public:
 	using ResourceHandle::ResourceHandle;
+	
+	static const ShaderProgramHandle INVALID;
 };
 
 }

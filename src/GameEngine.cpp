@@ -2,7 +2,11 @@
 #include <sstream>
 #include <utility>
 
-//#include <boost/filesystem.hpp>
+#define GLM_FORCE_RADIANS
+#include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/string_cast.hpp>
 
 #include "GameEngine.hpp"
 
@@ -708,6 +712,69 @@ entities::Entity GameEngine::createEntity()
 	entityx::Entity e = entityx_.entities.create();
 	
 	return entities::Entity( e.id().id() );
+}
+
+void GameEngine::assign(const entities::Entity entity, entities::GraphicsComponent component)
+{
+	entityx_.entities.assign<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()), std::forward<entities::GraphicsComponent>(component));
+}
+	
+void GameEngine::rotate(const entities::Entity entity, const float32 degrees, const glm::vec3& axis, const graphics::TransformSpace& relativeTo)
+{
+	auto component = entityx_.entities.component<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
+	
+	switch( relativeTo )
+	{
+		case graphics::TransformSpace::TS_LOCAL:
+			component->orientation = glm::normalize( glm::angleAxis(glm::radians(degrees), axis) ) * component->orientation;
+			break;
+		
+		case graphics::TransformSpace::TS_WORLD:
+			component->orientation =  component->orientation * glm::normalize( glm::angleAxis(glm::radians(degrees), axis) );
+			break;
+			
+		default:
+			throw std::runtime_error(std::string("Invalid TransformSpace type."));
+	}
+}
+
+void GameEngine::translate(const entities::Entity entity, const glm::vec3& translate)
+{
+	auto component = entityx_.entities.component<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
+	component->position += translate;
+}
+
+void GameEngine::setScale(const entities::Entity entity, const glm::vec3& scale)
+{
+	auto component = entityx_.entities.component<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
+	component->scale = scale;
+}
+
+void GameEngine::setScale(const entities::Entity entity, const float32 x, const float32 y, const float32 z)
+{
+	auto component = entityx_.entities.component<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
+	component->scale = glm::vec3(x, y, z);
+}
+
+void GameEngine::lookAt(const entities::Entity entity, const glm::vec3& lookAt)
+{
+	auto component = entityx_.entities.component<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
+	
+	const glm::mat4 lookAtMatrix = glm::lookAt(component->position, lookAt, glm::vec3(0.0f, 1.0f, 0.0f));
+	component->orientation =  glm::normalize( component->orientation * glm::quat_cast( lookAtMatrix ) );
+}
+
+	
+void GameEngine::setPosition(const entities::Entity entity, const glm::vec3& position)
+{
+	auto component = entityx_.entities.component<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
+	component->position = position;
+}
+
+void GameEngine::setPosition(const entities::Entity entity, const float32 x, const float32 y, const float32 z)
+{
+	auto component = entityx_.entities.component<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
+	component->position = glm::vec3(x, y, z);
 }
 
 void GameEngine::setBootstrapScript(const std::string& className, const std::string& filename)

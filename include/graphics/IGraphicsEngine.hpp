@@ -26,8 +26,6 @@ enum TransformSpace
 	TS_WORLD
 };
 
-
-
 class IGraphicsEngine
 {
 public:

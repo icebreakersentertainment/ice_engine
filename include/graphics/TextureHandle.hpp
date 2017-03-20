@@ -12,6 +12,8 @@ class TextureHandle : public ResourceHandle
 {
 public:
 	using ResourceHandle::ResourceHandle;
+	
+	static const TextureHandle INVALID;
 };
 
 }
