@@ -22,8 +22,8 @@
 
 #include "as_wrapper/AngelScript.hpp"
 
-#include "entities/EntityFactory.hpp"
-#include "entities/GraphicsComponentFactory.hpp"
+#include "entities/Entity.hpp"
+#include "entities/GraphicsComponent.hpp"
 
 namespace hercules
 {
@@ -41,9 +41,7 @@ public:
 
 	virtual GameState getState() override;
 
-	virtual entities::Entity* createEntity() override;
-	virtual entities::Entity* createEntity(const std::string& name) override;
-	virtual entities::Entity* getEntity(const std::string& name) override;
+	virtual entities::Entity createEntity() override;
 	
 	/**
 	 * 

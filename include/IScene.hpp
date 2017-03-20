@@ -12,7 +12,7 @@ public:
 	}
 	;
 	
-	virtual void tick(float32 elapsedTime) = 0;
+	virtual void tick(const float32 elapsedTime) = 0;
 };
 
 }

@@ -1,21 +1,21 @@
-#ifndef GRAPHICS_RESOURCE_HANDLE_H_
-#define GRAPHICS_RESOURCE_HANDLE_H_
+#ifndef ENTITIES_RESOURCE_HANDLE_H_
+#define ENTITIES_RESOURCE_HANDLE_H_
 
 #include "Types.hpp"
 
 namespace hercules
 {
-namespace graphics
+namespace entities
 {
 
 class ResourceHandle
 {
 public:
-	ResourceHandle() : id_(-1)
+	ResourceHandle() : id_(0)
 	{
 	}
 
-	explicit ResourceHandle(int32 id) : id_(id)
+	explicit ResourceHandle(uint64 id) : id_(id)
 	{
 	}
 
@@ -23,7 +23,7 @@ public:
 	{
 	}
 	
-	int32 getId() const
+	uint64 getId() const
 	{
 		return id_;
 	} 
@@ -60,11 +60,10 @@ public:
 
 	static const ResourceHandle INVALID;
 private:
-	int32 id_;
+	uint64 id_;
 };
 
 }
-
 }
 
-#endif /* GRAPHICS_RESOURCE_HANDLE_H_ */
+#endif /* ENTITIES_RESOURCE_HANDLE_H_ */

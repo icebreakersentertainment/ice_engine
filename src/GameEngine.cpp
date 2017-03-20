@@ -261,7 +261,7 @@ void GameEngine::initializeScriptingSubSystem()
 	logger_->debug( "create angelscript wrapper." );
 
 	angelScript_ = std::unique_ptr<as_wrapper::AngelScript>( new as_wrapper::AngelScript(logger_.get()) );
-	
+	/*
 	// Register Classes available to scripts
 	angelScript_->registerClass(
 		std::string("Entity"),
@@ -316,7 +316,7 @@ void GameEngine::initializeScriptingSubSystem()
 	auto asObject = angelScript_->createAsObject(std::string("Main"), std::string("Main"));
 	
 	asObject->callMethod( std::string("void tick()") );
-	
+	*/
 	/*
 	angelScript_ = std::unique_ptr<as_wrapper::AngelScript>( new as_wrapper::AngelScript() );
 	
@@ -703,24 +703,11 @@ void GameEngine::receiveMouseEvent(sf::Event evt)
 }
 */
 
-entities::Entity* GameEngine::createEntity()
+entities::Entity GameEngine::createEntity()
 {
-	return new entities::Entity( entityx_.entities.create() );
-}
-
-// TODO: Do we need a name?
-entities::Entity* GameEngine::createEntity(const std::string& name)
-{
-	//return new Entity( name );
-	return nullptr;
-}
-
-entities::Entity* GameEngine::getEntity(const std::string& name)
-{
-	//std::cout << "getting entity with name '" << name << "'." << std::endl;
-	//glr::ISceneNode* node = smgr_->getSceneNode( name );
-	//return new Entity( node );
-	return nullptr;
+	entityx::Entity e = entityx_.entities.create();
+	
+	return entities::Entity( e.id().id() );
 }
 
 void GameEngine::setBootstrapScript(const std::string& className, const std::string& filename)

@@ -33,9 +33,7 @@ public:
 	
 	virtual GameState getState() = 0;
 
-	virtual entities::Entity* createEntity() = 0;
-	virtual entities::Entity* createEntity(const std::string& name) = 0;
-	virtual entities::Entity* getEntity(const std::string& name) = 0;
+	virtual entities::Entity createEntity() = 0;
 	
 	virtual void setBootstrapScript(const std::string& className, const std::string& filename) = 0;
 };

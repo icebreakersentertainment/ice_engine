@@ -1,11 +1,9 @@
-#ifndef GRAPHICS_RESOURCE_HANDLE_H_
-#define GRAPHICS_RESOURCE_HANDLE_H_
+#ifndef RESOURCE_HANDLE_H_
+#define RESOURCE_HANDLE_H_
 
 #include "Types.hpp"
 
 namespace hercules
-{
-namespace graphics
 {
 
 class ResourceHandle
@@ -65,6 +63,4 @@ private:
 
 }
 
-}
-
-#endif /* GRAPHICS_RESOURCE_HANDLE_H_ */
+#endif /* RESOURCE_HANDLE_H_ */

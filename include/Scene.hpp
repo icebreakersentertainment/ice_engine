@@ -1,5 +1,5 @@
-#ifndef WORLD_H_
-#define WORLD_H_
+#ifndef SCENE_H_
+#define SCENE_H_
 
 #include "Types.hpp"
 
@@ -13,13 +13,13 @@
 namespace hercules
 {
 
-class Scene : IScene
+class Scene : public IScene
 {
 public:
 	Scene(IGameEngine* gameEngine, IThreadPool* threadPool, IOpenGlLoader* openGlLoader, utilities::Properties* properties);
 	virtual ~Scene();
 
-	virtual void tick(float32 elapsedTime) override;
+	virtual void tick(const float32 elapsedTime) override;
 	
 private:	
 	IGameEngine* gameEngine_;
@@ -30,4 +30,4 @@ private:
 
 }
 
-#endif /* WORLD_H_ */
+#endif /* SCENE_H_ */
