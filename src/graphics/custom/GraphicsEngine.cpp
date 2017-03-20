@@ -191,21 +191,21 @@ void GraphicsEngine::render(const float32 delta)
 	SDL_GL_SwapWindow( sdlWindow_ );
 }
 
-CameraId GraphicsEngine::createCamera(const glm::vec3& position, const glm::vec3& lookAt)
+CameraHandle GraphicsEngine::createCamera(const glm::vec3& position, const glm::vec3& lookAt)
 {
 	camera_ = Camera();
 	camera_.position = position;
 	camera_.orientation = glm::quat();
 	//camera_.orientation = glm::normalize(camera_.orientation);
 	
-	auto cameraId = CameraId(0);
+	auto cameraHandle = CameraHandle(0);
 	
-	this->lookAt(cameraId, lookAt);
+	this->lookAt(cameraHandle, lookAt);
 	
-	return cameraId;
+	return cameraHandle;
 }
 
-MeshId GraphicsEngine::createStaticMesh(
+MeshHandle GraphicsEngine::createStaticMesh(
 	const std::vector<glm::vec3>& vertices,
 	const std::vector<uint32>& indices,
 	const std::vector<glm::vec4>& colors,
@@ -260,10 +260,10 @@ MeshId GraphicsEngine::createStaticMesh(
 	vertexArrayObjects_.push_back(vao);
 	auto index = vertexArrayObjects_.size() - 1;
 	
-	return MeshId(index);
+	return MeshHandle(index);
 }
 
-MeshId GraphicsEngine::createAnimatedMesh(
+MeshHandle GraphicsEngine::createAnimatedMesh(
 		const std::vector<glm::vec3>& vertices,
 		const std::vector<uint32>& indices,
 		const std::vector<glm::vec4>& colors,
@@ -332,10 +332,10 @@ MeshId GraphicsEngine::createAnimatedMesh(
 	vertexArrayObjects_.push_back(vao);
 	auto index = vertexArrayObjects_.size() - 1;
 	
-	return MeshId(index);
+	return MeshHandle(index);
 }
 
-MeshId GraphicsEngine::createDynamicMesh(
+MeshHandle GraphicsEngine::createDynamicMesh(
 	const std::vector<glm::vec3>& vertices,
 	const std::vector<uint32>& indices,
 	const std::vector<glm::vec4>& colors,
@@ -386,12 +386,12 @@ MeshId GraphicsEngine::createDynamicMesh(
 	vertexArrayObjects_.push_back(vao);
 	auto index = vertexArrayObjects_.size() - 1;
 	
-	return MeshId(index);
+	return MeshHandle(index);
 	*/
-	return MeshId();
+	return MeshHandle();
 }
 
-SkeletonId GraphicsEngine::createSkeleton(const uint32 numberOfBones)
+SkeletonHandle GraphicsEngine::createSkeleton(const uint32 numberOfBones)
 {
 	Ubo ubo;
 	
@@ -405,10 +405,10 @@ SkeletonId GraphicsEngine::createSkeleton(const uint32 numberOfBones)
 	uniformBufferObjects_.push_back(ubo);
 	auto index = uniformBufferObjects_.size() - 1;
 	
-	return SkeletonId(index);
+	return SkeletonHandle(index);
 }
 
-TextureId GraphicsEngine::createTexture2d(const std::string& uri)
+TextureHandle GraphicsEngine::createTexture2d(const std::string& uri)
 {
 	GlTexture2d texture;
 	
@@ -429,15 +429,15 @@ TextureId GraphicsEngine::createTexture2d(const std::string& uri)
 	texture2dObjects_.push_back(texture);
 	auto index = texture2dObjects_.size() - 1;
 	
-	return TextureId(index);
+	return TextureHandle(index);
 }
 
-RenderableId GraphicsEngine::createRenderable(const MeshId meshId, const TextureId textureId)
+RenderableHandle GraphicsEngine::createRenderable(const MeshHandle meshHandle, const TextureHandle textureHandle)
 {
 	Renderable renderable;
 	
-	renderable.vao = vertexArrayObjects_[meshId.getId()];
-	renderable.texture = texture2dObjects_[textureId.getId()];
+	renderable.vao = vertexArrayObjects_[meshHandle.getId()];
+	renderable.texture = texture2dObjects_[textureHandle.getId()];
 	
 	renderables_.push_back(renderable);
 	auto index = renderables_.size() - 1;
@@ -448,10 +448,10 @@ RenderableId GraphicsEngine::createRenderable(const MeshId meshId, const Texture
 	graphicsData.orientation = glm::quat();
 	graphicsData_.push_back(graphicsData);
 	
-	return RenderableId(index);
+	return RenderableHandle(index);
 }
 
-void GraphicsEngine::rotate(const CameraId cameraId, const glm::quat& quaternion, const TransformSpace& relativeTo)
+void GraphicsEngine::rotate(const CameraHandle cameraHandle, const glm::quat& quaternion, const TransformSpace& relativeTo)
 {
 	switch( relativeTo )
 	{
@@ -469,9 +469,9 @@ void GraphicsEngine::rotate(const CameraId cameraId, const glm::quat& quaternion
 	}
 }
 
-void GraphicsEngine::rotate(const RenderableId renderableId, const glm::quat& quaternion, const TransformSpace& relativeTo)
+void GraphicsEngine::rotate(const RenderableHandle renderableHandle, const glm::quat& quaternion, const TransformSpace& relativeTo)
 {
-	const auto id = renderableId.getId();
+	const auto id = renderableHandle.getId();
 	
 	auto& graphicsData = graphicsData_[id];
 	
@@ -491,7 +491,7 @@ void GraphicsEngine::rotate(const RenderableId renderableId, const glm::quat& qu
 	}
 }
 
-void GraphicsEngine::rotate(const CameraId cameraId, const float32 degrees, const glm::vec3& axis, const TransformSpace& relativeTo)
+void GraphicsEngine::rotate(const CameraHandle cameraHandle, const float32 degrees, const glm::vec3& axis, const TransformSpace& relativeTo)
 {
 	switch( relativeTo )
 	{
@@ -509,9 +509,9 @@ void GraphicsEngine::rotate(const CameraId cameraId, const float32 degrees, cons
 	}
 }
 
-void GraphicsEngine::rotate(const RenderableId renderableId, const float32 degrees, const glm::vec3& axis, const TransformSpace& relativeTo)
+void GraphicsEngine::rotate(const RenderableHandle renderableHandle, const float32 degrees, const glm::vec3& axis, const TransformSpace& relativeTo)
 {
-	const auto id = renderableId.getId();
+	const auto id = renderableHandle.getId();
 	
 	auto& graphicsData = graphicsData_[id];
 	
@@ -531,86 +531,86 @@ void GraphicsEngine::rotate(const RenderableId renderableId, const float32 degre
 	}
 }
 
-void GraphicsEngine::translate(const CameraId cameraId, const float32 x, const float32 y, const float32 z)
+void GraphicsEngine::translate(const CameraHandle cameraHandle, const float32 x, const float32 y, const float32 z)
 {
 	camera_.position += glm::vec3(x, y, z);
 }
 
-void GraphicsEngine::translate(const RenderableId renderableId, const float32 x, const float32 y, const float32 z)
+void GraphicsEngine::translate(const RenderableHandle renderableHandle, const float32 x, const float32 y, const float32 z)
 {
-	const auto id = renderableId.getId();
+	const auto id = renderableHandle.getId();
 	
 	auto& graphicsData = graphicsData_[id];
 	graphicsData.position += glm::vec3(x, y, z);
 }
 
-void GraphicsEngine::translate(const CameraId cameraId, const glm::vec3& trans)
+void GraphicsEngine::translate(const CameraHandle cameraHandle, const glm::vec3& trans)
 {
 	camera_.position += trans;
 }
 
-void GraphicsEngine::translate(const RenderableId renderableId, const glm::vec3& trans)
+void GraphicsEngine::translate(const RenderableHandle renderableHandle, const glm::vec3& trans)
 {
-	const auto id = renderableId.getId();
+	const auto id = renderableHandle.getId();
 	
 	auto& graphicsData = graphicsData_[id];
 	graphicsData.position += trans;
 }
 
 
-void GraphicsEngine::scale(const RenderableId renderableId, const float32 x, const float32 y, const float32 z)
+void GraphicsEngine::scale(const RenderableHandle renderableHandle, const float32 x, const float32 y, const float32 z)
 {
-	const auto id = renderableId.getId();
+	const auto id = renderableHandle.getId();
 	
 	auto& graphicsData = graphicsData_[id];
 	graphicsData.scale = glm::vec3(x, y, z);
 }
 
-void GraphicsEngine::scale(const RenderableId renderableId, const glm::vec3& scale)
+void GraphicsEngine::scale(const RenderableHandle renderableHandle, const glm::vec3& scale)
 {
-	const auto id = renderableId.getId();
+	const auto id = renderableHandle.getId();
 	
 	auto& graphicsData = graphicsData_[id];
 	graphicsData.scale = scale;
 }
 
-void GraphicsEngine::scale(const RenderableId renderableId, const float32 scale)
+void GraphicsEngine::scale(const RenderableHandle renderableHandle, const float32 scale)
 {
-	const auto id = renderableId.getId();
+	const auto id = renderableHandle.getId();
 	
 	auto& graphicsData = graphicsData_[id];
 	graphicsData.scale = glm::vec3(scale, scale, scale);
 }
 
-void GraphicsEngine::position(const RenderableId renderableId, const float32 x, const float32 y, const float32 z)
+void GraphicsEngine::position(const RenderableHandle renderableHandle, const float32 x, const float32 y, const float32 z)
 {
-	const auto id = renderableId.getId();
+	const auto id = renderableHandle.getId();
 	
 	auto& graphicsData = graphicsData_[id];
 	graphicsData.position = glm::vec3(x, y, z);
 }
 
-void GraphicsEngine::position(const CameraId cameraId, const float32 x, const float32 y, const float32 z)
+void GraphicsEngine::position(const CameraHandle cameraHandle, const float32 x, const float32 y, const float32 z)
 {
 	camera_.position = glm::vec3(x, y, z);
 }
 
-void GraphicsEngine::position(const RenderableId renderableId, const glm::vec3& position)
+void GraphicsEngine::position(const RenderableHandle renderableHandle, const glm::vec3& position)
 {
-	const auto id = renderableId.getId();
+	const auto id = renderableHandle.getId();
 	
 	auto& graphicsData = graphicsData_[id];
 	graphicsData.scale = position;
 }
 
-void GraphicsEngine::position(const CameraId cameraId, const glm::vec3& position)
+void GraphicsEngine::position(const CameraHandle cameraHandle, const glm::vec3& position)
 {
 	camera_.position = position;
 }
 
-void GraphicsEngine::lookAt(const RenderableId renderableId, const glm::vec3& lookAt)
+void GraphicsEngine::lookAt(const RenderableHandle renderableHandle, const glm::vec3& lookAt)
 {
-	const auto id = renderableId.getId();
+	const auto id = renderableHandle.getId();
 	
 	auto& graphicsData = graphicsData_[id];
 	
@@ -620,7 +620,7 @@ void GraphicsEngine::lookAt(const RenderableId renderableId, const glm::vec3& lo
 	graphicsData.orientation =  glm::normalize( graphicsData.orientation * glm::quat_cast( lookAtMatrix ) );
 }
 
-void GraphicsEngine::lookAt(const CameraId cameraId, const glm::vec3& lookAt)
+void GraphicsEngine::lookAt(const CameraHandle cameraHandle, const glm::vec3& lookAt)
 {
 	assert(lookAt != camera_.position);
 	
@@ -628,16 +628,16 @@ void GraphicsEngine::lookAt(const CameraId cameraId, const glm::vec3& lookAt)
 	camera_.orientation =  glm::normalize( camera_.orientation * glm::quat_cast( lookAtMatrix ) );
 }
 
-void GraphicsEngine::assign(const RenderableId renderableId, const SkeletonId skeletonId)
+void GraphicsEngine::assign(const RenderableHandle renderableHandle, const SkeletonHandle skeletonHandle)
 {
-	auto& renderable = renderables_[renderableId.getId()];
+	auto& renderable = renderables_[renderableHandle.getId()];
 	
-	renderable.ubo = uniformBufferObjects_[skeletonId.getId()];
+	renderable.ubo = uniformBufferObjects_[skeletonHandle.getId()];
 }
 
-void GraphicsEngine::update(const SkeletonId skeletonId, const void* data, const uint32 size)
+void GraphicsEngine::update(const SkeletonHandle skeletonHandle, const void* data, const uint32 size)
 {
-	const auto& ubo = uniformBufferObjects_[skeletonId.getId()];
+	const auto& ubo = uniformBufferObjects_[skeletonHandle.getId()];
 	
 	glBindBuffer(GL_UNIFORM_BUFFER, ubo.id);
 	glBufferSubData(GL_UNIFORM_BUFFER, 0, size, data);

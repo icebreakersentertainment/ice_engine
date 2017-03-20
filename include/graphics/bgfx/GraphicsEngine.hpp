@@ -89,16 +89,16 @@ public:
 	virtual void setViewport(const uint32 width, const uint32 height) override;
 	virtual void render(const float32 delta) override;
 	
-	virtual CameraId createCamera(const glm::vec3& position, const glm::vec3& lookAt = glm::vec3(0.0f, 0.0f, 0.0f)) override;
+	virtual CameraHandle createCamera(const glm::vec3& position, const glm::vec3& lookAt = glm::vec3(0.0f, 0.0f, 0.0f)) override;
 	
-	virtual MeshId createStaticMesh(
+	virtual MeshHandle createStaticMesh(
 		const std::vector<glm::vec3>& vertices,
 		const std::vector<uint32>& indices,
 		const std::vector<glm::vec4>& colors,
 		const std::vector<glm::vec3>& normals,
 		const std::vector<glm::vec2>& textureCoordinates
 	) override;
-	virtual MeshId createAnimatedMesh(
+	virtual MeshHandle createAnimatedMesh(
 		const std::vector<glm::vec3>& vertices,
 		const std::vector<uint32>& indices,
 		const std::vector<glm::vec4>& colors,
@@ -107,7 +107,7 @@ public:
 		const std::vector<glm::ivec4>& boneIds,
 		const std::vector<glm::vec4>& boneWeights
 	) override;
-	virtual MeshId createDynamicMesh(
+	virtual MeshHandle createDynamicMesh(
 		const std::vector<glm::vec3>& vertices,
 		const std::vector<uint32>& indices,
 		const std::vector<glm::vec4>& colors,
@@ -115,37 +115,37 @@ public:
 		const std::vector<glm::vec2>& textureCoordinates
 	) override;
 	
-	virtual SkeletonId createSkeleton(const uint32 numberOfBones) override;
+	virtual SkeletonHandle createSkeleton(const uint32 numberOfBones) override;
 	
-	virtual TextureId createTexture2d(const std::string& uri) override;
+	virtual TextureHandle createTexture2d(const std::string& uri) override;
 	
-	virtual RenderableId createRenderable(const MeshId meshId, const TextureId textureId) override;
+	virtual RenderableHandle createRenderable(const MeshHandle meshHandle, const TextureHandle textureHandle) override;
 	
-	virtual void rotate(const CameraId cameraId, const glm::quat& quaternion, const TransformSpace& relativeTo = TransformSpace::TS_LOCAL) override;
-	virtual void rotate(const RenderableId renderableId, const glm::quat& quaternion, const TransformSpace& relativeTo = TransformSpace::TS_LOCAL) override;
-	virtual void rotate(const CameraId cameraId, const float32 degrees, const glm::vec3& axis, const TransformSpace& relativeTo = TransformSpace::TS_LOCAL) override;
-	virtual void rotate(const RenderableId renderableId, const float32 degrees, const glm::vec3& axis, const TransformSpace& relativeTo = TransformSpace::TS_LOCAL) override;
+	virtual void rotate(const CameraHandle cameraHandle, const glm::quat& quaternion, const TransformSpace& relativeTo = TransformSpace::TS_LOCAL) override;
+	virtual void rotate(const RenderableHandle renderableHandle, const glm::quat& quaternion, const TransformSpace& relativeTo = TransformSpace::TS_LOCAL) override;
+	virtual void rotate(const CameraHandle cameraHandle, const float32 degrees, const glm::vec3& axis, const TransformSpace& relativeTo = TransformSpace::TS_LOCAL) override;
+	virtual void rotate(const RenderableHandle renderableHandle, const float32 degrees, const glm::vec3& axis, const TransformSpace& relativeTo = TransformSpace::TS_LOCAL) override;
 	
-	virtual void translate(const CameraId cameraId, const float32 x, const float32 y, const float32 z) override;
-	virtual void translate(const RenderableId renderableId, const float32 x, const float32 y, const float32 z) override;
-	virtual void translate(const CameraId cameraId, const glm::vec3& trans) override;
-	virtual void translate(const RenderableId renderableId, const glm::vec3& trans) override;
+	virtual void translate(const CameraHandle cameraHandle, const float32 x, const float32 y, const float32 z) override;
+	virtual void translate(const RenderableHandle renderableHandle, const float32 x, const float32 y, const float32 z) override;
+	virtual void translate(const CameraHandle cameraHandle, const glm::vec3& trans) override;
+	virtual void translate(const RenderableHandle renderableHandle, const glm::vec3& trans) override;
 	
-	virtual void scale(const RenderableId renderableId, const float32 x, const float32 y, const float32 z) override;
-	virtual void scale(const RenderableId renderableId, const glm::vec3& scale) override;
-	virtual void scale(const RenderableId renderableId, const float32 scale) override;
+	virtual void scale(const RenderableHandle renderableHandle, const float32 x, const float32 y, const float32 z) override;
+	virtual void scale(const RenderableHandle renderableHandle, const glm::vec3& scale) override;
+	virtual void scale(const RenderableHandle renderableHandle, const float32 scale) override;
 	
-	virtual void position(const RenderableId renderableId, const float32 x, const float32 y, const float32 z) override;
-	virtual void position(const CameraId cameraId, const float32 x, const float32 y, const float32 z) override;
-	virtual void position(const RenderableId renderableId, const glm::vec3& position) override;
-	virtual void position(const CameraId cameraId, const glm::vec3& position) override;
+	virtual void position(const RenderableHandle renderableHandle, const float32 x, const float32 y, const float32 z) override;
+	virtual void position(const CameraHandle cameraHandle, const float32 x, const float32 y, const float32 z) override;
+	virtual void position(const RenderableHandle renderableHandle, const glm::vec3& position) override;
+	virtual void position(const CameraHandle cameraHandle, const glm::vec3& position) override;
 	
-	virtual void lookAt(const RenderableId renderableId, const glm::vec3& lookAt) override;
-	virtual void lookAt(const CameraId cameraId, const glm::vec3& lookAt) override;
+	virtual void lookAt(const RenderableHandle renderableHandle, const glm::vec3& lookAt) override;
+	virtual void lookAt(const CameraHandle cameraHandle, const glm::vec3& lookAt) override;
 	
-	virtual void assign(const RenderableId renderableId, const SkeletonId skeletonId) override;
+	virtual void assign(const RenderableHandle renderableHandle, const SkeletonHandle skeletonHandle) override;
 	
-	virtual void update(const SkeletonId skeletonId, const void* data, const uint32 size) override;
+	virtual void update(const SkeletonHandle skeletonHandle, const void* data, const uint32 size) override;
 	
 	virtual void setMouseRelativeMode(const bool enabled) override;
 	virtual void setCursorVisible(const bool visible) override;

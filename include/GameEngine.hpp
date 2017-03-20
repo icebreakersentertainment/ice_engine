@@ -64,7 +64,7 @@ private:
 	// Gui
 	//glr::gui::IGuiComponent* mainGui_;
 	std::unique_ptr< graphics::IGraphicsEngine > graphicsEngine_;
-	graphics::CameraId cameraId_;
+	graphics::CameraHandle cameraHandle_;
 	
 	std::unique_ptr< physics::IPhysicsEngine > physicsEngine_;
 	

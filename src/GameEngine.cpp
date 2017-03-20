@@ -382,10 +382,10 @@ std::vector<model::BoneData> boneData;
 std::vector<model::Animation> animations;
 model::BoneNode rootBoneNode;
 glm::mat4 globalInverseTransformation;
-graphics::SkeletonId skeletonId;
+graphics::SkeletonHandle skeletonHandle;
 void GameEngine::test()
 {
-	cameraId_ = graphicsEngine_->createCamera(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0.0f, 0.0f, 0.0f));
+	cameraHandle_ = graphicsEngine_->createCamera(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0.0f, 0.0f, 0.0f));
 	
 	std::vector<glm::vec3> vertices;
 	
@@ -427,10 +427,10 @@ void GameEngine::test()
 	
 	/*
 	{
-		auto meshId = graphicsEngine_->createStaticMesh(vertices, indices, colors, normals, textureCoordinates);
-		auto textureId = graphicsEngine_->createTexture2d( std::string("../../assets/textures/ts_grass.jpg") );
+		auto meshHandle = graphicsEngine_->createStaticMesh(vertices, indices, colors, normals, textureCoordinates);
+		auto textureHandle = graphicsEngine_->createTexture2d( std::string("../../assets/textures/ts_grass.jpg") );
 		
-		auto renderableId = graphicsEngine_->createRenderable(meshId, textureId);
+		auto renderableHandle = graphicsEngine_->createRenderable(meshHandle, textureHandle);
 	}
 	*/
 	{
@@ -449,23 +449,23 @@ void GameEngine::test()
 			boneWeights.push_back( bd.weights );
 		}
 		
-		auto meshId = graphicsEngine_->createAnimatedMesh(model->meshes[0].vertices, model->meshes[0].indices, model->meshes[0].colors, model->meshes[0].normals, model->meshes[0].textureCoordinates, boneIds, boneWeights);
+		auto meshHandle = graphicsEngine_->createAnimatedMesh(model->meshes[0].vertices, model->meshes[0].indices, model->meshes[0].colors, model->meshes[0].normals, model->meshes[0].textureCoordinates, boneIds, boneWeights);
 		std::cout << "Created animated mesh" << std::endl;
-		auto textureId = graphicsEngine_->createTexture2d( std::string("../assets/models/scoutship/") + model->textures[0].filename );
+		auto textureHandle = graphicsEngine_->createTexture2d( std::string("../assets/models/scoutship/") + model->textures[0].filename );
 		std::cout << "Created texture" << std::endl;
-		auto renderableId = graphicsEngine_->createRenderable(meshId, textureId);
+		auto renderableHandle = graphicsEngine_->createRenderable(meshHandle, textureHandle);
 		std::cout << "Created renderable" << std::endl;
-		graphicsEngine_->scale(renderableId, 0.03f);
-		graphicsEngine_->translate(renderableId, 6.0f, -4.0f, 0);
+		graphicsEngine_->scale(renderableHandle, 0.03f);
+		graphicsEngine_->translate(renderableHandle, 6.0f, -4.0f, 0);
 		
 		animations = model->animations;
 		rootBoneNode = model->rootBoneNode;
 		globalInverseTransformation = model->globalInverseTransformation;
 		boneData = model->boneData;
 		
-		skeletonId = graphicsEngine_->createSkeleton( 100 );
+		skeletonHandle = graphicsEngine_->createSkeleton( 100 );
 		std::cout << "Created skeleton" << std::endl;
-		graphicsEngine_->assign(renderableId, skeletonId);
+		graphicsEngine_->assign(renderableHandle, skeletonHandle);
 	}
 }
 
@@ -808,11 +808,11 @@ bool GameEngine::processEvent(const graphics::Event& event)
 		case graphics::MOUSEMOTION:
 			{
 				const auto degrees = event.motion.xrel / 5.5f;
-				graphicsEngine_->rotate(cameraId_, -degrees, glm::vec3(0.0f, 1.0f, 0.0f), graphics::TransformSpace::TS_LOCAL);
+				graphicsEngine_->rotate(cameraHandle_, -degrees, glm::vec3(0.0f, 1.0f, 0.0f), graphics::TransformSpace::TS_LOCAL);
 			}
 			{
 				const auto degrees = event.motion.yrel / 5.5f;
-				graphicsEngine_->rotate(cameraId_, -degrees, glm::vec3(1.0f, 0.0f, 0.0f), graphics::TransformSpace::TS_WORLD);
+				graphicsEngine_->rotate(cameraHandle_, -degrees, glm::vec3(1.0f, 0.0f, 0.0f), graphics::TransformSpace::TS_WORLD);
 			}
 			break;
 		
@@ -1081,11 +1081,11 @@ void GameEngine::run()
 		auto ticksPerSecond = animations[0].ticksPerSecond;
 		runningTime += 0.01;
 		model::animateSkeleton(transformations, globalInverseTransformation, animatedBoneNodes, rootBoneNode, boneData[0], duration, ticksPerSecond, runningTime, 0, 0);
-		graphicsEngine_->update(skeletonId, &transformations[0], 100 * sizeof(glm::mat4));
+		graphicsEngine_->update(skeletonHandle, &transformations[0], 100 * sizeof(glm::mat4));
 		*/
 
 		transformations = std::vector< glm::mat4 >(100, glm::mat4(1.0));
-		graphicsEngine_->update(skeletonId, &transformations[0], 100 * sizeof(glm::mat4));
+		graphicsEngine_->update(skeletonHandle, &transformations[0], 100 * sizeof(glm::mat4));
 		
 		if ( retVal == -1 )
 		{
