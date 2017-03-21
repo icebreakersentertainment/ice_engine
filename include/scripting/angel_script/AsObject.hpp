@@ -7,7 +7,9 @@
 
 namespace hercules
 {
-namespace as_wrapper
+namespace scripting
+{
+namespace angel_script
 {
 
 class AsObject
@@ -23,6 +25,7 @@ private:
 	asIScriptContext* ctx_;
 };
 
+}
 }
 }
 

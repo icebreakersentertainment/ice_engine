@@ -1,8 +1,10 @@
-#include "as_wrapper/AsObject.hpp"
+#include "scripting/angel_script/AsObject.hpp"
 
 namespace hercules
 {
-namespace as_wrapper
+namespace scripting
+{
+namespace angel_script
 {
 
 AsObject::AsObject(asIScriptObject* object, asITypeInfo* type, asIScriptContext* ctx) : object_(object), type_(type), ctx_(ctx)
@@ -28,5 +30,6 @@ void AsObject::callMethod(const std::string& methodDeclaration)
 	ctx_->Execute();
 }
 
+}
 }
 }

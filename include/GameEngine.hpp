@@ -22,7 +22,7 @@
 
 #include "physics/IPhysicsEngine.hpp"
 
-#include "as_wrapper/AngelScript.hpp"
+#include "scripting/IScriptingEngine.hpp"
 
 #include "entities/Entity.hpp"
 #include "entities/GraphicsComponent.hpp"
@@ -84,8 +84,7 @@ private:
 	
 	std::unique_ptr<Player> player_;
 	
-	// For some reason, AngelScript will crash with a SegFault when registering objects if I don't use a pointer here (instead of storing it on the stack)
-	std::unique_ptr<as_wrapper::AngelScript> angelScript_;
+	std::unique_ptr<scripting::IScriptingEngine> scriptingEngine_;
 	
 	std::unique_ptr<fs::IFileSystem> fileSystem_;
 	
@@ -110,9 +109,6 @@ private:
 
 	// Testing
 	void test();
-	
-	void angelscriptTest();
-	as_wrapper::AsObject* mainAsScript_;
 
 	float32 currentFps_;
 	float32 getFps();
@@ -129,7 +125,7 @@ private:
 	int32 timeForMisc_;
 	int32 timeForInput_;
 	int32 timeForGuiUpdate_;
-	int32 timeForAngelScript_;
+	int32 timeForScripting_;
 	
 	int32 getTimeForPhysics();
 	int32 getTimeForTick();
@@ -137,7 +133,7 @@ private:
 	int32 getTimeForMisc();
 	int32 getTimeForInput();
 	int32 getTimeForGuiUpdate();
-	int32 getTimeForAngelScript();
+	int32 getTimeForScripting();
 	
 	// Initialization stuff
 	void initializeLoggingSubSystem();

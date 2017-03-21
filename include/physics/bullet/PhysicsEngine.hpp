@@ -8,6 +8,10 @@
 
 #include "physics/IPhysicsEngine.hpp"
 
+#include "utilities/Properties.hpp"
+#include "fs/IFileSystem.hpp"
+#include "logger/ILogger.hpp"
+
 namespace hercules
 {
 namespace physics
@@ -18,7 +22,7 @@ namespace bullet
 class PhysicsEngine : public IPhysicsEngine
 {
 public:
-	PhysicsEngine();
+	PhysicsEngine(utilities::Properties* properties, fs::IFileSystem* fileSystem, logger::ILogger* logger);
 	virtual ~PhysicsEngine();
 	
 	virtual void tick(float32 delta) override;
@@ -27,6 +31,10 @@ public:
 
 private:
 	PhysicsEngine(const PhysicsEngine& other);
+	
+	utilities::Properties* properties_;
+	fs::IFileSystem* fileSystem_;
+	logger::ILogger* logger_;
 	
 	std::unique_ptr<btBroadphaseInterface> broadphase_;
 	std::unique_ptr<btDefaultCollisionConfiguration> collisionConfiguration_;

@@ -44,7 +44,7 @@ public:
 	AScriptModule* getScript(const std::string& name);
 	int32 discardModule(const std::string& name);
 	
-	AsObject* createAsObject(const std::string& moduleName, const std::string& className);
+	scripting::angel_script::AsObject* createAsObject(const std::string& moduleName, const std::string& className);
 
 	// More 'advanced' functions for angel script
 	int32 registerObjectType(const std::string& obj, int32 byteSize, asDWORD flags);

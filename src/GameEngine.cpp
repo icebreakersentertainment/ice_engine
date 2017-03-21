@@ -12,21 +12,16 @@
 
 #include "Constants.hpp"
 
-#include "graphics/GraphicsFactory.hpp"
-#include "graphics/Event.hpp"
-
 #include "model/ModelLoader.hpp"
 #include "model/Animate.hpp"
 
 #include "physics/PhysicsFactory.hpp"
+#include "graphics/GraphicsFactory.hpp"
+#include "scripting/ScriptingFactory.hpp"
+
+#include "graphics/Event.hpp"
 
 #include "logger/Logger.hpp"
-
-#include "as_wrapper/AngelScript.hpp"
-
-#include "angel_script/TestAtom.hpp"
-#include "angel_script/ClassFactory.hpp"
-
 #include "fs/FileSystem.hpp"
 
 namespace hercules
@@ -54,19 +49,12 @@ GameEngine::GameEngine(
 	
 	inConsole_ = false;
 	
-	mainAsScript_ = nullptr;
-	
 	initialize();
 }
 
 GameEngine::~GameEngine()
 {
 	logger_->info("Shutting down.");
-	
-	if (mainAsScript_ != nullptr)
-	{
-		mainAsScript_->callMethod( std::string("void destroy()") );
-	}
 }
 
 GameState GameEngine::getState()
@@ -106,10 +94,6 @@ void GameEngine::startNewGame()
 
 void GameEngine::tick(float32 elapsedTime)
 {
-	// Testing angelscript
-	if (mainAsScript_ != nullptr)
-		mainAsScript_->callMethod( std::string("void tick()") );
-	
 	switch ( state_ )
 	{
 		case GAME_STATE_UNKNOWN:
@@ -202,7 +186,7 @@ void GameEngine::initializePhysicsSubSystem()
 {
 	logger_->info( "initialize physics." );
 	
-	physicsEngine_ = physics::PhysicsFactory::createPhysicsEngine();
+	physicsEngine_ = physics::PhysicsFactory::createPhysicsEngine( properties_.get(), fileSystem_.get(), logger_.get() );
 }
 
 void GameEngine::initializeGraphicsSubSystem()
@@ -258,28 +242,26 @@ void GameEngine::initializeGraphicsSubSystem()
 
 void GameEngine::initializeScriptingSubSystem()
 {
-	logger_->info( "Initializing angelscript..." );
+	logger_->info( "Initializing scripting..." );
 	
-	logger_->debug( "create angelscript wrapper." );
-
-	angelScript_ = std::unique_ptr<as_wrapper::AngelScript>( new as_wrapper::AngelScript(logger_.get()) );
+	scriptingEngine_ = scripting::ScriptingFactory::createScriptingEngine( properties_.get(), fileSystem_.get(), logger_.get() );
 	
 	// Types available in the scripting engine
-	angelScript_->registerObjectType(std::string("Entity"), sizeof(entities::Entity), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<entities::Entity>());
-	angelScript_->registerClassMethod(std::string("Entity"), std::string("uint64 getId() const"), asMETHODPR(entities::Entity, getId, () const, uint64));
+	scriptingEngine_->registerObjectType(std::string("Entity"), sizeof(entities::Entity), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<entities::Entity>());
+	scriptingEngine_->registerClassMethod(std::string("Entity"), std::string("uint64 getId() const"), asMETHODPR(entities::Entity, getId, () const, uint64));
 	
-	angelScript_->registerObjectType(std::string("GraphicsComponent"), sizeof(entities::GraphicsComponent), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<entities::GraphicsComponent>());
-	//angelScript_->registerClassMethod(std::string("GraphicsComponent"), std::string("uint64 getId() const"), asMETHODPR(entities::GraphicsComponent, getId, () const, uint64));
+	scriptingEngine_->registerObjectType(std::string("GraphicsComponent"), sizeof(entities::GraphicsComponent), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<entities::GraphicsComponent>());
+	//scriptingEngine_->registerClassMethod(std::string("GraphicsComponent"), std::string("uint64 getId() const"), asMETHODPR(entities::GraphicsComponent, getId, () const, uint64));
 	
 	// IGameEngine functions available in the scripting engine
-	angelScript_->registerGlobalFunction(
+	scriptingEngine_->registerGlobalFunction(
 		std::string("Entity createEntity()"),
 		asMETHODPR(IGameEngine, createEntity, (), entities::Entity),
 		asCALL_THISCALL_ASGLOBAL,
 		this
 	);
 	
-	angelScript_->registerGlobalFunction(
+	scriptingEngine_->registerGlobalFunction(
 		std::string("void assign(const Entity, const GraphicsComponent& in)"),
 		asMETHODPR(IGameEngine, assign, (const entities::Entity, const entities::GraphicsComponent&), void),
 		asCALL_THISCALL_ASGLOBAL,
@@ -287,15 +269,15 @@ void GameEngine::initializeScriptingSubSystem()
 	);
 	
 	// TESTING - loading scripts and creating objects
-	angelScript_->loadScript(std::string("Main"), std::string("Main.as"));
+	scriptingEngine_->loadScript(std::string("Main"), std::string("Main.as"));
 	
-	auto asObject = angelScript_->createAsObject(std::string("Main"), std::string("Main"));
+	auto asObject = scriptingEngine_->createAsObject(std::string("Main"), std::string("Main"));
 	
 	asObject->callMethod( std::string("void tick()") );
 	
 	/*
 	// Register Classes available to scripts
-	angelScript_->registerClass(
+	scriptingEngine_->registerClass(
 		std::string("Entity"),
 		std::string("Entity@ f()"),
 		std::string("void f()"),
@@ -305,7 +287,7 @@ void GameEngine::initializeScriptingSubSystem()
 		asMETHOD(entities::Entity, releaseRef)
 	);
 	
-	angelScript_->registerClass(
+	scriptingEngine_->registerClass(
 		std::string("GraphicsComponent"),
 		std::string("GraphicsComponent@ f()"),
 		std::string("void f()"),
@@ -315,24 +297,24 @@ void GameEngine::initializeScriptingSubSystem()
 		asMETHOD(entities::GraphicsComponent, releaseRef)
 	);
 	
-	angelScript_->registerClassMethod(std::string("Entity"), std::string("void addComponent(GraphicsComponent@)"), asMETHODPR(entities::Entity, addComponent, (entities::GraphicsComponent*), void));
+	scriptingEngine_->registerClassMethod(std::string("Entity"), std::string("void addComponent(GraphicsComponent@)"), asMETHODPR(entities::Entity, addComponent, (entities::GraphicsComponent*), void));
 	
-	angelScript_->registerClassMethod(std::string("GraphicsComponent"), std::string("void rotate(float, const vec3 &in)"), asMETHODPR(entities::GraphicsComponent, rotate, (float, const Vec3 &), void));
-	angelScript_->registerClassMethod(std::string("GraphicsComponent"), std::string("void translate(const vec3 &in)"), asMETHODPR(entities::GraphicsComponent, translate, (const Vec3 &), void));
-	angelScript_->registerClassMethod(std::string("GraphicsComponent"), std::string("void setScale(float, float, float)"), asMETHODPR(entities::GraphicsComponent, setScale, (float, float, float), void));
-	angelScript_->registerClassMethod(std::string("GraphicsComponent"), std::string("void lookAt(const vec3 &in)"), asMETHODPR(entities::GraphicsComponent, lookAt, (const Vec3 &), void));
-	angelScript_->registerClassMethod(std::string("GraphicsComponent"), std::string("void setPosition(const vec3 &in)"), asMETHODPR(entities::GraphicsComponent, setPosition, (const Vec3 &), void));
-	angelScript_->registerClassMethod(std::string("GraphicsComponent"), std::string("void setPosition(float, float, float)"), asMETHODPR(entities::GraphicsComponent, setPosition, (float, float, float), void));
+	scriptingEngine_->registerClassMethod(std::string("GraphicsComponent"), std::string("void rotate(float, const vec3 &in)"), asMETHODPR(entities::GraphicsComponent, rotate, (float, const Vec3 &), void));
+	scriptingEngine_->registerClassMethod(std::string("GraphicsComponent"), std::string("void translate(const vec3 &in)"), asMETHODPR(entities::GraphicsComponent, translate, (const Vec3 &), void));
+	scriptingEngine_->registerClassMethod(std::string("GraphicsComponent"), std::string("void setScale(float, float, float)"), asMETHODPR(entities::GraphicsComponent, setScale, (float, float, float), void));
+	scriptingEngine_->registerClassMethod(std::string("GraphicsComponent"), std::string("void lookAt(const vec3 &in)"), asMETHODPR(entities::GraphicsComponent, lookAt, (const Vec3 &), void));
+	scriptingEngine_->registerClassMethod(std::string("GraphicsComponent"), std::string("void setPosition(const vec3 &in)"), asMETHODPR(entities::GraphicsComponent, setPosition, (const Vec3 &), void));
+	scriptingEngine_->registerClassMethod(std::string("GraphicsComponent"), std::string("void setPosition(float, float, float)"), asMETHODPR(entities::GraphicsComponent, setPosition, (float, float, float), void));
 	
 	// Global functions
-	angelScript_->registerGlobalFunction(
+	scriptingEngine_->registerGlobalFunction(
 		std::string("Entity@ getEntity(const string& in)"),
 		asMETHODPR(IGameEngine, getEntity, (const std::string&), entities::Entity*),
 		asCALL_THISCALL_ASGLOBAL,
 		this
 	);
 	
-	angelScript_->registerGlobalFunction(
+	scriptingEngine_->registerGlobalFunction(
 		std::string("Entity@ createEntity()"),
 		asMETHODPR(IGameEngine, createEntity, (), entities::Entity*),
 		asCALL_THISCALL_ASGLOBAL,
@@ -340,20 +322,20 @@ void GameEngine::initializeScriptingSubSystem()
 	);
 	
 	// Set global constants
-	angelScript_->registerGlobalProperty(std::string("const uint COMPONENT_TYPE_GRAPHICS"), &GameEngine::COMPONENT_TYPE_GRAPHICS);
+	scriptingEngine_->registerGlobalProperty(std::string("const uint COMPONENT_TYPE_GRAPHICS"), &GameEngine::COMPONENT_TYPE_GRAPHICS);
 	
 	// TESTING - loading scripts and creating objects
-	angelScript_->loadScript(std::string("Main"), std::string("Main.as"));
+	scriptingEngine_->loadScript(std::string("Main"), std::string("Main.as"));
 	
-	auto asObject = angelScript_->createAsObject(std::string("Main"), std::string("Main"));
+	auto asObject = scriptingEngine_->createAsObject(std::string("Main"), std::string("Main"));
 	
 	asObject->callMethod( std::string("void tick()") );
 	*/
 	/*
-	angelScript_ = std::unique_ptr<as_wrapper::AngelScript>( new as_wrapper::AngelScript() );
+	scriptingEngine_ = std::unique_ptr<as_wrapper::Scripting>( new as_wrapper::Scripting() );
 	
 	bool success = true;
-	success = success && angelScript_->registerClass(
+	success = success && scriptingEngine_->registerClass(
 		std::string("TestAtom"), 
 		std::string("TestAtom@ f()"), 
 		std::string("void f()"), 
@@ -363,7 +345,7 @@ void GameEngine::initializeScriptingSubSystem()
 		asMETHOD(angel_script::TestAtom, releaseRef)
 	);
 	
-	success = success && angelScript_->registerClassMethod(std::string("TestAtom"), std::string("void test()"), asMETHOD(angel_script::TestAtom, test));
+	success = success && scriptingEngine_->registerClassMethod(std::string("TestAtom"), std::string("void test()"), asMETHOD(angel_script::TestAtom, test));
 	
 	
 	
@@ -373,18 +355,18 @@ void GameEngine::initializeScriptingSubSystem()
 	}
 
 	// load all of the scripts
-	angelScript_->loadScripts();
+	scriptingEngine_->loadScripts();
 
 	// testing
-	angelScript_->initContext( std::string("void eat(TestAtom atom)"), std::string("test"));
+	scriptingEngine_->initContext( std::string("void eat(TestAtom atom)"), std::string("test"));
 	angel_script::TestAtom* atom = new angel_script::TestAtom();
-	angelScript_->setArgObject(0, atom);
+	scriptingEngine_->setArgObject(0, atom);
 	delete atom;
 
-	//angelScript_->initContext(text, "test");
+	//scriptingEngine_->initContext(text, "test");
 
-	int r = angelScript_->run();
-	angelScript_->releaseContext();
+	int r = scriptingEngine_->run();
+	scriptingEngine_->releaseContext();
 	*/
 }
 
@@ -562,8 +544,8 @@ void GameEngine::loadUserInterface()
 		gameGuiObject->addFunction(std::wstring(L"getTimeForInput"), function);
 		function = [this]() { return this->getTimeForGuiUpdate(); };
 		gameGuiObject->addFunction(std::wstring(L"getTimeForGuiUpdate"), function);
-		function = [this]() { return this->getTimeForAngelScript(); };
-		gameGuiObject->addFunction(std::wstring(L"getTimeForAngelScript"), function);
+		function = [this]() { return this->getTimeForScripting(); };
+		gameGuiObject->addFunction(std::wstring(L"getTimeForScripting"), function);
 	}
 
 	{
@@ -823,6 +805,7 @@ void GameEngine::setPosition(const entities::Entity entity, const float32 x, con
 
 void GameEngine::setBootstrapScript(const std::string& className, const std::string& filename)
 {
+	/*
 	// Error check
 	if (mainAsScript_ != nullptr)
 	{
@@ -830,22 +813,12 @@ void GameEngine::setBootstrapScript(const std::string& className, const std::str
 		assert(0);
 	}
 	
-	angelScript_->loadScript(std::string("Main"), filename);
+	scriptingEngine_->loadScript(std::string("Main"), filename);
 	
-	mainAsScript_ = angelScript_->createAsObject(std::string("Main"), className);
+	mainAsScript_ = scriptingEngine_->createAsObject(std::string("Main"), className);
 	
 	mainAsScript_->callMethod( std::string("void initialize()") );
-}
-
-void GameEngine::angelscriptTest()
-{
-	angelScript_->loadScript( std::string("manipulate_scene_nodes"), std::string("manipulate_scene_nodes.as") );
-	
-	angelScript_->initContext( std::string("void main()"), std::string("manipulate_scene_nodes"));
-
-	angelScript_->run();
-		
-	angelScript_->releaseContext();
+	*/
 }
 
 void GameEngine::handleEvents()
@@ -981,9 +954,9 @@ int32 GameEngine::getTimeForGuiUpdate()
 	return timeForGuiUpdate_;
 }
 
-int32 GameEngine::getTimeForAngelScript()
+int32 GameEngine::getTimeForScripting()
 {
-	return timeForAngelScript_;
+	return timeForScripting_;
 }
 
 float32 runningTime;
@@ -1000,7 +973,7 @@ void GameEngine::run()
 	timeForMisc_ = 0;
 	timeForInput_ = 0;
 	timeForGuiUpdate_ = 0;
-	timeForAngelScript_ = 0;
+	timeForScripting_ = 0;
 	
 	test();
 	
@@ -1221,7 +1194,7 @@ void GameEngine::run()
 				auto c = clock.getElapsedTime();
 				lastAngelscriptUpdateTime = currentTime;
 				angelscriptTest();
-				timeForAngelScript_ = clock.getElapsedTime().asMilliseconds() - c.asMilliseconds();
+				timeForScripting_ = clock.getElapsedTime().asMilliseconds() - c.asMilliseconds();
 				
 			}
 			
@@ -1251,7 +1224,7 @@ void GameEngine::run()
 
 	//window_->destroy();
 
-	//angelScript_->destroy();
+	//scriptingEngine_->destroy();
 
 	destroy();
 }

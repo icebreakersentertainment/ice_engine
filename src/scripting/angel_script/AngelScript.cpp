@@ -2,12 +2,12 @@
 #include <iostream>
 #include <stdio.h>
 
-#include "as_wrapper/AngelScript.hpp"
+#include "scripting/angel_script/AngelScript.hpp"
 
 #define AS_USE_STLNAMES = 1
-#include "as_wrapper/scriptstdstring/scriptstdstring.h"
+#include "scripting/angel_script/scriptstdstring/scriptstdstring.h"
 
-#include "as_wrapper/glm_bindings/Vec3.h"
+#include "scripting/angel_script/glm_bindings/Vec3.h"
 
 namespace hercules
 {
@@ -676,7 +676,7 @@ int32 AngelScript::discardModules()
 	return discardModule( std::string("test"));
 }
 
-AsObject* AngelScript::createAsObject(const std::string& moduleName, const std::string& className)
+scripting::angel_script::AsObject* AngelScript::createAsObject(const std::string& moduleName, const std::string& className)
 {
 	// Get the object type
 	asIScriptModule* module = engine_->GetModule(moduleName.c_str());
@@ -701,7 +701,7 @@ AsObject* AngelScript::createAsObject(const std::string& moduleName, const std::
 	// otherwise it will be destroyed when the context is reused or destroyed.
 	object->AddRef();
 	
-	return new AsObject(object, type, ctx);
+	return new scripting::angel_script::AsObject(object, type, ctx);
 }
 
 }

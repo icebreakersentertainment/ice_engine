@@ -12,8 +12,12 @@ namespace physics
 namespace bullet
 {
 
-PhysicsEngine::PhysicsEngine()
+PhysicsEngine::PhysicsEngine(utilities::Properties* properties, fs::IFileSystem* fileSystem, logger::ILogger* logger)
 {
+	properties_ = properties;
+	fileSystem_ = fileSystem;
+	logger_ = logger;
+	
 	broadphase_ = std::unique_ptr<btBroadphaseInterface>(new btDbvtBroadphase());
 	collisionConfiguration_ = std::unique_ptr<btDefaultCollisionConfiguration>(new btDefaultCollisionConfiguration());
 	dispatcher_ = std::unique_ptr<btCollisionDispatcher>(new btCollisionDispatcher(collisionConfiguration_.get()));

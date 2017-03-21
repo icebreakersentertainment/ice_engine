@@ -1,4 +1,4 @@
-#include "as_wrapper/AScriptModule.hpp"
+#include "scripting/angel_script/AScriptModule.hpp"
 
 namespace hercules
 {
