@@ -1,4 +1,4 @@
-#include "as_wrapper/ASRefObject.hpp"
+#include "scripting/angel_script/ASRefObject.hpp"
 
 namespace hercules
 {
