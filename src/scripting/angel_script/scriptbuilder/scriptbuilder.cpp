@@ -1,4 +1,4 @@
-#include "scriptbuilder.h"
+#include "scripting/angel_script/scriptbuilder/scriptbuilder.h"
 #include <vector>
 #include <assert.h>
 using namespace std;

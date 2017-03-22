@@ -47,6 +47,8 @@ GameEngine::GameEngine(
 	// set the initial state
 	state_ = GAME_STATE_STARTUP;
 	
+	bootstrapScriptName_ = std::string("bootstrap.as");
+	
 	inConsole_ = false;
 	
 	initialize();
@@ -269,11 +271,11 @@ void GameEngine::initializeScriptingSubSystem()
 	);
 	
 	// TESTING - loading scripts and creating objects
-	scriptingEngine_->loadScript(std::string("Main"), std::string("Main.as"));
+	//scriptingEngine_->loadScript(std::string("Main"), std::string("Main.as"));
 	
-	auto asObject = scriptingEngine_->createAsObject(std::string("Main"), std::string("Main"));
+	//auto asObject = scriptingEngine_->createAsObject(std::string("Main"), std::string("Main"));
 	
-	asObject->callMethod( std::string("void tick()") );
+	//asObject->callMethod( std::string("void tick()") );
 	
 	/*
 	// Register Classes available to scripts
@@ -803,8 +805,9 @@ void GameEngine::setPosition(const entities::Entity entity, const float32 x, con
 	component->position = glm::vec3(x, y, z);
 }
 
-void GameEngine::setBootstrapScript(const std::string& className, const std::string& filename)
+void GameEngine::setBootstrapScript(const std::string& filename)
 {
+	bootstrapScriptName_ = filename;
 	/*
 	// Error check
 	if (mainAsScript_ != nullptr)
@@ -993,6 +996,8 @@ void GameEngine::run()
 	setState(GAME_STATE_MAIN_MENU);
 	
 	int temp = 0;
+	
+	scriptingEngine_->runScript(bootstrapScriptName_);
 	
 	while ( running_ )
 	{

@@ -5,7 +5,11 @@
 
 #define AS_USE_STLNAMES = 1
 #include "scripting/angel_script/scriptstdstring/scriptstdstring.h"
-#include "scripting/angel_script/glm_bindings/Vec3.h"
+//#include "scripting/angel_script/glm_bindings/Vec3.h"
+#include "scripting/angel_script/scriptglm/scriptglm.hpp"
+
+#include "exceptions/Exception.hpp"
+#include "exceptions/InvalidArgumentException.hpp"
 
 namespace hercules
 {
@@ -13,6 +17,8 @@ namespace scripting
 {
 namespace angel_script
 {
+
+const std::string ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME = std::string("ONE_TIME_RUN_SCRIPT_MODULE_NAME");
 
 ScriptingEngine::ScriptingEngine(utilities::Properties* properties, fs::IFileSystem* fileSystem, logger::ILogger* logger)
 {
@@ -32,14 +38,89 @@ ScriptingEngine::~ScriptingEngine()
 	destroy();
 }
 
+void ScriptingEngine::assertNoAngelscriptError(const int32 returnCode)
+{
+	if (returnCode < 0)
+	{
+		switch(returnCode)
+		{
+			case asERROR:
+				throw Exception("ScriptEngine: Generic error.");
+				break;
+				
+			case asINVALID_ARG:
+				throw InvalidArgumentException("ScriptEngine: Argument was invalid.");
+				break;
+			
+			case asNOT_SUPPORTED:
+				throw Exception("ScriptEngine: Operation not supported.");
+				break;
+				
+			case asNO_MODULE:
+				throw Exception("ScriptEngine: Module not found.");
+				break;
+			
+			case asINVALID_TYPE:
+				throw Exception("ScriptEngine: The type specified is invalid.");
+				break;
+			
+			case asNO_GLOBAL_VAR:
+				throw Exception("ScriptEngine: No matching property was found.");
+				break;
+			
+			case asINVALID_DECLARATION:
+				throw Exception("ScriptEngine: The specified declaration is invalid.");
+				break;
+			
+			case asINVALID_NAME:
+				throw Exception("ScriptEngine: The name specified is invalid.");
+				break;
+			
+			case asALREADY_REGISTERED:
+				throw Exception("ScriptEngine: The specified type or name is already registered.");
+				break;
+			
+			case asNAME_TAKEN:
+				throw Exception("ScriptEngine: The specified name is already taken.");
+				break;
+			
+			case asWRONG_CALLING_CONV:
+				throw Exception("ScriptEngine: The specified calling convention is not valid or does not match the registered calling convention.");
+				break;
+			
+			case asWRONG_CONFIG_GROUP:
+				throw Exception("ScriptEngine: Wrong configuration group.");
+				break;
+			
+			case asCONFIG_GROUP_IS_IN_USE:
+				throw Exception("ScriptEngine: Configuration group already in use.");
+				break;
+			
+			case asILLEGAL_BEHAVIOUR_FOR_TYPE:
+				throw Exception("ScriptEngine: Illegal behaviour for type.");
+				break;
+			
+			case asINVALID_OBJECT:
+				throw Exception("ScriptEngine: The object does not specify a valid object type.");
+				break;
+			
+			case asLOWER_ARRAY_DIMENSION_NOT_REGISTERED:
+				throw Exception("ScriptEngine:  Array element must be a primitive or a registered type.");
+				break;
+			
+			default:
+				throw Exception("ScriptEngine: Unknown error.");
+				break;
+		}
+	}
+}
+
 void ScriptingEngine::initialize()
 {
 	engine_ = asCreateScriptEngine(ANGELSCRIPT_VERSION);
 	// Set the message callback to receive information on errors in human readable form.
 	int32 r = engine_->SetMessageCallback(asMETHOD(ScriptingEngine, MessageCallback), this, asCALL_THISCALL);
-
-	if ( r < 0 )
-		assert(0);
+	assertNoAngelscriptError(r);
 
 	/* ScriptingEngine doesn't have a built-in string type, as there is no definite standard
 	 * string type for C++ applications. Every developer is free to register it's own string type.
@@ -49,7 +130,7 @@ void ScriptingEngine::initialize()
 	RegisterStdString(engine_);
 	
 	RegisterGlmBindings(engine_);
-
+	
 	/* The CScriptBuilder helper is an add-on that does the loading/processing
 	 * of a script file
 	 */
@@ -60,11 +141,10 @@ void ScriptingEngine::initialize()
 	 */
 	// Register the function(s) that we want the scripts to call
 	r = engine_->RegisterGlobalFunction("void print(const string &in)", asFUNCTION(scripting::angel_script::ScriptingEngine::print), asCALL_CDECL);
-	if ( r < 0 )
-		assert(0);
+	assertNoAngelscriptError(r);
+	
 	r = engine_->RegisterGlobalFunction("void println(const string &in)", asFUNCTION(scripting::angel_script::ScriptingEngine::println), asCALL_CDECL);
-	if ( r < 0 )
-		assert(0);
+	assertNoAngelscriptError(r);
 
 	/**
 	 * Load all of the scripts.
@@ -75,158 +155,105 @@ void ScriptingEngine::initialize()
 	ctx_ = nullptr;
 }
 
-bool ScriptingEngine::loadScripts()
+void ScriptingEngine::loadScripts()
 {
 	// discard any modules that already exist
 	this->discardModules();
 
 	// load modules/scripts
-	if ( this->startNewModule("test") >= 0 )
-	{
-		int32 r = 0;
-		r += this->addScript("test.as");
-		r += this->addScript("test2.as");
-		r += this->buildModule();
-		if ( r < 0 )
-		{
-			logger_->warn( "An error occured while loading scripts!" );
-			return false;
-		}
-		logger_->debug( "All scripts loaded successfully!" );
-	}
+	this->startNewModule("test");
 	
-	return true;
+	//this->addScript("test.as");
+	//this->addScript("test2.as");
+	this->buildModule();
+	
+	logger_->debug( "All scripts loaded successfully!" );
 }
 
-bool ScriptingEngine::registerGlobalFunction(const std::string& name, const asSFuncPtr& funcPointer, asDWORD callConv, void* objForThiscall)
+void ScriptingEngine::registerGlobalFunction(const std::string& name, const asSFuncPtr& funcPointer, asDWORD callConv, void* objForThiscall)
 {
 	int32 r = engine_->RegisterGlobalFunction(name.c_str(), funcPointer, callConv, objForThiscall);
-	
-	if ( r < 0 )
-	{
-		logger_->warn( "An error occured while registering global function '" + name + "'." );
-		return false;
-	}
-	
-	return true;
+	assertNoAngelscriptError(r);
 }
 
 void ScriptingEngine::registerGlobalProperty(const std::string& declaration, void* pointer)
 {
 	int32 r = engine_->RegisterGlobalProperty(declaration.c_str(), pointer);
-	
-	if ( r < 0 )
-	{
-		logger_->warn( "An error occured while registering global property '" + declaration + "'." );
-		assert(0);
-	}
+	assertNoAngelscriptError(r);
 }
 
-bool ScriptingEngine::registerClass(const std::string& name)
+void ScriptingEngine::registerClass(const std::string& name)
 {
-	int32 r = registerObjectType(name.c_str(), 0, asOBJ_REF);
-	
-	return (r == 0);
+	registerObjectType(name.c_str(), 0, asOBJ_REF);
 }
 
-bool ScriptingEngine::registerClass(const std::string& name, const std::string& classFactorySignature, const std::string& addRefSignature, const std::string& releaseRefSignature, 
+void ScriptingEngine::registerClass(const std::string& name, const std::string& classFactorySignature, const std::string& addRefSignature, const std::string& releaseRefSignature, 
 	const asSFuncPtr& classFactoryFuncPointer, const asSFuncPtr& addRefFuncPointer, const asSFuncPtr& releaseRefFuncPointer)
 {
-	bool success = true;
-	
-	success = success && registerClass(name);
-	success = success && registerClassFactory(name, classFactorySignature, classFactoryFuncPointer);
-	success = success && registerClassAddRef(name, addRefSignature, addRefFuncPointer);
-	success = success && registerClassReleaseRef(name, releaseRefSignature, releaseRefFuncPointer);
-	
-	return success;
+	registerClass(name);
+	registerClassFactory(name, classFactorySignature, classFactoryFuncPointer);
+	registerClassAddRef(name, addRefSignature, addRefFuncPointer);
+	registerClassReleaseRef(name, releaseRefSignature, releaseRefFuncPointer);
 }
 		
-bool ScriptingEngine::registerClassFactory(const std::string& name, const std::string& classFactorySignature, const asSFuncPtr& classFactoryFuncPointer)
+void ScriptingEngine::registerClassFactory(const std::string& name, const std::string& classFactorySignature, const asSFuncPtr& classFactoryFuncPointer)
 {
-	int32 r = registerObjectBehaviour(name.c_str(), asBEHAVE_FACTORY, classFactorySignature.c_str(), classFactoryFuncPointer, asCALL_CDECL);
-	
-	return (r == 0);
+	registerObjectBehaviour(name.c_str(), asBEHAVE_FACTORY, classFactorySignature.c_str(), classFactoryFuncPointer, asCALL_CDECL);
 }
 
-bool ScriptingEngine::registerClassAddRef(const std::string& name, const std::string& addRefSignature, const asSFuncPtr& addRefFuncPointer)
+void ScriptingEngine::registerClassAddRef(const std::string& name, const std::string& addRefSignature, const asSFuncPtr& addRefFuncPointer)
 {
-	int32 r = registerObjectBehaviour(name.c_str(), asBEHAVE_ADDREF, addRefSignature.c_str(), addRefFuncPointer, asCALL_THISCALL);
-	
-	return (r == 0);
+	registerObjectBehaviour(name.c_str(), asBEHAVE_ADDREF, addRefSignature.c_str(), addRefFuncPointer, asCALL_THISCALL);
 }
 
-bool ScriptingEngine::registerClassReleaseRef(const std::string& name, const std::string& releaseRefSignature, const asSFuncPtr& releaseRefFuncPointer)
+void ScriptingEngine::registerClassReleaseRef(const std::string& name, const std::string& releaseRefSignature, const asSFuncPtr& releaseRefFuncPointer)
 {
-	int32 r = registerObjectBehaviour(name.c_str(), asBEHAVE_RELEASE, releaseRefSignature.c_str(), releaseRefFuncPointer, asCALL_THISCALL);
-	
-	return (r == 0);
+	registerObjectBehaviour(name.c_str(), asBEHAVE_RELEASE, releaseRefSignature.c_str(), releaseRefFuncPointer, asCALL_THISCALL);
 }
 		
-bool ScriptingEngine::registerClassMethod(const std::string& className, const std::string& methodSignature, const asSFuncPtr& funcPointer)
+void ScriptingEngine::registerClassMethod(const std::string& className, const std::string& methodSignature, const asSFuncPtr& funcPointer)
 {
-	int32 r = registerObjectMethod(className.c_str(), methodSignature.c_str(), funcPointer, asCALL_THISCALL);
-	
-	return (r == 0);
+	registerObjectMethod(className.c_str(), methodSignature.c_str(), funcPointer, asCALL_THISCALL);
 }
 
-bool ScriptingEngine::loadScript(const std::string& name, const std::string& filename)
+void ScriptingEngine::loadScript(const std::string& name, const std::string& filename)
 {
 	// load modules/scripts
-	if ( this->startNewModule(name) >= 0 )
-	{
-		int32 r = 0;
-		r += this->addScript(filename);
-		
-		r += this->buildModule();
-		if ( r < 0 )
-		{
-			logger_->warn( "An error occured while loading script '" + filename + "'." );
-			
-			return false;
-		}
-		logger_->debug( "Script '" + filename + "' loaded successfully." );
-	}
+	startNewModule(name);
 	
-	return true;
+	addScript(filename);
+	buildModule();
 }
 
-bool ScriptingEngine::loadScripts(const std::string& directory)
+void ScriptingEngine::loadScripts(const std::string& directory)
 {
 	// discard any modules that already exist
-	this->discardModules();
+	discardModules();
 
 	// load modules/scripts
-	if ( this->startNewModule("test") >= 0 )
-	{
-		int32 r = 0;
-		r += this->addScript("test.as");
-		//r += this->addScript("test2.as");
-		r += this->buildModule();
-		if ( r < 0 )
-		{
-			logger_->debug( "An error occured while loading scripts!" );
-			return false;
-		}
-		
-		logger_->debug( "All scripts loaded successfully!" );
-	}
+	startNewModule("test");
 	
-	return true;
+	//addScript("test.as");
+	buildModule();
 }
 
 void ScriptingEngine::unloadScripts()
 {
 }
 
-int32 ScriptingEngine::registerObjectType(const std::string& obj, int32 byteSize, asDWORD flags)
+void ScriptingEngine::runScript(const std::string& filename, const std::string& function)
 {
-	//logger_->debug( std::string("create angelscript wrapper1: ") + obj + " " + byteSize + " " + flags );
-	if ( engine_->RegisterObjectType(obj.c_str(), byteSize, flags) < 0 )
-	{
-		logger_->debug( "create angelscript wrapper2." );
-		// debug message
+	loadScript(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME, filename);
+	initContext(function, ONE_TIME_RUN_SCRIPT_MODULE_NAME);
+	run();
+}
 
+void ScriptingEngine::registerObjectType(const std::string& obj, int32 byteSize, asDWORD flags)
+{
+	int32 r = engine_->RegisterObjectType(obj.c_str(), byteSize, flags);
+	
+	if (r < 0)
+	{
 		std::string msg = std::string();
 
 		if ( obj.length() > 80 )
@@ -239,18 +266,16 @@ int32 ScriptingEngine::registerObjectType(const std::string& obj, int32 byteSize
 			msg += obj;
 		}
 		
-		logger_->warn( msg );
-		
-		return -1;
+		throw Exception("ScriptEngine: " + msg);
 	}
-
-	return 0;
 }
 
-int32 ScriptingEngine::registerObjectMethod(const std::string& obj, const std::string& declaration,
+void ScriptingEngine::registerObjectMethod(const std::string& obj, const std::string& declaration,
 									  const asSFuncPtr& funcPointer, asDWORD callConv)
 {
-	if ( engine_->RegisterObjectMethod(obj.c_str(), declaration.c_str(), funcPointer, callConv) < 0 )
+	int32 r = engine_->RegisterObjectMethod(obj.c_str(), declaration.c_str(), funcPointer, callConv);
+	
+	if (r < 0)
 	{
 		std::string msg = std::string();
 
@@ -264,15 +289,11 @@ int32 ScriptingEngine::registerObjectMethod(const std::string& obj, const std::s
 			msg += obj;
 		}
 		
-		logger_->warn( msg );
-
-		return -1;
+		throw Exception("ScriptEngine: " + msg);
 	}
-
-	return 0;
 }
 
-int32 ScriptingEngine::registerObjectBehaviour(const std::string& obj, asEBehaviours behaviour,
+void ScriptingEngine::registerObjectBehaviour(const std::string& obj, asEBehaviours behaviour,
 										 const std::string& declaration, const asSFuncPtr& funcPointer, asDWORD callConv)
 {
 	int32 r = engine_->RegisterObjectBehaviour(obj.c_str(), behaviour, declaration.c_str(), funcPointer, callConv);
@@ -293,58 +314,17 @@ int32 ScriptingEngine::registerObjectBehaviour(const std::string& obj, asEBehavi
 			msg += declaration;
 		}
 
-		logger_->warn( msg );
-
-		
-		switch ( r )
-		{
-			case asWRONG_CONFIG_GROUP:
-				logger_->warn("Error returned was: asWRONG_CONFIG_GROUP");
-				break;
-	
-			case asINVALID_ARG:
-				logger_->warn("Error returned was: asINVALID_ARG");
-				break;
-	
-			case asNOT_SUPPORTED:
-				logger_->warn("Error returned was: asNOT_SUPPORTED");
-				break;
-	
-			case asWRONG_CALLING_CONV:
-				logger_->warn("Error returned was: asWRONG_CALLING_CONV");
-				break;
-	
-			case asINVALID_TYPE:
-				logger_->warn("Error returned was: asINVALID_TYPE");
-				break;
-	
-			case asINVALID_DECLARATION:
-				logger_->warn("Error returned was: asINVALID_DECLARATION");
-				break;
-	
-			case asILLEGAL_BEHAVIOUR_FOR_TYPE:
-				logger_->warn("Error returned was: asILLEGAL_BEHAVIOUR_FOR_TYPE");
-				break;
-	
-			case asALREADY_REGISTERED:
-				logger_->warn("Error returned was: asALREADY_REGISTERED");
-				break;
-				
-			default:
-				logger_->warn("Unknown error type returned.");
-				break;
-		}
-
-		return r;
+		throw Exception("ScriptEngine: " + msg);
 	}
-
-	return 0;
 }
 
 void ScriptingEngine::destroy()
 {
 	if ( ctx_ != nullptr )
+	{
 		ctx_->Release();
+	}
+	
 	// Clean up
 	engine_->Release();
 	delete builder_;
@@ -356,9 +336,13 @@ void ScriptingEngine::MessageCallback(const asSMessageInfo* msg, void* param)
 	std::string type = std::string("ERR ");
 
 	if ( msg->type == asMSGTYPE_WARNING )
+	{
 		type = std::string("WARN");
+	}
 	else if ( msg->type == asMSGTYPE_INFORMATION )
+	{
 		type = std::string("INFO");
+	}
 	
 	printf("%s (%d, %d) : %s : %s\n", msg->section, msg->row, msg->col, type.c_str(), msg->message);
 }
@@ -374,20 +358,21 @@ void ScriptingEngine::println(const std::string& msg)
 	printf("%s\n", msg.c_str());
 }
 
-bool ScriptingEngine::initContext(const std::string& function, const std::string& module)
+void ScriptingEngine::initContext(const std::string& function, const std::string& module)
 {
 	// error check
 	if ( function.length() > 150 )
 	{
-		logger_->warn( "Function length is too long." );
-		return false;
+		throw Exception("ScriptEngine: Function length is too long.");
 	}
+	
 	logger_->debug( "Releasing old context." );
 	releaseContext();
 	logger_->debug( "Creating new context." );
 	ctx_ = engine_->CreateContext();
 
 	logger_->debug( "Finding the module that is to be used." );
+	
 	// Find the function that is to be called.
 	asIScriptModule* mod = engine_->GetModule( module.c_str() );
 	if ( mod == nullptr )
@@ -404,17 +389,15 @@ bool ScriptingEngine::initContext(const std::string& function, const std::string
 			msg += module;
 		}
 
-		logger_->warn( msg );
-		
-		return false;
+		throw Exception("ScriptEngine: " + msg);
 	}
 	
 	logger_->debug( "Getting function by the declaration." );
+	
 	asIScriptFunction* func = mod->GetFunctionByDecl( function.c_str() );
 	if ( func == nullptr )
 	{
 		// The function couldn't be found. Instruct the script writer to include the expected function in the script.
-		
 		std::string msg = std::string();
 
 		if ( function.length() > 80 )
@@ -427,9 +410,7 @@ bool ScriptingEngine::initContext(const std::string& function, const std::string
 			msg += function;
 		}
 
-		logger_->warn( msg );
-
-		return false;
+		throw Exception("ScriptEngine: " + msg);
 	}
 
 	logger_->debug( "Preparing function: " + function);
@@ -437,76 +418,96 @@ bool ScriptingEngine::initContext(const std::string& function, const std::string
 
 	if ( function.length() > 80 )
 	{
-		logger_->warn( std::string("Preparing function: Function name too long.") );
+		throw Exception("ScriptEngine: Preparing function: Function name too long.");
+	}
+}
+
+void ScriptingEngine::setArgDWord(asUINT arg, asDWORD value)
+{
+	if ( ctx_ == nullptr )
+	{
+		throw Exception("ScriptEngine: Context is null.");
 	}
 	
-	return true;
+	ctx_->SetArgDWord(arg, value);
 }
 
-int32 ScriptingEngine::setArgDWord(asUINT arg, asDWORD value)
+void ScriptingEngine::setArgQWord(asUINT arg, asQWORD value)
 {
 	if ( ctx_ == nullptr )
-		return -1;
-	return ctx_->SetArgDWord(arg, value);
+	{
+		throw Exception("ScriptEngine: Context is null.");
+	}
+	
+	ctx_->SetArgQWord(arg, value);
 }
 
-int32 ScriptingEngine::setArgQWord(asUINT arg, asQWORD value)
+void ScriptingEngine::setArgFloat(asUINT arg, const float32 value)
 {
 	if ( ctx_ == nullptr )
-		return -1;
-	return ctx_->SetArgQWord(arg, value);
+	{
+		throw Exception("ScriptEngine: Context is null.");
+	}
+	
+	ctx_->SetArgFloat(arg, value);
 }
 
-int32 ScriptingEngine::setArgFloat(asUINT arg, float32 value)
+void ScriptingEngine::setArgDouble(asUINT arg, const float64 value)
 {
 	if ( ctx_ == nullptr )
-		return -1;
-	return ctx_->SetArgFloat(arg, value);
+	{
+		throw Exception("ScriptEngine: Context is null.");
+	}
+	
+	ctx_->SetArgDouble(arg, value);
 }
 
-int32 ScriptingEngine::setArgDouble(asUINT arg, float64 value)
+void ScriptingEngine::setArgAddress(asUINT arg, void* addr)
 {
 	if ( ctx_ == nullptr )
-		return -1;
-	return ctx_->SetArgDouble(arg, value);
+	{
+		throw Exception("ScriptEngine: Context is null.");
+	}
+	
+	ctx_->SetArgAddress(arg, addr);
 }
 
-int32 ScriptingEngine::setArgAddress(asUINT arg, void* addr)
+void ScriptingEngine::setArgByte(asUINT arg, asBYTE value)
 {
 	if ( ctx_ == nullptr )
-		return -1;
-	return ctx_->SetArgAddress(arg, addr);
+	{
+		throw Exception("ScriptEngine: Context is null.");
+	}
+	
+	ctx_->SetArgByte(arg, value);
 }
 
-int32 ScriptingEngine::setArgByte(asUINT arg, asBYTE value)
+void ScriptingEngine::setArgObject(asUINT arg, void* obj)
 {
 	if ( ctx_ == nullptr )
-		return -1;
-	return ctx_->SetArgByte(arg, value);
+	{
+		throw Exception("ScriptEngine: Context is null.");
+	}
+	
+	ctx_->SetArgObject(arg, obj);
 }
 
-int32 ScriptingEngine::setArgObject(asUINT arg, void* obj)
+void ScriptingEngine::setArgWord(asUINT arg, asWORD value)
 {
 	if ( ctx_ == nullptr )
-		return -1;
-	return ctx_->SetArgObject(arg, obj);
+	{
+		throw Exception("ScriptEngine: Context is null.");
+	}
+	
+	ctx_->SetArgWord(arg, value);
 }
 
-int32 ScriptingEngine::setArgWord(asUINT arg, asWORD value)
-{
-	if ( ctx_ == nullptr )
-		return -1;
-	return ctx_->SetArgWord(arg, value);
-}
-
-int32 ScriptingEngine::run()
+void ScriptingEngine::run()
 {
 	// error check
 	if ( ctx_ == nullptr )
 	{
-		logger_->error( "Context is null!" );
-		// TODO: Throw exception
-		return -1;
+		throw Exception("ScriptEngine: Context is null.");
 	}
 
 	logger_->debug( "Executing function." );
@@ -514,81 +515,98 @@ int32 ScriptingEngine::run()
 	
 	if ( r != asEXECUTION_FINISHED )
 	{
+		std::string msg = std::string();
+		
 		// The execution didn't complete as expected. Determine what happened.
 		if ( r == asEXECUTION_EXCEPTION )
 		{
 			// An exception occurred, let the script writer know what happened so it can be corrected.
-			logger_->error( "An exception occurred: " );
-			logger_->error( std::string(ctx_->GetExceptionString()) );
-			logger_->error( "Please correct the code and try again." );
-		}
-		else
-		{
-			logger_->error( "An exception occurred!" );
+			msg = std::string("An exception occurred: ");
+			msg += std::string(ctx_->GetExceptionString());
+			throw Exception("ScriptEngine: " + msg);
 		}
 		
-		// TODO: Throw exception
-		return -1;
+		assertNoAngelscriptError(r);
 	}
-
-	logger_->debug( "Function executed successfully!" );
-
-	return 0;
 }
 
 asDWORD ScriptingEngine::getReturnDWord()
 {
 	if ( ctx_ == nullptr )
-		return 0;
+	{
+		throw Exception("ScriptEngine: Context is null.");
+	}
+	
 	return ctx_->GetReturnDWord();
 }
 
 asQWORD ScriptingEngine::getReturnQWord()
 {
 	if ( ctx_ == nullptr )
-		return 0;
+	{
+		throw Exception("ScriptEngine: Context is null.");
+	}
+	
 	return ctx_->GetReturnQWord();
 }
 
 float32 ScriptingEngine::getReturnFloat()
 {
 	if ( ctx_ == nullptr )
-		return 0;
+	{
+		throw Exception("ScriptEngine: Context is null.");
+	}
+	
 	return ctx_->GetReturnFloat();
 }
 
 float64 ScriptingEngine::getReturnDouble()
 {
 	if ( ctx_ == nullptr )
-		return 0;
+	{
+		throw Exception("ScriptEngine: Context is null.");
+	}
+	
 	return ctx_->GetReturnDouble();
 }
 
 void* ScriptingEngine::getReturnAddress()
 {
 	if ( ctx_ == nullptr )
-		return 0;
+	{
+		throw Exception("ScriptEngine: Context is null.");
+	}
+	
 	return ctx_->GetReturnAddress();
 }
 
 asBYTE ScriptingEngine::getReturnByte()
 {
 	if ( ctx_ == nullptr )
-		return 0;
+	{
+		throw Exception("ScriptEngine: Context is null.");
+	}
+	
 	return ctx_->GetReturnByte();
 }
 
 void* ScriptingEngine::getReturnObject()
 {
 	if ( ctx_ == nullptr )
-		return 0;
+	{
+		throw Exception("ScriptEngine: Context is null.");
+	}
+	
 	return ctx_->GetReturnObject();
 }
 
 asWORD ScriptingEngine::getReturnWord()
 {
 	if ( ctx_ == nullptr )
-		return 0;
+	{
+		throw Exception("ScriptEngine: Context is null.");
+	}
+	
 	return ctx_->GetReturnWord();
 }
 
@@ -601,81 +619,43 @@ void ScriptingEngine::releaseContext()
 	}
 }
 
-int32 ScriptingEngine::startNewModule(const std::string& module)
+void ScriptingEngine::startNewModule(const std::string& module)
 {
 	int32 r = builder_->StartNewModule(engine_, module.c_str());
-
-	if ( r < 0 )
-	{
-		// If the code fails here it is usually because there
-		// is no more memory to allocate the module
-		logger_->error( "Unrecoverable error while starting a new module." );
-		//updateAll("Unrecoverable error while starting a new module.");
-		
-		// TODO: Throw exception
-		return -1;
-	}
-	return 0;
+	assertNoAngelscriptError(r);
 }
 
-int32 ScriptingEngine::addScript(const std::string& script)
+void ScriptingEngine::addScript(const std::string& script)
 {
 	// error check
 	if ( script.length() > 150 )
-		return -1;
+	{
+		throw Exception("ScriptEngine: Script filename too long.");
+	}
 
 	// TODO: maybe make this a constant or something..?  Or make the directory an instance variable?
 	//std::string file = fs::current_path().string() + std::string("/scripts/") + script;
 	std::string file = std::string("../data/scripts/") + script;
 	
 	int32 r = builder_->AddSectionFromFile(file.c_str());
-	if ( r < 0 )
-	{
-		// The builder wasn't able to load the file. Maybe the file
-		// has been removed, or the wrong name was given, or some
-		// preprocessing commands are incorrectly written.
-		logger_->error( "Please correct the errors in the script and try again." );
-		//updateAll("Please correct the errors in the script and try again.");
-		
-		// TODO: Throw exception
-		return -1;
-	}
-
-	return 0;
+	assertNoAngelscriptError(r);
 }
 
-int32 ScriptingEngine::buildModule()
+void ScriptingEngine::buildModule()
 {
 	int32 r = builder_->BuildModule();
-
-	if ( r < 0 )
-	{
-		// An error occurred. Instruct the script writer to fix the
-		// compilation errors that were listed in the output stream.
-		logger_->error( "Please correct the errors in the script and try again." );
-		
-		// TODO: Throw exception
-		return -1;
-	}
-
-	return 0;
+	assertNoAngelscriptError(r);
 }
 
-int32 ScriptingEngine::discardModule(const std::string& name)
+void ScriptingEngine::discardModule(const std::string& name)
 {
 	int32 r = engine_->DiscardModule( name.c_str() );
-
-	if ( r < 0 )
-	{
-		logger_->warn( "Unable to discard module!" );
-	}
-
-	return r;
+	assertNoAngelscriptError(r);
 }
 
-int32 ScriptingEngine::discardModules()
+void ScriptingEngine::discardModules()
 {
-	return discardModule( std::string("test"));
+	discardModule( std::string("test"));
 }
 
 AsObject* ScriptingEngine::createAsObject(const std::string& moduleName, const std::string& className)

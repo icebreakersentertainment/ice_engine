@@ -5,7 +5,7 @@
 #include <stdio.h> // sprintf
 #include <string>
 
-#include "scriptarray.h"
+#include "scripting/angel_script/scriptarray/scriptarray.h"
 
 using namespace std;
 

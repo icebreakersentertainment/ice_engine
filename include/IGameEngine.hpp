@@ -53,7 +53,7 @@ public:
 	virtual void setPosition(const entities::Entity entity, const glm::vec3& position) = 0;
 	virtual void setPosition(const entities::Entity entity, const float32 x, const float32 y, const float32 z) = 0;
 	
-	virtual void setBootstrapScript(const std::string& className, const std::string& filename) = 0;
+	virtual void setBootstrapScript(const std::string& filename) = 0;
 };
 
 }

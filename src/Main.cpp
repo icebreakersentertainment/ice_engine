@@ -37,8 +37,6 @@ int main()
 		auto properties = std::make_unique< hercules::utilities::Properties >(configData);
 		auto gameEngine = hercules::GameFactory::createGameEngine(std::move(properties), std::move(logger));
 		
-		gameEngine->setBootstrapScript( std::string("Main"), std::string("Main.as") );
-		
 		gameEngine->run();
 	}
 	catch (const std::exception& e)

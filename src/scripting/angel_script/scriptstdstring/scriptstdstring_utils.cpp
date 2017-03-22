@@ -1,6 +1,6 @@
 #include <assert.h>
-#include "scriptstdstring.h"
-#include "../scriptarray/scriptarray.h"
+#include "scripting/angel_script/scriptstdstring/scriptstdstring.h"
+#include "scripting/angel_script/scriptarray/scriptarray.h"
 #include <stdio.h>
 #include <string.h>
 

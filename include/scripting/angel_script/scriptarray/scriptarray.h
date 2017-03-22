@@ -3,7 +3,7 @@
 
 #ifndef ANGELSCRIPT_H 
 // Avoid having to inform include path if header is already include before
-#include <angelscript.h>
+#include <angelscript/angelscript.h>
 #endif
 
 // Sometimes it may be desired to use the same method names as used by C++ STL.
@@ -29,19 +29,19 @@ public:
 	static void SetMemoryFunctions(asALLOCFUNC_t allocFunc, asFREEFUNC_t freeFunc);
 
 	// Factory functions
-	static CScriptArray *Create(asIObjectType *ot);
-	static CScriptArray *Create(asIObjectType *ot, asUINT length);
-	static CScriptArray *Create(asIObjectType *ot, asUINT length, void *defaultValue);
-	static CScriptArray *Create(asIObjectType *ot, void *listBuffer);
+	static CScriptArray *Create(asITypeInfo *ot);
+	static CScriptArray *Create(asITypeInfo *ot, asUINT length);
+	static CScriptArray *Create(asITypeInfo *ot, asUINT length, void *defaultValue);
+	static CScriptArray *Create(asITypeInfo *ot, void *listBuffer);
 
 	// Memory management
 	void AddRef() const;
 	void Release() const;
 
 	// Type information
-	asIObjectType *GetArrayObjectType() const;
-	int            GetArrayTypeId() const;
-	int            GetElementTypeId() const;
+	asITypeInfo *GetArrayObjectType() const;
+	int          GetArrayTypeId() const;
+	int          GetElementTypeId() const;
 
 	// Get the current size
 	asUINT GetSize() const;
@@ -73,9 +73,11 @@ public:
 
 	// Array manipulation
 	void InsertAt(asUINT index, void *value);
-	void RemoveAt(asUINT index);
+	void InsertAt(asUINT index, const CScriptArray &arr);
 	void InsertLast(void *value);
+	void RemoveAt(asUINT index);
 	void RemoveLast();
+	void RemoveRange(asUINT start, asUINT count);
 	void SortAsc();
 	void SortDesc();
 	void SortAsc(asUINT startAt, asUINT count);
@@ -87,6 +89,9 @@ public:
 	int  FindByRef(void *ref) const;
 	int  FindByRef(asUINT startAt, void *ref) const;
 
+	// Return the address of internal buffer for direct manipulation of elements
+	void *GetBuffer();
+
 	// GC methods
 	int  GetRefCount();
 	void SetFlag();
@@ -95,17 +100,17 @@ public:
 	void ReleaseAllHandles(asIScriptEngine *engine);
 
 protected:
-	mutable int       refCount;
-	mutable bool      gcFlag;
-	asIObjectType    *objType;
-	SArrayBuffer     *buffer;
-	int               elementSize;
-	int               subTypeId;
+	mutable int     refCount;
+	mutable bool    gcFlag;
+	asITypeInfo    *objType;
+	SArrayBuffer   *buffer;
+	int             elementSize;
+	int             subTypeId;
 
 	// Constructors
-	CScriptArray(asIObjectType *ot, void *initBuf); // Called from script when initialized with list
-	CScriptArray(asUINT length, asIObjectType *ot);
-	CScriptArray(asUINT length, void *defVal, asIObjectType *ot);
+	CScriptArray(asITypeInfo *ot, void *initBuf); // Called from script when initialized with list
+	CScriptArray(asUINT length, asITypeInfo *ot);
+	CScriptArray(asUINT length, void *defVal, asITypeInfo *ot);
 	CScriptArray(const CScriptArray &other);
 	virtual ~CScriptArray();
 

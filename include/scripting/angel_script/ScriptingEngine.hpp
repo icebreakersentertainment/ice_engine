@@ -21,49 +21,50 @@ class ScriptingEngine : public IScriptingEngine
 public:
 	ScriptingEngine(utilities::Properties* properties, fs::IFileSystem* fileSystem, logger::ILogger* logger);
 	virtual ~ScriptingEngine();
-	
-	/* AngelScript methods that need to be exposed */		
-	virtual bool registerGlobalFunction(const std::string& name, const asSFuncPtr& funcPointer, asDWORD callConv, void* objForThiscall = nullptr) override;
+		
+	virtual void registerGlobalFunction(const std::string& name, const asSFuncPtr& funcPointer, asDWORD callConv, void* objForThiscall = nullptr) override;
 	virtual void registerGlobalProperty(const std::string& declaration, void* pointer) override;
 	
-	virtual bool registerClass(const std::string& name) override;
-	virtual bool registerClass(const std::string& name, const std::string& classFactorySignature, const std::string& addRefSignature, const std::string& releaseRefSignature, 
+	virtual void registerClass(const std::string& name) override;
+	virtual void registerClass(const std::string& name, const std::string& classFactorySignature, const std::string& addRefSignature, const std::string& releaseRefSignature, 
 		const asSFuncPtr& classFactoryFuncPointer, const asSFuncPtr& addRefFuncPointer, const asSFuncPtr& releaseRefFuncPointer) override;
 		
-	virtual bool registerClassFactory(const std::string& name, const std::string& classFactorySignature, const asSFuncPtr& classFactoryFuncPointer) override;
-	virtual bool registerClassAddRef(const std::string& name, const std::string& addRefSignature, const asSFuncPtr& addRefFuncPointer) override;
-	virtual bool registerClassReleaseRef(const std::string& name, const std::string& releaseRefSignature, const asSFuncPtr& releaseRefFuncPointer) override;
+	virtual void registerClassFactory(const std::string& name, const std::string& classFactorySignature, const asSFuncPtr& classFactoryFuncPointer) override;
+	virtual void registerClassAddRef(const std::string& name, const std::string& addRefSignature, const asSFuncPtr& addRefFuncPointer) override;
+	virtual void registerClassReleaseRef(const std::string& name, const std::string& releaseRefSignature, const asSFuncPtr& releaseRefFuncPointer) override;
 		
-	virtual bool registerClassMethod(const std::string& className, const std::string& methodSignature, const asSFuncPtr& funcPointer) override;
+	virtual void registerClassMethod(const std::string& className, const std::string& methodSignature, const asSFuncPtr& funcPointer) override;
 	
-	virtual bool loadScript(const std::string& name, const std::string& filename) override;
-	virtual bool loadScripts() override;
-	virtual bool loadScripts(const std::string& directory) override;
+	virtual void loadScript(const std::string& name, const std::string& filename) override;
+	virtual void loadScripts() override;
+	virtual void loadScripts(const std::string& directory) override;
 	virtual void unloadScripts() override;
 	
-	virtual int32 discardModule(const std::string& name) override;
+	virtual void runScript(const std::string& filename, const std::string& function = std::string("void main()")) override;
+	
+	virtual void discardModule(const std::string& name) override;
 	
 	virtual AsObject* createAsObject(const std::string& moduleName, const std::string& className) override;
 	
 	// More 'advanced' functions for angel script
-	virtual int32 registerObjectType(const std::string& obj, int32 byteSize, asDWORD flags) override;
-	virtual int32 registerObjectMethod(const std::string& obj, const std::string& declaration, const asSFuncPtr& funcPointer, asDWORD callConv) override;
-	virtual int32 registerObjectBehaviour(const std::string& obj, asEBehaviours behaviour, const std::string& declaration, const asSFuncPtr& funcPointer, asDWORD callConv) override;
+	virtual void registerObjectType(const std::string& obj, const int32 byteSize, asDWORD flags) override;
+	virtual void registerObjectMethod(const std::string& obj, const std::string& declaration, const asSFuncPtr& funcPointer, asDWORD callConv) override;
+	virtual void registerObjectBehaviour(const std::string& obj, asEBehaviours behaviour, const std::string& declaration, const asSFuncPtr& funcPointer, asDWORD callConv) override;
 
 	virtual void MessageCallback(const asSMessageInfo* msg, void* param) override;
 	static void print(const std::string& msg);
 	static void println(const std::string& msg);
 
-	bool initContext(const std::string& function, const std::string& module) override;
-	virtual int32 setArgDWord(asUINT arg, asDWORD value) override;
-	virtual int32 setArgQWord(asUINT arg, asQWORD value) override;
-	virtual int32 setArgFloat(asUINT arg, float32 value) override;
-	virtual int32 setArgDouble(asUINT arg, float64 value) override;
-	virtual int32 setArgAddress(asUINT arg, void* addr) override;
-	virtual int32 setArgByte(asUINT arg, asBYTE value) override;
-	virtual int32 setArgObject(asUINT arg, void* obj) override;
-	virtual int32 setArgWord(asUINT arg, asWORD value) override;
-	virtual int32 run() override;
+	virtual void initContext(const std::string& function, const std::string& module) override;
+	virtual void setArgDWord(asUINT arg, asDWORD value) override;
+	virtual void setArgQWord(asUINT arg, asQWORD value) override;
+	virtual void setArgFloat(asUINT arg, const float32 value) override;
+	virtual void setArgDouble(asUINT arg, const float64 value) override;
+	virtual void setArgAddress(asUINT arg, void* addr) override;
+	virtual void setArgByte(asUINT arg, asBYTE value) override;
+	virtual void setArgObject(asUINT arg, void* obj) override;
+	virtual void setArgWord(asUINT arg, asWORD value) override;
+	virtual void run() override;
 	
 	asDWORD getReturnDWord();
 	asQWORD getReturnQWord();
@@ -84,17 +85,19 @@ private:
 	
 	void initialize();
 	void destroy();
-	//int32 loadScript(const std::string& script);
 
 	asIScriptEngine* engine_;
 	CScriptBuilder* builder_;
 	asIScriptContext* ctx_;
 	
-	int32 startNewModule(const std::string& module);
-	int32 addScript(const std::string& script);
-	int32 buildModule();
-	int32 discardModules();
+	void assertNoAngelscriptError(const int32 returnCode);
 	
+	void startNewModule(const std::string& module);
+	void addScript(const std::string& script);
+	void buildModule();
+	void discardModules();
+	
+	static const std::string ONE_TIME_RUN_SCRIPT_MODULE_NAME;
 };
 
 }

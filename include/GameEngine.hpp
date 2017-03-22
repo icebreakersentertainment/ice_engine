@@ -59,7 +59,7 @@ public:
 	/**
 	 * 
 	 */
-	virtual void setBootstrapScript(const std::string& className, const std::string& filename) override;
+	virtual void setBootstrapScript(const std::string& filename) override;
 	
 	// Implements the IEventListener interface
 	virtual bool processEvent(const graphics::Event& event) override;
@@ -106,6 +106,8 @@ private:
 	static float32 rotationY;
 	static int32 mousePosX;
 	static int32 mousePosY;
+	
+	std::string bootstrapScriptName_;
 
 	// Testing
 	void test();
