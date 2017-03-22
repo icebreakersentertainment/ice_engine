@@ -29,19 +29,19 @@ template <class C> void InitConstructor(args, void* memory) { new(memory) C(vars
 }
 
 #define GLM_REGISTER_OBJECT(name) \
-r = engine->RegisterObjectType(#name, sizeof(glm::##name), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<glm::##name>()); assert( r >= 0 );
+r = engine->RegisterObjectType(#name, sizeof(glm::name), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<glm::name>()); assert( r >= 0 );
 
 #define GLM_REGISTER_PROPERTIES(name, type, var) \
-r = engine->RegisterObjectProperty(#name, #type" "#var, asOFFSET(glm::##name, ##var)); assert( r >= 0 );
+r = engine->RegisterObjectProperty(#name, #type" "#var, asOFFSET(glm::name, var)); assert( r >= 0 );
 
 #define GLM_REGISTER_CONSTRUCTOR_DESTRUCTOR1(name) \
-r = engine->RegisterObjectBehaviour(#name, asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(glm##name::DefaultConstructor<glm::##name>), asCALL_CDECL_OBJLAST); assert( r >= 0 ); \
-r = engine->RegisterObjectBehaviour(#name, asBEHAVE_CONSTRUCT, "void f(const "#name" &in)", asFUNCTION(glm##name::CopyConstructor<glm::##name>), asCALL_CDECL_OBJLAST); assert( r >= 0 ); \
-r = engine->RegisterObjectBehaviour(#name, asBEHAVE_DESTRUCT, "void f()", asFUNCTION(glm##name::DefaultDestructor<glm::##name>), asCALL_CDECL_OBJLAST); assert( r >= 0 ); \
+r = engine->RegisterObjectBehaviour(#name, asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(glm##name::DefaultConstructor<glm::name>), asCALL_CDECL_OBJLAST); assert( r >= 0 ); \
+r = engine->RegisterObjectBehaviour(#name, asBEHAVE_CONSTRUCT, "void f(const "#name" &in)", asFUNCTION(glm##name::CopyConstructor<glm::name>), asCALL_CDECL_OBJLAST); assert( r >= 0 ); \
+r = engine->RegisterObjectBehaviour(#name, asBEHAVE_DESTRUCT, "void f()", asFUNCTION(glm##name::DefaultDestructor<glm::name>), asCALL_CDECL_OBJLAST); assert( r >= 0 ); \
 
 #define GLM_REGISTER_CONSTRUCTOR_DESTRUCTOR2(name, paramTypesList) \
 GLM_REGISTER_CONSTRUCTOR_DESTRUCTOR1(name) \
-r = engine->RegisterObjectBehaviour(#name, asBEHAVE_CONSTRUCT, "void f"#paramTypesList, asFUNCTION(glm##name::InitConstructor<glm::##name>), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+r = engine->RegisterObjectBehaviour(#name, asBEHAVE_CONSTRUCT, "void f"#paramTypesList, asFUNCTION(glm##name::InitConstructor<glm::name>), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 
 // Must register our constructor / destructor templates first
 GLM_REGISTER_CONSTRUCTOR_DESTRUCTOR_TEMPLATES3(vec2, SINGLE_ARG(float x, float y), SINGLE_ARG(x,y));
