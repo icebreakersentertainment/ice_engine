@@ -2,16 +2,17 @@
 #define EXCEPTION_H_
 
 #include <string>
+#include <stdexcept>
 
 namespace hercules
 {
 
-class Exception : public std::exception
+class Exception : public std::runtime_error
 {
 public:
-	using std::exception::exception;
+	using std::runtime_error::runtime_error;
 	
-	Exception(const std::string& error) : std::exception(error.c_str())
+	Exception(const std::string& error) : std::runtime_error(error.c_str())
 	{
 	};
 };
