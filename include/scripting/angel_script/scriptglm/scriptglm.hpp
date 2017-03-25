@@ -28,8 +28,11 @@ namespace glm##name \
 template <class C> void InitConstructor(args, void* memory) { new(memory) C(vars); } \
 }
 
-#define GLM_REGISTER_OBJECT(name) \
-r = engine->RegisterObjectType(#name, sizeof(glm::name), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<glm::name>()); assert( r >= 0 );
+#define GLM_REGISTER_OBJECT_POD_FLOATS(name) \
+r = engine->RegisterObjectType(#name, sizeof(glm::name), asOBJ_VALUE | asOBJ_POD | asOBJ_APP_CLASS_ALLFLOATS | asGetTypeTraits<glm::name>()); assert( r >= 0 );
+
+#define GLM_REGISTER_OBJECT_POD_INTS(name) \
+r = engine->RegisterObjectType(#name, sizeof(glm::name), asOBJ_VALUE | asOBJ_POD | asOBJ_APP_CLASS_ALLINTS | asGetTypeTraits<glm::name>()); assert( r >= 0 );
 
 #define GLM_REGISTER_PROPERTIES(name, type, var) \
 r = engine->RegisterObjectProperty(#name, #type" "#var, asOFFSET(glm::name, var)); assert( r >= 0 );
@@ -68,13 +71,13 @@ void RegisterGlmBindings(asIScriptEngine* engine)
 {
 	int r = 0;
 	
-	GLM_REGISTER_OBJECT(vec2);
-	GLM_REGISTER_OBJECT(vec3);
-	GLM_REGISTER_OBJECT(vec4);
+	GLM_REGISTER_OBJECT_POD_FLOATS(vec2);
+	GLM_REGISTER_OBJECT_POD_FLOATS(vec3);
+	GLM_REGISTER_OBJECT_POD_FLOATS(vec4);
 	
-	GLM_REGISTER_OBJECT(mat2);
-	GLM_REGISTER_OBJECT(mat3);
-	GLM_REGISTER_OBJECT(mat4);
+	GLM_REGISTER_OBJECT_POD_FLOATS(mat2);
+	GLM_REGISTER_OBJECT_POD_FLOATS(mat3);
+	GLM_REGISTER_OBJECT_POD_FLOATS(mat4);
 	
 	// Register the object properties
 	GLM_REGISTER_PROPERTIES(vec2, float, x);

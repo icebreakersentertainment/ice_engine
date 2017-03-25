@@ -33,7 +33,7 @@ BOOST_AUTO_TEST_CASE(constructor)
 
 BOOST_AUTO_TEST_CASE(executeScriptData)
 {
-	BOOST_CHECK_NO_THROW( scriptingEngine->execute("void main() { println(\"testing1234\n\"); }"); );
+	BOOST_CHECK_NO_THROW( scriptingEngine->execute("void main() {}"); );
 }
 
 BOOST_AUTO_TEST_CASE(executeScriptDataMultipleTimes)
