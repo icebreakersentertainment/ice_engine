@@ -26,6 +26,8 @@ ScriptingEngine::ScriptingEngine(utilities::Properties* properties, fs::IFileSys
 	fileSystem_ = fileSystem;
 	logger_ = logger;
 	
+	ctx_ = nullptr;
+	
 	initialize();
 }
 
