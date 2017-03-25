@@ -17,6 +17,7 @@ namespace utilities
 class Properties
 {
 public:
+	Properties();
 	Properties(fs::IFile* file);
 	Properties(const std::string& properties);
 	virtual ~Properties();

@@ -7,6 +7,10 @@
 
 #include "scripting/angel_script/AsObject.hpp"
 
+#include "scripting/ExecutionContextHandle.hpp"
+#include "scripting/ScriptHandle.hpp"
+#include "scripting/ScriptObjectHandle.hpp"
+
 #include "Types.hpp"
 
 namespace hercules
@@ -21,6 +25,11 @@ public:
 	{
 	}
 	;
+	
+	virtual void run(const std::string& filename, const std::string& function = std::string("void main()"), const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle()) = 0;
+	virtual void execute(const std::string& scriptData, const std::string& function = std::string("void main()"), const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle()) = 0;
+	
+	virtual ExecutionContextHandle createExecutionContext() = 0;
 	
 	virtual void registerGlobalFunction(const std::string& name, const asSFuncPtr& funcPointer, asDWORD callConv, void* objForThiscall = nullptr) = 0;
 	virtual void registerGlobalProperty(const std::string& declaration, void* pointer) = 0;
@@ -40,9 +49,9 @@ public:
 	virtual void loadScripts(const std::string& directory) = 0;
 	virtual void unloadScripts() = 0;
 	
-	virtual void runScript(const std::string& filename, const std::string& function = std::string("void main()")) = 0;
-	
 	virtual void discardModule(const std::string& name) = 0;
+	
+	virtual void runScript(const std::string& filename, const std::string& function = std::string("void main()")) = 0;
 	
 	virtual angel_script::AsObject* createAsObject(const std::string& moduleName, const std::string& className) = 0;
 	

@@ -1,6 +1,8 @@
 #ifndef SCRIPTINGENGINE_H_
 #define SCRIPTINGENGINE_H_
 
+#include <vector>
+
 #include "scripting/IScriptingEngine.hpp"
 
 #include "scripting/angel_script/scriptbuilder/scriptbuilder.h"
@@ -21,6 +23,11 @@ class ScriptingEngine : public IScriptingEngine
 public:
 	ScriptingEngine(utilities::Properties* properties, fs::IFileSystem* fileSystem, logger::ILogger* logger);
 	virtual ~ScriptingEngine();
+	
+	virtual void run(const std::string& filename, const std::string& function = std::string("void main()"), const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) override;
+	virtual void execute(const std::string& scriptData, const std::string& function = std::string("void main()"), const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) override;
+	
+	virtual ExecutionContextHandle createExecutionContext() override;
 		
 	virtual void registerGlobalFunction(const std::string& name, const asSFuncPtr& funcPointer, asDWORD callConv, void* objForThiscall = nullptr) override;
 	virtual void registerGlobalProperty(const std::string& declaration, void* pointer) override;
@@ -86,9 +93,14 @@ private:
 	void initialize();
 	void destroy();
 
-	asIScriptEngine* engine_;
-	CScriptBuilder* builder_;
+	void releaseAngelscriptIScriptEngine(asIScriptEngine* engine);
+	void releaseAngelscriptIScriptContext(asIScriptContext* context);
+
 	asIScriptContext* ctx_;
+	std::unique_ptr<CScriptBuilder> builder_;
+	asIScriptEngine* engine_;
+	std::vector< asIScriptContext* > contexts_;
+	asIScriptModule* defaultModule_;
 	
 	void assertNoAngelscriptError(const int32 returnCode);
 	
@@ -97,7 +109,10 @@ private:
 	void buildModule();
 	void discardModules();
 	
+	asIScriptFunction* getFunctionByDecl(const std::string& function, asIScriptModule* module = nullptr);
+	
 	static const std::string ONE_TIME_RUN_SCRIPT_MODULE_NAME;
+	static const uint32 MAX_EXECUTION_CONTEXTS = 32;
 };
 
 }

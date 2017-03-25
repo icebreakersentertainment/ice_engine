@@ -118,6 +118,7 @@ void ScriptingEngine::assertNoAngelscriptError(const int32 returnCode)
 void ScriptingEngine::initialize()
 {
 	engine_ = asCreateScriptEngine(ANGELSCRIPT_VERSION);
+	
 	// Set the message callback to receive information on errors in human readable form.
 	int32 r = engine_->SetMessageCallback(asMETHOD(ScriptingEngine, MessageCallback), this, asCALL_THISCALL);
 	assertNoAngelscriptError(r);
@@ -134,7 +135,7 @@ void ScriptingEngine::initialize()
 	/* The CScriptBuilder helper is an add-on that does the loading/processing
 	 * of a script file
 	 */
-	builder_ = new CScriptBuilder();
+	builder_ = std::make_unique<CScriptBuilder>();
 
 	/**
 	 * Setup the functions that are available to the scripts.
@@ -145,14 +146,17 @@ void ScriptingEngine::initialize()
 	
 	r = engine_->RegisterGlobalFunction("void println(const string &in)", asFUNCTION(scripting::angel_script::ScriptingEngine::println), asCALL_CDECL);
 	assertNoAngelscriptError(r);
+	
+	defaultModule_ = engine_->GetModule("", asGM_ALWAYS_CREATE);
 
 	/**
 	 * Load all of the scripts.
 	 */
 	//this->loadScripts();
 
-	// initialize context to nullptr
-	ctx_ = nullptr;
+	// initialize default context
+	contexts_ = std::vector< asIScriptContext* >();
+	contexts_.push_back( engine_->CreateContext() );
 }
 
 void ScriptingEngine::loadScripts()
@@ -168,6 +172,105 @@ void ScriptingEngine::loadScripts()
 	this->buildModule();
 	
 	logger_->debug( "All scripts loaded successfully!" );
+}
+
+void ScriptingEngine::run(const std::string& filename, const std::string& function, const ExecutionContextHandle& executionContextHandle)
+{
+	
+}
+
+void ScriptingEngine::execute(const std::string& scriptData, const std::string& function, const ExecutionContextHandle& executionContextHandle)
+{
+	if (executionContextHandle.getId() >= contexts_.size())
+	{
+		throw Exception("ExecutionContextHandle is not valid");
+	}
+	
+	auto context = contexts_[executionContextHandle.getId()];
+	
+	if (context == nullptr)
+	{
+		throw Exception("ExecutionContextHandle is not valid");
+	}
+	
+	CScriptBuilder builder = CScriptBuilder();
+	builder.StartNewModule(engine_, ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME.c_str());
+	builder.AddSectionFromMemory("", scriptData.c_str(), scriptData.length());
+	builder.BuildModule();
+	auto module = builder.GetModule();
+	
+	auto func = getFunctionByDecl(function, module);
+	
+	logger_->debug( "Preparing function: " + function);
+	
+	int32 r = context->Prepare(func);
+	assertNoAngelscriptError(r);
+	
+	logger_->debug( "Executing function: " + function);
+	
+	r = context->Execute();
+	
+	if ( r != asEXECUTION_FINISHED )
+	{
+		std::string msg = std::string();
+		
+		// The execution didn't complete as expected. Determine what happened.
+		if ( r == asEXECUTION_EXCEPTION )
+		{
+			// An exception occurred, let the script writer know what happened so it can be corrected.
+			msg = std::string("An exception occurred: ");
+			msg += std::string(context->GetExceptionString());
+			throw Exception("ScriptEngine: " + msg);
+		}
+		
+		assertNoAngelscriptError(r);
+	}
+	
+	r = engine_->DiscardModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME.c_str());
+	assertNoAngelscriptError(r);
+}
+
+ExecutionContextHandle ScriptingEngine::createExecutionContext()
+{
+	if (contexts_.size() == ScriptingEngine::MAX_EXECUTION_CONTEXTS)
+	{
+		throw Exception("Maximum number of execution contexts reached.");
+	}
+	
+	contexts_.push_back( engine_->CreateContext() );
+	auto index = contexts_.size() - 1;
+	
+	return ExecutionContextHandle(index);
+}
+
+asIScriptFunction* ScriptingEngine::getFunctionByDecl(const std::string& function, asIScriptModule* module)
+{
+	if (module == nullptr)
+	{
+		module = defaultModule_;
+	}
+	
+	asIScriptFunction* func = module->GetFunctionByDecl( function.c_str() );
+	
+	if ( func == nullptr )
+	{
+		// The function couldn't be found. Instruct the script writer to include the expected function in the script.
+		std::string msg = std::string();
+
+		if ( function.length() > 80 )
+		{
+			msg = std::string("Function name too long.");
+		}
+		else
+		{
+			msg = std::string("Unable to locate the specified function: ");
+			msg += function;
+		}
+
+		throw Exception("ScriptEngine: " + msg);
+	}
+	
+	return func;
 }
 
 void ScriptingEngine::registerGlobalFunction(const std::string& name, const asSFuncPtr& funcPointer, asDWORD callConv, void* objForThiscall)
@@ -325,9 +428,15 @@ void ScriptingEngine::destroy()
 		ctx_->Release();
 	}
 	
-	// Clean up
-	engine_->Release();
-	delete builder_;
+	for ( auto c : contexts_ )
+	{
+		if (c != nullptr)
+		{
+			c->Release();
+		}
+	}
+	
+	engine_->ShutDownAndRelease();
 }
 
 // Implement a simple message callback function

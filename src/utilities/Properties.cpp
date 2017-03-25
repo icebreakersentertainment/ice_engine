@@ -23,6 +23,11 @@ namespace hercules
 namespace utilities
 {
 
+Properties::Properties()
+{
+	
+}
+
 Properties::Properties(fs::IFile* file)
 {
 	//parameters

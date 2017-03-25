@@ -98,3 +98,4 @@ macro(create_test TEST_NAME EXECUTABLE_NAME SOURCE)
 endmacro()
 
 create_test(FileSystemTests FileSystem FileSystem.cpp)
+create_test(ScriptingEngineTests ScriptingEngine ScriptingEngine.cpp)
