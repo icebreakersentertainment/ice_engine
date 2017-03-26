@@ -27,18 +27,18 @@ enum ParameterType
 
 union Value
 {
-	bool boolean;
-	uint8 uint8;
-	int8 int8;
-	uint16 uint16;
-	int16 int16;
-	uint32 uint32;
-	int32 int32;
-	uint64 uint64;
-	int64 int64;
-	float32 float32;
-	float64 float64;
-	void* pointer;
+	bool valueBoolean;
+	uint8 valueUint8;
+	int8 valueInt8;
+	uint16 valueUint16;
+	int16 valueInt16;
+	uint32 valueUint32;
+	int32 valueInt32;
+	uint64 valueUint64;
+	int64 valueInt64;
+	float32 valueFloat32;
+	float64 valueFloat64;
+	void* valuePointer;
 };
 
 class Parameter
@@ -47,7 +47,7 @@ class Parameter
 public:
 	Parameter() : type_(ParameterType::TYPE_UNKNOWN), value_(Value())
 	{
-		value_.pointer = nullptr;
+		value_.valuePointer = nullptr;
 	};
 	
 	virtual ~Parameter() {};
@@ -56,25 +56,25 @@ public:
 	void valueRef(T& value)
 	{
 		type_ = ParameterType::TYPE_OBJECT;
-		value_.pointer = (void*)&value;
+		value_.valuePointer = (void*)&value;
 	};
 	
 	template <typename T>
 	void value(T value)
 	{
 		type_ = ParameterType::TYPE_OBJECT;
-		value_.pointer = (void*)&value;
+		value_.valuePointer = (void*)&value;
 	};
 	
 	template <typename T>
 	T value()
 	{
-		return (*(T*)value_.pointer);
+		return (*(T*)value_.valuePointer);
 	};
 	
 	void* pointer() const
 	{
-		return value_.pointer;
+		return value_.valuePointer;
 	};
 	
 	ParameterType type() const

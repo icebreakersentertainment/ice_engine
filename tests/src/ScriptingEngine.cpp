@@ -78,8 +78,8 @@ BOOST_AUTO_TEST_CASE(ParameterInt)
 {
 	hercules::scripting::ParameterList params;
 	params.add(1);
-	auto returnObject = hercules::scripting::ReturnObject<int>();
-	BOOST_CHECK_NO_THROW( scriptingEngine->execute("int main(int input) { int i = input; return i; }", "int main(int)", params, returnObject.parser()); );
+	hercules::int32 returnValue = 0;
+	BOOST_CHECK_NO_THROW( scriptingEngine->execute("int main(int input) { int i = input; return i; }", "int main(int)", params, returnValue); );
 }
 
 BOOST_AUTO_TEST_CASE(ParameterByValue)
