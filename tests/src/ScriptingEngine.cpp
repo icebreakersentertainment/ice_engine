@@ -6,6 +6,7 @@
 #include "logger/Logger.hpp"
 
 #include "scripting/angel_script/ScriptingEngine.hpp"
+#include "scripting/Variant.hpp"
 
 struct Fixture
 {
@@ -53,7 +54,10 @@ BOOST_AUTO_TEST_CASE(glmVec3Constructors)
 
 BOOST_AUTO_TEST_CASE(glmVec3Assignment)
 {
-	BOOST_CHECK_NO_THROW( scriptingEngine->execute("void main() { vec3 v; v.x = 1.0; v.y = 1.0; v.z = 1.0; }"); );
+	auto variant = hercules::scripting::Variant<float>();
+	BOOST_CHECK_NO_THROW( scriptingEngine->execute("float main() { vec3 v; v.x = 1.0; v.y = 1.0; v.z = 1.0; return v.x;}", "float main()", variant.gen()); );
+	
+	BOOST_CHECK_EQUAL(variant.value, 1.0f);
 }
 
 BOOST_AUTO_TEST_CASE(glmVec3Functions)

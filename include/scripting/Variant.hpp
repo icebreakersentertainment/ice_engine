@@ -8,23 +8,22 @@ namespace hercules
 namespace scripting
 {
 
-//template <typename T>
+template <typename T>
 class Variant
 {
 public:
-	Variant();
-	virtual ~Variant();
+	Variant() {};
+	virtual ~Variant() {};
 	
-	/*
 	std::function<void(void*)> gen()
 	{
-		return [&value](void* ptr) {
+		return [this](void* ptr) {
 			value = *(T*)ptr;
 		};
 	};
 	
 	T value;
-	*/
+	
 	/*
 	Variant(int ok, std::function<void(void*)> copyFunction)
 	{

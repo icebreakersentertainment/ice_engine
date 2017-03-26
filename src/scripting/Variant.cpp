@@ -1,4 +1,4 @@
-#include <functional>
+/*#include <functional>
 
 #include "scripting/Variant.hpp"
 
@@ -18,3 +18,4 @@ Variant::~Variant()
 
 }
 }
+*/

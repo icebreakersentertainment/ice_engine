@@ -284,6 +284,7 @@ void ScriptingEngine::execute(const std::string& scriptData, const std::string& 
 	
 	// TODO: Get return value
 	//obj = *(CObject*)context->GetReturnObject();
+	getReturnValue(context->GetReturnObject());
 	
 	r = engine_->DiscardModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME.c_str());
 	assertNoAngelscriptError(r);
