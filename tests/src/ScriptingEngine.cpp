@@ -81,7 +81,7 @@ BOOST_AUTO_TEST_CASE(glmVec3WithParametersReturnGlmVec3)
 	params.push_back(p);
 	
 	auto returnObject = hercules::scripting::ReturnObject<glm::vec3>();
-	BOOST_CHECK_NO_THROW( scriptingEngine->execute("vec3 main(float f) { vec3 v; v.x = f; v.y = f; v.z = f; return v;}", "vec3 main()", params, returnObject.parser()); );
+	BOOST_CHECK_NO_THROW( scriptingEngine->execute("vec3 main(float f) { vec3 v; v.x = f; v.y = f; v.z = f; return v;}", "vec3 main(float)", params, returnObject.parser()); );
 	
 	BOOST_CHECK_EQUAL(returnObject.value.x, 1.0f);
 	BOOST_CHECK_EQUAL(returnObject.value.y, 1.0f);

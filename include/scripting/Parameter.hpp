@@ -37,16 +37,9 @@ public:
 	virtual ~Parameter() {};
 	
 	template <typename T>
-	void value(T& value)
+	void valueRef(T& value)
 	{
 		type_ = ParameterType::TYPE_OBJECT;
-		valuePtr_ = (void*)value;
-	};
-	
-	template <>
-	void value<uint8>(uint8& value)
-	{
-		type_ = ParameterType::TYPE_UINT8;
 		valuePtr_ = (void*)value;
 	};
 	
@@ -57,30 +50,10 @@ public:
 		valuePtr_ = (void*)&value;
 	};
 	
-	template <>
-	void value<uint8>(uint8 value)
-	{
-		type_ = ParameterType::TYPE_UINT8;
-		valuePtr_ = (void*)&value;
-	};
-	
-	template <>
-	void value<float32>(float32 value)
-	{
-		type_ = ParameterType::TYPE_FLOAT32;
-		valuePtr_ = (void*)&value;
-	};
-	
 	template <typename T>
 	T value()
 	{
 		return (*(T*)valuePtr_);
-	};
-	
-	template <>
-	uint8 value()
-	{
-		return *(uint8*)valuePtr_;
 	};
 	
 	void* pointer() const
@@ -97,6 +70,40 @@ public:
 private:
 	ParameterType type_;
 	void* valuePtr_;
+};
+
+template <>
+inline void Parameter::valueRef<uint8>(uint8& value)
+{
+	type_ = ParameterType::TYPE_UINT8;
+	valuePtr_ = (void*)&value;
+};
+
+template <>
+inline void Parameter::value<uint8>(uint8 value)
+{
+	type_ = ParameterType::TYPE_UINT8;
+	valuePtr_ = (void*)&value;
+};
+
+template <>
+inline void Parameter::value<float32>(float32 value)
+{
+	type_ = ParameterType::TYPE_FLOAT32;
+	valuePtr_ = (void*)&value;
+};
+
+template <>
+inline void Parameter::valueRef<float32>(float32& value)
+{
+	type_ = ParameterType::TYPE_FLOAT32;
+	valuePtr_ = (void*)&value;
+};
+
+template <>
+inline uint8 Parameter::value<uint8>()
+{
+	return *(uint8*)valuePtr_;
 };
 
 }

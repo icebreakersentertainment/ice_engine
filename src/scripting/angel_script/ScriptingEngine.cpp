@@ -111,7 +111,8 @@ void ScriptingEngine::assertNoAngelscriptError(const int32 returnCode)
 				break;
 			
 			default:
-				throw Exception("ScriptEngine: Unknown error.");
+				std::string str = std::string("ScriptEngine: Unknown error: ") + std::to_string(returnCode);
+				throw Exception(str.c_str());
 				break;
 		}
 	}
@@ -375,50 +376,51 @@ void ScriptingEngine::execute(const std::string& scriptData, const std::string& 
 		switch (arguments[i].type())
 	    {
 	        case ParameterType::TYPE_BOOL:
-	            context->SetArgByte(i, arguments[i].value<bool>());
+	            r = context->SetArgByte(i, arguments[i].value<bool>());
 	            break;
 	
 	        case ParameterType::TYPE_INT8:
-	            context->SetArgByte(i, arguments[i].value<int8>());
+	            r = context->SetArgByte(i, arguments[i].value<int8>());
 	            break;
 	            
 			case ParameterType::TYPE_UINT8:
-			    context->SetArgByte(i, arguments[i].value<uint8>());
+			    r = context->SetArgByte(i, arguments[i].value<uint8>());
 	            break;
 	            
 	        case ParameterType::TYPE_INT16:
-				context->SetArgWord(i, arguments[i].value<int16>());
+				r = context->SetArgWord(i, arguments[i].value<int16>());
 	            break;
 	            
 	        case ParameterType::TYPE_UINT16:
-	            context->SetArgWord(i, arguments[i].value<uint16>());
+	            r = context->SetArgWord(i, arguments[i].value<uint16>());
 	            break;
 	
 	        case ParameterType::TYPE_INT32:
-				context->SetArgWord(i, arguments[i].value<int32>());
+				r = context->SetArgWord(i, arguments[i].value<int32>());
 	            break;
 	            
 	        case ParameterType::TYPE_UINT32:
-	            context->SetArgDWord(i, arguments[i].value<uint32>());
+	            r = context->SetArgDWord(i, arguments[i].value<uint32>());
 	            break;
 	
 	        case ParameterType::TYPE_FLOAT32:
-	            context->SetArgFloat(i, arguments[i].value<float32>());
+	            r = context->SetArgFloat(i, arguments[i].value<float32>());
 	            break;
 	           
 	        case ParameterType::TYPE_FLOAT64:
-	            context->SetArgDouble(i, arguments[i].value<float64>());
+	            r = context->SetArgDouble(i, arguments[i].value<float64>());
 	            break;
 	           
 	        case ParameterType::TYPE_OBJECT:
-				context->SetArgObject(i, arguments[i].pointer());
+				r = context->SetArgObject(i, arguments[i].pointer());
 	            break;
 			
 	        default:
-				print("BLAH ex\n");
 				throw Exception("Unknown parameter type.");
 				break;
 		}
+		
+		assertNoAngelscriptError(r);
 	}
 	
 	logger_->debug( "Executing function: " + function);
