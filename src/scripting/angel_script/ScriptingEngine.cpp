@@ -341,6 +341,112 @@ void ScriptingEngine::execute(const std::string& scriptData, const std::string& 
 	assertNoAngelscriptError(r);
 }
 
+void ScriptingEngine::execute(const std::string& scriptData, const std::string& function, std::vector<Parameter> arguments, std::function<void(void*)> returnObjectParser, const ExecutionContextHandle& executionContextHandle)
+{
+	if (executionContextHandle.getId() >= contexts_.size())
+	{
+		throw Exception("ExecutionContextHandle is not valid");
+	}
+	
+	auto context = contexts_[executionContextHandle.getId()];
+	
+	if (context == nullptr)
+	{
+		throw Exception("ExecutionContextHandle is not valid");
+	}
+	
+	CScriptBuilder builder = CScriptBuilder();
+	builder.StartNewModule(engine_, ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME.c_str());
+	builder.AddSectionFromMemory("", scriptData.c_str(), scriptData.length());
+	builder.BuildModule();
+	auto module = builder.GetModule();
+	
+	auto func = getFunctionByDecl(function, module);
+	
+	logger_->debug( "Preparing function: " + function);
+	
+	int32 r = context->Prepare(func);
+	assertNoAngelscriptError(r);
+	
+	logger_->debug( "Setting parameters for function: " + function);
+	
+	for ( size_t i = 0; i < arguments.size(); i++)
+	{
+		switch (arguments[i].type())
+	    {
+	        case ParameterType::TYPE_BOOL:
+	            context->SetArgByte(i, arguments[i].value<bool>());
+	            break;
+	
+	        case ParameterType::TYPE_INT8:
+	            context->SetArgByte(i, arguments[i].value<int8>());
+	            break;
+	            
+			case ParameterType::TYPE_UINT8:
+			    context->SetArgByte(i, arguments[i].value<uint8>());
+	            break;
+	            
+	        case ParameterType::TYPE_INT16:
+				context->SetArgWord(i, arguments[i].value<int16>());
+	            break;
+	            
+	        case ParameterType::TYPE_UINT16:
+	            context->SetArgWord(i, arguments[i].value<uint16>());
+	            break;
+	
+	        case ParameterType::TYPE_INT32:
+				context->SetArgWord(i, arguments[i].value<int32>());
+	            break;
+	            
+	        case ParameterType::TYPE_UINT32:
+	            context->SetArgDWord(i, arguments[i].value<uint32>());
+	            break;
+	
+	        case ParameterType::TYPE_FLOAT32:
+	            context->SetArgFloat(i, arguments[i].value<float32>());
+	            break;
+	           
+	        case ParameterType::TYPE_FLOAT64:
+	            context->SetArgDouble(i, arguments[i].value<float64>());
+	            break;
+	           
+	        case ParameterType::TYPE_OBJECT:
+				context->SetArgObject(i, arguments[i].pointer());
+	            break;
+			
+	        default:
+				print("BLAH ex\n");
+				throw Exception("Unknown parameter type.");
+				break;
+		}
+	}
+	
+	logger_->debug( "Executing function: " + function);
+	
+	r = context->Execute();
+	
+	if ( r != asEXECUTION_FINISHED )
+	{
+		std::string msg = std::string();
+		
+		// The execution didn't complete as expected. Determine what happened.
+		if ( r == asEXECUTION_EXCEPTION )
+		{
+			// An exception occurred, let the script writer know what happened so it can be corrected.
+			msg = std::string("An exception occurred: ");
+			msg += std::string(context->GetExceptionString());
+			throw Exception("ScriptEngine: " + msg);
+		}
+		
+		assertNoAngelscriptError(r);
+	}
+	
+	returnObjectParser(context->GetReturnObject());
+	
+	r = engine_->DiscardModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME.c_str());
+	assertNoAngelscriptError(r);
+}
+
 ExecutionContextHandle ScriptingEngine::createExecutionContext()
 {
 	if (contexts_.size() == ScriptingEngine::MAX_EXECUTION_CONTEXTS)
