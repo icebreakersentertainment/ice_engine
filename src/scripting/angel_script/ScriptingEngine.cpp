@@ -235,7 +235,7 @@ void ScriptingEngine::execute(const std::string& scriptData, const std::string& 
 	assertNoAngelscriptError(r);
 }
 
-void ScriptingEngine::execute(const std::string& scriptData, const std::string& function, std::function<void(void*)> getReturnValue, const ExecutionContextHandle& executionContextHandle)
+void ScriptingEngine::execute(const std::string& scriptData, const std::string& function, float32& returnValue, const ExecutionContextHandle& executionContextHandle)
 {
 	if (executionContextHandle.getId() >= contexts_.size())
 	{
@@ -282,9 +282,60 @@ void ScriptingEngine::execute(const std::string& scriptData, const std::string& 
 		assertNoAngelscriptError(r);
 	}
 	
-	// TODO: Get return value
-	//obj = *(CObject*)context->GetReturnObject();
-	getReturnValue(context->GetReturnObject());
+	returnValue = context->GetReturnFloat();
+	
+	r = engine_->DiscardModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME.c_str());
+	assertNoAngelscriptError(r);
+}
+
+void ScriptingEngine::execute(const std::string& scriptData, const std::string& function, std::function<void(void*)> returnObjectParser, const ExecutionContextHandle& executionContextHandle)
+{
+	if (executionContextHandle.getId() >= contexts_.size())
+	{
+		throw Exception("ExecutionContextHandle is not valid");
+	}
+	
+	auto context = contexts_[executionContextHandle.getId()];
+	
+	if (context == nullptr)
+	{
+		throw Exception("ExecutionContextHandle is not valid");
+	}
+	
+	CScriptBuilder builder = CScriptBuilder();
+	builder.StartNewModule(engine_, ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME.c_str());
+	builder.AddSectionFromMemory("", scriptData.c_str(), scriptData.length());
+	builder.BuildModule();
+	auto module = builder.GetModule();
+	
+	auto func = getFunctionByDecl(function, module);
+	
+	logger_->debug( "Preparing function: " + function);
+	
+	int32 r = context->Prepare(func);
+	assertNoAngelscriptError(r);
+	
+	logger_->debug( "Executing function: " + function);
+	
+	r = context->Execute();
+	
+	if ( r != asEXECUTION_FINISHED )
+	{
+		std::string msg = std::string();
+		
+		// The execution didn't complete as expected. Determine what happened.
+		if ( r == asEXECUTION_EXCEPTION )
+		{
+			// An exception occurred, let the script writer know what happened so it can be corrected.
+			msg = std::string("An exception occurred: ");
+			msg += std::string(context->GetExceptionString());
+			throw Exception("ScriptEngine: " + msg);
+		}
+		
+		assertNoAngelscriptError(r);
+	}
+	
+	returnObjectParser(context->GetReturnObject());
 	
 	r = engine_->DiscardModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME.c_str());
 	assertNoAngelscriptError(r);

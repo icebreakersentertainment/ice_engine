@@ -26,7 +26,8 @@ public:
 	
 	virtual void run(const std::string& filename, const std::string& function = std::string("void main()"), const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) override;
 	virtual void execute(const std::string& scriptData, const std::string& function = std::string("void main()"), const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) override;
-	virtual void execute(const std::string& scriptData, const std::string& function, std::function<void(void*)> getReturnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) override;
+	virtual void execute(const std::string& scriptData, const std::string& function, float32& returnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) override;
+	virtual void execute(const std::string& scriptData, const std::string& function, std::function<void(void*)> returnObjectParser, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) override;
 	
 	virtual ExecutionContextHandle createExecutionContext() override;
 		
