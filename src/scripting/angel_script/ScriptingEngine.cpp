@@ -342,7 +342,7 @@ void ScriptingEngine::execute(const std::string& scriptData, const std::string& 
 	assertNoAngelscriptError(r);
 }
 
-void ScriptingEngine::execute(const std::string& scriptData, const std::string& function, std::vector<Parameter> arguments, std::function<void(void*)> returnObjectParser, const ExecutionContextHandle& executionContextHandle)
+void ScriptingEngine::execute(const std::string& scriptData, const std::string& function, ParameterList& arguments, std::function<void(void*)> returnObjectParser, const ExecutionContextHandle& executionContextHandle)
 {
 	if (executionContextHandle.getId() >= contexts_.size())
 	{

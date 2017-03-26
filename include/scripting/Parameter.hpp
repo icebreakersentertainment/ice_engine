@@ -1,9 +1,6 @@
 #ifndef SCRIPT_PARAMETER_H_
 #define SCRIPT_PARAMETER_H_
 
-#include <functional>
-#include <type_traits>
-
 #include "Types.hpp"
 
 namespace hercules
@@ -28,37 +25,56 @@ enum ParameterType
 	TYPE_OBJECT
 };
 
+union Value
+{
+	bool boolean;
+	uint8 uint8;
+	int8 int8;
+	uint16 uint16;
+	int16 int16;
+	uint32 uint32;
+	int32 int32;
+	uint64 uint64;
+	int64 int64;
+	float32 float32;
+	float64 float64;
+	void* pointer;
+};
+
 class Parameter
 {
-// Only allowed for non-integral types
-//static_assert(std::is_integral<T>::value, "T must be a non-integral type");
+
 public:
-	Parameter() : type_(ParameterType::TYPE_UNKNOWN), valuePtr_(nullptr) {};
+	Parameter() : type_(ParameterType::TYPE_UNKNOWN), value_(Value())
+	{
+		value_.pointer = nullptr;
+	};
+	
 	virtual ~Parameter() {};
 	
 	template <typename T>
 	void valueRef(T& value)
 	{
 		type_ = ParameterType::TYPE_OBJECT;
-		valuePtr_ = (void*)value;
+		value_.pointer = (void*)&value;
 	};
 	
 	template <typename T>
 	void value(T value)
 	{
 		type_ = ParameterType::TYPE_OBJECT;
-		valuePtr_ = (void*)&value;
+		value_.pointer = (void*)&value;
 	};
 	
 	template <typename T>
 	T value()
 	{
-		return (*(T*)valuePtr_);
+		return (*(T*)value_.pointer);
 	};
 	
 	void* pointer() const
 	{
-		return valuePtr_;
+		return value_.pointer;
 	};
 	
 	ParameterType type() const
@@ -69,44 +85,13 @@ public:
 
 private:
 	ParameterType type_;
-	void* valuePtr_;
-};
-
-template <>
-inline void Parameter::valueRef<uint8>(uint8& value)
-{
-	type_ = ParameterType::TYPE_UINT8;
-	valuePtr_ = (void*)&value;
-};
-
-template <>
-inline void Parameter::value<uint8>(uint8 value)
-{
-	type_ = ParameterType::TYPE_UINT8;
-	valuePtr_ = (void*)&value;
-};
-
-template <>
-inline void Parameter::value<float32>(float32 value)
-{
-	type_ = ParameterType::TYPE_FLOAT32;
-	valuePtr_ = (void*)&value;
-};
-
-template <>
-inline void Parameter::valueRef<float32>(float32& value)
-{
-	type_ = ParameterType::TYPE_FLOAT32;
-	valuePtr_ = (void*)&value;
-};
-
-template <>
-inline uint8 Parameter::value<uint8>()
-{
-	return *(uint8*)valuePtr_;
+	Value value_;
+	
 };
 
 }
 }
+
+#include "scripting/Parameter.inl"
 
 #endif /* SCRIPT_PARAMETER_H_ */
