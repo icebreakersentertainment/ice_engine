@@ -10,57 +10,18 @@
 
 BEGIN_AS_NAMESPACE
 
-// Macro magic courtesy of http://stackoverflow.com/a/13842612/780281
-#define SINGLE_ARG(...) __VA_ARGS__
-
-#define GLM_REGISTER_CONSTRUCTOR_DESTRUCTOR_TEMPLATES1(name) \
-namespace glm##name \
-{ \
-template <class C> void DefaultConstructor(void* memory) { new(memory) C(); } \
-template <class C> void CopyConstructor(const C& other, void* memory) { new(memory) C(other); } \
-template <class C> void DefaultDestructor(void* memory) { ((C*)memory)->~C(); } \
-}
-
-#define GLM_REGISTER_CONSTRUCTOR_DESTRUCTOR_TEMPLATES3(name, args, vars) \
-GLM_REGISTER_CONSTRUCTOR_DESTRUCTOR_TEMPLATES1(name) \
-namespace glm##name \
-{ \
-template <class C> void InitConstructor(args, void* memory) { new(memory) C(vars); } \
-}
-
-#define GLM_REGISTER_OBJECT_POD_FLOATS(name) \
-r = engine->RegisterObjectType(#name, sizeof(glm::name), asOBJ_VALUE | asOBJ_POD | asOBJ_APP_CLASS_ALLFLOATS | asGetTypeTraits<glm::name>()); assert( r >= 0 );
-
-#define GLM_REGISTER_OBJECT_POD_INTS(name) \
-r = engine->RegisterObjectType(#name, sizeof(glm::name), asOBJ_VALUE | asOBJ_POD | asOBJ_APP_CLASS_ALLINTS | asGetTypeTraits<glm::name>()); assert( r >= 0 );
-
-#define GLM_REGISTER_PROPERTIES(name, type, var) \
-r = engine->RegisterObjectProperty(#name, #type" "#var, asOFFSET(glm::name, var)); assert( r >= 0 );
-
-#define GLM_REGISTER_CONSTRUCTOR_DESTRUCTOR1(name) \
-r = engine->RegisterObjectBehaviour(#name, asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(glm##name::DefaultConstructor<glm::name>), asCALL_CDECL_OBJLAST); assert( r >= 0 ); \
-r = engine->RegisterObjectBehaviour(#name, asBEHAVE_CONSTRUCT, "void f(const "#name" &in)", asFUNCTION(glm##name::CopyConstructor<glm::name>), asCALL_CDECL_OBJLAST); assert( r >= 0 ); \
-r = engine->RegisterObjectBehaviour(#name, asBEHAVE_DESTRUCT, "void f()", asFUNCTION(glm##name::DefaultDestructor<glm::name>), asCALL_CDECL_OBJLAST); assert( r >= 0 ); \
-
-#define GLM_REGISTER_CONSTRUCTOR_DESTRUCTOR2(name, paramTypesList) \
-GLM_REGISTER_CONSTRUCTOR_DESTRUCTOR1(name) \
-r = engine->RegisterObjectBehaviour(#name, asBEHAVE_CONSTRUCT, "void f"#paramTypesList, asFUNCTION(glm##name::InitConstructor<glm::name>), asCALL_CDECL_OBJLAST); assert( r >= 0 );
-
-// Must register our constructor / destructor templates first
-GLM_REGISTER_CONSTRUCTOR_DESTRUCTOR_TEMPLATES3(vec2, SINGLE_ARG(float x, float y), SINGLE_ARG(x,y));
-GLM_REGISTER_CONSTRUCTOR_DESTRUCTOR_TEMPLATES3(vec3, SINGLE_ARG(float x, float y, float z), SINGLE_ARG(x,y,z));
-GLM_REGISTER_CONSTRUCTOR_DESTRUCTOR_TEMPLATES3(vec4, SINGLE_ARG(float x, float y, float z, float w), SINGLE_ARG(x,y,z,w));
-
-GLM_REGISTER_CONSTRUCTOR_DESTRUCTOR_TEMPLATES1(mat2);
-GLM_REGISTER_CONSTRUCTOR_DESTRUCTOR_TEMPLATES1(mat3);
-GLM_REGISTER_CONSTRUCTOR_DESTRUCTOR_TEMPLATES1(mat4);
-
 namespace glmvec3
 {
-static glm::vec3 operator+(const glm::vec3& a, const glm::vec3& b)
-{
-	return glm::vec3(a.x + b.x, a.y + b.y, a.z + b.z);
-}
+void DefaultConstructor(void* memory) { new(memory) glm::vec3(); }
+void CopyConstructor(const glm::vec3& other, void* memory) { new(memory) glm::vec3(other); }
+//void DefaultDestructor(void* memory) { ((glm::vec3*)memory)->~glm::vec3(); }
+void InitConstructor(float x, float y, float z, void* memory) { new(memory) glm::vec3(x,y,z); }
+
+static glm::vec3 operator+(const glm::vec3& a, const glm::vec3& b) { return glm::vec3(a.x + b.x, a.y + b.y, a.z + b.z); }
+static glm::vec3 operator-(const glm::vec3& a, const glm::vec3& b) { return glm::vec3(a.x - b.x, a.y - b.y, a.z - b.z); }
+static glm::vec3 operator*(const glm::vec3& a, const glm::vec3& b) { return glm::vec3(a.x * b.x, a.y * b.y, a.z * b.z); }
+static glm::vec3 operator/(const glm::vec3& a, const glm::vec3& b) { return glm::vec3(a.x / b.x, a.y / b.y, a.z / b.z); }
+static bool operator==(const glm::vec3& a, const glm::vec3& b) { return (a.x == b.x && a.y == b.y && a.z == b.z); }
 }
 
 
@@ -71,39 +32,27 @@ void RegisterGlmBindings(asIScriptEngine* engine)
 {
 	int r = 0;
 	
-	GLM_REGISTER_OBJECT_POD_FLOATS(vec2);
-	GLM_REGISTER_OBJECT_POD_FLOATS(vec3);
-	GLM_REGISTER_OBJECT_POD_FLOATS(vec4);
+	// glm::vec3
+	r = engine->RegisterObjectType("vec3", sizeof(glm::vec3), asOBJ_VALUE | asOBJ_POD | asOBJ_APP_CLASS_ALLFLOATS | asGetTypeTraits<glm::vec3>()); assert( r >= 0 );
+	r = engine->RegisterObjectProperty("vec3", "float x", asOFFSET(glm::vec3, x)); assert( r >= 0 );
+	r = engine->RegisterObjectProperty("vec3", "float y", asOFFSET(glm::vec3, y)); assert( r >= 0 );
+	r = engine->RegisterObjectProperty("vec3", "float z", asOFFSET(glm::vec3, z)); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("vec3", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(glmvec3::DefaultConstructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("vec3", asBEHAVE_CONSTRUCT, "void f(const vec3 &in)", asFUNCTION(glmvec3::CopyConstructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("vec3", asBEHAVE_CONSTRUCT, "void f(float, float, float)", asFUNCTION(glmvec3::InitConstructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	//r = engine->RegisterObjectBehaviour("vec3", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(glmvec3::DefaultDestructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 	
-	GLM_REGISTER_OBJECT_POD_FLOATS(mat2);
-	GLM_REGISTER_OBJECT_POD_FLOATS(mat3);
-	GLM_REGISTER_OBJECT_POD_FLOATS(mat4);
-	
-	// Register the object properties
-	GLM_REGISTER_PROPERTIES(vec2, float, x);
-	GLM_REGISTER_PROPERTIES(vec2, float, y);
-	
-	GLM_REGISTER_PROPERTIES(vec3, float, x);
-	GLM_REGISTER_PROPERTIES(vec3, float, y);
-	GLM_REGISTER_PROPERTIES(vec3, float, z);
-	
-	GLM_REGISTER_PROPERTIES(vec4, float, x);
-	GLM_REGISTER_PROPERTIES(vec4, float, y);
-	GLM_REGISTER_PROPERTIES(vec4, float, z);
-	GLM_REGISTER_PROPERTIES(vec4, float, w);
-	
-	// Register the object constructor/destructor
-	GLM_REGISTER_CONSTRUCTOR_DESTRUCTOR2(vec2, (float, float));
-	GLM_REGISTER_CONSTRUCTOR_DESTRUCTOR2(vec3, (float, float, float));
-	GLM_REGISTER_CONSTRUCTOR_DESTRUCTOR2(vec4, (float, float, float, float));
-	
-	GLM_REGISTER_CONSTRUCTOR_DESTRUCTOR1(mat2);
-	GLM_REGISTER_CONSTRUCTOR_DESTRUCTOR1(mat3);
-	GLM_REGISTER_CONSTRUCTOR_DESTRUCTOR1(mat4);
-	
-	// testing
-	engine->RegisterObjectMethod("vec3", "vec3 opAdd_r(const vec3& in) const", asFUNCTIONPR(glmvec3::operator+, (const glm::vec3&, const glm::vec3&), glm::vec3), asCALL_CDECL_OBJLAST);
-	engine->RegisterObjectMethod("vec3", "vec3 &opAddAssign(const vec3& in)", asMETHODPR(glm::vec3, operator+=, (const glm::vec3&), glm::vec3&), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("vec3", "vec3 opAdd_r(const vec3& in) const", asFUNCTIONPR(glmvec3::operator+, (const glm::vec3&, const glm::vec3&), glm::vec3), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("vec3", "vec3 &opAddAssign(const vec3& in)", asMETHODPR(glm::vec3, operator+=, (const glm::vec3&), glm::vec3&), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("vec3", "vec3 opSub_r(const vec3& in) const", asFUNCTIONPR(glmvec3::operator-, (const glm::vec3&, const glm::vec3&), glm::vec3), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("vec3", "vec3 &opSubAssign(const vec3 &in)", asMETHODPR(glm::vec3, operator-=, (const glm::vec3 &), glm::vec3&), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("vec3", "vec3 opMul_r(const vec3& in) const", asFUNCTIONPR(glmvec3::operator*, (const glm::vec3&, const glm::vec3&), glm::vec3), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("vec3", "vec3 &opMulAssign(float)", asMETHODPR(glm::vec3, operator*=, (float), glm::vec3&), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("vec3", "vec3 opDiv_r(const vec3& in) const", asFUNCTIONPR(glmvec3::operator/, (const glm::vec3&, const glm::vec3&), glm::vec3), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("vec3", "vec3 &opDivAssign(float)", asMETHODPR(glm::vec3, operator/=, (float), glm::vec3&), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("vec3", "vec3 &opPreInc()", asMETHODPR(glm::vec3, operator++, (), glm::vec3&), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("vec3", "vec3 &opPreDec()", asMETHODPR(glm::vec3, operator--, (), glm::vec3&), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("vec3", "bool opEquals(const vec3 &in) const", asFUNCTIONPR(glmvec3::operator==, (const glm::vec3&, const glm::vec3&), bool), asCALL_CDECL_OBJFIRST); assert( r >= 0 );
 }
 
 END_AS_NAMESPACE

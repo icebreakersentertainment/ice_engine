@@ -43,4 +43,29 @@ BOOST_AUTO_TEST_CASE(executeScriptDataMultipleTimes)
 	BOOST_CHECK_NO_THROW( scriptingEngine->execute("void main() {}"); );
 }
 
+BOOST_AUTO_TEST_CASE(glmVec3Constructors)
+{
+	BOOST_CHECK_NO_THROW( scriptingEngine->execute("void main() { vec3 v; }"); );
+	BOOST_CHECK_NO_THROW( scriptingEngine->execute("void main() { vec3 v = vec3(); }"); );
+	BOOST_CHECK_NO_THROW( scriptingEngine->execute("void main() { vec3 v = vec3(1.0, 2.0, 3.0); }"); );
+	BOOST_CHECK_NO_THROW( scriptingEngine->execute("void main() { vec3 v = vec3( vec3(1.0, 2.0, 3.0) ); }"); );
+}
+
+BOOST_AUTO_TEST_CASE(glmVec3Assignment)
+{
+	BOOST_CHECK_NO_THROW( scriptingEngine->execute("void main() { vec3 v; v.x = 1.0; v.y = 1.0; v.z = 1.0; }"); );
+}
+
+BOOST_AUTO_TEST_CASE(glmVec3Functions)
+{/*
+	const char* R"SCRIPT(
+void main()
+{
+	
+	
+}
+	)SCRIPT"
+	*/
+}
+
 BOOST_AUTO_TEST_SUITE_END()

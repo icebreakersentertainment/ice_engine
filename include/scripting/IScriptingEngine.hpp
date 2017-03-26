@@ -2,6 +2,7 @@
 #define ISCRIPTINGENGINE_H_
 
 #include <string>
+#include <functional>
 
 #include <angelscript/angelscript.h>
 
@@ -10,6 +11,7 @@
 #include "scripting/ExecutionContextHandle.hpp"
 #include "scripting/ScriptHandle.hpp"
 #include "scripting/ScriptObjectHandle.hpp"
+#include "scripting/Variant.hpp"
 
 #include "Types.hpp"
 
@@ -28,6 +30,7 @@ public:
 	
 	virtual void run(const std::string& filename, const std::string& function = std::string("void main()"), const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle()) = 0;
 	virtual void execute(const std::string& scriptData, const std::string& function = std::string("void main()"), const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle()) = 0;
+	virtual void execute(const std::string& scriptData, const std::string& function, std::function<void(void*)> getReturnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle()) = 0;
 	
 	virtual ExecutionContextHandle createExecutionContext() = 0;
 	
