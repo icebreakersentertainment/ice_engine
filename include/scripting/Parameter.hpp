@@ -43,6 +43,9 @@ union Value
 	void* valuePointer;
 };
 
+/**
+ * TODO: Make sure we destroy any copied objects if we set a new value for this parameter.
+ */
 class Parameter
 {
 
@@ -52,6 +55,14 @@ public:
 		value_.valuePointer = nullptr;
 	};
 	
+	/**
+	 * copy this parameter.
+	 * 
+	 * Note that if the other Parameter has an object copied by value, the copy constructor
+	 * will make another copy of that object by allocating new memory and copying the contents of that object.
+	 * 
+	 * When this newly created parameter is destroyed, it will call the destructor on that copied object.
+	 */
 	Parameter(const Parameter& other)
 	{
 		type_ = other.type_;
@@ -67,6 +78,9 @@ public:
 		}
 	};
 	
+	/**
+	 * If the parameter holds a copy of an object, the destructor for that object will be called.
+	 */
 	virtual ~Parameter()
 	{
 		if (type_ == ParameterType::TYPE_OBJECT_VAL)
@@ -75,6 +89,9 @@ public:
 		}
 	};
 	
+	/**
+	 * Set the parameter by reference.
+	 */
 	template <typename T>
 	void valueRef(T& value)
 	{
@@ -82,11 +99,16 @@ public:
 		value_.valuePointer = (void*)&value;
 	};
 	
+	/**
+	 * Set the parameter by value. This will make a copy of the passed in value using that values copy constructor.
+	 * 
+	 * Note that when the parameter object is destroyed, it will call the destructor on the copied object.
+	 * 
+	 * It is highly recommended that you use relatively simple values.
+	 */
 	template <typename T>
 	void value(T value)
 	{
-		// static_assert(false, "Cannot set object by value.");
-		
 		type_ = ParameterType::TYPE_OBJECT_VAL;
 		
 		T* p = new T(value);
