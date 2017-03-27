@@ -1,7 +1,9 @@
 #ifndef SCRIPT_PARAMETER_H_
 #define SCRIPT_PARAMETER_H_
 
+#include <cstring>
 #include <functional>
+
 #include "Types.hpp"
 
 namespace hercules
