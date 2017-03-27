@@ -59,11 +59,17 @@ public:
 		value_.valuePointer = (void*)&value;
 	};
 	
+	// This is only here so that we can define specializations for integral types
 	template <typename T>
 	void value(T value)
 	{
-		type_ = ParameterType::TYPE_OBJECT;
-		value_.valuePointer = (void*)&value;
+		static_assert(false, "Cannot set object by value.");
+	};
+	
+	template <typename T>
+	T& valueRef()
+	{
+		return ((T*)value_.valuePointer);
 	};
 	
 	template <typename T>

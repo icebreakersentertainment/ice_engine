@@ -16,7 +16,6 @@ class ParameterList
 
 public:
 	ParameterList() {};
-	
 	virtual ~ParameterList() {};
 	
 	Parameter& operator[](size_t index)
