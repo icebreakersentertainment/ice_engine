@@ -167,7 +167,19 @@ inline bool Parameter::value<bool>()
 };
 
 template <>
+inline bool& Parameter::valueRef<bool>()
+{
+	return value_.valueBoolean;
+};
+
+template <>
 inline uint8 Parameter::value<uint8>()
+{
+	return value_.valueUint8;
+};
+
+template <>
+inline uint8& Parameter::valueRef<uint8>()
 {
 	return value_.valueUint8;
 };
@@ -179,7 +191,19 @@ inline int8 Parameter::value<int8>()
 };
 
 template <>
+inline int8& Parameter::valueRef<int8>()
+{
+	return value_.valueInt8;
+};
+
+template <>
 inline uint16 Parameter::value<uint16>()
+{
+	return value_.valueUint16;
+};
+
+template <>
+inline uint16& Parameter::valueRef<uint16>()
 {
 	return value_.valueUint16;
 };
@@ -197,7 +221,19 @@ inline uint32 Parameter::value<uint32>()
 };
 
 template <>
+inline uint32& Parameter::valueRef<uint32>()
+{
+	return value_.valueUint32;
+};
+
+template <>
 inline int32 Parameter::value<int32>()
+{
+	return value_.valueInt32;
+};
+
+template <>
+inline int32& Parameter::valueRef<int32>()
 {
 	return value_.valueInt32;
 };
@@ -206,6 +242,12 @@ template <>
 inline uint64 Parameter::value<uint64>()
 {
 	return value_.valueUint64;
+};
+
+template <>
+inline int64& Parameter::valueRef<int64>()
+{
+	return value_.valueInt64;
 };
 
 template <>
@@ -221,7 +263,19 @@ inline float32 Parameter::value<float32>()
 };
 
 template <>
+inline float32& Parameter::valueRef<float32>()
+{
+	return value_.valueFloat32;
+};
+
+template <>
 inline float64 Parameter::value<float64>()
+{
+	return value_.valueFloat64;
+};
+
+template <>
+inline float64& Parameter::valueRef<float64>()
 {
 	return value_.valueFloat64;
 };

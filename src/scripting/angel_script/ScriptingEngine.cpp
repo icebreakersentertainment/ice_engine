@@ -411,7 +411,8 @@ void ScriptingEngine::execute(const std::string& scriptData, const std::string& 
 	            r = context->SetArgDouble(i, arguments[i].value<float64>());
 	            break;
 	           
-	        case ParameterType::TYPE_OBJECT:
+	        case ParameterType::TYPE_OBJECT_REF:
+	        case ParameterType::TYPE_OBJECT_VAL:
 				r = context->SetArgObject(i, arguments[i].pointer());
 	            break;
 			
@@ -519,7 +520,8 @@ void ScriptingEngine::execute(const std::string& scriptData, const std::string& 
 	            r = context->SetArgDouble(i, arguments[i].value<float64>());
 	            break;
 	           
-	        case ParameterType::TYPE_OBJECT:
+	        case ParameterType::TYPE_OBJECT_REF:
+	        case ParameterType::TYPE_OBJECT_VAL:
 				r = context->SetArgObject(i, arguments[i].pointer());
 	            break;
 			

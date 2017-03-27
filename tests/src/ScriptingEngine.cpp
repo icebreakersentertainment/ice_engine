@@ -126,7 +126,22 @@ BOOST_AUTO_TEST_CASE(ParameterByReference)
 	BOOST_CHECK_EQUAL(returnObject.value.z, 1.0f);
 }
 
-BOOST_AUTO_TEST_CASE(glmVec3Parameter)
+BOOST_AUTO_TEST_CASE(glmVec3ParameterByValue)
+{
+	hercules::scripting::ParameterList params;
+	
+	glm::vec3 v = glm::vec3(1.0f, 1.0f, 1.0f);
+	params.add(v);
+	
+	auto returnObject = hercules::scripting::ReturnObject<glm::vec3>();
+	BOOST_CHECK_NO_THROW( scriptingEngine->execute("vec3 main(vec3 vectorIn) { vec3 v = vectorIn; return v;}", "vec3 main(vec3)", params, returnObject.parser()); );
+	
+	BOOST_CHECK_EQUAL(returnObject.value.x, 1.0f);
+	BOOST_CHECK_EQUAL(returnObject.value.y, 1.0f);
+	BOOST_CHECK_EQUAL(returnObject.value.z, 1.0f);
+}
+
+BOOST_AUTO_TEST_CASE(glmVec3ParameterByReference)
 {
 	hercules::scripting::ParameterList params;
 	

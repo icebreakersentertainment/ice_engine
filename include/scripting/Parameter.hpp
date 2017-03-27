@@ -1,6 +1,7 @@
 #ifndef SCRIPT_PARAMETER_H_
 #define SCRIPT_PARAMETER_H_
 
+#include <functional>
 #include "Types.hpp"
 
 namespace hercules
@@ -22,7 +23,8 @@ enum ParameterType
 	TYPE_UINT64,
 	TYPE_FLOAT32,
 	TYPE_FLOAT64,
-	TYPE_OBJECT
+	TYPE_OBJECT_REF,
+	TYPE_OBJECT_VAL
 };
 
 union Value
@@ -45,31 +47,58 @@ class Parameter
 {
 
 public:
-	Parameter() : type_(ParameterType::TYPE_UNKNOWN), value_(Value())
+	Parameter() : type_(ParameterType::TYPE_UNKNOWN), value_(Value()), sizeOf_(0)
 	{
 		value_.valuePointer = nullptr;
 	};
 	
-	virtual ~Parameter() {};
+	Parameter(const Parameter& other)
+	{
+		type_ = other.type_;
+		value_ = other.value_;
+		sizeOf_ = other.sizeOf_;
+		destructor_ = other.destructor_;
+		
+		if (type_ == ParameterType::TYPE_OBJECT_VAL)
+		{
+			void* p = malloc(sizeOf_);
+			memcpy(p, value_.valuePointer, sizeOf_);
+			value_.valuePointer = p;
+		}
+	};
+	
+	virtual ~Parameter()
+	{
+		if (type_ == ParameterType::TYPE_OBJECT_VAL)
+		{
+			destructor_(value_.valuePointer);
+		}
+	};
 	
 	template <typename T>
 	void valueRef(T& value)
 	{
-		type_ = ParameterType::TYPE_OBJECT;
+		type_ = ParameterType::TYPE_OBJECT_REF;
 		value_.valuePointer = (void*)&value;
 	};
 	
-	// This is only here so that we can define specializations for integral types
 	template <typename T>
 	void value(T value)
 	{
-		static_assert(false, "Cannot set object by value.");
+		// static_assert(false, "Cannot set object by value.");
+		
+		type_ = ParameterType::TYPE_OBJECT_VAL;
+		
+		T* p = new T(value);
+		value_.valuePointer = (void*)p;
+		sizeOf_ = sizeof(T);
+		destructor_ = [](const void* x) { static_cast<const T*>(x)->~T(); };
 	};
 	
 	template <typename T>
 	T& valueRef()
 	{
-		return ((T*)value_.valuePointer);
+		return (*(T*)value_.valuePointer);
 	};
 	
 	template <typename T>
@@ -92,6 +121,8 @@ public:
 private:
 	ParameterType type_;
 	Value value_;
+	size_t sizeOf_;
+	std::function<void(const void*)> destructor_;
 	
 };
 

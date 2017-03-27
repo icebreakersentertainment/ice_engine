@@ -99,3 +99,4 @@ endmacro()
 
 create_test(FileSystemTests FileSystem FileSystem.cpp)
 create_test(ScriptingEngineTests ScriptingEngine ScriptingEngine.cpp)
+create_test(ParameterTests Parameter Parameter.cpp)
