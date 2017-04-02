@@ -40,7 +40,7 @@ ScriptingEngine::~ScriptingEngine()
 	destroy();
 }
 
-void ScriptingEngine::assertNoAngelscriptError(const int32 returnCode)
+void ScriptingEngine::assertNoAngelscriptError(const int32 returnCode) const
 {
 	if (returnCode < 0)
 	{
@@ -177,12 +177,7 @@ void ScriptingEngine::loadScripts()
 	logger_->debug( "All scripts loaded successfully!" );
 }
 
-void ScriptingEngine::run(const std::string& filename, const std::string& function, const ExecutionContextHandle& executionContextHandle)
-{
-	
-}
-
-void ScriptingEngine::execute(const std::string& scriptData, const std::string& function, const ExecutionContextHandle& executionContextHandle)
+asIScriptContext* ScriptingEngine::getContext(const ExecutionContextHandle& executionContextHandle) const
 {
 	if (executionContextHandle.getId() >= contexts_.size())
 	{
@@ -196,18 +191,92 @@ void ScriptingEngine::execute(const std::string& scriptData, const std::string& 
 		throw Exception("ExecutionContextHandle is not valid");
 	}
 	
+	return context;
+}
+
+asIScriptModule* ScriptingEngine::createModuleFromScript(const std::string& moduleName, const std::string& scriptData) const
+{
 	CScriptBuilder builder = CScriptBuilder();
-	builder.StartNewModule(engine_, ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME.c_str());
+	builder.StartNewModule(engine_, moduleName.c_str());
 	builder.AddSectionFromMemory("", scriptData.c_str(), scriptData.length());
 	builder.BuildModule();
-	auto module = builder.GetModule();
+	return builder.GetModule();
+}
+
+void ScriptingEngine::destroyModule(const std::string& moduleName)
+{
+	int32 r = engine_->DiscardModule(moduleName.c_str());
+	assertNoAngelscriptError(r);
+}
+
+void ScriptingEngine::setArguments(asIScriptContext* context, ParameterList& arguments) const
+{
+	int32 r = 0;
+	
+	for ( size_t i = 0; i < arguments.size(); i++)
+	{
+		switch (arguments[i].type())
+	    {
+	        case ParameterType::TYPE_BOOL:
+	            r = context->SetArgByte(i, arguments[i].value<bool>());
+	            break;
+	
+	        case ParameterType::TYPE_INT8:
+	            r = context->SetArgByte(i, arguments[i].value<int8>());
+	            break;
+	            
+			case ParameterType::TYPE_UINT8:
+			    r = context->SetArgByte(i, arguments[i].value<uint8>());
+	            break;
+	            
+	        case ParameterType::TYPE_INT16:
+				r = context->SetArgWord(i, arguments[i].value<int16>());
+	            break;
+	            
+	        case ParameterType::TYPE_UINT16:
+	            r = context->SetArgWord(i, arguments[i].value<uint16>());
+	            break;
+	
+	        case ParameterType::TYPE_INT32:
+				r = context->SetArgDWord(i, arguments[i].value<int32>());
+	            break;
+	            
+	        case ParameterType::TYPE_UINT32:
+	            r = context->SetArgDWord(i, arguments[i].value<uint32>());
+	            break;
+	
+	        case ParameterType::TYPE_FLOAT32:
+	            r = context->SetArgFloat(i, arguments[i].value<float32>());
+	            break;
+	           
+	        case ParameterType::TYPE_FLOAT64:
+	            r = context->SetArgDouble(i, arguments[i].value<float64>());
+	            break;
+	           
+	        case ParameterType::TYPE_OBJECT_REF:
+	        case ParameterType::TYPE_OBJECT_VAL:
+				r = context->SetArgObject(i, arguments[i].pointer());
+	            break;
+			
+	        default:
+				throw Exception("Unknown parameter type.");
+				break;
+		}
+		
+		assertNoAngelscriptError(r);
+	}
+}
+
+void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptModule* module, const std::string& function, ParameterList& arguments) const
+{
+	logger_->debug( "Preparing function: " + function);
 	
 	auto func = getFunctionByDecl(function, module);
 	
-	logger_->debug( "Preparing function: " + function);
-	
 	int32 r = context->Prepare(func);
 	assertNoAngelscriptError(r);
+	
+	setArguments(context, arguments);
 	
 	logger_->debug( "Executing function: " + function);
 	
@@ -228,335 +297,478 @@ void ScriptingEngine::execute(const std::string& scriptData, const std::string& 
 		
 		assertNoAngelscriptError(r);
 	}
+}
+
+void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptHandle& scriptHandle, const std::string& function, ParameterList& arguments) const
+{
+	/*
+	logger_->debug( "Preparing function: " + function);
 	
-	// TODO: Get return value
-	//obj = *(CObject*)context->GetReturnObject();
+	auto func = getFunctionByDecl(function, module);
 	
-	r = engine_->DiscardModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME.c_str());
+	int32 r = context->Prepare(func);
 	assertNoAngelscriptError(r);
+	
+	setArguments(context, arguments);
+	
+	logger_->debug( "Executing function: " + function);
+	
+	r = context->Execute();
+	
+	if ( r != asEXECUTION_FINISHED )
+	{
+		std::string msg = std::string();
+		
+		// The execution didn't complete as expected. Determine what happened.
+		if ( r == asEXECUTION_EXCEPTION )
+		{
+			// An exception occurred, let the script writer know what happened so it can be corrected.
+			msg = std::string("An exception occurred: ");
+			msg += std::string(context->GetExceptionString());
+			throw Exception("ScriptEngine: " + msg);
+		}
+		
+		assertNoAngelscriptError(r);
+	}
+	*/
+}
+
+void ScriptingEngine::run(const std::string& filename, const std::string& function, ParameterList& arguments, std::function<void(void*)> returnObjectParser, const ExecutionContextHandle& executionContextHandle)
+{
+	auto scriptData = fileSystem_->readAll(filename);
+	execute(scriptData, function, arguments, returnObjectParser, executionContextHandle);
+}
+
+void ScriptingEngine::run(const std::string& filename, const std::string& function, ParameterList& arguments, float32& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto scriptData = fileSystem_->readAll(filename);
+	execute(scriptData, function, arguments, returnValue, executionContextHandle);
+}
+
+void ScriptingEngine::run(const std::string& filename, const std::string& function, ParameterList& arguments, float64& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto scriptData = fileSystem_->readAll(filename);
+	execute(scriptData, function, arguments, returnValue, executionContextHandle);
+}
+
+void ScriptingEngine::run(const std::string& filename, const std::string& function, ParameterList& arguments, int8& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto scriptData = fileSystem_->readAll(filename);
+	execute(scriptData, function, arguments, returnValue, executionContextHandle);
+}
+
+void ScriptingEngine::run(const std::string& filename, const std::string& function, ParameterList& arguments, uint8& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto scriptData = fileSystem_->readAll(filename);
+	execute(scriptData, function, arguments, returnValue, executionContextHandle);
+}
+
+void ScriptingEngine::run(const std::string& filename, const std::string& function, ParameterList& arguments, int16& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto scriptData = fileSystem_->readAll(filename);
+	execute(scriptData, function, arguments, returnValue, executionContextHandle);
+}
+
+void ScriptingEngine::run(const std::string& filename, const std::string& function, ParameterList& arguments, uint16& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto scriptData = fileSystem_->readAll(filename);
+	execute(scriptData, function, arguments, returnValue, executionContextHandle);
+}
+
+void ScriptingEngine::run(const std::string& filename, const std::string& function, ParameterList& arguments, int32& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto scriptData = fileSystem_->readAll(filename);
+	execute(scriptData, function, arguments, returnValue, executionContextHandle);
+}
+
+void ScriptingEngine::run(const std::string& filename, const std::string& function, ParameterList& arguments, uint32& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto scriptData = fileSystem_->readAll(filename);
+	execute(scriptData, function, arguments, returnValue, executionContextHandle);
+}
+
+void ScriptingEngine::run(const std::string& filename, const std::string& function, ParameterList& arguments, int64& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto scriptData = fileSystem_->readAll(filename);
+	execute(scriptData, function, arguments, returnValue, executionContextHandle);
+}
+
+void ScriptingEngine::run(const std::string& filename, const std::string& function, ParameterList& arguments, uint64& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto scriptData = fileSystem_->readAll(filename);
+	execute(scriptData, function, arguments, returnValue, executionContextHandle);
+}
+
+
+
+/* EXECUTE SCRIPT DATA FUNCTIONS */
+void ScriptingEngine::execute(const std::string& scriptData, const std::string& function, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	auto module = createModuleFromScript(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME, scriptData);
+	callFunction(context, module, function);
+	destroyModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME);
 }
 
 void ScriptingEngine::execute(const std::string& scriptData, const std::string& function, float32& returnValue, const ExecutionContextHandle& executionContextHandle)
 {
-	if (executionContextHandle.getId() >= contexts_.size())
-	{
-		throw Exception("ExecutionContextHandle is not valid");
-	}
-	
-	auto context = contexts_[executionContextHandle.getId()];
-	
-	if (context == nullptr)
-	{
-		throw Exception("ExecutionContextHandle is not valid");
-	}
-	
-	CScriptBuilder builder = CScriptBuilder();
-	builder.StartNewModule(engine_, ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME.c_str());
-	builder.AddSectionFromMemory("", scriptData.c_str(), scriptData.length());
-	builder.BuildModule();
-	auto module = builder.GetModule();
-	
-	auto func = getFunctionByDecl(function, module);
-	
-	logger_->debug( "Preparing function: " + function);
-	
-	int32 r = context->Prepare(func);
-	assertNoAngelscriptError(r);
-	
-	logger_->debug( "Executing function: " + function);
-	
-	r = context->Execute();
-	
-	if ( r != asEXECUTION_FINISHED )
-	{
-		std::string msg = std::string();
-		
-		// The execution didn't complete as expected. Determine what happened.
-		if ( r == asEXECUTION_EXCEPTION )
-		{
-			// An exception occurred, let the script writer know what happened so it can be corrected.
-			msg = std::string("An exception occurred: ");
-			msg += std::string(context->GetExceptionString());
-			throw Exception("ScriptEngine: " + msg);
-		}
-		
-		assertNoAngelscriptError(r);
-	}
-	
+	auto context = getContext(executionContextHandle);
+	auto module = createModuleFromScript(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME, scriptData);
+	callFunction(context, module, function);
 	returnValue = context->GetReturnFloat();
-	
-	r = engine_->DiscardModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME.c_str());
-	assertNoAngelscriptError(r);
+	destroyModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME);
+}
+
+void ScriptingEngine::execute(const std::string& scriptData, const std::string& function, float64& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	auto module = createModuleFromScript(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME, scriptData);
+	callFunction(context, module, function);
+	returnValue = context->GetReturnDouble();
+	destroyModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME);
+}
+
+void ScriptingEngine::execute(const std::string& scriptData, const std::string& function, int8& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	auto module = createModuleFromScript(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME, scriptData);
+	callFunction(context, module, function);
+	returnValue = context->GetReturnByte();
+	destroyModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME);
+}
+
+void ScriptingEngine::execute(const std::string& scriptData, const std::string& function, uint8& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	auto module = createModuleFromScript(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME, scriptData);
+	callFunction(context, module, function);
+	returnValue = context->GetReturnByte();
+	destroyModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME);
+}
+
+void ScriptingEngine::execute(const std::string& scriptData, const std::string& function, int16& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	auto module = createModuleFromScript(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME, scriptData);
+	callFunction(context, module, function);
+	returnValue = context->GetReturnWord();
+	destroyModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME);
+}
+
+void ScriptingEngine::execute(const std::string& scriptData, const std::string& function, uint16& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	auto module = createModuleFromScript(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME, scriptData);
+	callFunction(context, module, function);
+	returnValue = context->GetReturnWord();
+	destroyModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME);
+}
+
+void ScriptingEngine::execute(const std::string& scriptData, const std::string& function, int32& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	auto module = createModuleFromScript(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME, scriptData);
+	callFunction(context, module, function);
+	returnValue = context->GetReturnDWord();
+	destroyModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME);
+}
+
+void ScriptingEngine::execute(const std::string& scriptData, const std::string& function, uint32& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	auto module = createModuleFromScript(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME, scriptData);
+	callFunction(context, module, function);
+	returnValue = context->GetReturnDWord();
+	destroyModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME);
+}
+
+void ScriptingEngine::execute(const std::string& scriptData, const std::string& function, int64& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	auto module = createModuleFromScript(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME, scriptData);
+	callFunction(context, module, function);
+	returnValue = context->GetReturnQWord();
+	destroyModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME);
+}
+
+void ScriptingEngine::execute(const std::string& scriptData, const std::string& function, uint64& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	auto module = createModuleFromScript(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME, scriptData);
+	callFunction(context, module, function);
+	returnValue = context->GetReturnQWord();
+	destroyModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME);
 }
 
 void ScriptingEngine::execute(const std::string& scriptData, const std::string& function, std::function<void(void*)> returnObjectParser, const ExecutionContextHandle& executionContextHandle)
 {
-	if (executionContextHandle.getId() >= contexts_.size())
-	{
-		throw Exception("ExecutionContextHandle is not valid");
-	}
-	
-	auto context = contexts_[executionContextHandle.getId()];
-	
-	if (context == nullptr)
-	{
-		throw Exception("ExecutionContextHandle is not valid");
-	}
-	
-	CScriptBuilder builder = CScriptBuilder();
-	builder.StartNewModule(engine_, ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME.c_str());
-	builder.AddSectionFromMemory("", scriptData.c_str(), scriptData.length());
-	builder.BuildModule();
-	auto module = builder.GetModule();
-	
-	auto func = getFunctionByDecl(function, module);
-	
-	logger_->debug( "Preparing function: " + function);
-	
-	int32 r = context->Prepare(func);
-	assertNoAngelscriptError(r);
-	
-	logger_->debug( "Executing function: " + function);
-	
-	r = context->Execute();
-	
-	if ( r != asEXECUTION_FINISHED )
-	{
-		std::string msg = std::string();
-		
-		// The execution didn't complete as expected. Determine what happened.
-		if ( r == asEXECUTION_EXCEPTION )
-		{
-			// An exception occurred, let the script writer know what happened so it can be corrected.
-			msg = std::string("An exception occurred: ");
-			msg += std::string(context->GetExceptionString());
-			throw Exception("ScriptEngine: " + msg);
-		}
-		
-		assertNoAngelscriptError(r);
-	}
-	
+	auto context = getContext(executionContextHandle);
+	auto module = createModuleFromScript(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME, scriptData);
+	callFunction(context, module, function);
 	returnObjectParser(context->GetReturnObject());
-	
-	r = engine_->DiscardModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME.c_str());
-	assertNoAngelscriptError(r);
+	destroyModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME);
 }
 
 void ScriptingEngine::execute(const std::string& scriptData, const std::string& function, ParameterList& arguments, std::function<void(void*)> returnObjectParser, const ExecutionContextHandle& executionContextHandle)
 {
-	if (executionContextHandle.getId() >= contexts_.size())
-	{
-		throw Exception("ExecutionContextHandle is not valid");
-	}
-	
-	auto context = contexts_[executionContextHandle.getId()];
-	
-	if (context == nullptr)
-	{
-		throw Exception("ExecutionContextHandle is not valid");
-	}
-	
-	CScriptBuilder builder = CScriptBuilder();
-	builder.StartNewModule(engine_, ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME.c_str());
-	builder.AddSectionFromMemory("", scriptData.c_str(), scriptData.length());
-	builder.BuildModule();
-	auto module = builder.GetModule();
-	
-	auto func = getFunctionByDecl(function, module);
-	
-	logger_->debug( "Preparing function: " + function);
-	
-	int32 r = context->Prepare(func);
-	assertNoAngelscriptError(r);
-	
-	logger_->debug( "Setting parameters for function: " + function);
-	
-	for ( size_t i = 0; i < arguments.size(); i++)
-	{
-		switch (arguments[i].type())
-	    {
-	        case ParameterType::TYPE_BOOL:
-	            r = context->SetArgByte(i, arguments[i].value<bool>());
-	            break;
-	
-	        case ParameterType::TYPE_INT8:
-	            r = context->SetArgByte(i, arguments[i].value<int8>());
-	            break;
-	            
-			case ParameterType::TYPE_UINT8:
-			    r = context->SetArgByte(i, arguments[i].value<uint8>());
-	            break;
-	            
-	        case ParameterType::TYPE_INT16:
-				r = context->SetArgWord(i, arguments[i].value<int16>());
-	            break;
-	            
-	        case ParameterType::TYPE_UINT16:
-	            r = context->SetArgWord(i, arguments[i].value<uint16>());
-	            break;
-	
-	        case ParameterType::TYPE_INT32:
-				r = context->SetArgDWord(i, arguments[i].value<int32>());
-	            break;
-	            
-	        case ParameterType::TYPE_UINT32:
-	            r = context->SetArgDWord(i, arguments[i].value<uint32>());
-	            break;
-	
-	        case ParameterType::TYPE_FLOAT32:
-	            r = context->SetArgFloat(i, arguments[i].value<float32>());
-	            break;
-	           
-	        case ParameterType::TYPE_FLOAT64:
-	            r = context->SetArgDouble(i, arguments[i].value<float64>());
-	            break;
-	           
-	        case ParameterType::TYPE_OBJECT_REF:
-	        case ParameterType::TYPE_OBJECT_VAL:
-				r = context->SetArgObject(i, arguments[i].pointer());
-	            break;
-			
-	        default:
-				throw Exception("Unknown parameter type.");
-				break;
-		}
-		
-		assertNoAngelscriptError(r);
-	}
-	
-	logger_->debug( "Executing function: " + function);
-	
-	r = context->Execute();
-	
-	if ( r != asEXECUTION_FINISHED )
-	{
-		std::string msg = std::string();
-		
-		// The execution didn't complete as expected. Determine what happened.
-		if ( r == asEXECUTION_EXCEPTION )
-		{
-			// An exception occurred, let the script writer know what happened so it can be corrected.
-			msg = std::string("An exception occurred: ");
-			msg += std::string(context->GetExceptionString());
-			throw Exception("ScriptEngine: " + msg);
-		}
-		
-		assertNoAngelscriptError(r);
-	}
-	
+	auto context = getContext(executionContextHandle);
+	auto module = createModuleFromScript(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME, scriptData);
+	callFunction(context, module, function, arguments);
 	returnObjectParser(context->GetReturnObject());
-	
-	r = engine_->DiscardModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME.c_str());
-	assertNoAngelscriptError(r);
+	destroyModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME);
 }
 
+void ScriptingEngine::execute(const std::string& scriptData, const std::string& function, ParameterList& arguments, float32& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	auto module = createModuleFromScript(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME, scriptData);
+	callFunction(context, module, function, arguments);
+	returnValue = context->GetReturnFloat();
+	destroyModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME);
+}
+
+void ScriptingEngine::execute(const std::string& scriptData, const std::string& function, ParameterList& arguments, float64& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	auto module = createModuleFromScript(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME, scriptData);
+	callFunction(context, module, function, arguments);
+	returnValue = context->GetReturnDouble();
+	destroyModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME);
+}
+
+void ScriptingEngine::execute(const std::string& scriptData, const std::string& function, ParameterList& arguments, int8& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	auto module = createModuleFromScript(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME, scriptData);
+	callFunction(context, module, function, arguments);
+	returnValue = context->GetReturnByte();
+	destroyModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME);
+}
+
+void ScriptingEngine::execute(const std::string& scriptData, const std::string& function, ParameterList& arguments, uint8& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	auto module = createModuleFromScript(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME, scriptData);
+	callFunction(context, module, function, arguments);
+	returnValue = context->GetReturnByte();
+	destroyModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME);
+}
+
+void ScriptingEngine::execute(const std::string& scriptData, const std::string& function, ParameterList& arguments, int16& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	auto module = createModuleFromScript(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME, scriptData);
+	callFunction(context, module, function, arguments);
+	returnValue = context->GetReturnWord();
+	destroyModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME);
+}
+
+void ScriptingEngine::execute(const std::string& scriptData, const std::string& function, ParameterList& arguments, uint16& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	auto module = createModuleFromScript(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME, scriptData);
+	callFunction(context, module, function, arguments);
+	returnValue = context->GetReturnWord();
+	destroyModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME);
+}
 
 void ScriptingEngine::execute(const std::string& scriptData, const std::string& function, ParameterList& arguments, int32& returnValue, const ExecutionContextHandle& executionContextHandle)
 {
-	if (executionContextHandle.getId() >= contexts_.size())
-	{
-		throw Exception("ExecutionContextHandle is not valid");
-	}
-	
-	auto context = contexts_[executionContextHandle.getId()];
-	
-	if (context == nullptr)
-	{
-		throw Exception("ExecutionContextHandle is not valid");
-	}
-	
-	CScriptBuilder builder = CScriptBuilder();
-	builder.StartNewModule(engine_, ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME.c_str());
-	builder.AddSectionFromMemory("", scriptData.c_str(), scriptData.length());
-	builder.BuildModule();
-	auto module = builder.GetModule();
-	
-	auto func = getFunctionByDecl(function, module);
-	
-	logger_->debug( "Preparing function: " + function);
-	
-	int32 r = context->Prepare(func);
-	assertNoAngelscriptError(r);
-	
-	logger_->debug( "Setting parameters for function: " + function);
-	
-	for ( size_t i = 0; i < arguments.size(); i++)
-	{
-		switch (arguments[i].type())
-	    {
-	        case ParameterType::TYPE_BOOL:
-	            r = context->SetArgByte(i, arguments[i].value<bool>());
-	            break;
-	
-	        case ParameterType::TYPE_INT8:
-	            r = context->SetArgByte(i, arguments[i].value<int8>());
-	            break;
-	            
-			case ParameterType::TYPE_UINT8:
-			    r = context->SetArgByte(i, arguments[i].value<uint8>());
-	            break;
-	            
-	        case ParameterType::TYPE_INT16:
-				r = context->SetArgWord(i, arguments[i].value<int16>());
-	            break;
-	            
-	        case ParameterType::TYPE_UINT16:
-	            r = context->SetArgWord(i, arguments[i].value<uint16>());
-	            break;
-	
-	        case ParameterType::TYPE_INT32:
-				r = context->SetArgDWord(i, arguments[i].value<int32>());
-	            break;
-	            
-	        case ParameterType::TYPE_UINT32:
-	            r = context->SetArgDWord(i, arguments[i].value<uint32>());
-	            break;
-	
-	        case ParameterType::TYPE_FLOAT32:
-	            r = context->SetArgFloat(i, arguments[i].value<float32>());
-	            break;
-	           
-	        case ParameterType::TYPE_FLOAT64:
-	            r = context->SetArgDouble(i, arguments[i].value<float64>());
-	            break;
-	           
-	        case ParameterType::TYPE_OBJECT_REF:
-	        case ParameterType::TYPE_OBJECT_VAL:
-				r = context->SetArgObject(i, arguments[i].pointer());
-	            break;
-			
-	        default:
-				throw Exception("Unknown parameter type.");
-				break;
-		}
-		
-		assertNoAngelscriptError(r);
-	}
-	
-	logger_->debug( "Executing function: " + function);
-	
-	r = context->Execute();
-	
-	if ( r != asEXECUTION_FINISHED )
-	{
-		std::string msg = std::string();
-		
-		// The execution didn't complete as expected. Determine what happened.
-		if ( r == asEXECUTION_EXCEPTION )
-		{
-			// An exception occurred, let the script writer know what happened so it can be corrected.
-			msg = std::string("An exception occurred: ");
-			msg += std::string(context->GetExceptionString());
-			throw Exception("ScriptEngine: " + msg);
-		}
-		
-		assertNoAngelscriptError(r);
-	}
-	
+	auto context = getContext(executionContextHandle);
+	auto module = createModuleFromScript(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME, scriptData);
+	callFunction(context, module, function, arguments);
 	returnValue = context->GetReturnDWord();
-	
-	r = engine_->DiscardModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME.c_str());
-	assertNoAngelscriptError(r);
+	destroyModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME);
+}
+
+void ScriptingEngine::execute(const std::string& scriptData, const std::string& function, ParameterList& arguments, uint32& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	auto module = createModuleFromScript(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME, scriptData);
+	callFunction(context, module, function, arguments);
+	returnValue = context->GetReturnDWord();
+	destroyModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME);
+}
+
+void ScriptingEngine::execute(const std::string& scriptData, const std::string& function, ParameterList& arguments, int64& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	auto module = createModuleFromScript(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME, scriptData);
+	callFunction(context, module, function, arguments);
+	returnValue = context->GetReturnQWord();
+	destroyModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME);
+}
+
+void ScriptingEngine::execute(const std::string& scriptData, const std::string& function, ParameterList& arguments, uint64& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	auto module = createModuleFromScript(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME, scriptData);
+	callFunction(context, module, function, arguments);
+	returnValue = context->GetReturnQWord();
+	destroyModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME);
+}
+
+
+
+/* EXECUTE SCRIPT HANDLE FUNCTIONS */
+void ScriptingEngine::execute(const ScriptHandle& scriptHandle, const std::string& function, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptHandle, function);
+}
+
+void ScriptingEngine::execute(const ScriptHandle& scriptHandle, const std::string& function, float32& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptHandle, function);
+	returnValue = context->GetReturnFloat();
+}
+
+void ScriptingEngine::execute(const ScriptHandle& scriptHandle, const std::string& function, float64& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptHandle, function);
+	returnValue = context->GetReturnDouble();
+}
+
+void ScriptingEngine::execute(const ScriptHandle& scriptHandle, const std::string& function, int8& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptHandle, function);
+	returnValue = context->GetReturnByte();
+}
+
+void ScriptingEngine::execute(const ScriptHandle& scriptHandle, const std::string& function, uint8& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptHandle, function);
+	returnValue = context->GetReturnByte();
+}
+
+void ScriptingEngine::execute(const ScriptHandle& scriptHandle, const std::string& function, int16& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptHandle, function);
+	returnValue = context->GetReturnWord();
+}
+
+void ScriptingEngine::execute(const ScriptHandle& scriptHandle, const std::string& function, uint16& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptHandle, function);
+	returnValue = context->GetReturnWord();
+}
+
+void ScriptingEngine::execute(const ScriptHandle& scriptHandle, const std::string& function, int32& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptHandle, function);
+	returnValue = context->GetReturnDWord();
+}
+
+void ScriptingEngine::execute(const ScriptHandle& scriptHandle, const std::string& function, uint32& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptHandle, function);
+	returnValue = context->GetReturnDWord();
+}
+
+void ScriptingEngine::execute(const ScriptHandle& scriptHandle, const std::string& function, int64& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptHandle, function);
+	returnValue = context->GetReturnQWord();
+}
+
+void ScriptingEngine::execute(const ScriptHandle& scriptHandle, const std::string& function, uint64& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptHandle, function);
+	returnValue = context->GetReturnQWord();
+}
+
+void ScriptingEngine::execute(const ScriptHandle& scriptHandle, const std::string& function, std::function<void(void*)> returnObjectParser, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptHandle, function);
+	returnObjectParser(context->GetReturnObject());
+}
+
+void ScriptingEngine::execute(const ScriptHandle& scriptHandle, const std::string& function, ParameterList& arguments, std::function<void(void*)> returnObjectParser, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptHandle, function, arguments);
+	returnObjectParser(context->GetReturnObject());
+}
+
+void ScriptingEngine::execute(const ScriptHandle& scriptHandle, const std::string& function, ParameterList& arguments, float32& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptHandle, function, arguments);
+	returnValue = context->GetReturnFloat();
+}
+
+void ScriptingEngine::execute(const ScriptHandle& scriptHandle, const std::string& function, ParameterList& arguments, float64& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptHandle, function, arguments);
+	returnValue = context->GetReturnDouble();
+}
+
+void ScriptingEngine::execute(const ScriptHandle& scriptHandle, const std::string& function, ParameterList& arguments, int8& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptHandle, function, arguments);
+	returnValue = context->GetReturnByte();
+}
+
+void ScriptingEngine::execute(const ScriptHandle& scriptHandle, const std::string& function, ParameterList& arguments, uint8& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptHandle, function, arguments);
+	returnValue = context->GetReturnByte();
+}
+
+void ScriptingEngine::execute(const ScriptHandle& scriptHandle, const std::string& function, ParameterList& arguments, int16& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptHandle, function, arguments);
+	returnValue = context->GetReturnWord();
+}
+
+void ScriptingEngine::execute(const ScriptHandle& scriptHandle, const std::string& function, ParameterList& arguments, uint16& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptHandle, function, arguments);
+	returnValue = context->GetReturnWord();
+}
+
+void ScriptingEngine::execute(const ScriptHandle& scriptHandle, const std::string& function, ParameterList& arguments, int32& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptHandle, function, arguments);
+	returnValue = context->GetReturnDWord();
+}
+
+void ScriptingEngine::execute(const ScriptHandle& scriptHandle, const std::string& function, ParameterList& arguments, uint32& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptHandle, function, arguments);
+	returnValue = context->GetReturnDWord();
+}
+
+void ScriptingEngine::execute(const ScriptHandle& scriptHandle, const std::string& function, ParameterList& arguments, int64& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptHandle, function, arguments);
+	returnValue = context->GetReturnQWord();
+}
+
+void ScriptingEngine::execute(const ScriptHandle& scriptHandle, const std::string& function, ParameterList& arguments, uint64& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptHandle, function, arguments);
+	returnValue = context->GetReturnQWord();
 }
 
 ExecutionContextHandle ScriptingEngine::createExecutionContext()
@@ -572,7 +784,7 @@ ExecutionContextHandle ScriptingEngine::createExecutionContext()
 	return ExecutionContextHandle(index);
 }
 
-asIScriptFunction* ScriptingEngine::getFunctionByDecl(const std::string& function, asIScriptModule* module)
+asIScriptFunction* ScriptingEngine::getFunctionByDecl(const std::string& function, asIScriptModule* module) const
 {
 	if (module == nullptr)
 	{

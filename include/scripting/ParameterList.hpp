@@ -23,6 +23,11 @@ public:
 		return parameters_[index];
 	};
 	
+	const Parameter& operator[](size_t index) const
+	{
+		return parameters_[index];
+	};
+	
 	size_t size() const
 	{
 		return parameters_.size();

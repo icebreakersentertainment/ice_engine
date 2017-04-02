@@ -74,12 +74,94 @@ BOOST_AUTO_TEST_CASE(glmVec3ReturnGlmVec3)
 	BOOST_CHECK_EQUAL(returnObject.value.z, 1.0f);
 }
 
-BOOST_AUTO_TEST_CASE(ParameterInt)
+BOOST_AUTO_TEST_CASE(ParameterFloat32)
+{
+	hercules::scripting::ParameterList params;
+	params.add(1.0f);
+	hercules::float32 returnValue = 0;
+	BOOST_CHECK_NO_THROW( scriptingEngine->execute("float main(float input) { float i = input; return i; }", "float main(float)", params, returnValue); );
+	BOOST_CHECK_EQUAL(returnValue, 1.0f);
+}
+
+BOOST_AUTO_TEST_CASE(ParameterFloat64)
+{
+	hercules::scripting::ParameterList params;
+	params.add(1.0f);
+	hercules::float64 returnValue = 0;
+	BOOST_CHECK_NO_THROW( scriptingEngine->execute("double main(double input) { double i = input; return i; }", "double main(double)", params, returnValue); );
+	BOOST_CHECK_EQUAL(returnValue, 1.0f);
+}
+
+BOOST_AUTO_TEST_CASE(ParameterInt8)
+{
+	hercules::scripting::ParameterList params;
+	params.add(1);
+	hercules::int8 returnValue = 0;
+	BOOST_CHECK_NO_THROW( scriptingEngine->execute("int8 main(int8 input) { int8 i = input; return i; }", "int8 main(int8)", params, returnValue); );
+	BOOST_CHECK_EQUAL(returnValue, 1);
+}
+
+BOOST_AUTO_TEST_CASE(ParameterUInt8)
+{
+	hercules::scripting::ParameterList params;
+	params.add(1);
+	hercules::uint8 returnValue = 0;
+	BOOST_CHECK_NO_THROW( scriptingEngine->execute("uint8 main(uint8 input) { uint8 i = input; return i; }", "uint8 main(uint8)", params, returnValue); );
+	BOOST_CHECK_EQUAL(returnValue, 1);
+}
+
+BOOST_AUTO_TEST_CASE(ParameterInt16)
+{
+	hercules::scripting::ParameterList params;
+	params.add(1);
+	hercules::int16 returnValue = 0;
+	BOOST_CHECK_NO_THROW( scriptingEngine->execute("int16 main(int16 input) { int16 i = input; return i; }", "int16 main(int16)", params, returnValue); );
+	BOOST_CHECK_EQUAL(returnValue, 1);
+}
+
+BOOST_AUTO_TEST_CASE(ParameterUInt16)
+{
+	hercules::scripting::ParameterList params;
+	params.add(1);
+	hercules::uint16 returnValue = 0;
+	BOOST_CHECK_NO_THROW( scriptingEngine->execute("uint16 main(uint16 input) { uint16 i = input; return i; }", "uint16 main(uint16)", params, returnValue); );
+	BOOST_CHECK_EQUAL(returnValue, 1);
+}
+
+BOOST_AUTO_TEST_CASE(ParameterInt32)
 {
 	hercules::scripting::ParameterList params;
 	params.add(1);
 	hercules::int32 returnValue = 0;
-	BOOST_CHECK_NO_THROW( scriptingEngine->execute("int main(int input) { int i = input; return i; }", "int main(int)", params, returnValue); );
+	BOOST_CHECK_NO_THROW( scriptingEngine->execute("int32 main(int32 input) { int32 i = input; return i; }", "int32 main(int32)", params, returnValue); );
+	BOOST_CHECK_EQUAL(returnValue, 1);
+}
+
+BOOST_AUTO_TEST_CASE(ParameterUInt32)
+{
+	hercules::scripting::ParameterList params;
+	params.add(1);
+	hercules::uint32 returnValue = 0;
+	BOOST_CHECK_NO_THROW( scriptingEngine->execute("uint32 main(uint32 input) { uint32 i = input; return i; }", "uint32 main(uint32)", params, returnValue); );
+	BOOST_CHECK_EQUAL(returnValue, 1);
+}
+
+BOOST_AUTO_TEST_CASE(ParameterInt64)
+{
+	hercules::scripting::ParameterList params;
+	params.add(1);
+	hercules::int64 returnValue = 0;
+	BOOST_CHECK_NO_THROW( scriptingEngine->execute("int64 main(int64 input) { int64 i = input; return i; }", "int64 main(int64)", params, returnValue); );
+	BOOST_CHECK_EQUAL(returnValue, 1);
+}
+
+BOOST_AUTO_TEST_CASE(ParameterUInt64)
+{
+	hercules::scripting::ParameterList params;
+	params.add(1);
+	hercules::uint64 returnValue = 0;
+	BOOST_CHECK_NO_THROW( scriptingEngine->execute("uint64 main(uint64 input) { uint64 i = input; return i; }", "uint64 main(uint64)", params, returnValue); );
+	BOOST_CHECK_EQUAL(returnValue, 1);
 }
 
 BOOST_AUTO_TEST_CASE(ParameterByValue)
