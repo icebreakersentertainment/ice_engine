@@ -86,7 +86,7 @@ BOOST_AUTO_TEST_CASE(ParameterFloat32)
 BOOST_AUTO_TEST_CASE(ParameterFloat64)
 {
 	hercules::scripting::ParameterList params;
-	params.add(1.0d);
+	params.add<hercules::float64>(1.0);
 	hercules::float64 returnValue = 0;
 	BOOST_CHECK_NO_THROW( scriptingEngine->execute("double main(double input) { double i = input; return i; }", "double main(double)", params, returnValue); );
 	BOOST_CHECK_EQUAL(returnValue, 1.0f);
