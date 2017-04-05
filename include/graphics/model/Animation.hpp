@@ -6,7 +6,7 @@
 
 #include "Types.hpp"
 
-#include "model/AnimatedBoneNode.hpp"
+#include "graphics/model/AnimatedBoneNode.hpp"
 
 namespace hercules
 {

@@ -9,7 +9,7 @@
 
 #include "Types.hpp"
 
-#include "model/VertexBoneData.hpp"
+#include "graphics/model/VertexBoneData.hpp"
 
 namespace hercules
 {

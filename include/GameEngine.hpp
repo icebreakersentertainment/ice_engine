@@ -61,8 +61,8 @@ public:
 	 */
 	virtual void setBootstrapScript(const std::string& filename) override;
 	
-	virtual model::Model importModel(const std::string& filename, const std::string& name = std::string()) const override;
-	virtual graphics::ModelHandle loadModel(const model::Model& model) override;
+	virtual graphics::model::Model importModel(const std::string& filename, const std::string& name = std::string()) const override;
+	virtual graphics::ModelHandle loadModel(const graphics::model::Model& model) override;
 	
 	// Implements the IEventListener interface
 	virtual bool processEvent(const graphics::Event& event) override;

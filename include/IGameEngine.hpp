@@ -11,7 +11,7 @@
 
 #include "graphics/IGraphicsEngine.hpp"
 
-#include "model/Model.hpp"
+#include "graphics/model/Model.hpp"
 
 #include "entities/Entity.hpp"
 #include "entities/GraphicsComponent.hpp"
@@ -57,8 +57,8 @@ public:
 	
 	virtual void setBootstrapScript(const std::string& filename) = 0;
 	
-	virtual model::Model importModel(const std::string& filename, const std::string& name = std::string()) const = 0;
-	virtual graphics::ModelHandle loadModel(const model::Model& model) = 0;
+	virtual graphics::model::Model importModel(const std::string& filename, const std::string& name = std::string()) const = 0;
+	virtual graphics::ModelHandle loadModel(const graphics::model::Model& model) = 0;
 };
 
 }

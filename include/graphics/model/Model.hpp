@@ -6,12 +6,12 @@
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 
-#include "model/Mesh.hpp"
-#include "model/Material.hpp"
-#include "model/Texture.hpp"
-#include "model/BoneData.hpp"
-#include "model/Animation.hpp"
-#include "model/BoneNode.hpp"
+#include "graphics/model/Mesh.hpp"
+#include "graphics/model/Material.hpp"
+#include "graphics/model/Texture.hpp"
+#include "graphics/model/BoneData.hpp"
+#include "graphics/model/Animation.hpp"
+#include "graphics/model/BoneNode.hpp"
 
 namespace hercules
 {

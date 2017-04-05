@@ -4,7 +4,7 @@
 #include <string>
 #include <memory>
 
-#include "model/Model.hpp"
+#include "graphics/model/Model.hpp"
 
 #include "logger/ILogger.hpp"
 

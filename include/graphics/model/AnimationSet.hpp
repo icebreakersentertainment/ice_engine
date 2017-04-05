@@ -7,8 +7,8 @@
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 
-#include "model/BoneNode.hpp"
-#include "model/Animation.hpp"
+#include "graphics/model/BoneNode.hpp"
+#include "graphics/model/Animation.hpp"
 
 namespace hercules
 {

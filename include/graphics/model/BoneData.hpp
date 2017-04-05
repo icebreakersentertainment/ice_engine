@@ -7,7 +7,7 @@
 
 #include "Types.hpp"
 
-#include "Bone.hpp"
+#include "graphics/model/Bone.hpp"
 
 namespace hercules
 {

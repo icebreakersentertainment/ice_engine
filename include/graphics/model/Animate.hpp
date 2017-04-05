@@ -10,9 +10,9 @@
 
 #include "Types.hpp"
 
-#include "model/BoneNode.hpp"
-#include "model/BoneData.hpp"
-#include "model/AnimatedBoneNode.hpp"
+#include "graphics/model/BoneNode.hpp"
+#include "graphics/model/BoneData.hpp"
+#include "graphics/model/AnimatedBoneNode.hpp"
 
 namespace hercules
 {
