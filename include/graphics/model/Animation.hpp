@@ -10,6 +10,8 @@
 
 namespace hercules
 {
+namespace graphics
+{
 namespace model
 {
 
@@ -21,6 +23,7 @@ struct Animation
 	std::map< std::string, AnimatedBoneNode > animatedBoneNodes;
 };
 
+}
 }
 }
 

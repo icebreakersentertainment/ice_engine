@@ -8,6 +8,8 @@
 
 namespace hercules
 {
+namespace graphics
+{
 namespace model
 {
 
@@ -18,7 +20,7 @@ struct Texture
 };
 
 }
-
+}
 }
 
 #endif /* TEXTURE_H_ */

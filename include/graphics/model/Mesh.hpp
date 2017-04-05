@@ -13,6 +13,8 @@
 
 namespace hercules
 {
+namespace graphics
+{
 namespace model
 {
 
@@ -27,6 +29,7 @@ struct Mesh
 	std::vector< VertexBoneData > bones;
 };
 
+}
 }
 }
 

@@ -8,6 +8,8 @@
 
 namespace hercules
 {
+namespace graphics
+{
 namespace model
 {
 
@@ -17,6 +19,7 @@ struct Bone
 	glm::mat4 boneOffset;
 };
 
+}
 }
 }
 

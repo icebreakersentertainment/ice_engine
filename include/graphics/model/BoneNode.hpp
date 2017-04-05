@@ -11,6 +11,8 @@
 
 namespace hercules
 {
+namespace graphics
+{
 namespace model
 {
 
@@ -21,6 +23,7 @@ struct BoneNode
 	std::vector< BoneNode > children;
 };
 
+}
 }
 }
 

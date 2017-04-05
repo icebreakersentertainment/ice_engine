@@ -13,6 +13,8 @@
 
 namespace hercules
 {
+namespace graphics
+{
 namespace model
 {
 
@@ -40,6 +42,7 @@ struct AnimatedBoneNode
 	std::vector< glm::vec3 > scalings;
 };
 
+}
 }
 }
 

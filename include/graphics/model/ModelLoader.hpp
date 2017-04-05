@@ -10,6 +10,8 @@
 
 namespace hercules
 {
+namespace graphics
+{
 namespace model
 {
 
@@ -19,6 +21,7 @@ Model import(const std::string& name, const std::string& filename, logger::ILogg
 
 void save(const std::string& name, const std::string& filename, const Model& model, logger::ILogger* logger);
 
+}
 }
 }
 

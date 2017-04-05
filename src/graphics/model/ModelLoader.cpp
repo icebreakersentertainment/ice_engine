@@ -14,20 +14,22 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/string_cast.hpp>
 
-#include "model/BoneNode.hpp"
-#include "model/BoneData.hpp"
-#include "model/AnimatedBoneNode.hpp"
-#include "model/ModelLoader.hpp"
-#include "model/Model.hpp"
-#include "model/AnimationSet.hpp"
-#include "model/Animation.hpp"
-#include "model/Mesh.hpp"
-#include "model/Texture.hpp"
-#include "model/Material.hpp"
+#include "graphics/model/BoneNode.hpp"
+#include "graphics/model/BoneData.hpp"
+#include "graphics/model/AnimatedBoneNode.hpp"
+#include "graphics/model/ModelLoader.hpp"
+#include "graphics/model/Model.hpp"
+#include "graphics/model/AnimationSet.hpp"
+#include "graphics/model/Animation.hpp"
+#include "graphics/model/Mesh.hpp"
+#include "graphics/model/Texture.hpp"
+#include "graphics/model/Material.hpp"
 
 #include "utilities/AssImpUtilities.hpp"
 
 namespace hercules
+{
+namespace graphics
 {
 namespace model
 {
@@ -614,5 +616,6 @@ void save(const std::string& name, const std::string& filename, const Model& mod
 	*/
 }
 
+}
 }
 }

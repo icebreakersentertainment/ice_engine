@@ -12,6 +12,8 @@
 
 namespace hercules
 {
+namespace graphics
+{
 namespace model
 {
 
@@ -24,6 +26,7 @@ struct AnimationSet
 	glm::mat4 globalInverseTransformation;
 };
 
+}
 }
 }
 

@@ -10,6 +10,8 @@
 
 namespace hercules
 {
+namespace graphics
+{
 namespace model
 {
 
@@ -25,6 +27,7 @@ struct Material
 	float32 strength;
 };
 
+}
 }
 }
 

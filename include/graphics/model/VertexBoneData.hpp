@@ -8,6 +8,8 @@
 
 namespace hercules
 {
+namespace graphics
+{
 namespace model
 {
 
@@ -43,7 +45,7 @@ struct VertexBoneData
 };
 
 }
-
+}
 }
 
 #endif /* VERTEXBONEDATA_H_ */

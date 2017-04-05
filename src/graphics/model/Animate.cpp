@@ -2,9 +2,11 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/string_cast.hpp>
 
-#include "model/Animate.hpp"
+#include "graphics/model/Animate.hpp"
 
 namespace hercules
+{
+namespace graphics
 {
 namespace model
 {
@@ -272,5 +274,6 @@ void animateSkeleton(std::vector< glm::mat4 >& transformations, const glm::mat4&
 	readNodeHeirarchy( transformations, animationTime, globalInverseTransformation, animatedBoneNodes, rootBoneNode, boneData, startFrame, endFrame, glm::mat4(), indexCache );
 }
 
+}
 }
 }
