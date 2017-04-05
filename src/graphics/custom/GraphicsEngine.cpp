@@ -138,11 +138,11 @@ void GraphicsEngine::render(const float32 delta)
 		std::vector<GLchar> nameData(256);
 		for(int unif = 0; unif < numActiveUniforms; ++unif)
 		{
-		  GLint arraySize = 0;
-		  GLenum type = 0;
-		  GLsizei actualLength = 0;
-		  glGetActiveUniform(shaderProgram_, unif, nameData.size(), &actualLength, &arraySize, &type, &nameData[0]);
-		  std::string name((char*)&nameData[0], actualLength);
+			GLint arraySize = 0;
+			GLenum type = 0;
+			GLsizei actualLength = 0;
+			glGetActiveUniform(shaderProgram_, unif, nameData.size(), &actualLength, &arraySize, &type, &nameData[0]);
+			std::string name((char*)&nameData[0], actualLength);
 		}
 	}
 	

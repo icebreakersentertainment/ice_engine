@@ -427,86 +427,16 @@ graphics::SkeletonHandle skeletonHandle;
 void GameEngine::test()
 {
 	cameraHandle_ = graphicsEngine_->createCamera(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-	
-	std::vector<glm::vec3> vertices;
-	
-	vertices.push_back( glm::vec3(0.5f,  0.5f, 0.0f) );
-	vertices.push_back( glm::vec3(0.5f, -0.5f, 0.0f) );
-	vertices.push_back( glm::vec3(-0.5f, -0.5f, 0.0f) );
-	vertices.push_back( glm::vec3(-0.5f,  0.5f, 0.0f) );
-	
-	std::vector<uint32> indices;
-	// First triangle
-	indices.push_back(0);
-	indices.push_back(1);
-	indices.push_back(3);
-	// Second triangle
-	indices.push_back(1);
-	indices.push_back(2);
-	indices.push_back(3);
-	
-	std::vector<glm::vec4> colors;
-	
-	colors.push_back( glm::vec4(1.0f, 0.0f, 0.0f, 1.0f) );
-	colors.push_back( glm::vec4(0.0f, 1.0f, 0.0f, 1.0f) );
-	colors.push_back( glm::vec4(0.0f, 0.0f, 1.0f, 1.0f) );
-	colors.push_back( glm::vec4(1.0f, 1.0f, 0.0f, 1.0f) );
-	
-	std::vector<glm::vec3> normals;
-	
-	normals.push_back( glm::vec3(0.5f,  0.5f, 0.0f) );
-	normals.push_back( glm::vec3(0.5f, -0.5f, 0.0f) );
-	normals.push_back( glm::vec3(-0.5f, -0.5f, 0.0f) );
-	normals.push_back( glm::vec3(-0.5f,  0.5f, 0.0f) );
-	
-	std::vector<glm::vec2> textureCoordinates;
-	
-	textureCoordinates.push_back( glm::vec2(1.0f, 1.0f) );
-	textureCoordinates.push_back( glm::vec2(1.0f, 0.0f) );
-	textureCoordinates.push_back( glm::vec2(0.0f, 0.0f) );
-	textureCoordinates.push_back( glm::vec2(0.0f, 1.0f) );
-	
-	/*
-	{
-		auto meshHandle = graphicsEngine_->createStaticMesh(vertices, indices, colors, normals, textureCoordinates);
-		auto textureHandle = graphicsEngine_->createTexture2d( std::string("../../assets/textures/ts_grass.jpg") );
-		
-		auto renderableHandle = graphicsEngine_->createRenderable(meshHandle, textureHandle);
-	}
-	*/
+
 	{
 		auto model = graphics::model::import(std::string("test_model"), std::string("../assets/models/scoutship/scoutship.dae"), logger_.get());
 		
-		std::cout << model.meshes.size() << " meshes." << std::endl;
-		
-		auto boneIds = std::vector< glm::ivec4 >();
-		auto boneWeights = std::vector< glm::vec4 >();
-		
-		auto vertexBoneData = model.meshes[0].bones;
-		
-		for ( const auto& bd : vertexBoneData )
-		{
-			boneIds.push_back( bd.boneIds );
-			boneWeights.push_back( bd.weights );
-		}
-		
-		auto meshHandle = graphicsEngine_->createAnimatedMesh(model.meshes[0].vertices, model.meshes[0].indices, model.meshes[0].colors, model.meshes[0].normals, model.meshes[0].textureCoordinates, boneIds, boneWeights);
-		std::cout << "Created animated mesh" << std::endl;
+		auto meshHandle = graphicsEngine_->createStaticMesh(model.meshes[0].vertices, model.meshes[0].indices, model.meshes[0].colors, model.meshes[0].normals, model.meshes[0].textureCoordinates);
 		auto textureHandle = graphicsEngine_->createTexture2d( std::string("../assets/models/scoutship/") + model.textures[0].filename );
-		std::cout << "Created texture" << std::endl;
 		auto renderableHandle = graphicsEngine_->createRenderable(meshHandle, textureHandle);
-		std::cout << "Created renderable" << std::endl;
+		
 		graphicsEngine_->scale(renderableHandle, 0.03f);
 		graphicsEngine_->translate(renderableHandle, 6.0f, -4.0f, 0);
-		
-		animations = model.animations;
-		rootBoneNode = model.rootBoneNode;
-		globalInverseTransformation = model.globalInverseTransformation;
-		boneData = model.boneData;
-		
-		skeletonHandle = graphicsEngine_->createSkeleton( 100 );
-		std::cout << "Created skeleton" << std::endl;
-		graphicsEngine_->assign(renderableHandle, skeletonHandle);
 	}
 }
 
@@ -1219,8 +1149,8 @@ void GameEngine::run()
 		graphicsEngine_->update(skeletonHandle, &transformations[0], 100 * sizeof(glm::mat4));
 		*/
 
-		transformations = std::vector< glm::mat4 >(100, glm::mat4(1.0));
-		graphicsEngine_->update(skeletonHandle, &transformations[0], 100 * sizeof(glm::mat4));
+		//transformations = std::vector< glm::mat4 >(100, glm::mat4(1.0));
+		//graphicsEngine_->update(skeletonHandle, &transformations[0], 100 * sizeof(glm::mat4));
 		
 		if ( retVal == -1 )
 		{
