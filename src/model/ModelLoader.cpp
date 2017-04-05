@@ -43,9 +43,14 @@ Mesh importMesh(const std::string& name, const std::string& filename, uint32 ind
 	
 	// Set the mesh name
 	if (mesh->mName.length > 0)
+	{
 		data.name = std::string( mesh->mName.C_Str() );
+	}
 	else
+	{
 		data.name = name + "_mesh_" + std::to_string(index);
+	}
+	
 	logger->debug( "mesh name: " + data.name );
 
 	if (mesh->mNormals == 0)
@@ -192,7 +197,9 @@ Material importMaterial(const std::string& name, const std::string& filename, ui
 	data.diffuse[2] = 0.8f;
 	data.diffuse[3] = 1.0f;
 	if ( AI_SUCCESS == aiGetMaterialColor(material, AI_MATKEY_COLOR_DIFFUSE, &c) )
+	{
 		utilities::color4ToVec4(&c, data.diffuse);
+	}
 
 	//utilities::setFloat4(c, 0.0f, 0.0f, 0.0f, 1.0f);
 	data.specular[0] = 0.0f;
@@ -200,7 +207,9 @@ Material importMaterial(const std::string& name, const std::string& filename, ui
 	data.specular[2] = 0.0f;
 	data.specular[3] = 1.0f;
 	if ( AI_SUCCESS == aiGetMaterialColor(material, AI_MATKEY_COLOR_SPECULAR, &c) )
+	{
 		utilities::color4ToVec4(&c, data.specular);
+	}
 
 	//utilities::setFloat4(c, 0.2f, 0.2f, 0.2f, 1.0f);
 	data.ambient[0] = 0.2f;
@@ -208,7 +217,9 @@ Material importMaterial(const std::string& name, const std::string& filename, ui
 	data.ambient[2] = 0.2f;
 	data.ambient[3] = 1.0f;
 	if ( AI_SUCCESS == aiGetMaterialColor(material, AI_MATKEY_COLOR_AMBIENT, &c) )
+	{
 		utilities::color4ToVec4(&c, data.ambient);
+	}
 
 	//utilities::setFloat4(c, 0.0f, 0.0f, 0.0f, 1.0f);
 	data.emission[0] = 0.0f;
@@ -216,7 +227,9 @@ Material importMaterial(const std::string& name, const std::string& filename, ui
 	data.emission[2] = 0.0f;
 	data.emission[3] = 1.0f;
 	if ( AI_SUCCESS == aiGetMaterialColor(material, AI_MATKEY_COLOR_EMISSIVE, &c) )
+	{
 		utilities::color4ToVec4(&c, data.emission);
+	}
 	
 	logger->debug( "done importing material." );
 	
@@ -237,17 +250,23 @@ BoneData importBones(const std::string& name, const std::string& filename, uint3
 		
 		// Set the bone name
 		if (mesh->mBones[i]->mName.length > 0)
+		{
 			data.name = std::string( mesh->mBones[i]->mName.C_Str() );
+		}
 		else
+		{
 			data.name = std::string( name ) + "_bone_" + std::to_string(index);
+		}
 		
 		logger->debug( "bone name: " + data.name );
 		
-		if (boneData.boneIndexMap.find(data.name) == boneData.boneIndexMap.end()) {
+		if (boneData.boneIndexMap.find(data.name) == boneData.boneIndexMap.end())
+		{
 			boneIndex = boneData.boneIndexMap.size();
 			boneData.boneTransform.push_back(data);
 		}
-		else {
+		else
+		{
 			boneIndex = boneData.boneIndexMap[data.name];
 		}
 
@@ -377,11 +396,11 @@ AnimationSet importAnimations(const std::string& name, const std::string& filena
 	return animationSet;
 }
 
-std::unique_ptr< Model > importModelData(const std::string& name, const std::string& filename, logger::ILogger* logger)
+Model importModelData(const std::string& name, const std::string& filename, logger::ILogger* logger)
 {
 	logger->debug( "Importing model data from file '" + filename + "'." );
 
-	auto model = std::unique_ptr< Model >( new Model() );
+	auto model = Model();
 
 	// We don't currently support aiProcess_JoinIdenticalVertices or aiProcess_FindInvalidData
 	// aiProcess_FindInvalidData - I think it's due to the reduction of animation tracks containing redundant keys..
@@ -405,23 +424,23 @@ std::unique_ptr< Model > importModelData(const std::string& name, const std::str
 	
 	try
 	{
-		model->meshes.resize( scene->mNumMeshes );
-		model->materials.resize( scene->mNumMeshes );
-		model->textures.resize( scene->mNumMeshes );
-		model->boneData.resize( scene->mNumMeshes );
+		model.meshes.resize( scene->mNumMeshes );
+		model.materials.resize( scene->mNumMeshes );
+		model.textures.resize( scene->mNumMeshes );
+		model.boneData.resize( scene->mNumMeshes );
 		
 		auto animationSet = importAnimations(name, filename, scene, logger);
 		
 		// Create bone structure (tree structure)
-		model->rootBoneNode = animationSet.rootBoneNode;
+		model.rootBoneNode = animationSet.rootBoneNode;
 		
 		// Set the global inverse transformation
-		model->globalInverseTransformation = animationSet.globalInverseTransformation;
+		model.globalInverseTransformation = animationSet.globalInverseTransformation;
 		
 		// Load the animation information
 		for ( auto& kv : animationSet.animations)
 		{
-			model->animations.push_back(kv.second);
+			model.animations.push_back(kv.second);
 			/*
 			// Create animated bone node information
 			auto animatedBoneNodes = std::map< std::string, AnimatedBoneNode >();
@@ -443,7 +462,7 @@ std::unique_ptr< Model > importModelData(const std::string& name, const std::str
 			
 			assert(animation != nullptr);
 			
-			model->animations.push_back(animation);
+			model.animations.push_back(animation);
 			
 			// TODO: add animations properly (i.e. with names specifying the animation i guess?)
 			//std::cout << "anim: " << animation->getName() << std::endl;
@@ -451,26 +470,26 @@ std::unique_ptr< Model > importModelData(const std::string& name, const std::str
 		}
 		
 		std::stringstream msg;
-		msg << "Model has " << model->meshes.size() << " meshes.";
+		msg << "Model has " << model.meshes.size() << " meshes.";
 		logger->debug( msg.str() );
 		
-		for ( uint32 i=0; i < model->meshes.size(); i++ )
+		for ( uint32 i=0; i < model.meshes.size(); i++ )
 		{
-			model->meshes[i] = Mesh();
-			model->materials[i] = Material();
-			model->textures[i] = Texture();
-			model->boneData[i] = BoneData();
+			model.meshes[i] = Mesh();
+			model.materials[i] = Material();
+			model.textures[i] = Texture();
+			model.boneData[i] = BoneData();
 			
-			model->boneData[i] = importBones( name, filename, i, scene->mMeshes[i], logger );
-			model->meshes[i] = importMesh( name, filename, i, scene->mMeshes[i], model->boneData[i].boneIndexMap, logger );
-			model->materials[i] = importMaterial( name, filename, i, scene->mMaterials[ scene->mMeshes[i]->mMaterialIndex ], logger );
-			model->textures[i] = importTexture( name, filename, i, scene->mMaterials[ scene->mMeshes[i]->mMaterialIndex ], logger );
+			model.boneData[i] = importBones( name, filename, i, scene->mMeshes[i], logger );
+			model.meshes[i] = importMesh( name, filename, i, scene->mMeshes[i], model.boneData[i].boneIndexMap, logger );
+			model.materials[i] = importMaterial( name, filename, i, scene->mMaterials[ scene->mMeshes[i]->mMaterialIndex ], logger );
+			model.textures[i] = importTexture( name, filename, i, scene->mMaterials[ scene->mMeshes[i]->mMaterialIndex ], logger );
 		}
 		
 		bool hasTextures = false;
-		for ( uint32 i=0; i < model->meshes.size(); i++ )
+		for ( uint32 i=0; i < model.meshes.size(); i++ )
 		{
-			if (model->textures[i].filename != std::string(""))
+			if (model.textures[i].filename != std::string(""))
 			{
 				hasTextures = true;
 				break;
@@ -499,11 +518,11 @@ std::unique_ptr< Model > importModelData(const std::string& name, const std::str
 
 }
 
-std::unique_ptr<Model> load(const std::string& name, const std::string& filename, logger::ILogger* logger)
+Model load(const std::string& name, const std::string& filename, logger::ILogger* logger)
 {
 	logger->debug( "Loading model '" + name + "' - " + filename + "." );
 	
-	std::unique_ptr<Model> model;
+	auto model = Model();
 	
 	//model = loadModelData(name, filename);
 
@@ -512,7 +531,7 @@ std::unique_ptr<Model> load(const std::string& name, const std::string& filename
 	return std::move(model);
 }
 
-std::unique_ptr<Model> import(const std::string& name, const std::string& filename, logger::ILogger* logger)
+Model import(const std::string& name, const std::string& filename, logger::ILogger* logger)
 {
 	logger->debug( "Importing model '" + name + "' - " + filename + "." );
 	
@@ -525,7 +544,7 @@ std::unique_ptr<Model> import(const std::string& name, const std::string& filena
 	aiAttachLogStream(&stream);
 #endif
 
-	std::unique_ptr<Model> model;
+	auto model = Model();
 	try
 	{
 		model = importModelData(name, filename, logger);
@@ -554,7 +573,7 @@ std::unique_ptr<Model> import(const std::string& name, const std::string& filena
 	return std::move(model);
 }
 
-void save(const std::string& name, const std::string& filename, std::unique_ptr<Model> model, logger::ILogger* logger)
+void save(const std::string& name, const std::string& filename, const Model& model, logger::ILogger* logger)
 {
 	/*
 	logger->debug( "Saving model '" + name + "' - " + filename + "." );

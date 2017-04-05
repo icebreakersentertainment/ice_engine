@@ -4,8 +4,10 @@
 #include "scripting/angel_script/ScriptingEngine.hpp"
 
 #define AS_USE_STLNAMES = 1
+#include "scripting/angel_script/scripthelper/scripthelper.h"
 #include "scripting/angel_script/scriptstdstring/scriptstdstring.h"
 //#include "scripting/angel_script/glm_bindings/Vec3.h"
+#include "scripting/angel_script/scriptvector/scriptvector.hpp"
 #include "scripting/angel_script/scriptglm/scriptglm.hpp"
 
 #include "exceptions/Exception.hpp"
@@ -133,7 +135,21 @@ void ScriptingEngine::initialize()
 	 */
 	RegisterStdString(engine_);
 	
+	RegisterVectorBindings<int8>(engine_, "vectorInt8", "int8");
+	RegisterVectorBindings<uint8>(engine_, "vectorUInt8", "uint8");
+	RegisterVectorBindings<int16>(engine_, "vectorInt16", "int16");
+	RegisterVectorBindings<uint16>(engine_, "vectorUInt16", "uint16");
+	RegisterVectorBindings<int>(engine_, "vectorInt", "int");
+	RegisterVectorBindings<int32>(engine_, "vectorInt32", "int32");
+	RegisterVectorBindings<uint32>(engine_, "vectorUInt32", "uint32");
+	RegisterVectorBindings<int64>(engine_, "vectorInt64", "int64");
+	RegisterVectorBindings<uint64>(engine_, "vectorUInt64", "uint64");
+	RegisterVectorBindings<float32>(engine_, "vectorFloat", "float");
+	RegisterVectorBindings<float64>(engine_, "vectorDouble", "double");
+	
 	RegisterGlmBindings(engine_);
+	
+	RegisterVectorBindings<glm::vec3>(engine_, "vectorVec3", "vec3");
 	
 	/* The CScriptBuilder helper is an add-on that does the loading/processing
 	 * of a script file
@@ -262,6 +278,9 @@ void ScriptingEngine::setArguments(asIScriptContext* context, ParameterList& arg
 	            break;
 	           
 	        case ParameterType::TYPE_OBJECT_REF:
+				r = context->SetArgAddress(i, arguments[i].pointer());
+	            break;
+	            
 	        case ParameterType::TYPE_OBJECT_VAL:
 				r = context->SetArgObject(i, arguments[i].pointer());
 	            break;
@@ -281,6 +300,8 @@ void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptModule* m
 	
 	auto func = getFunctionByDecl(function, module);
 	
+	assert(func->GetParamCount() == 0);
+	
 	int32 r = context->Prepare(func);
 	assertNoAngelscriptError(r);
 	
@@ -297,7 +318,8 @@ void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptModule* m
 		{
 			// An exception occurred, let the script writer know what happened so it can be corrected.
 			msg = std::string("An exception occurred: ");
-			msg += std::string(context->GetExceptionString());
+			msg += GetExceptionInfo(context, true);
+			//msg += std::string(context->GetExceptionString());
 			throw Exception("ScriptEngine: " + msg);
 		}
 		
@@ -310,6 +332,8 @@ void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptModule* m
 	logger_->debug( "Preparing function: " + function);
 	
 	auto func = getFunctionByDecl(function, module);
+	
+	assert(func->GetParamCount() == parameters_.size());
 	
 	int32 r = context->Prepare(func);
 	assertNoAngelscriptError(r);
@@ -329,7 +353,8 @@ void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptModule* m
 		{
 			// An exception occurred, let the script writer know what happened so it can be corrected.
 			msg = std::string("An exception occurred: ");
-			msg += std::string(context->GetExceptionString());
+			msg += GetExceptionInfo(context, true);
+			//msg += std::string(context->GetExceptionString());
 			throw Exception("ScriptEngine: " + msg);
 		}
 		
@@ -1004,6 +1029,28 @@ void ScriptingEngine::registerObjectType(const std::string& obj, int32 byteSize,
 	}
 }
 
+void ScriptingEngine::registerObjectProperty(const std::string& obj, const std::string& declaration, int32 byteOffset)
+{
+	int32 r = engine_->RegisterObjectProperty(obj.c_str(), declaration.c_str(), byteOffset);
+	
+	if (r < 0)
+	{
+		std::string msg = std::string();
+
+		if ( obj.length() > 80 )
+		{
+			msg = std::string("Unable to register the object property: (cannot display 'obj' name; it is too long!)");
+		}
+		else
+		{
+			msg = std::string("Unable to register the object property: ");
+			msg += obj;
+		}
+		
+		throw Exception("ScriptEngine: " + msg);
+	}
+}
+
 void ScriptingEngine::registerObjectMethod(const std::string& obj, const std::string& declaration,
 									  const asSFuncPtr& funcPointer, asDWORD callConv)
 {
@@ -1262,7 +1309,8 @@ void ScriptingEngine::run()
 		{
 			// An exception occurred, let the script writer know what happened so it can be corrected.
 			msg = std::string("An exception occurred: ");
-			msg += std::string(ctx_->GetExceptionString());
+			msg += GetExceptionInfo(ctx_, true);
+			//msg += std::string(ctx_->GetExceptionString());
 			throw Exception("ScriptEngine: " + msg);
 		}
 		

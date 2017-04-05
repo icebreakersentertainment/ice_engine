@@ -11,6 +11,8 @@
 
 #include "graphics/IGraphicsEngine.hpp"
 
+#include "model/Model.hpp"
+
 #include "entities/Entity.hpp"
 #include "entities/GraphicsComponent.hpp"
 
@@ -54,6 +56,9 @@ public:
 	virtual void setPosition(const entities::Entity entity, const float32 x, const float32 y, const float32 z) = 0;
 	
 	virtual void setBootstrapScript(const std::string& filename) = 0;
+	
+	virtual model::Model importModel(const std::string& filename, const std::string& name = std::string()) const = 0;
+	virtual graphics::ModelHandle loadModel(const model::Model& model) = 0;
 };
 
 }

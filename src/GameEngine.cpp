@@ -249,23 +249,48 @@ void GameEngine::initializeScriptingSubSystem()
 	scriptingEngine_ = scripting::ScriptingFactory::createScriptingEngine( properties_.get(), fileSystem_.get(), logger_.get() );
 	
 	// Types available in the scripting engine
-	scriptingEngine_->registerObjectType(std::string("Entity"), sizeof(entities::Entity), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<entities::Entity>());
-	scriptingEngine_->registerClassMethod(std::string("Entity"), std::string("uint64 getId() const"), asMETHODPR(entities::Entity, getId, () const, uint64));
+	scriptingEngine_->registerObjectType("Entity", sizeof(entities::Entity), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<entities::Entity>());
+	scriptingEngine_->registerClassMethod("Entity", "uint64 getId() const", asMETHODPR(entities::Entity, getId, () const, uint64));
 	
-	scriptingEngine_->registerObjectType(std::string("GraphicsComponent"), sizeof(entities::GraphicsComponent), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<entities::GraphicsComponent>());
+	scriptingEngine_->registerObjectType("ModelHandle", sizeof(graphics::ModelHandle), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<graphics::ModelHandle>());
+	scriptingEngine_->registerClassMethod("ModelHandle", "int32 getId() const", asMETHODPR(graphics::ModelHandle, getId, () const, int32));
+	
+	scriptingEngine_->registerObjectType("GraphicsComponent", sizeof(entities::GraphicsComponent), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<entities::GraphicsComponent>());
 	//scriptingEngine_->registerClassMethod(std::string("GraphicsComponent"), std::string("uint64 getId() const"), asMETHODPR(entities::GraphicsComponent, getId, () const, uint64));
+	
+	// Register Model/Mesh/etc
+	//RegisterVectorBindings<glm::vec3>(engine_, "vectorVec3", "vec3");
+	//scriptingEngine_->registerObjectType("Mesh", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	//scriptingEngine_->registerObjectProperty("Mesh", "vectorMVec3 vertices", asOFFSET(model::Mesh, vertices));
+	//scriptingEngine_->registerObjectType("Model", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	scriptingEngine_->registerObjectType("Model", sizeof(model::Model), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<model::Model>());
+	//scriptingEngine_->registerObjectProperty("Model", "vectorMesh meshes", asOFFSET(model::Model, meshes));
 	
 	// IGameEngine functions available in the scripting engine
 	scriptingEngine_->registerGlobalFunction(
-		std::string("Entity createEntity()"),
+		"Entity createEntity()",
 		asMETHODPR(IGameEngine, createEntity, (), entities::Entity),
 		asCALL_THISCALL_ASGLOBAL,
 		this
 	);
 	
 	scriptingEngine_->registerGlobalFunction(
-		std::string("void assign(const Entity, const GraphicsComponent& in)"),
+		"void assign(const Entity, const GraphicsComponent& in)",
 		asMETHODPR(IGameEngine, assign, (const entities::Entity, const entities::GraphicsComponent&), void),
+		asCALL_THISCALL_ASGLOBAL,
+		this
+	);
+	
+	scriptingEngine_->registerGlobalFunction(
+		"Model importModel(const string& in, const string& in)",
+		asMETHODPR(IGameEngine, importModel, (const std::string&, const std::string&) const, model::Model),
+		asCALL_THISCALL_ASGLOBAL,
+		this
+	);
+	
+	scriptingEngine_->registerGlobalFunction(
+		"ModelHandle loadModel(const Model& in)",
+		asMETHODPR(IGameEngine, loadModel, (const model::Model&), graphics::ModelHandle),
 		asCALL_THISCALL_ASGLOBAL,
 		this
 	);
@@ -452,12 +477,12 @@ void GameEngine::test()
 	{
 		auto model = model::import(std::string("test_model"), std::string("../assets/models/scoutship/scoutship.dae"), logger_.get());
 		
-		std::cout << model->meshes.size() << " meshes." << std::endl;
+		std::cout << model.meshes.size() << " meshes." << std::endl;
 		
 		auto boneIds = std::vector< glm::ivec4 >();
 		auto boneWeights = std::vector< glm::vec4 >();
 		
-		auto vertexBoneData = model->meshes[0].bones;
+		auto vertexBoneData = model.meshes[0].bones;
 		
 		for ( const auto& bd : vertexBoneData )
 		{
@@ -465,19 +490,19 @@ void GameEngine::test()
 			boneWeights.push_back( bd.weights );
 		}
 		
-		auto meshHandle = graphicsEngine_->createAnimatedMesh(model->meshes[0].vertices, model->meshes[0].indices, model->meshes[0].colors, model->meshes[0].normals, model->meshes[0].textureCoordinates, boneIds, boneWeights);
+		auto meshHandle = graphicsEngine_->createAnimatedMesh(model.meshes[0].vertices, model.meshes[0].indices, model.meshes[0].colors, model.meshes[0].normals, model.meshes[0].textureCoordinates, boneIds, boneWeights);
 		std::cout << "Created animated mesh" << std::endl;
-		auto textureHandle = graphicsEngine_->createTexture2d( std::string("../assets/models/scoutship/") + model->textures[0].filename );
+		auto textureHandle = graphicsEngine_->createTexture2d( std::string("../assets/models/scoutship/") + model.textures[0].filename );
 		std::cout << "Created texture" << std::endl;
 		auto renderableHandle = graphicsEngine_->createRenderable(meshHandle, textureHandle);
 		std::cout << "Created renderable" << std::endl;
 		graphicsEngine_->scale(renderableHandle, 0.03f);
 		graphicsEngine_->translate(renderableHandle, 6.0f, -4.0f, 0);
 		
-		animations = model->animations;
-		rootBoneNode = model->rootBoneNode;
-		globalInverseTransformation = model->globalInverseTransformation;
-		boneData = model->boneData;
+		animations = model.animations;
+		rootBoneNode = model.rootBoneNode;
+		globalInverseTransformation = model.globalInverseTransformation;
+		boneData = model.boneData;
 		
 		skeletonHandle = graphicsEngine_->createSkeleton( 100 );
 		std::cout << "Created skeleton" << std::endl;
@@ -822,6 +847,40 @@ void GameEngine::setBootstrapScript(const std::string& filename)
 	
 	mainAsScript_->callMethod( std::string("void initialize()") );
 	*/
+}
+
+model::Model GameEngine::importModel(const std::string& filename, const std::string& name) const
+{
+	if (!fileSystem_->exists(filename))
+	{
+		throw std::runtime_error("Model file '" + filename + "' does not exist.");
+	}
+	
+	auto model = model::import(name, filename, logger_.get());
+	
+	return std::move(model);
+}
+
+graphics::ModelHandle GameEngine::loadModel(const model::Model& model)
+{
+	//auto meshHandle = graphicsEngine_->createStaticMesh(model.meshes[0].vertices, model.meshes[0].indices, model.meshes[0].colors, model.meshes[0].normals, model.meshes[0].textureCoordinates);
+	//auto textureHandle = graphicsEngine_->createTexture2d( std::string("../assets/models/scoutship/") + model.textures[0].filename );
+	//auto modelInstanceHandle = graphicsEngine_->createModelInstance(meshHandle, textureHandle);
+	/*
+	graphicsEngine_->scale(renderableHandle, 0.03f);
+	graphicsEngine_->translate(renderableHandle, 6.0f, -4.0f, 0);
+	
+	animations = model.animations;
+	rootBoneNode = model.rootBoneNode;
+	globalInverseTransformation = model.globalInverseTransformation;
+	boneData = model.boneData;
+	
+	skeletonHandle = graphicsEngine_->createSkeleton( 100 );
+	
+	graphicsEngine_->assign(renderableHandle, skeletonHandle);
+	*/
+	
+	return graphics::ModelHandle();
 }
 
 void GameEngine::handleEvents()
