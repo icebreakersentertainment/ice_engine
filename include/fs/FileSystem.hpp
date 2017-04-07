@@ -20,6 +20,11 @@ public:
 	
 	virtual void makeDirectory(const std::string& directoryName) const override;
 	
+	virtual std::string getBasePath(const std::string& filename) const override;
+	virtual std::string getDirectorySeperator() const override;
+	virtual std::string getFilename(const std::string& filename) const override;
+	virtual std::string getFilenameWithoutExtension(const std::string& filename) const override;
+	
 	virtual std::string readAll(const std::string& file, const bool isBinary = false) const override;
 	
 	virtual std::unique_ptr<IFile> open(const std::string& file, int32 flags) const override;

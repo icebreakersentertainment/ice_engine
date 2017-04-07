@@ -25,6 +25,7 @@
 #include "graphics/model/Texture.hpp"
 #include "graphics/model/Material.hpp"
 
+#include "utilities/ImageLoader.hpp"
 #include "utilities/AssImpUtilities.hpp"
 
 namespace hercules
@@ -37,7 +38,7 @@ namespace model
 namespace
 {
 
-Mesh importMesh(const std::string& name, const std::string& filename, uint32 index, const aiMesh* mesh, std::map< std::string, uint32 >& boneIndexMap, logger::ILogger* logger)
+Mesh importMesh(const std::string& name, const std::string& filename, uint32 index, const aiMesh* mesh, std::map< std::string, uint32 >& boneIndexMap, logger::ILogger* logger, fs::IFileSystem* fileSystem)
 {
 	Mesh data = Mesh();
 	
@@ -135,7 +136,7 @@ Mesh importMesh(const std::string& name, const std::string& filename, uint32 ind
 	return data;
 }
 
-Texture importTexture(const std::string& name, const std::string& filename, uint32 index, const aiMaterial* material, logger::ILogger* logger)
+Texture importTexture(const std::string& name, const std::string& filename, uint32 index, const aiMaterial* material, logger::ILogger* logger, fs::IFileSystem* fileSystem)
 {
 	assert( material != nullptr );
 	
@@ -157,10 +158,20 @@ Texture importTexture(const std::string& name, const std::string& filename, uint
 			return data;
 		}
 
-		logger->debug( std::string("Texture has filename: ") + texPath.data );
+		auto basePath = fileSystem->getBasePath(filename);
+		auto fullPath = basePath + fileSystem->getDirectorySeperator() + texPath.data;
 		
-		data.filename = texPath.data;
+		logger->debug( std::string("Texture has filename: ") + fullPath );
 		
+		if (!fileSystem->exists(fullPath))
+		{
+			throw std::runtime_error("Texture with filename '" + fullPath + "' does not exist.");
+		}
+		
+		data.filename = fullPath;
+		
+		auto il = utilities::ImageLoader(logger);
+		data.image = il.loadImageData(fullPath);
 	}
 	else
 	{
@@ -180,7 +191,7 @@ glm::mat4 convertAssImpMatrix(const aiMatrix4x4* m)
 	);
 }
 
-Material importMaterial(const std::string& name, const std::string& filename, uint32 index, const aiMaterial* material, logger::ILogger* logger)
+Material importMaterial(const std::string& name, const std::string& filename, uint32 index, const aiMaterial* material, logger::ILogger* logger, fs::IFileSystem* fileSystem)
 {	
 	assert( material != nullptr );
 		
@@ -238,7 +249,7 @@ Material importMaterial(const std::string& name, const std::string& filename, ui
 	return data;
 }
 
-BoneData importBones(const std::string& name, const std::string& filename, uint32 index, const aiMesh* mesh, logger::ILogger* logger)
+BoneData importBones(const std::string& name, const std::string& filename, uint32 index, const aiMesh* mesh, logger::ILogger* logger, fs::IFileSystem* fileSystem)
 {
 	assert( mesh != nullptr );
 	
@@ -295,7 +306,7 @@ BoneNode importBoneNode( const aiNode* node )
 	return boneNode;
 }
 
-AnimationSet importAnimations(const std::string& name, const std::string& filename, const aiScene* scene, logger::ILogger* logger)
+AnimationSet importAnimations(const std::string& name, const std::string& filename, const aiScene* scene, logger::ILogger* logger, fs::IFileSystem* fileSystem)
 {
 	assert( scene != nullptr );
 	
@@ -398,7 +409,7 @@ AnimationSet importAnimations(const std::string& name, const std::string& filena
 	return animationSet;
 }
 
-Model importModelData(const std::string& name, const std::string& filename, logger::ILogger* logger)
+Model importModelData(const std::string& name, const std::string& filename, logger::ILogger* logger, fs::IFileSystem* fileSystem)
 {
 	logger->debug( "Importing model data from file '" + filename + "'." );
 
@@ -431,7 +442,7 @@ Model importModelData(const std::string& name, const std::string& filename, logg
 		model.textures.resize( scene->mNumMeshes );
 		model.boneData.resize( scene->mNumMeshes );
 		
-		auto animationSet = importAnimations(name, filename, scene, logger);
+		auto animationSet = importAnimations(name, filename, scene, logger, fileSystem);
 		
 		// Create bone structure (tree structure)
 		model.rootBoneNode = animationSet.rootBoneNode;
@@ -482,10 +493,10 @@ Model importModelData(const std::string& name, const std::string& filename, logg
 			model.textures[i] = Texture();
 			model.boneData[i] = BoneData();
 			
-			model.boneData[i] = importBones( name, filename, i, scene->mMeshes[i], logger );
-			model.meshes[i] = importMesh( name, filename, i, scene->mMeshes[i], model.boneData[i].boneIndexMap, logger );
-			model.materials[i] = importMaterial( name, filename, i, scene->mMaterials[ scene->mMeshes[i]->mMaterialIndex ], logger );
-			model.textures[i] = importTexture( name, filename, i, scene->mMaterials[ scene->mMeshes[i]->mMaterialIndex ], logger );
+			model.boneData[i] = importBones( name, filename, i, scene->mMeshes[i], logger, fileSystem );
+			model.meshes[i] = importMesh( name, filename, i, scene->mMeshes[i], model.boneData[i].boneIndexMap, logger, fileSystem );
+			model.materials[i] = importMaterial( name, filename, i, scene->mMaterials[ scene->mMeshes[i]->mMaterialIndex ], logger, fileSystem );
+			model.textures[i] = importTexture( name, filename, i, scene->mMaterials[ scene->mMeshes[i]->mMaterialIndex ], logger, fileSystem );
 		}
 		
 		bool hasTextures = false;
@@ -520,8 +531,10 @@ Model importModelData(const std::string& name, const std::string& filename, logg
 
 }
 
-Model load(const std::string& name, const std::string& filename, logger::ILogger* logger)
+Model load(const std::string& filename, logger::ILogger* logger, fs::IFileSystem* fileSystem)
 {
+	auto name = fileSystem->getFilenameWithoutExtension(filename);
+	
 	logger->debug( "Loading model '" + name + "' - " + filename + "." );
 	
 	auto model = Model();
@@ -533,8 +546,10 @@ Model load(const std::string& name, const std::string& filename, logger::ILogger
 	return std::move(model);
 }
 
-Model import(const std::string& name, const std::string& filename, logger::ILogger* logger)
+Model import(const std::string& filename, logger::ILogger* logger, fs::IFileSystem* fileSystem)
 {
+	auto name = fileSystem->getFilenameWithoutExtension(filename);
+	
 	logger->debug( "Importing model '" + name + "' - " + filename + "." );
 	
 	// get a handle to the predefined STDOUT log stream and attach
@@ -545,11 +560,11 @@ Model import(const std::string& name, const std::string& filename, logger::ILogg
 	aiLogStream stream = aiGetPredefinedLogStream(aiDefaultLogStream_STDOUT, nullptr);
 	aiAttachLogStream(&stream);
 #endif
-
+	
 	auto model = Model();
 	try
 	{
-		model = importModelData(name, filename, logger);
+		model = importModelData(name, filename, logger, fileSystem);
 
 		logger->debug( "Done importing model '" + name + "'." );
 	}
@@ -575,7 +590,7 @@ Model import(const std::string& name, const std::string& filename, logger::ILogg
 	return std::move(model);
 }
 
-void save(const std::string& name, const std::string& filename, const Model& model, logger::ILogger* logger)
+void save(const std::string& filename, const Model& model, logger::ILogger* logger, fs::IFileSystem* fileSystem)
 {
 	/*
 	logger->debug( "Saving model '" + name + "' - " + filename + "." );

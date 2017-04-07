@@ -26,6 +26,11 @@ public:
 	
 	virtual void makeDirectory(const std::string& directoryName) const = 0;
 	
+	virtual std::string getBasePath(const std::string& filename) const = 0;
+	virtual std::string getDirectorySeperator() const = 0;
+	virtual std::string getFilename(const std::string& filename) const = 0;
+	virtual std::string getFilenameWithoutExtension(const std::string& filename) const = 0;
+	
 	virtual std::string readAll(const std::string& file, const bool isBinary = false) const = 0;
 	
 	virtual std::unique_ptr<IFile> open(const std::string& file, int32 flags) const = 0;

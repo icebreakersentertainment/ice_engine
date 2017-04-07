@@ -112,35 +112,35 @@ public:
 	
 	virtual SkeletonHandle createSkeleton(const uint32 numberOfBones) override;
 	
-	virtual TextureHandle createTexture2d(const std::string& uri) override;
+	virtual TextureHandle createTexture2d(const utilities::Image& image) override;
 	
-	virtual RenderableHandle createRenderable(const MeshHandle meshHandle, const TextureHandle textureHandle) override;
+	virtual RenderableHandle createRenderable(const MeshHandle& meshHandle, const TextureHandle& textureHandle) override;
 	
-	virtual void rotate(const CameraHandle cameraHandle, const glm::quat& quaternion, const TransformSpace& relativeTo = TransformSpace::TS_LOCAL) override;
-	virtual void rotate(const RenderableHandle renderableHandle, const glm::quat& quaternion, const TransformSpace& relativeTo = TransformSpace::TS_LOCAL) override;
-	virtual void rotate(const CameraHandle cameraHandle, const float32 degrees, const glm::vec3& axis, const TransformSpace& relativeTo = TransformSpace::TS_LOCAL) override;
-	virtual void rotate(const RenderableHandle renderableHandle, const float32 degrees, const glm::vec3& axis, const TransformSpace& relativeTo = TransformSpace::TS_LOCAL) override;
+	virtual void rotate(const CameraHandle& cameraHandle, const glm::quat& quaternion, const TransformSpace& relativeTo = TransformSpace::TS_LOCAL) override;
+	virtual void rotate(const RenderableHandle& renderableHandle, const glm::quat& quaternion, const TransformSpace& relativeTo = TransformSpace::TS_LOCAL) override;
+	virtual void rotate(const CameraHandle& cameraHandle, const float32 degrees, const glm::vec3& axis, const TransformSpace& relativeTo = TransformSpace::TS_LOCAL) override;
+	virtual void rotate(const RenderableHandle& renderableHandle, const float32 degrees, const glm::vec3& axis, const TransformSpace& relativeTo = TransformSpace::TS_LOCAL) override;
 	
-	virtual void translate(const CameraHandle cameraHandle, const float32 x, const float32 y, const float32 z) override;
-	virtual void translate(const RenderableHandle renderableHandle, const float32 x, const float32 y, const float32 z) override;
-	virtual void translate(const CameraHandle cameraHandle, const glm::vec3& trans) override;
-	virtual void translate(const RenderableHandle renderableHandle, const glm::vec3& trans) override;
+	virtual void translate(const CameraHandle& cameraHandle, const float32 x, const float32 y, const float32 z) override;
+	virtual void translate(const RenderableHandle& renderableHandle, const float32 x, const float32 y, const float32 z) override;
+	virtual void translate(const CameraHandle& cameraHandle, const glm::vec3& trans) override;
+	virtual void translate(const RenderableHandle& renderableHandle, const glm::vec3& trans) override;
 	
-	virtual void scale(const RenderableHandle renderableHandle, const float32 x, const float32 y, const float32 z) override;
-	virtual void scale(const RenderableHandle renderableHandle, const glm::vec3& scale) override;
-	virtual void scale(const RenderableHandle renderableHandle, const float32 scale) override;
+	virtual void scale(const RenderableHandle& renderableHandle, const float32 x, const float32 y, const float32 z) override;
+	virtual void scale(const RenderableHandle& renderableHandle, const glm::vec3& scale) override;
+	virtual void scale(const RenderableHandle& renderableHandle, const float32 scale) override;
 	
-	virtual void position(const RenderableHandle renderableHandle, const float32 x, const float32 y, const float32 z) override;
-	virtual void position(const CameraHandle cameraHandle, const float32 x, const float32 y, const float32 z) override;
-	virtual void position(const RenderableHandle renderableHandle, const glm::vec3& position) override;
-	virtual void position(const CameraHandle cameraHandle, const glm::vec3& position) override;
+	virtual void position(const RenderableHandle& renderableHandle, const float32 x, const float32 y, const float32 z) override;
+	virtual void position(const CameraHandle& cameraHandle, const float32 x, const float32 y, const float32 z) override;
+	virtual void position(const RenderableHandle& renderableHandle, const glm::vec3& position) override;
+	virtual void position(const CameraHandle& cameraHandle, const glm::vec3& position) override;
 	
-	virtual void lookAt(const RenderableHandle renderableHandle, const glm::vec3& lookAt) override;
-	virtual void lookAt(const CameraHandle cameraHandle, const glm::vec3& lookAt) override;
+	virtual void lookAt(const RenderableHandle& renderableHandle, const glm::vec3& lookAt) override;
+	virtual void lookAt(const CameraHandle& cameraHandle, const glm::vec3& lookAt) override;
 	
-	virtual void assign(const RenderableHandle renderableHandle, const SkeletonHandle skeletonHandle) override;
+	virtual void assign(const RenderableHandle& renderableHandle, const SkeletonHandle& skeletonHandle) override;
 	
-	virtual void update(const SkeletonHandle skeletonHandle, const void* data, const uint32 size) override;
+	virtual void update(const SkeletonHandle& skeletonHandle, const void* data, const uint32 size) override;
 	
 	virtual void setMouseRelativeMode(const bool enabled) override;
 	virtual void setCursorVisible(const bool visible) override;

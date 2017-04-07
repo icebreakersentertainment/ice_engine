@@ -3,6 +3,8 @@
 
 #include <string>
 
+#include "utilities/Image.hpp"
+
 //#include "glw/TextureSettings.hpp"
 //#include "graphics/model/VertexBoneData.hpp"
 
@@ -16,6 +18,7 @@ namespace model
 struct Texture
 {
 	std::string filename;
+	utilities::Image image;
 	//glw::TextureSettings settings;
 };
 

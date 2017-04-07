@@ -6,7 +6,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 
-#include "graphics/ModelHandle.hpp"
+#include "graphics/RenderableHandle.hpp"
 
 #include "Types.hpp"
 
@@ -21,28 +21,28 @@ struct GraphicsComponent
 		glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f),
 		glm::vec3 lookAt = glm::vec3(0.0f, 0.0f, 0.0f),
 		glm::vec3 scale = glm::vec3(1.0f, 1.0f, 1.0f),
-		graphics::ModelHandle modelHandle = graphics::ModelHandle::INVALID
+		graphics::RenderableHandle renderableHandle = graphics::RenderableHandle::INVALID
 	)
-		: position(position), scale(scale), modelHandle(modelHandle)
+		: position(position), scale(scale), renderableHandle(renderableHandle)
 	{
 		const glm::mat4 lookAtMatrix = glm::lookAt(position, lookAt, glm::vec3(0.0f, 1.0f, 0.0f));
 		orientation =  glm::normalize( orientation * glm::quat_cast( lookAtMatrix ) );
 	};
 	
 	GraphicsComponent(
-		glm::vec3 position = glm::vec3(0.0f, 0.0f, 0.0f),
-		glm::quat orientation = glm::quat(),
+		glm::vec3 position,
+		glm::quat orientation,
 		glm::vec3 scale = glm::vec3(1.0f, 1.0f, 1.0f),
-		graphics::ModelHandle modelHandle = graphics::ModelHandle::INVALID
+		graphics::RenderableHandle renderableHandle = graphics::RenderableHandle::INVALID
 	)
-		: position(position), orientation(orientation), scale(scale), modelHandle(modelHandle)
+		: position(position), orientation(orientation), scale(scale), renderableHandle(renderableHandle)
 	{
 	};
 	
 	glm::vec3 position;
 	glm::vec3 scale;
 	glm::quat orientation;
-	graphics::ModelHandle modelHandle;
+	graphics::RenderableHandle renderableHandle;
 };
 
 }

@@ -5,71 +5,14 @@
 
 #include <FreeImage.h>
 
-#include <GL/glew.h>
-
 #include "logger/ILogger.hpp"
+
+#include "utilities/Image.hpp"
 
 namespace hercules
 {
 namespace utilities
 {
-
-enum Format
-{
-	FORMAT_UNKNOWN = -1,
-	FORMAT_RGB,
-	FORMAT_RGBA
-};
-
-struct Image
-{
-	Image()
-	{
-		data = std::vector<char>();
-		width = 0;
-		height = 0;
-		format = Format::FORMAT_UNKNOWN;
-	}
-	
-	Image(const Image& image)
-	{
-		data = image.data;
-		width = image.width;
-		height = image.height;
-		format = image.format;
-	}
-	
-	std::vector<char> data;
-	int width;
-	int height;
-	Format format;
-};
-
-/**
- * Will return the OpenGL compatible format of the given image Format 'format'.
- * 
- * If no known compatible OpenGL format is found, FORMAT_UNKNOWN is returned.
- * 
- * @param format
- * 
- * @return The OpenGL compatible format of the given image Format 'format', or FORMAT_UNKNOWN if no known compatible OpenGL format is found.
- */
-inline GLint getOpenGlImageFormat( Format format )
-{
-	switch (format)
-	{
-		case Format::FORMAT_RGB:
-			return GL_RGB;
-		
-		case Format::FORMAT_RGBA:
-			return GL_RGBA;
-
-		case Format::FORMAT_UNKNOWN:
-			return (GLint)FORMAT_UNKNOWN;
-	}
-	
-	return (GLint)FORMAT_UNKNOWN;
-}
 
 class ImageLoader
 {
@@ -82,12 +25,12 @@ public:
 	{
 	};
 
-	std::unique_ptr<Image> loadImageData(const std::string filename, bool hasAlpha = true)
+	Image loadImageData(const std::string filename, bool hasAlpha = true)
 	{
 		return loadImageData(filename.c_str());
 	};
 
-	std::unique_ptr<Image> loadImageData(const char* filename, bool hasAlpha = true)
+	Image loadImageData(const char* filename, bool hasAlpha = true)
 	{
 		logger_->debug( "Loading image." );
 		FREE_IMAGE_FORMAT format = FreeImage_GetFileType(filename, 0);
@@ -123,7 +66,7 @@ public:
 
 		char* pixels = (char*) FreeImage_GetBits(imageBitmap);
 
-		auto retImage = std::unique_ptr<Image>();
+		auto retImage = Image();
 		
 		if ( pixels != nullptr )
 		{
@@ -139,24 +82,26 @@ public:
 				pixels[j * pixelSize + 0] = swap;
 			}
 
-			retImage = std::unique_ptr<Image>(new Image());
-			
 			int imageBytesLength = pixelSize * w * h;
 			
 			// Transfer raw data into a vector
-			retImage->data = std::vector<char>(pixels, pixels+imageBytesLength);
+			retImage.data = std::vector<char>(pixels, pixels+imageBytesLength);
 			
-			retImage->width = w;
-			retImage->height = h;
+			retImage.width = w;
+			retImage.height = h;
 			if (hasAlpha)
-				retImage->format = FORMAT_RGBA;
+			{
+				retImage.format = FORMAT_RGBA;
+			}
 			else
-				retImage->format = FORMAT_RGB;
+			{
+				retImage.format = FORMAT_RGB;
+			}
 		}
 		
 		FreeImage_Unload(imageBitmap);
 
-		return retImage;
+		return std::move(retImage);
 	};
 
 private:
@@ -164,7 +109,6 @@ private:
 };
 
 }
-
 }
 
 #endif /* IMAGELOADER_H_ */

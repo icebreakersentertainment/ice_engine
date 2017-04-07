@@ -1,6 +1,8 @@
 #ifndef GAMEENGINE_H_
 #define GAMEENGINE_H_
 
+#include <vector>
+#include <tuple>
 #include <memory>
 
 #include <entityx/entityx.h>
@@ -45,24 +47,26 @@ public:
 
 	virtual entities::Entity createEntity() override;
 	
-	virtual void assign(const entities::Entity entity, const entities::GraphicsComponent& component) override;
+	virtual void assign(const entities::Entity& entity, const entities::GraphicsComponent& component) override;
 	
-	virtual void rotate(const entities::Entity entity, const float32 degrees, const glm::vec3& axis, const graphics::TransformSpace& relativeTo = graphics::TransformSpace::TS_LOCAL) override;
-	virtual void translate(const entities::Entity entity, const glm::vec3& translate) override;
-	virtual void setScale(const entities::Entity entity, const glm::vec3& scale) override;
-	virtual void setScale(const entities::Entity entity, const float32 x, const float32 y, const float32 z) override;
-	virtual void lookAt(const entities::Entity entity, const glm::vec3& lookAt) override;
+	virtual void rotate(const entities::Entity& entity, const float32 degrees, const glm::vec3& axis, const graphics::TransformSpace& relativeTo = graphics::TransformSpace::TS_LOCAL) override;
+	virtual void translate(const entities::Entity& entity, const glm::vec3& translate) override;
+	virtual void scale(const entities::Entity& entity, const float32 scale) override;
+	virtual void scale(const entities::Entity& entity, const glm::vec3& scale) override;
+	virtual void scale(const entities::Entity& entity, const float32 x, const float32 y, const float32 z) override;
+	virtual void lookAt(const entities::Entity& entity, const glm::vec3& lookAt) override;
 	
-	virtual void setPosition(const entities::Entity entity, const glm::vec3& position) override;
-	virtual void setPosition(const entities::Entity entity, const float32 x, const float32 y, const float32 z) override;
+	virtual void position(const entities::Entity& entity, const glm::vec3& position) override;
+	virtual void position(const entities::Entity& entity, const float32 x, const float32 y, const float32 z) override;
 	
 	/**
 	 * 
 	 */
 	virtual void setBootstrapScript(const std::string& filename) override;
 	
-	virtual graphics::model::Model importModel(const std::string& filename, const std::string& name = std::string()) const override;
-	virtual graphics::ModelHandle loadModel(const graphics::model::Model& model) override;
+	virtual graphics::model::Model importModel(const std::string& filename) const override;
+	virtual ModelHandle loadStaticModel(const graphics::model::Model& model) override;
+	virtual graphics::RenderableHandle createRenderable(const ModelHandle& modelHandle, const std::string& name = std::string()) override;
 	
 	// Implements the IEventListener interface
 	virtual bool processEvent(const graphics::Event& event) override;
@@ -160,6 +164,8 @@ private:
 	std::vector<entities::Entity> entities_;
 	
 	static uint32 COMPONENT_TYPE_GRAPHICS;
+	
+	std::vector<std::tuple<graphics::MeshHandle, graphics::TextureHandle>> staticModels_;
 	
 	// testing
 	std::unique_ptr<ThreadPool> threadPool_;

@@ -15,6 +15,8 @@
 #include "SkeletonHandle.hpp"
 #include "CameraHandle.hpp"
 
+#include "model/Model.hpp"
+
 namespace hercules
 {
 namespace graphics
@@ -65,35 +67,35 @@ public:
 	
 	virtual SkeletonHandle createSkeleton(const uint32 numberOfBones) = 0;
 	
-	virtual TextureHandle createTexture2d(const std::string& uri) = 0;
+	virtual TextureHandle createTexture2d(const utilities::Image& image) = 0;
 	
-	virtual RenderableHandle createRenderable(const MeshHandle meshHandle, const TextureHandle textureHandle) = 0;
+	virtual RenderableHandle createRenderable(const MeshHandle& meshHandle, const TextureHandle& textureHandle) = 0;
 	
-	virtual void rotate(const CameraHandle cameraHandle, const glm::quat& quaternion, const TransformSpace& relativeTo = TransformSpace::TS_LOCAL) = 0;
-	virtual void rotate(const RenderableHandle renderableHandle, const glm::quat& quaternion, const TransformSpace& relativeTo = TransformSpace::TS_LOCAL) = 0;
-	virtual void rotate(const CameraHandle cameraHandle, const float32 degrees, const glm::vec3& axis, const TransformSpace& relativeTo = TransformSpace::TS_LOCAL) = 0;
-	virtual void rotate(const RenderableHandle renderableHandle, const float32 degrees, const glm::vec3& axis, const TransformSpace& relativeTo = TransformSpace::TS_LOCAL) = 0;
+	virtual void rotate(const CameraHandle& cameraHandle, const glm::quat& quaternion, const TransformSpace& relativeTo = TransformSpace::TS_LOCAL) = 0;
+	virtual void rotate(const RenderableHandle& renderableHandle, const glm::quat& quaternion, const TransformSpace& relativeTo = TransformSpace::TS_LOCAL) = 0;
+	virtual void rotate(const CameraHandle& cameraHandle, const float32 degrees, const glm::vec3& axis, const TransformSpace& relativeTo = TransformSpace::TS_LOCAL) = 0;
+	virtual void rotate(const RenderableHandle& renderableHandle, const float32 degrees, const glm::vec3& axis, const TransformSpace& relativeTo = TransformSpace::TS_LOCAL) = 0;
 	
-	virtual void translate(const CameraHandle cameraHandle, const float32 x, const float32 y, const float32 z) = 0;
-	virtual void translate(const RenderableHandle renderableHandle, const float32 x, const float32 y, const float32 z) = 0;
-	virtual void translate(const CameraHandle cameraHandle, const glm::vec3& trans) = 0;
-	virtual void translate(const RenderableHandle renderableHandle, const glm::vec3& trans) = 0;
+	virtual void translate(const CameraHandle& cameraHandle, const float32 x, const float32 y, const float32 z) = 0;
+	virtual void translate(const RenderableHandle& renderableHandle, const float32 x, const float32 y, const float32 z) = 0;
+	virtual void translate(const CameraHandle& cameraHandle, const glm::vec3& trans) = 0;
+	virtual void translate(const RenderableHandle& renderableHandle, const glm::vec3& trans) = 0;
 	
-	virtual void scale(const RenderableHandle renderableHandle, const float32 x, const float32 y, const float32 z) = 0;
-	virtual void scale(const RenderableHandle renderableHandle, const glm::vec3& scale) = 0;
-	virtual void scale(const RenderableHandle renderableHandle, const float32 scale) = 0;
+	virtual void scale(const RenderableHandle& renderableHandle, const float32 x, const float32 y, const float32 z) = 0;
+	virtual void scale(const RenderableHandle& renderableHandle, const glm::vec3& scale) = 0;
+	virtual void scale(const RenderableHandle& renderableHandle, const float32 scale) = 0;
 	
-	virtual void position(const RenderableHandle renderableHandle, const float32 x, const float32 y, const float32 z) = 0;
-	virtual void position(const CameraHandle cameraHandle, const float32 x, const float32 y, const float32 z) = 0;
-	virtual void position(const RenderableHandle renderableHandle, const glm::vec3& position) = 0;
-	virtual void position(const CameraHandle cameraHandle, const glm::vec3& position) = 0;
+	virtual void position(const RenderableHandle& renderableHandle, const float32 x, const float32 y, const float32 z) = 0;
+	virtual void position(const CameraHandle& cameraHandle, const float32 x, const float32 y, const float32 z) = 0;
+	virtual void position(const RenderableHandle& renderableHandle, const glm::vec3& position) = 0;
+	virtual void position(const CameraHandle& cameraHandle, const glm::vec3& position) = 0;
 	
-	virtual void lookAt(const RenderableHandle renderableHandle, const glm::vec3& lookAt) = 0;
-	virtual void lookAt(const CameraHandle cameraHandle, const glm::vec3& lookAt) = 0;
+	virtual void lookAt(const RenderableHandle& renderableHandle, const glm::vec3& lookAt) = 0;
+	virtual void lookAt(const CameraHandle& cameraHandle, const glm::vec3& lookAt) = 0;
 	
-	virtual void assign(const RenderableHandle renderableHandle, const SkeletonHandle skeletonHandle) = 0;
+	virtual void assign(const RenderableHandle& renderableHandle, const SkeletonHandle& skeletonHandle) = 0;
 	
-	virtual void update(const SkeletonHandle skeletonHandle, const void* data, const uint32 size) = 0;
+	virtual void update(const SkeletonHandle& skeletonHandle, const void* data, const uint32 size) = 0;
 	
 	virtual void setMouseRelativeMode(const bool enabled) = 0;
 	virtual void setCursorVisible(const bool visible) = 0;

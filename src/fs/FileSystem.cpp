@@ -61,6 +61,29 @@ void FileSystem::makeDirectory(const std::string& directoryName) const
 	boost::filesystem::create_directory(path);
 }
 
+std::string FileSystem::getBasePath(const std::string& filename) const
+{
+	auto path = boost::filesystem::path(filename);
+	return path.parent_path().string();
+}
+
+std::string FileSystem::getDirectorySeperator() const
+{
+	return std::string(1, boost::filesystem::path::preferred_separator);
+}
+
+std::string FileSystem::getFilename(const std::string& filename) const
+{
+	auto path = boost::filesystem::path(filename);
+	return path.filename().string();
+}
+
+std::string FileSystem::getFilenameWithoutExtension(const std::string& filename) const
+{
+	auto path = boost::filesystem::path(filename);
+	return path.stem().string();
+}
+
 std::string FileSystem::readAll(const std::string& file, const bool isBinary) const
 {
 	int32 flags = FileFlags::READ;
