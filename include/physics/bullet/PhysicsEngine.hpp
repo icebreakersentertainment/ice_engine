@@ -7,6 +7,8 @@
 #include <bullet/btBulletDynamicsCommon.h>
 
 #include "physics/IPhysicsEngine.hpp"
+#include "physics/CollisionShapeHandle.hpp"
+#include "physics/bullet/BulletMotionState.hpp"
 
 #include "utilities/Properties.hpp"
 #include "fs/IFileSystem.hpp"
@@ -25,9 +27,10 @@ public:
 	PhysicsEngine(utilities::Properties* properties, fs::IFileSystem* fileSystem, logger::ILogger* logger);
 	virtual ~PhysicsEngine();
 	
-	virtual void tick(float32 delta) override;
+	virtual void tick(const float32 delta) override;
 	
-	virtual ICollisionShape* createStaticPlane(const glm::vec3& planeNormal, float32 planeConstant) override;
+	virtual CollisionShapeHandle createStaticPlane(const glm::vec3& planeNormal, const float32 planeConstant, entities::Entity entity, IGameEngine* gameEngine) override;
+	virtual CollisionShapeHandle createBoxShape(const glm::vec3& dimensions, entities::Entity entity, IGameEngine* gameEngine) override;
 
 private:
 	PhysicsEngine(const PhysicsEngine& other);
@@ -42,7 +45,8 @@ private:
 	std::unique_ptr<btSequentialImpulseConstraintSolver> solver_;
 	std::unique_ptr<btDiscreteDynamicsWorld> dynamicsWorld_;
 	
-	std::vector< std::unique_ptr<ICollisionShape> > shapes_;
+	std::vector<btRigidBody*> rigidBodies_;
+	std::vector<BulletMotionState*> bulletMotionStates_;
 };
 
 }

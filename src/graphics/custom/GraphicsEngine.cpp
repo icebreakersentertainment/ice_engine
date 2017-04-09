@@ -530,6 +530,34 @@ void GraphicsEngine::rotate(const RenderableHandle& renderableHandle, const floa
 	}
 }
 
+void GraphicsEngine::rotation(const CameraHandle& cameraHandle, const glm::quat& quaternion)
+{
+	camera_.orientation = glm::normalize( quaternion );
+}
+
+void GraphicsEngine::rotation(const RenderableHandle& renderableHandle, const glm::quat& quaternion)
+{
+	const auto id = renderableHandle.getId();
+	
+	auto& graphicsData = graphicsData_[id];
+
+	graphicsData.orientation = glm::normalize( quaternion );
+}
+
+void GraphicsEngine::rotation(const CameraHandle& cameraHandle, const float32 degrees, const glm::vec3& axis)
+{
+	camera_.orientation = glm::normalize( glm::angleAxis(glm::radians(degrees), axis) );
+}
+
+void GraphicsEngine::rotation(const RenderableHandle& renderableHandle, const float32 degrees, const glm::vec3& axis)
+{
+	const auto id = renderableHandle.getId();
+	
+	auto& graphicsData = graphicsData_[id];
+	
+	graphicsData.orientation = glm::normalize( glm::angleAxis(glm::radians(degrees), axis) );
+}
+
 void GraphicsEngine::translate(const CameraHandle& cameraHandle, const float32 x, const float32 y, const float32 z)
 {
 	camera_.position += glm::vec3(x, y, z);

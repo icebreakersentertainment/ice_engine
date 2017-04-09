@@ -76,6 +76,11 @@ public:
 	virtual void rotate(const CameraHandle& cameraHandle, const float32 degrees, const glm::vec3& axis, const TransformSpace& relativeTo = TransformSpace::TS_LOCAL) = 0;
 	virtual void rotate(const RenderableHandle& renderableHandle, const float32 degrees, const glm::vec3& axis, const TransformSpace& relativeTo = TransformSpace::TS_LOCAL) = 0;
 	
+	virtual void rotation(const CameraHandle& cameraHandle, const glm::quat& quaternion) = 0;
+	virtual void rotation(const RenderableHandle& renderableHandle, const glm::quat& quaternion) = 0;
+	virtual void rotation(const CameraHandle& cameraHandle, const float32 degrees, const glm::vec3& axis) = 0;
+	virtual void rotation(const RenderableHandle& renderableHandle, const float32 degrees, const glm::vec3& axis) = 0;
+	
 	virtual void translate(const CameraHandle& cameraHandle, const float32 x, const float32 y, const float32 z) = 0;
 	virtual void translate(const RenderableHandle& renderableHandle, const float32 x, const float32 y, const float32 z) = 0;
 	virtual void translate(const CameraHandle& cameraHandle, const glm::vec3& trans) = 0;

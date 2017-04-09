@@ -6,7 +6,9 @@
 
 #include "Types.hpp"
 
-#include "ICollisionShape.hpp"
+#include "physics/CollisionShapeHandle.hpp"
+#include "entities/Entity.hpp"
+#include "IGameEngine.hpp"
 
 namespace hercules
 {
@@ -21,9 +23,10 @@ public:
 	}
 	;
 	
-	virtual void tick(float32 delta) = 0;
+	virtual void tick(const float32 delta) = 0;
 	
-	virtual ICollisionShape* createStaticPlane(const glm::vec3& planeNormal, float32 planeConstant) = 0;
+	virtual CollisionShapeHandle createStaticPlane(const glm::vec3& planeNormal, const float32 planeConstant, entities::Entity entity, IGameEngine* gameEngine) = 0;
+	virtual CollisionShapeHandle createBoxShape(const glm::vec3& dimensions, entities::Entity entity, IGameEngine* gameEngine) = 0;
 };
 
 }

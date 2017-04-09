@@ -1,6 +1,7 @@
 #include <iostream>
 #include <sstream>
 #include <utility>
+#include <chrono>
 
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
@@ -23,6 +24,7 @@
 
 #include "logger/Logger.hpp"
 #include "fs/FileSystem.hpp"
+#include "utilities/ImageLoader.hpp"
 
 namespace hercules
 {
@@ -451,22 +453,96 @@ glm::mat4 globalInverseTransformation;
 graphics::SkeletonHandle skeletonHandle;
 void GameEngine::test()
 {
-	cameraHandle_ = graphicsEngine_->createCamera(glm::vec3(0.0f, 0.0f, 3.0f), glm::vec3(0.0f, 0.0f, 0.0f));
-
+	cameraHandle_ = graphicsEngine_->createCamera(glm::vec3(0.0f, 0.0f, 0.5f), glm::vec3(0.0f, 0.0f, 0.0f));
+	
 	{
+		std::vector<glm::vec3> vertices;
+		
 		/*
+		vertices.push_back( glm::vec3(0.5f, 0.0f, 0.5f) );
+		vertices.push_back( glm::vec3(0.5f, 0.0f, -0.5f) );
+		vertices.push_back( glm::vec3(-0.5f, 0.0f, -0.5f) );
+		vertices.push_back( glm::vec3(-0.5f, 0.0f, 0.5f) );
+		*/
+		
+		vertices.push_back( glm::vec3(0.5f,  0.5f, 0.0f) );
+		vertices.push_back( glm::vec3(0.5f, -0.5f, 0.0f) );
+		vertices.push_back( glm::vec3(-0.5f, -0.5f, 0.0f) );
+		vertices.push_back( glm::vec3(-0.5f,  0.5f, 0.0f) );
+		
+		std::vector<uint32> indices;
+		// First triangle
+		indices.push_back(0);
+		indices.push_back(1);
+		indices.push_back(3);
+		// Second triangle
+		indices.push_back(1);
+		indices.push_back(2);
+		indices.push_back(3);
+		
+		std::vector<glm::vec4> colors;
+		
+		colors.push_back( glm::vec4(1.0f, 0.0f, 0.0f, 1.0f) );
+		colors.push_back( glm::vec4(0.0f, 1.0f, 0.0f, 1.0f) );
+		colors.push_back( glm::vec4(0.0f, 0.0f, 1.0f, 1.0f) );
+		colors.push_back( glm::vec4(1.0f, 1.0f, 0.0f, 1.0f) );
+		
+		std::vector<glm::vec3> normals;
+		
+		normals.push_back( glm::vec3(0.5f,  0.5f, 0.0f) );
+		normals.push_back( glm::vec3(0.5f, -0.5f, 0.0f) );
+		normals.push_back( glm::vec3(-0.5f, -0.5f, 0.0f) );
+		normals.push_back( glm::vec3(-0.5f,  0.5f, 0.0f) );
+		
+		std::vector<glm::vec2> textureCoordinates;
+		
+		textureCoordinates.push_back( glm::vec2(1.0f, 1.0f) );
+		textureCoordinates.push_back( glm::vec2(1.0f, 0.0f) );
+		textureCoordinates.push_back( glm::vec2(0.0f, 0.0f) );
+		textureCoordinates.push_back( glm::vec2(0.0f, 1.0f) );
+		
+		auto il = utilities::ImageLoader(logger_.get());
+		auto image = il.loadImageData("../assets/models/scoutship/ship1_glass.jpg");
+		
+		auto meshHandle = graphicsEngine_->createStaticMesh(vertices, indices, colors, normals, textureCoordinates);
+		auto textureHandle = graphicsEngine_->createTexture2d(image);
+		auto renderableHandle = graphicsEngine_->createRenderable(meshHandle, textureHandle);
+		
+		auto e = createEntity();
+		
+		auto collisionShapeHandle = physicsEngine_->createStaticPlane(glm::vec3(0.0f, 1.0f, 0.0f), 1.0f, e, this);
+		
+		entities::GraphicsComponent gc;
+		gc.renderableHandle = renderableHandle;
+		entities::PhysicsComponent pc;
+		pc.collisionShapeHandle = collisionShapeHandle;
+		assign(e, gc);
+		assign(e, pc);
+		
+		scale(e, 20.0f);
+		rotate(e, -90.0f, glm::vec3(1.0f, 0.0f, 0.0f));
+		translate(e, glm::vec3(0.0f, -6.0f, 0.0f));
+	}
+	
+	{
 		auto model = importModel("../assets/models/scoutship/scoutship.dae");
 		
 		auto modelHandle = loadStaticModel(model);
 		
 		auto e = createEntity();
+		
+		auto collisionShapeHandle = physicsEngine_->createBoxShape(glm::vec3(1.0f, 1.0f, 1.0f), e, this);
+		
 		entities::GraphicsComponent gc;
 		gc.renderableHandle = createRenderable(modelHandle);
+		entities::PhysicsComponent pc;
+		pc.collisionShapeHandle = collisionShapeHandle;
 		assign(e, gc);
+		assign(e, pc);
 		
-		scale(e, 0.03f);
-		translate(e, glm::vec3(6.0f, -4.0f, 0));
-		*/
+		scale(e, 0.002f);
+		translate(e, glm::vec3(1.0f, 0.0f, 1.0f));
+		
 		//graphicsEngine_->scale(renderableHandle, 0.03f);
 		//graphicsEngine_->translate(renderableHandle, 6.0f, -4.0f, 0);
 	}
@@ -720,6 +796,12 @@ void GameEngine::assign(const entities::Entity& entity, const entities::Graphics
 	logger_->debug( "Assigning graphics component to entity with id: " + std::to_string(entity.getId()) );
 	entityx_.entities.assign<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()), std::forward<const entities::GraphicsComponent>(component));
 }
+
+void GameEngine::assign(const entities::Entity& entity, const entities::PhysicsComponent& component)
+{
+	logger_->debug( "Assigning physics component to entity with id: " + std::to_string(entity.getId()) );
+	entityx_.entities.assign<entities::PhysicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()), std::forward<const entities::PhysicsComponent>(component));
+}
 	
 void GameEngine::rotate(const entities::Entity& entity, const float32 degrees, const glm::vec3& axis, const graphics::TransformSpace& relativeTo)
 {
@@ -740,6 +822,53 @@ void GameEngine::rotate(const entities::Entity& entity, const float32 degrees, c
 		default:
 			throw std::runtime_error(std::string("Invalid TransformSpace type."));
 	}
+	
+	graphicsEngine_->rotate(component->renderableHandle, degrees, axis, relativeTo);
+}
+	
+void GameEngine::rotate(const entities::Entity& entity, const glm::quat& orientation, const graphics::TransformSpace& relativeTo)
+{
+	logger_->debug( "Rotating entity with id: " + std::to_string(entity.getId()) );
+	
+	auto component = entityx_.entities.component<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
+	
+	switch( relativeTo )
+	{
+		case graphics::TransformSpace::TS_LOCAL:
+			component->orientation = component->orientation * glm::normalize( orientation );
+			break;
+		
+		case graphics::TransformSpace::TS_WORLD:
+			component->orientation =  glm::normalize( orientation ) * component->orientation;
+			break;
+			
+		default:
+			throw std::runtime_error(std::string("Invalid TransformSpace type."));
+	}
+	
+	graphicsEngine_->rotate(component->renderableHandle, orientation, relativeTo);
+}
+
+void GameEngine::rotation(const entities::Entity& entity, const float32 degrees, const glm::vec3& axis)
+{
+	logger_->debug( "Setting rotation for entity with id: " + std::to_string(entity.getId()) );
+	
+	auto component = entityx_.entities.component<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
+	
+	component->orientation = glm::normalize( glm::angleAxis(glm::radians(degrees), axis) );
+	
+	graphicsEngine_->rotation(component->renderableHandle, degrees, axis);
+}
+
+void GameEngine::rotation(const entities::Entity& entity, const glm::quat& orientation)
+{
+	logger_->debug( "Setting rotation for entity with id: " + std::to_string(entity.getId()) );
+	
+	auto component = entityx_.entities.component<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
+	
+	component->orientation = glm::normalize( orientation );
+	
+	graphicsEngine_->rotation(component->renderableHandle, orientation);
 }
 
 void GameEngine::translate(const entities::Entity& entity, const glm::vec3& translate)
@@ -748,6 +877,8 @@ void GameEngine::translate(const entities::Entity& entity, const glm::vec3& tran
 	
 	auto component = entityx_.entities.component<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
 	component->position += translate;
+	
+	graphicsEngine_->translate(component->renderableHandle, translate);
 }
 
 void GameEngine::scale(const entities::Entity& entity, const float32 scale)
@@ -756,6 +887,8 @@ void GameEngine::scale(const entities::Entity& entity, const float32 scale)
 	
 	auto component = entityx_.entities.component<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
 	component->scale = glm::vec3(scale, scale, scale);
+	
+	graphicsEngine_->scale(component->renderableHandle, scale);
 }
 
 void GameEngine::scale(const entities::Entity& entity, const glm::vec3& scale)
@@ -764,6 +897,8 @@ void GameEngine::scale(const entities::Entity& entity, const glm::vec3& scale)
 	
 	auto component = entityx_.entities.component<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
 	component->scale = scale;
+	
+	graphicsEngine_->scale(component->renderableHandle, scale);
 }
 
 void GameEngine::scale(const entities::Entity& entity, const float32 x, const float32 y, const float32 z)
@@ -772,6 +907,8 @@ void GameEngine::scale(const entities::Entity& entity, const float32 x, const fl
 	
 	auto component = entityx_.entities.component<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
 	component->scale = glm::vec3(x, y, z);
+	
+	graphicsEngine_->scale(component->renderableHandle, x, y, z);
 }
 
 void GameEngine::lookAt(const entities::Entity& entity, const glm::vec3& lookAt)
@@ -782,6 +919,8 @@ void GameEngine::lookAt(const entities::Entity& entity, const glm::vec3& lookAt)
 	
 	const glm::mat4 lookAtMatrix = glm::lookAt(component->position, lookAt, glm::vec3(0.0f, 1.0f, 0.0f));
 	component->orientation =  glm::normalize( component->orientation * glm::quat_cast( lookAtMatrix ) );
+	
+	graphicsEngine_->lookAt(component->renderableHandle, lookAt);
 }
 
 void GameEngine::position(const entities::Entity& entity, const glm::vec3& position)
@@ -790,6 +929,8 @@ void GameEngine::position(const entities::Entity& entity, const glm::vec3& posit
 	
 	auto component = entityx_.entities.component<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
 	component->position = position;
+	
+	graphicsEngine_->position(component->renderableHandle, position);
 }
 
 void GameEngine::position(const entities::Entity& entity, const float32 x, const float32 y, const float32 z)
@@ -798,6 +939,8 @@ void GameEngine::position(const entities::Entity& entity, const float32 x, const
 	
 	auto component = entityx_.entities.component<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
 	component->position = glm::vec3(x, y, z);
+	
+	graphicsEngine_->position(component->renderableHandle, x, y, z);
 }
 
 void GameEngine::setBootstrapScript(const std::string& filename)
@@ -1007,7 +1150,14 @@ void GameEngine::run()
 	test();
 	
 	logger_->info( "We have liftoff..." );
+	
 	// start our clock
+	auto begin = std::chrono::high_resolution_clock::now();
+	auto end = std::chrono::high_resolution_clock::now();
+	auto previousFpsTime = begin;
+	float32 tempFps = 0.0f;
+	float32 deltaTime = 0.0f;
+	
 	/*
 	sf::Clock clock;
 
@@ -1027,6 +1177,11 @@ void GameEngine::run()
 	
 	while ( running_ )
 	{
+		begin = std::chrono::high_resolution_clock::now();
+		deltaTime = std::chrono::duration<float32>(begin - end).count();
+		
+		//std::cout << "deltaTime: " << deltaTime << std::endl;
+		
 		switch ( state_ )
 		{
 			case GAME_STATE_MAIN_MENU:
@@ -1037,12 +1192,26 @@ void GameEngine::run()
 	
 				handleEvents();
 				
+				tempFps++;
+				
+				if (std::chrono::duration<float32>(begin - previousFpsTime).count() > 1.0f)
+				{
+					previousFpsTime = begin;
+					currentFps_ = tempFps;
+					//std::cout << "currentFps_: " << currentFps_ << std::endl;
+					tempFps = 0;
+				}
+				
+				physicsEngine_->tick(deltaTime);
+				
 				/*
 				if ( sf::Keyboard::isKeyPressed(sf::Keyboard::N))
 				{
 					setState(GAME_STATE_START_NEW_GAME);
 				}
 				*/
+				
+				end = begin;
 				break;
 			
 			case GAME_STATE_START_NEW_GAME:

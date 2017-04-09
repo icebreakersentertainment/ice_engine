@@ -3,7 +3,7 @@
 
 #include <memory>
 
-#include "IPhysicsEngine.hpp"
+#include "physics/IPhysicsEngine.hpp"
 
 #include "utilities/Properties.hpp"
 #include "fs/IFileSystem.hpp"
