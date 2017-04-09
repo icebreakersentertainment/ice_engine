@@ -1,6 +1,8 @@
 #include <iostream>
 #include <sstream>
 #include <utility>
+#include <functional>
+#include <algorithm>
 #include <chrono>
 
 #define GLM_FORCE_RADIANS
@@ -10,13 +12,13 @@
 #include <glm/gtx/string_cast.hpp>
 
 #include "GameEngine.hpp"
+#include "Scene.hpp"
 
 #include "Constants.hpp"
 
 #include "graphics/model/ModelLoader.hpp"
 #include "graphics/model/Animate.hpp"
 
-#include "physics/PhysicsFactory.hpp"
 #include "graphics/GraphicsFactory.hpp"
 #include "scripting/ScriptingFactory.hpp"
 
@@ -188,9 +190,6 @@ void GameEngine::initializeSoundSubSystem()
 
 void GameEngine::initializePhysicsSubSystem()
 {
-	logger_->info( "initialize physics." );
-	
-	physicsEngine_ = physics::PhysicsFactory::createPhysicsEngine( properties_.get(), fileSystem_.get(), logger_.get() );
 }
 
 void GameEngine::initializeGraphicsSubSystem()
@@ -272,24 +271,30 @@ void GameEngine::initializeScriptingSubSystem()
 	scriptingEngine_->registerObjectType("Model", sizeof(graphics::model::Model), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<graphics::model::Model>());
 	//scriptingEngine_->registerObjectProperty("Model", "vectorMesh meshes", asOFFSET(graphics::model::Model, meshes));
 	
-	// IGameEngine functions available in the scripting engine
-	scriptingEngine_->registerGlobalFunction(
-		"Entity createEntity()",
-		asMETHODPR(IGameEngine, createEntity, (), entities::Entity),
-		asCALL_THISCALL_ASGLOBAL,
-		this
+	// IScene
+	scriptingEngine_->registerObjectType("IScene", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	scriptingEngine_->registerClassMethod("IScene", "string getName() const", asMETHODPR(IScene, getName, () const, std::string));
+	scriptingEngine_->registerClassMethod("IScene", "Entity createEntity()", asMETHODPR(IScene, createEntity, (), entities::Entity));
+	scriptingEngine_->registerClassMethod(
+		"IScene",
+		"void assign(const Entity& in, const GraphicsComponent& in)", 
+		asMETHODPR(IScene, assign, (const entities::Entity&, const entities::GraphicsComponent&), void)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IScene",
+		"void scale(const Entity& in, const float)",
+		asMETHODPR(IScene, scale, (const entities::Entity&, const float32), void)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IScene",
+		"void translate(const Entity& in, const vec3& in)",
+		asMETHODPR(IScene, translate, (const entities::Entity&, const glm::vec3&), void)
 	);
 	
+	// IGameEngine functions available in the scripting engine
 	scriptingEngine_->registerGlobalFunction(
 		"RenderableHandle createRenderable(const ModelHandle& in, const string& in = string())",
 		asMETHODPR(IGameEngine, createRenderable, (const ModelHandle&, const std::string&), graphics::RenderableHandle),
-		asCALL_THISCALL_ASGLOBAL,
-		this
-	);
-	
-	scriptingEngine_->registerGlobalFunction(
-		"void assign(const Entity& in, const GraphicsComponent& in)",
-		asMETHODPR(IGameEngine, assign, (const entities::Entity&, const entities::GraphicsComponent&), void),
 		asCALL_THISCALL_ASGLOBAL,
 		this
 	);
@@ -309,15 +314,15 @@ void GameEngine::initializeScriptingSubSystem()
 	);
 	
 	scriptingEngine_->registerGlobalFunction(
-		"void scale(const Entity& in, const float)",
-		asMETHODPR(IGameEngine, scale, (const entities::Entity&, const float32), void),
+		"IScene@ createScene(const string& in)",
+		asMETHODPR(IGameEngine, createScene, (const std::string&), IScene*),
 		asCALL_THISCALL_ASGLOBAL,
 		this
 	);
 	
 	scriptingEngine_->registerGlobalFunction(
-		"void translate(const Entity& in, const vec3& in)",
-		asMETHODPR(IGameEngine, translate, (const entities::Entity&, const glm::vec3&), void),
+		"IScene@ getScene(const string& in)",
+		asMETHODPR(IGameEngine, getScene, (const std::string&) const, IScene*),
 		asCALL_THISCALL_ASGLOBAL,
 		this
 	);
@@ -441,7 +446,7 @@ void GameEngine::initializeDataStoreSubSystem()
 
 void GameEngine::initializeEntitySubSystem()
 {
-	logger_->info( "Load entity system..." );
+	//logger_->info( "Load entity system..." );
 	//entityEvents_ = entityx::ptr<entityx::EventManager>(new entityx::EventManager());
 	//entities_ = entityx::ptr<entityx::EntityManager>(new entityx::EntityManager(entityEvents_));
 }
@@ -454,98 +459,6 @@ graphics::SkeletonHandle skeletonHandle;
 void GameEngine::test()
 {
 	cameraHandle_ = graphicsEngine_->createCamera(glm::vec3(0.0f, 0.0f, 0.5f), glm::vec3(0.0f, 0.0f, 0.0f));
-	
-	{
-		std::vector<glm::vec3> vertices;
-		
-		/*
-		vertices.push_back( glm::vec3(0.5f, 0.0f, 0.5f) );
-		vertices.push_back( glm::vec3(0.5f, 0.0f, -0.5f) );
-		vertices.push_back( glm::vec3(-0.5f, 0.0f, -0.5f) );
-		vertices.push_back( glm::vec3(-0.5f, 0.0f, 0.5f) );
-		*/
-		
-		vertices.push_back( glm::vec3(0.5f,  0.5f, 0.0f) );
-		vertices.push_back( glm::vec3(0.5f, -0.5f, 0.0f) );
-		vertices.push_back( glm::vec3(-0.5f, -0.5f, 0.0f) );
-		vertices.push_back( glm::vec3(-0.5f,  0.5f, 0.0f) );
-		
-		std::vector<uint32> indices;
-		// First triangle
-		indices.push_back(0);
-		indices.push_back(1);
-		indices.push_back(3);
-		// Second triangle
-		indices.push_back(1);
-		indices.push_back(2);
-		indices.push_back(3);
-		
-		std::vector<glm::vec4> colors;
-		
-		colors.push_back( glm::vec4(1.0f, 0.0f, 0.0f, 1.0f) );
-		colors.push_back( glm::vec4(0.0f, 1.0f, 0.0f, 1.0f) );
-		colors.push_back( glm::vec4(0.0f, 0.0f, 1.0f, 1.0f) );
-		colors.push_back( glm::vec4(1.0f, 1.0f, 0.0f, 1.0f) );
-		
-		std::vector<glm::vec3> normals;
-		
-		normals.push_back( glm::vec3(0.5f,  0.5f, 0.0f) );
-		normals.push_back( glm::vec3(0.5f, -0.5f, 0.0f) );
-		normals.push_back( glm::vec3(-0.5f, -0.5f, 0.0f) );
-		normals.push_back( glm::vec3(-0.5f,  0.5f, 0.0f) );
-		
-		std::vector<glm::vec2> textureCoordinates;
-		
-		textureCoordinates.push_back( glm::vec2(1.0f, 1.0f) );
-		textureCoordinates.push_back( glm::vec2(1.0f, 0.0f) );
-		textureCoordinates.push_back( glm::vec2(0.0f, 0.0f) );
-		textureCoordinates.push_back( glm::vec2(0.0f, 1.0f) );
-		
-		auto il = utilities::ImageLoader(logger_.get());
-		auto image = il.loadImageData("../assets/models/scoutship/ship1_glass.jpg");
-		
-		auto meshHandle = graphicsEngine_->createStaticMesh(vertices, indices, colors, normals, textureCoordinates);
-		auto textureHandle = graphicsEngine_->createTexture2d(image);
-		auto renderableHandle = graphicsEngine_->createRenderable(meshHandle, textureHandle);
-		
-		auto e = createEntity();
-		
-		auto collisionShapeHandle = physicsEngine_->createStaticPlane(glm::vec3(0.0f, 1.0f, 0.0f), 1.0f, e, this);
-		
-		entities::GraphicsComponent gc;
-		gc.renderableHandle = renderableHandle;
-		entities::PhysicsComponent pc;
-		pc.collisionShapeHandle = collisionShapeHandle;
-		assign(e, gc);
-		assign(e, pc);
-		
-		scale(e, 20.0f);
-		rotate(e, -90.0f, glm::vec3(1.0f, 0.0f, 0.0f));
-		translate(e, glm::vec3(0.0f, -6.0f, 0.0f));
-	}
-	
-	{
-		auto model = importModel("../assets/models/scoutship/scoutship.dae");
-		
-		auto modelHandle = loadStaticModel(model);
-		
-		auto e = createEntity();
-		
-		auto collisionShapeHandle = physicsEngine_->createBoxShape(glm::vec3(1.0f, 1.0f, 1.0f), e, this);
-		
-		entities::GraphicsComponent gc;
-		gc.renderableHandle = createRenderable(modelHandle);
-		entities::PhysicsComponent pc;
-		pc.collisionShapeHandle = collisionShapeHandle;
-		assign(e, gc);
-		assign(e, pc);
-		
-		scale(e, 0.002f);
-		translate(e, glm::vec3(1.0f, 0.0f, 1.0f));
-		
-		//graphicsEngine_->scale(renderableHandle, 0.03f);
-		//graphicsEngine_->translate(renderableHandle, 6.0f, -4.0f, 0);
-	}
 }
 
 void GameEngine::loadEssentialGameData()
@@ -782,165 +695,29 @@ void GameEngine::receiveMouseEvent(sf::Event evt)
 }
 */
 
-entities::Entity GameEngine::createEntity()
+IScene* GameEngine::createScene(const std::string& name)
 {
-	entityx::Entity e = entityx_.entities.create();
+	logger_->debug( "Create Scene with name: " + name );
 	
-	logger_->debug( "Created entity with id: " + std::to_string(e.id().id()) );
+	scenes_.push_back( std::make_unique<Scene>(name, this, graphicsEngine_.get(), properties_.get(), fileSystem_.get(), logger_.get(), threadPool_.get(), openGlLoader_.get()) );
 	
-	return entities::Entity( e.id().id() );
+	return scenes_.back().get();
 }
 
-void GameEngine::assign(const entities::Entity& entity, const entities::GraphicsComponent& component)
+IScene* GameEngine::getScene(const std::string& name) const
 {
-	logger_->debug( "Assigning graphics component to entity with id: " + std::to_string(entity.getId()) );
-	entityx_.entities.assign<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()), std::forward<const entities::GraphicsComponent>(component));
-}
-
-void GameEngine::assign(const entities::Entity& entity, const entities::PhysicsComponent& component)
-{
-	logger_->debug( "Assigning physics component to entity with id: " + std::to_string(entity.getId()) );
-	entityx_.entities.assign<entities::PhysicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()), std::forward<const entities::PhysicsComponent>(component));
-}
+	auto func = [&name](const std::unique_ptr<IScene>& s) {
+		return s->getName() == name;
+	};
 	
-void GameEngine::rotate(const entities::Entity& entity, const float32 degrees, const glm::vec3& axis, const graphics::TransformSpace& relativeTo)
-{
-	logger_->debug( "Rotating entity with id: " + std::to_string(entity.getId()) );
+	auto it = std::find_if(scenes_.begin(), scenes_.end(), func);
 	
-	auto component = entityx_.entities.component<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
-	
-	switch( relativeTo )
+	if (it != scenes_.end())
 	{
-		case graphics::TransformSpace::TS_LOCAL:
-			component->orientation = glm::normalize( glm::angleAxis(glm::radians(degrees), axis) ) * component->orientation;
-			break;
-		
-		case graphics::TransformSpace::TS_WORLD:
-			component->orientation =  component->orientation * glm::normalize( glm::angleAxis(glm::radians(degrees), axis) );
-			break;
-			
-		default:
-			throw std::runtime_error(std::string("Invalid TransformSpace type."));
+		return it->get();
 	}
 	
-	graphicsEngine_->rotate(component->renderableHandle, degrees, axis, relativeTo);
-}
-	
-void GameEngine::rotate(const entities::Entity& entity, const glm::quat& orientation, const graphics::TransformSpace& relativeTo)
-{
-	logger_->debug( "Rotating entity with id: " + std::to_string(entity.getId()) );
-	
-	auto component = entityx_.entities.component<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
-	
-	switch( relativeTo )
-	{
-		case graphics::TransformSpace::TS_LOCAL:
-			component->orientation = component->orientation * glm::normalize( orientation );
-			break;
-		
-		case graphics::TransformSpace::TS_WORLD:
-			component->orientation =  glm::normalize( orientation ) * component->orientation;
-			break;
-			
-		default:
-			throw std::runtime_error(std::string("Invalid TransformSpace type."));
-	}
-	
-	graphicsEngine_->rotate(component->renderableHandle, orientation, relativeTo);
-}
-
-void GameEngine::rotation(const entities::Entity& entity, const float32 degrees, const glm::vec3& axis)
-{
-	logger_->debug( "Setting rotation for entity with id: " + std::to_string(entity.getId()) );
-	
-	auto component = entityx_.entities.component<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
-	
-	component->orientation = glm::normalize( glm::angleAxis(glm::radians(degrees), axis) );
-	
-	graphicsEngine_->rotation(component->renderableHandle, degrees, axis);
-}
-
-void GameEngine::rotation(const entities::Entity& entity, const glm::quat& orientation)
-{
-	logger_->debug( "Setting rotation for entity with id: " + std::to_string(entity.getId()) );
-	
-	auto component = entityx_.entities.component<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
-	
-	component->orientation = glm::normalize( orientation );
-	
-	graphicsEngine_->rotation(component->renderableHandle, orientation);
-}
-
-void GameEngine::translate(const entities::Entity& entity, const glm::vec3& translate)
-{
-	logger_->debug( "Translating entity with id: " + std::to_string(entity.getId()) );
-	
-	auto component = entityx_.entities.component<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
-	component->position += translate;
-	
-	graphicsEngine_->translate(component->renderableHandle, translate);
-}
-
-void GameEngine::scale(const entities::Entity& entity, const float32 scale)
-{
-	logger_->debug( "Set scale for entity with id: " + std::to_string(entity.getId()) );
-	
-	auto component = entityx_.entities.component<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
-	component->scale = glm::vec3(scale, scale, scale);
-	
-	graphicsEngine_->scale(component->renderableHandle, scale);
-}
-
-void GameEngine::scale(const entities::Entity& entity, const glm::vec3& scale)
-{
-	logger_->debug( "Set scale for entity with id: " + std::to_string(entity.getId()) );
-	
-	auto component = entityx_.entities.component<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
-	component->scale = scale;
-	
-	graphicsEngine_->scale(component->renderableHandle, scale);
-}
-
-void GameEngine::scale(const entities::Entity& entity, const float32 x, const float32 y, const float32 z)
-{
-	logger_->debug( "Set scale for entity with id: " + std::to_string(entity.getId()) );
-	
-	auto component = entityx_.entities.component<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
-	component->scale = glm::vec3(x, y, z);
-	
-	graphicsEngine_->scale(component->renderableHandle, x, y, z);
-}
-
-void GameEngine::lookAt(const entities::Entity& entity, const glm::vec3& lookAt)
-{
-	logger_->debug( "Set look at for entity with id: " + std::to_string(entity.getId()) );
-	
-	auto component = entityx_.entities.component<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
-	
-	const glm::mat4 lookAtMatrix = glm::lookAt(component->position, lookAt, glm::vec3(0.0f, 1.0f, 0.0f));
-	component->orientation =  glm::normalize( component->orientation * glm::quat_cast( lookAtMatrix ) );
-	
-	graphicsEngine_->lookAt(component->renderableHandle, lookAt);
-}
-
-void GameEngine::position(const entities::Entity& entity, const glm::vec3& position)
-{
-	logger_->debug( "Set position for entity with id: " + std::to_string(entity.getId()) );
-	
-	auto component = entityx_.entities.component<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
-	component->position = position;
-	
-	graphicsEngine_->position(component->renderableHandle, position);
-}
-
-void GameEngine::position(const entities::Entity& entity, const float32 x, const float32 y, const float32 z)
-{
-	logger_->debug( "Set position for entity with id: " + std::to_string(entity.getId()) );
-	
-	auto component = entityx_.entities.component<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
-	component->position = glm::vec3(x, y, z);
-	
-	graphicsEngine_->position(component->renderableHandle, x, y, z);
+	return nullptr;
 }
 
 void GameEngine::setBootstrapScript(const std::string& filename)
@@ -1202,7 +979,10 @@ void GameEngine::run()
 					tempFps = 0;
 				}
 				
-				physicsEngine_->tick(deltaTime);
+				for (auto& scene : scenes_)
+				{
+					scene->tick(deltaTime);
+				}
 				
 				/*
 				if ( sf::Keyboard::isKeyPressed(sf::Keyboard::N))
@@ -1267,7 +1047,7 @@ void GameEngine::run()
 				}
 				
 				{
-					physicsEngine_->tick(0.15f);
+					//physicsEngine_->tick(0.15f);
 				}
 			
 				{

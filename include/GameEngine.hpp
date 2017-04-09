@@ -5,8 +5,6 @@
 #include <tuple>
 #include <memory>
 
-#include <entityx/entityx.h>
-
 #include "extras/FpsCamera.hpp"
 
 #include "utilities/Properties.hpp"
@@ -22,12 +20,7 @@
 #include "graphics/IGraphicsEngine.hpp"
 #include "graphics/IEventListener.hpp"
 
-#include "physics/IPhysicsEngine.hpp"
-
 #include "scripting/IScriptingEngine.hpp"
-
-#include "entities/Entity.hpp"
-#include "entities/GraphicsComponent.hpp"
 
 namespace hercules
 {
@@ -45,24 +38,6 @@ public:
 
 	virtual GameState getState() override;
 
-	virtual entities::Entity createEntity() override;
-	
-	virtual void assign(const entities::Entity& entity, const entities::GraphicsComponent& component) override;
-	virtual void assign(const entities::Entity& entity, const entities::PhysicsComponent& component) override;
-	
-	virtual void rotate(const entities::Entity& entity, const float32 degrees, const glm::vec3& axis, const graphics::TransformSpace& relativeTo = graphics::TransformSpace::TS_LOCAL) override;
-	virtual void rotate(const entities::Entity& entity, const glm::quat& orientation, const graphics::TransformSpace& relativeTo = graphics::TransformSpace::TS_LOCAL) override;
-	virtual void rotation(const entities::Entity& entity, const float32 degrees, const glm::vec3& axis) override;
-	virtual void rotation(const entities::Entity& entity, const glm::quat& orientation) override;
-	virtual void translate(const entities::Entity& entity, const glm::vec3& translate) override;
-	virtual void scale(const entities::Entity& entity, const float32 scale) override;
-	virtual void scale(const entities::Entity& entity, const glm::vec3& scale) override;
-	virtual void scale(const entities::Entity& entity, const float32 x, const float32 y, const float32 z) override;
-	virtual void lookAt(const entities::Entity& entity, const glm::vec3& lookAt) override;
-	
-	virtual void position(const entities::Entity& entity, const glm::vec3& position) override;
-	virtual void position(const entities::Entity& entity, const float32 x, const float32 y, const float32 z) override;
-	
 	/**
 	 * 
 	 */
@@ -71,6 +46,9 @@ public:
 	virtual graphics::model::Model importModel(const std::string& filename) const override;
 	virtual ModelHandle loadStaticModel(const graphics::model::Model& model) override;
 	virtual graphics::RenderableHandle createRenderable(const ModelHandle& modelHandle, const std::string& name = std::string()) override;
+	
+	virtual IScene* createScene(const std::string& name) override;
+	virtual IScene* getScene(const std::string& name) const override;
 	
 	// Implements the IEventListener interface
 	virtual bool processEvent(const graphics::Event& event) override;
@@ -88,8 +66,6 @@ private:
 	std::unique_ptr< graphics::IGraphicsEngine > graphicsEngine_;
 	graphics::CameraHandle cameraHandle_;
 	
-	std::unique_ptr< physics::IPhysicsEngine > physicsEngine_;
-	
 	std::unique_ptr< utilities::Properties > properties_;
 	std::unique_ptr< logger::ILogger > logger_;
 	
@@ -98,6 +74,8 @@ private:
 	std::unique_ptr<scripting::IScriptingEngine> scriptingEngine_;
 	
 	std::unique_ptr<fs::IFileSystem> fileSystem_;
+	
+	std::vector<std::unique_ptr<IScene>> scenes_;
 	
 	bool running_;
 	GameState state_;
@@ -162,10 +140,6 @@ private:
 	
 	void loadEssentialGameData();
 	void loadUserInterface();
-	
-	// Entity system
-	entityx::EntityX entityx_;
-	std::vector<entities::Entity> entities_;
 	
 	static uint32 COMPONENT_TYPE_GRAPHICS;
 	

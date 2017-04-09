@@ -4,7 +4,7 @@
 #include <bullet/btBulletDynamicsCommon.h>
 
 #include "entities/Entity.hpp"
-#include "IGameEngine.hpp"
+#include "IScene.hpp"
 
 namespace hercules
 {
@@ -16,11 +16,11 @@ namespace bullet
 class BulletMotionState : public btMotionState
 {
 public:
-	BulletMotionState(const btTransform& initialPosition, entities::Entity entity, IGameEngine* gameEngine)
+	BulletMotionState(const btTransform& initialPosition, entities::Entity entity, IScene* scene)
 		:
 		initialPosition_(initialPosition),
 		entity_(entity),
-		gameEngine_(gameEngine)
+		scene_(scene)
 	{
 	}
 
@@ -33,9 +33,9 @@ public:
 		entity_ = entity;
 	}
 
-	void setGameEngine(IGameEngine* gameEngine)
+	void setGameEngine(IScene* scene)
 	{
-		gameEngine_ = gameEngine;
+		scene_ = scene;
 	}
 
 	virtual void getWorldTransform(btTransform& worldTrans) const override
@@ -45,7 +45,7 @@ public:
 
 	virtual void setWorldTransform(const btTransform& worldTrans) override
 	{
-		if (gameEngine_ == nullptr)
+		if (scene_ == nullptr)
 		{
 			return; // silently return before we set a node
 		}
@@ -55,13 +55,13 @@ public:
 		const btQuaternion& rot = worldTrans.getRotation();
 		const btVector3& pos = worldTrans.getOrigin();
 		
-		gameEngine_->rotation(entity_, glm::quat(rot.w(), rot.x(), rot.y(), rot.z()));
-		gameEngine_->position(entity_, pos.x(), pos.y(), pos.z());
+		scene_->rotation(entity_, glm::quat(rot.w(), rot.x(), rot.y(), rot.z()));
+		scene_->position(entity_, pos.x(), pos.y(), pos.z());
 	}
 
 private:
 	entities::Entity entity_;
-	IGameEngine* gameEngine_;
+	IScene* scene_;
 	btTransform initialPosition_;
 };
 
