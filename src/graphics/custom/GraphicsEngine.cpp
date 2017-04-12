@@ -626,7 +626,7 @@ void GraphicsEngine::position(const RenderableHandle& renderableHandle, const gl
 	const auto id = renderableHandle.getId();
 	
 	auto& graphicsData = graphicsData_[id];
-	graphicsData.scale = position;
+	graphicsData.position = position;
 }
 
 void GraphicsEngine::position(const CameraHandle& cameraHandle, const glm::vec3& position)

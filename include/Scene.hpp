@@ -4,13 +4,12 @@
 #include <vector>
 #include <string>
 
-#include <entityx/entityx.h>
-
 #include "Types.hpp"
 
 #include "IScene.hpp"
 
 #include "physics/IPhysicsEngine.hpp"
+#include "entities/EntityComponentSystem.hpp"
 
 #include "IGameEngine.hpp"
 
@@ -46,6 +45,7 @@ public:
 	
 	virtual void assign(const entities::Entity& entity, const entities::GraphicsComponent& component) override;
 	virtual void assign(const entities::Entity& entity, const entities::PhysicsComponent& component) override;
+	virtual void assign(const entities::Entity& entity, const entities::PositionOrientationComponent& component) override;
 	
 	virtual void rotate(const entities::Entity& entity, const float32 degrees, const glm::vec3& axis, const graphics::TransformSpace& relativeTo = graphics::TransformSpace::TS_LOCAL) override;
 	virtual void rotate(const entities::Entity& entity, const glm::quat& orientation, const graphics::TransformSpace& relativeTo = graphics::TransformSpace::TS_LOCAL) override;
@@ -73,7 +73,7 @@ private:
 	std::unique_ptr< physics::IPhysicsEngine > physicsEngine_;
 	
 	// Entity system
-	entityx::EntityX entityx_;
+	entities::EntityComponentSystem entityComponentSystem_;
 	std::vector<entities::Entity> entities_;
 };
 

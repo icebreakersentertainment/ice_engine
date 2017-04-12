@@ -29,8 +29,8 @@ public:
 	
 	virtual void tick(const float32 delta) override;
 	
-	virtual CollisionShapeHandle createStaticPlane(const glm::vec3& planeNormal, const float32 planeConstant, entities::Entity entity, IScene* scene) override;
-	virtual CollisionShapeHandle createBoxShape(const glm::vec3& dimensions, entities::Entity entity, IScene* scene) override;
+	virtual CollisionShapeHandle createStaticPlane(const glm::vec3& planeNormal, const float32 planeConstant, std::unique_ptr<IMotionStateListener> motionStateListener = nullptr) override;
+	virtual CollisionShapeHandle createBoxShape(const glm::vec3& dimensions, std::unique_ptr<IMotionStateListener> motionStateListener = nullptr) override;
 
 private:
 	PhysicsEngine(const PhysicsEngine& other);

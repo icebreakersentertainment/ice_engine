@@ -7,6 +7,7 @@
 
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
 
 BEGIN_AS_NAMESPACE
 
@@ -22,6 +23,20 @@ static glm::vec3 operator-(const glm::vec3& a, const glm::vec3& b) { return glm:
 static glm::vec3 operator*(const glm::vec3& a, const glm::vec3& b) { return glm::vec3(a.x * b.x, a.y * b.y, a.z * b.z); }
 static glm::vec3 operator/(const glm::vec3& a, const glm::vec3& b) { return glm::vec3(a.x / b.x, a.y / b.y, a.z / b.z); }
 static bool operator==(const glm::vec3& a, const glm::vec3& b) { return (a.x == b.x && a.y == b.y && a.z == b.z); }
+}
+
+namespace glmquat
+{
+void DefaultConstructor(void* memory) { new(memory) glm::quat(); }
+void CopyConstructor(const glm::quat& other, void* memory) { new(memory) glm::quat(other); }
+//void DefaultDestructor(void* memory) { ((glm::quat*)memory)->~glm::quat(); }
+void InitConstructor(float x, float y, float z, float w, void* memory) { new(memory) glm::quat(x,y,z,w); }
+
+static glm::quat operator+(const glm::quat& a, const glm::quat& b) { return glm::quat(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w); }
+static glm::quat operator-(const glm::quat& a, const glm::quat& b) { return glm::quat(a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w); }
+static glm::quat operator*(const glm::quat& a, const glm::quat& b) { return glm::quat(a.x * b.x, a.y * b.y, a.z * b.z, a.w * b.w); }
+static glm::quat operator/(const glm::quat& a, const glm::quat& b) { return glm::quat(a.x / b.x, a.y / b.y, a.z / b.z, a.w / b.w); }
+static bool operator==(const glm::quat& a, const glm::quat& b) { return (a.x == b.x && a.y == b.y && a.z == b.z && a.w == b.w); }
 }
 
 
@@ -53,6 +68,27 @@ void RegisterGlmBindings(asIScriptEngine* engine)
 	r = engine->RegisterObjectMethod("vec3", "vec3 &opPreInc()", asMETHODPR(glm::vec3, operator++, (), glm::vec3&), asCALL_THISCALL); assert( r >= 0 );
 	r = engine->RegisterObjectMethod("vec3", "vec3 &opPreDec()", asMETHODPR(glm::vec3, operator--, (), glm::vec3&), asCALL_THISCALL); assert( r >= 0 );
 	r = engine->RegisterObjectMethod("vec3", "bool opEquals(const vec3 &in) const", asFUNCTIONPR(glmvec3::operator==, (const glm::vec3&, const glm::vec3&), bool), asCALL_CDECL_OBJFIRST); assert( r >= 0 );
+	
+	// glm::quat
+	r = engine->RegisterObjectType("quat", sizeof(glm::quat), asOBJ_VALUE | asOBJ_POD | asOBJ_APP_CLASS_ALLFLOATS | asGetTypeTraits<glm::quat>()); assert( r >= 0 );
+	r = engine->RegisterObjectProperty("quat", "float x", asOFFSET(glm::quat, x)); assert( r >= 0 );
+	r = engine->RegisterObjectProperty("quat", "float y", asOFFSET(glm::quat, y)); assert( r >= 0 );
+	r = engine->RegisterObjectProperty("quat", "float z", asOFFSET(glm::quat, z)); assert( r >= 0 );
+	r = engine->RegisterObjectProperty("quat", "float w", asOFFSET(glm::quat, w)); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("quat", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(glmquat::DefaultConstructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("quat", asBEHAVE_CONSTRUCT, "void f(const quat &in)", asFUNCTION(glmquat::CopyConstructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("quat", asBEHAVE_CONSTRUCT, "void f(float, float, float)", asFUNCTION(glmquat::InitConstructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	//r = engine->RegisterObjectBehaviour("quat", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(glmquat::DefaultDestructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	
+	r = engine->RegisterObjectMethod("quat", "quat opAdd_r(const quat& in) const", asFUNCTIONPR(glmquat::operator+, (const glm::quat&, const glm::quat&), glm::quat), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("quat", "quat &opAddAssign(const quat& in)", asMETHODPR(glm::quat, operator+=, (const glm::quat&), glm::quat&), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("quat", "quat opSub_r(const quat& in) const", asFUNCTIONPR(glmquat::operator-, (const glm::quat&, const glm::quat&), glm::quat), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("quat", "quat &opSubAssign(const quat &in)", asMETHODPR(glm::quat, operator-=, (const glm::quat &), glm::quat&), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("quat", "quat opMul_r(const quat& in) const", asFUNCTIONPR(glmquat::operator*, (const glm::quat&, const glm::quat&), glm::quat), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("quat", "quat &opMulAssign(float)", asMETHODPR(glm::quat, operator*=, (float), glm::quat&), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("quat", "quat opDiv_r(const quat& in) const", asFUNCTIONPR(glmquat::operator/, (const glm::quat&, const glm::quat&), glm::quat), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("quat", "quat &opDivAssign(float)", asMETHODPR(glm::quat, operator/=, (float), glm::quat&), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("quat", "bool opEquals(const quat &in) const", asFUNCTIONPR(glmquat::operator==, (const glm::quat&, const glm::quat&), bool), asCALL_CDECL_OBJFIRST); assert( r >= 0 );
 }
 
 END_AS_NAMESPACE

@@ -38,7 +38,7 @@ void PhysicsEngine::tick(const float32 delta)
 	dynamicsWorld_->stepSimulation(delta, 10);
 }
 
-CollisionShapeHandle PhysicsEngine::createStaticPlane(const glm::vec3& planeNormal, const float32 planeConstant, entities::Entity entity, IScene* scene)
+CollisionShapeHandle PhysicsEngine::createStaticPlane(const glm::vec3& planeNormal, const float32 planeConstant, std::unique_ptr<IMotionStateListener> motionStateListener)
 {
 	//auto groundShape = std::make_unique<btStaticPlaneShape>(btVector3(planeNormal.x, planeNormal.y, planeNormal.z), planeConstant);
 	btStaticPlaneShape* groundShape = new btStaticPlaneShape(btVector3(planeNormal.x, planeNormal.y, planeNormal.z), planeConstant);
@@ -47,7 +47,7 @@ CollisionShapeHandle PhysicsEngine::createStaticPlane(const glm::vec3& planeNorm
 	groundShapeTransform.setIdentity();
 	groundShapeTransform.setOrigin(btVector3(0.0f, -6.0f, 0.0f));
 	
-	BulletMotionState* groundMotionState = new BulletMotionState(groundShapeTransform, entity, scene);
+	BulletMotionState* groundMotionState = new BulletMotionState(groundShapeTransform, std::move(motionStateListener));
 	//btRigidBody::btRigidBodyConstructionInfo rbGroundInfo(0, groundMotionState, groundShape.get());
 	btRigidBody::btRigidBodyConstructionInfo rbGroundInfo(0, groundMotionState, groundShape);
 	rbGroundInfo.m_friction = 1.0f;
@@ -63,7 +63,7 @@ CollisionShapeHandle PhysicsEngine::createStaticPlane(const glm::vec3& planeNorm
 	return CollisionShapeHandle(index);
 }
 
-CollisionShapeHandle PhysicsEngine::createBoxShape(const glm::vec3& dimensions, entities::Entity entity, IScene* scene)
+CollisionShapeHandle PhysicsEngine::createBoxShape(const glm::vec3& dimensions, std::unique_ptr<IMotionStateListener> motionStateListener)
 {
 	//auto groundShape = std::make_unique<btStaticPlaneShape>(btVector3(planeNormal.x, planeNormal.y, planeNormal.z), planeConstant);
 	btCollisionShape* boxShape = new btBoxShape(btVector3(dimensions.x, dimensions.y, dimensions.z));
@@ -77,7 +77,7 @@ CollisionShapeHandle PhysicsEngine::createBoxShape(const glm::vec3& dimensions, 
 	btVector3 localInertia(0.0f, 0.0f, 0.0f);
 	boxShape->calculateLocalInertia(mass, localInertia);
 	
-	BulletMotionState* boxMotionState = new BulletMotionState(boxShapeTransform, entity, scene);
+	BulletMotionState* boxMotionState = new BulletMotionState(boxShapeTransform, std::move(motionStateListener));
 	//btDefaultMotionState* boxMotionState = new btDefaultMotionState(boxShapeTransform);
 	//btRigidBody::btRigidBodyConstructionInfo rbGroundInfo(0, boxMotionState, groundShape.get());
 	btRigidBody::btRigidBodyConstructionInfo boxInfo(mass, boxMotionState, boxShape, localInertia);

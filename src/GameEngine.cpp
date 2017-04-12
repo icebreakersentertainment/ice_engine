@@ -257,11 +257,17 @@ void GameEngine::initializeScriptingSubSystem()
 	scriptingEngine_->registerClassMethod("ModelHandle", "int32 getId() const", asMETHODPR(ModelHandle, getId, () const, int32));
 	scriptingEngine_->registerObjectType("RenderableHandle", sizeof(graphics::RenderableHandle), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<graphics::RenderableHandle>());
 	scriptingEngine_->registerClassMethod("RenderableHandle", "int32 getId() const", asMETHODPR(graphics::RenderableHandle, getId, () const, int32));
+	scriptingEngine_->registerObjectType("CollisionShapeHandle", sizeof(physics::CollisionShapeHandle), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<physics::CollisionShapeHandle>());
+	scriptingEngine_->registerClassMethod("CollisionShapeHandle", "int32 getId() const", asMETHODPR(physics::CollisionShapeHandle, getId, () const, int32));
 	
 	scriptingEngine_->registerObjectType("GraphicsComponent", sizeof(entities::GraphicsComponent), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<entities::GraphicsComponent>());
-	scriptingEngine_->registerObjectProperty("GraphicsComponent", "vec3 position", asOFFSET(entities::GraphicsComponent, position));
 	scriptingEngine_->registerObjectProperty("GraphicsComponent", "vec3 scale", asOFFSET(entities::GraphicsComponent, scale));
 	scriptingEngine_->registerObjectProperty("GraphicsComponent", "RenderableHandle renderableHandle", asOFFSET(entities::GraphicsComponent, renderableHandle));
+	scriptingEngine_->registerObjectType("PhysicsComponent", sizeof(entities::PhysicsComponent), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<entities::PhysicsComponent>());
+	scriptingEngine_->registerObjectProperty("PhysicsComponent", "CollisionShapeHandle collisionShapeHandle", asOFFSET(entities::PhysicsComponent, collisionShapeHandle));
+	scriptingEngine_->registerObjectType("PositionOrientationComponent", sizeof(entities::PositionOrientationComponent), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<entities::PositionOrientationComponent>());
+	scriptingEngine_->registerObjectProperty("PositionOrientationComponent", "vec3 position", asOFFSET(entities::PositionOrientationComponent, position));
+	scriptingEngine_->registerObjectProperty("PositionOrientationComponent", "quat orientation", asOFFSET(entities::PositionOrientationComponent, orientation));
 	
 	// Register Model/Mesh/etc
 	//RegisterVectorBindings<glm::vec3>(engine_, "vectorVec3", "vec3");
@@ -975,7 +981,7 @@ void GameEngine::run()
 				{
 					previousFpsTime = begin;
 					currentFps_ = tempFps;
-					//std::cout << "currentFps_: " << currentFps_ << std::endl;
+					std::cout << "currentFps_: " << currentFps_ << std::endl;
 					tempFps = 0;
 				}
 				

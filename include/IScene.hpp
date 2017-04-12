@@ -11,6 +11,7 @@
 #include "entities/Entity.hpp"
 #include "entities/GraphicsComponent.hpp"
 #include "entities/PhysicsComponent.hpp"
+#include "entities/PositionOrientationComponent.hpp"
 
 #include "graphics/IGraphicsEngine.hpp"
 
@@ -33,6 +34,7 @@ public:
 	
 	virtual void assign(const entities::Entity& entity, const entities::GraphicsComponent& component) = 0;
 	virtual void assign(const entities::Entity& entity, const entities::PhysicsComponent& component) = 0;
+	virtual void assign(const entities::Entity& entity, const entities::PositionOrientationComponent& component) = 0;
 	
 	virtual void rotate(const entities::Entity& entity, const float32 degrees, const glm::vec3& axis, const graphics::TransformSpace& relativeTo = graphics::TransformSpace::TS_LOCAL) = 0;
 	virtual void rotate(const entities::Entity& entity, const glm::quat& orientation, const graphics::TransformSpace& relativeTo = graphics::TransformSpace::TS_LOCAL) = 0;
