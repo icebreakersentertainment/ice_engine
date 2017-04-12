@@ -1,6 +1,6 @@
 #include "Scene.hpp"
 
-#include "HerculesMotionStateListener.hpp"
+#include "HerculesMotionChangeListener.hpp"
 
 #include "physics/PhysicsFactory.hpp"
 
@@ -108,7 +108,7 @@ Scene::Scene(
 		
 		auto e = createEntity();
 		
-		std::unique_ptr<HerculesMotionStateListener> motionStateListener = std::make_unique<HerculesMotionStateListener>(e, this);
+		std::unique_ptr<HerculesMotionChangeListener> motionStateListener = std::make_unique<HerculesMotionChangeListener>(e, this);
 		auto collisionShapeHandle = physicsEngine_->createBoxShape(glm::vec3(1.0f, 1.0f, 1.0f), std::move(motionStateListener));
 		
 		entities::GraphicsComponent gc;

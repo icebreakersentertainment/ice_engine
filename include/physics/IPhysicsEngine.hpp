@@ -9,7 +9,7 @@
 #include "Types.hpp"
 
 #include "physics/CollisionShapeHandle.hpp"
-#include "physics/IMotionStateListener.hpp"
+#include "physics/IMotionChangeListener.hpp"
 
 namespace hercules
 {
@@ -26,8 +26,8 @@ public:
 	
 	virtual void tick(const float32 delta) = 0;
 	
-	virtual CollisionShapeHandle createStaticPlane(const glm::vec3& planeNormal, const float32 planeConstant, std::unique_ptr<IMotionStateListener> motionStateListener = nullptr) = 0;
-	virtual CollisionShapeHandle createBoxShape(const glm::vec3& dimensions, std::unique_ptr<IMotionStateListener> motionStateListener = nullptr) = 0;
+	virtual CollisionShapeHandle createStaticPlane(const glm::vec3& planeNormal, const float32 planeConstant, std::unique_ptr<IMotionChangeListener> motionStateListener = nullptr) = 0;
+	virtual CollisionShapeHandle createBoxShape(const glm::vec3& dimensions, std::unique_ptr<IMotionChangeListener> motionStateListener = nullptr) = 0;
 };
 
 }

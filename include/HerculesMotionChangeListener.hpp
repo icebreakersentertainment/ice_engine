@@ -1,7 +1,7 @@
 #ifndef HERCULESMOTIONSTATELISTENER_H_
 #define HERCULESMOTIONSTATELISTENER_H_
 
-#include "physics/IMotionStateListener.hpp"
+#include "physics/IMotionChangeListener.hpp"
 
 #include "entities/Entity.hpp"
 #include "IScene.hpp"
@@ -9,11 +9,11 @@
 namespace hercules
 {
 
-class HerculesMotionStateListener : public physics::IMotionStateListener
+class HerculesMotionChangeListener : public physics::IMotionChangeListener
 {
 public:
-	HerculesMotionStateListener(entities::Entity entity, IScene* scene);
-	virtual ~HerculesMotionStateListener();
+	HerculesMotionChangeListener(entities::Entity entity, IScene* scene);
+	virtual ~HerculesMotionChangeListener();
 	
 	virtual void update(const glm::vec3& position, const glm::quat& orientation) override;
 

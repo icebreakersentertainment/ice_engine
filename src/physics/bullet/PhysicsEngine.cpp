@@ -38,7 +38,7 @@ void PhysicsEngine::tick(const float32 delta)
 	dynamicsWorld_->stepSimulation(delta, 10);
 }
 
-CollisionShapeHandle PhysicsEngine::createStaticPlane(const glm::vec3& planeNormal, const float32 planeConstant, std::unique_ptr<IMotionStateListener> motionStateListener)
+CollisionShapeHandle PhysicsEngine::createStaticPlane(const glm::vec3& planeNormal, const float32 planeConstant, std::unique_ptr<IMotionChangeListener> motionStateListener)
 {
 	//auto groundShape = std::make_unique<btStaticPlaneShape>(btVector3(planeNormal.x, planeNormal.y, planeNormal.z), planeConstant);
 	btStaticPlaneShape* groundShape = new btStaticPlaneShape(btVector3(planeNormal.x, planeNormal.y, planeNormal.z), planeConstant);
@@ -63,7 +63,7 @@ CollisionShapeHandle PhysicsEngine::createStaticPlane(const glm::vec3& planeNorm
 	return CollisionShapeHandle(index);
 }
 
-CollisionShapeHandle PhysicsEngine::createBoxShape(const glm::vec3& dimensions, std::unique_ptr<IMotionStateListener> motionStateListener)
+CollisionShapeHandle PhysicsEngine::createBoxShape(const glm::vec3& dimensions, std::unique_ptr<IMotionChangeListener> motionStateListener)
 {
 	//auto groundShape = std::make_unique<btStaticPlaneShape>(btVector3(planeNormal.x, planeNormal.y, planeNormal.z), planeConstant);
 	btCollisionShape* boxShape = new btBoxShape(btVector3(dimensions.x, dimensions.y, dimensions.z));

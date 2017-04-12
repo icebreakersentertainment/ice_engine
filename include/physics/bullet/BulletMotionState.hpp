@@ -3,7 +3,7 @@
 
 #include <bullet/btBulletDynamicsCommon.h>
 
-#include "physics/IMotionStateListener.hpp"
+#include "physics/IMotionChangeListener.hpp"
 
 namespace hercules
 {
@@ -15,7 +15,7 @@ namespace bullet
 class BulletMotionState : public btMotionState
 {
 public:
-	BulletMotionState(const btTransform& initialPosition, std::unique_ptr<IMotionStateListener> motionStateListener = nullptr)
+	BulletMotionState(const btTransform& initialPosition, std::unique_ptr<IMotionChangeListener> motionStateListener = nullptr)
 		:
 		initialPosition_(initialPosition),
 		motionStateListener_(std::move(motionStateListener))
@@ -48,7 +48,7 @@ public:
 
 private:
 	btTransform initialPosition_;
-	std::unique_ptr<IMotionStateListener> motionStateListener_;
+	std::unique_ptr<IMotionChangeListener> motionStateListener_;
 };
 
 }
