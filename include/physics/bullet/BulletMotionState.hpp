@@ -25,6 +25,41 @@ public:
 	virtual ~BulletMotionState()
 	{
 	}
+	
+	/**
+	 * Call this to update the physics simulation from an external source.
+	 */
+	void position(const glm::vec3& position)
+	{
+		const btVector3 pos = btVector3(position.x, position.y, position.z);
+		
+		initialPosition_.setOrigin(pos);
+	}
+	
+	/**
+	 * Call this to update the physics simulation from an external source.
+	 */
+	void orientation(const glm::quat& orientation)
+	{
+		const btQuaternion rot = btQuaternion(orientation.x, orientation.y, orientation.z, orientation.w);
+		
+		initialPosition_.setRotation(rot);
+	}
+	
+	/**
+	 * Call this to update the physics simulation from an external source.
+	 */
+	void setPositionAndOrientation(const glm::vec3& position, const glm::quat& orientation)
+	{
+		const btQuaternion rot = btQuaternion(orientation.x, orientation.y, orientation.z, orientation.w);
+		const btVector3 pos = btVector3(position.x, position.y, position.z);
+		initialPosition_ = btTransform(rot, pos);
+	}
+
+	btTransform getWorldTransform() const
+	{
+		return initialPosition_;
+	}
 
 	virtual void getWorldTransform(btTransform& worldTrans) const override
 	{
@@ -40,8 +75,8 @@ public:
 		
 		initialPosition_ = worldTrans;
 
-		const btQuaternion& rot = worldTrans.getRotation();
-		const btVector3& pos = worldTrans.getOrigin();
+		const btQuaternion rot = worldTrans.getRotation();
+		const btVector3 pos = worldTrans.getOrigin();
 		
 		motionStateListener_->update(glm::vec3(pos.x(), pos.y(), pos.z()), glm::quat(rot.w(), rot.x(), rot.y(), rot.z()));
 	}
