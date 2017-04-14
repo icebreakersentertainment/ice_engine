@@ -88,7 +88,7 @@ Scene::Scene(
 		auto e = createEntity();
 		
 		auto collisionShapeHandle = physicsEngine_->createStaticPlaneShape(glm::vec3(0.0f, 1.0f, 0.0f), 1.0f);
-		auto collisionBodyHandle = physicsEngine_->createRigidBody(collisionShapeHandle, 0.0f, 1.0f, 1.0f);
+		auto collisionBodyHandle = physicsEngine_->createStaticRigidBody(collisionShapeHandle);
 		
 		entities::GraphicsComponent gc;
 		gc.renderableHandle = renderableHandle;
@@ -111,7 +111,7 @@ Scene::Scene(
 		
 		std::unique_ptr<HerculesMotionChangeListener> motionStateListener = std::make_unique<HerculesMotionChangeListener>(e, this);
 		auto collisionShapeHandle = physicsEngine_->createStaticBoxShape(glm::vec3(1.0f, 1.0f, 1.0f));
-		auto collisionBodyHandle = physicsEngine_->createRigidBody(collisionShapeHandle, 1.0f, 0.0f, 0.0f, std::move(motionStateListener));
+		auto collisionBodyHandle = physicsEngine_->createDynamicRigidBody(collisionShapeHandle, 1.0f, 0.0f, 0.0f, std::move(motionStateListener));
 		
 		entities::GraphicsComponent gc;
 		gc.renderableHandle = gameEngine_->createRenderable(modelHandle);
@@ -135,6 +135,78 @@ Scene::~Scene()
 void Scene::tick(const float32 elapsedTime)
 {
 	physicsEngine_->tick(elapsedTime);
+}
+
+physics::CollisionShapeHandle Scene::createStaticPlaneShape(const glm::vec3& planeNormal, const float32 planeConstant)
+{
+	return physicsEngine_->createStaticPlaneShape(planeNormal, planeConstant);
+}
+
+physics::CollisionShapeHandle Scene::createStaticBoxShape(const glm::vec3& dimensions)
+{
+	return physicsEngine_->createStaticBoxShape(dimensions);
+}
+
+void Scene::destroyStaticShape(const physics::CollisionShapeHandle& collisionShapeHandle)
+{
+	return physicsEngine_->destroyStaticShape(collisionShapeHandle);
+}
+
+void Scene::destroyAllStaticShapes()
+{
+	return physicsEngine_->destroyAllStaticShapes();
+}
+
+physics::CollisionBodyHandle Scene::createDynamicRigidBody(const physics::CollisionShapeHandle& collisionShapeHandle)
+{
+	return physicsEngine_->createDynamicRigidBody(collisionShapeHandle);
+}
+
+physics::CollisionBodyHandle Scene::createDynamicRigidBody(
+	const physics::CollisionShapeHandle& collisionShapeHandle,
+	const float32 mass,
+	const float32 friction,
+	const float32 restitution
+)
+{
+	return physicsEngine_->createDynamicRigidBody(collisionShapeHandle, mass, friction, restitution);
+}
+
+physics::CollisionBodyHandle Scene::createDynamicRigidBody(
+	const physics::CollisionShapeHandle& collisionShapeHandle,
+	const glm::vec3& position,
+	const glm::quat& orientation,
+	const float32 mass,
+	const float32 friction,
+	const float32 restitution
+)
+{
+	return physicsEngine_->createDynamicRigidBody(collisionShapeHandle, position, orientation, mass, friction, restitution);
+}
+
+physics::CollisionBodyHandle Scene::createStaticRigidBody(const physics::CollisionShapeHandle& collisionShapeHandle)
+{
+	return physicsEngine_->createStaticRigidBody(collisionShapeHandle);
+}
+
+physics::CollisionBodyHandle Scene::createStaticRigidBody(
+	const physics::CollisionShapeHandle& collisionShapeHandle,
+	const float32 friction,
+	const float32 restitution
+)
+{
+	return physicsEngine_->createStaticRigidBody(collisionShapeHandle, friction, restitution);
+}
+
+physics::CollisionBodyHandle Scene::createStaticRigidBody(
+	const physics::CollisionShapeHandle& collisionShapeHandle,
+	const glm::vec3& position,
+	const glm::quat& orientation,
+	const float32 friction,
+	const float32 restitution
+)
+{
+	return physicsEngine_->createStaticRigidBody(collisionShapeHandle, position, orientation, friction, restitution);
 }
 
 std::string Scene::getName() const
@@ -168,7 +240,7 @@ void Scene::assign(const entities::Entity& entity, const entities::PositionOrien
 	logger_->debug( "Assigning position and orientation component to entity with id: " + std::to_string(entity.getId()) );
 	entityComponentSystem_.entities.assign<entities::PositionOrientationComponent>(static_cast<entityx::Entity::Id>(entity.getId()), std::forward<const entities::PositionOrientationComponent>(component));
 }
-	
+
 void Scene::rotate(const entities::Entity& entity, const float32 degrees, const glm::vec3& axis, const graphics::TransformSpace& relativeTo)
 {
 	logger_->debug( "Rotating entity with id: " + std::to_string(entity.getId()) );
@@ -194,7 +266,7 @@ void Scene::rotate(const entities::Entity& entity, const float32 degrees, const 
 	graphicsEngine_->rotation(graphicsComponent->renderableHandle, component->orientation);
 	physicsEngine_->rotation(physicsComponent->collisionBodyHandle, component->orientation);
 }
-	
+
 void Scene::rotate(const entities::Entity& entity, const glm::quat& orientation, const graphics::TransformSpace& relativeTo)
 {
 	logger_->debug( "Rotating entity with id: " + std::to_string(entity.getId()) );

@@ -282,6 +282,56 @@ void GameEngine::initializeScriptingSubSystem()
 	// IScene
 	scriptingEngine_->registerObjectType("IScene", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	scriptingEngine_->registerClassMethod("IScene", "string getName() const", asMETHODPR(IScene, getName, () const, std::string));
+	scriptingEngine_->registerClassMethod(
+		"IScene",
+		"CollisionShapeHandle createStaticPlaneShape(const vec3& in, const float)",
+		asMETHODPR(IScene, createStaticPlaneShape, (const glm::vec3&, const float32), physics::CollisionShapeHandle)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IScene",
+		"CollisionShapeHandle createStaticBoxShape(const vec3& in)",
+		asMETHODPR(IScene, createStaticBoxShape, (const glm::vec3&), physics::CollisionShapeHandle)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IScene",
+		"void destroyStaticShape(const CollisionShapeHandle& in)",
+		asMETHODPR(IScene, destroyStaticShape, (const physics::CollisionShapeHandle&), void)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IScene",
+		"void destroyAllStaticShapes()",
+		asMETHODPR(IScene, destroyAllStaticShapes, (), void)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IScene",
+		"CollisionBodyHandle createDynamicRigidBody(const CollisionShapeHandle& in)",
+		asMETHODPR(IScene, createDynamicRigidBody, (const physics::CollisionShapeHandle&), physics::CollisionBodyHandle)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IScene",
+		"CollisionBodyHandle createDynamicRigidBody(const CollisionShapeHandle& in, const float, const float, const float)",
+		asMETHODPR(IScene, createDynamicRigidBody, (const physics::CollisionShapeHandle&, const float32, const float32, const float32), physics::CollisionBodyHandle)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IScene",
+		"CollisionBodyHandle createDynamicRigidBody(const CollisionShapeHandle& in, const vec3& in, const quat& in, const float, const float, const float)",
+		asMETHODPR(IScene, createDynamicRigidBody, (const physics::CollisionShapeHandle&, const glm::vec3&, const glm::quat&, const float32, const float32, const float32), physics::CollisionBodyHandle)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IScene",
+		"CollisionBodyHandle createStaticRigidBody(const CollisionShapeHandle& in)",
+		asMETHODPR(IScene, createStaticRigidBody, (const physics::CollisionShapeHandle&), physics::CollisionBodyHandle)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IScene",
+		"CollisionBodyHandle createStaticRigidBody(const CollisionShapeHandle& in, const float, const float)",
+		asMETHODPR(IScene, createStaticRigidBody, (const physics::CollisionShapeHandle&, const float32, const float32), physics::CollisionBodyHandle)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IScene",
+		"CollisionBodyHandle createStaticRigidBody(const CollisionShapeHandle& in, const vec3& in, const quat& in, const float, const float)",
+		asMETHODPR(IScene, createStaticRigidBody, (const physics::CollisionShapeHandle&, const glm::vec3&, const glm::quat&, const float32, const float32), physics::CollisionBodyHandle)
+	);
 	scriptingEngine_->registerClassMethod("IScene", "Entity createEntity()", asMETHODPR(IScene, createEntity, (), entities::Entity));
 	scriptingEngine_->registerClassMethod(
 		"IScene",
@@ -290,13 +340,50 @@ void GameEngine::initializeScriptingSubSystem()
 	);
 	scriptingEngine_->registerClassMethod(
 		"IScene",
+		"void assign(const Entity& in, const PhysicsComponent& in)", 
+		asMETHODPR(IScene, assign, (const entities::Entity&, const entities::PhysicsComponent&), void)
+	);
+	/*
+	scriptingEngine_->registerClassMethod(
+		"IScene",
+		"void rotate(const Entity& in, const quat& in)",
+		asMETHODPR(IScene, rotate, (const entities::Entity&, const glm::quat&), void)
+	);
+	*/
+	scriptingEngine_->registerClassMethod(
+		"IScene",
+		"void rotation(const Entity& in, const quat& in)",
+		asMETHODPR(IScene, rotation, (const entities::Entity&, const glm::quat&), void)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IScene",
 		"void scale(const Entity& in, const float)",
 		asMETHODPR(IScene, scale, (const entities::Entity&, const float32), void)
 	);
 	scriptingEngine_->registerClassMethod(
 		"IScene",
+		"void scale(const Entity& in, const vec3& in)",
+		asMETHODPR(IScene, scale, (const entities::Entity&, const glm::vec3&), void)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IScene",
+		"void scale(const Entity& in, const float, const float, const float)",
+		asMETHODPR(IScene, scale, (const entities::Entity&, const float32, const float32, const float32), void)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IScene",
 		"void translate(const Entity& in, const vec3& in)",
 		asMETHODPR(IScene, translate, (const entities::Entity&, const glm::vec3&), void)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IScene",
+		"void position(const Entity& in, const vec3& in)",
+		asMETHODPR(IScene, position, (const entities::Entity&, const glm::vec3&), void)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IScene",
+		"void position(const Entity& in, const float, const float, const float)",
+		asMETHODPR(IScene, position, (const entities::Entity&, const float32, const float32, const float32), void)
 	);
 	
 	// IGameEngine functions available in the scripting engine

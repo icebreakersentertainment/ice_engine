@@ -74,15 +74,15 @@ void PhysicsEngine::destroyAllStaticShapes()
 	shapes_.clear();
 }
 
-CollisionBodyHandle PhysicsEngine::createRigidBody(
+CollisionBodyHandle PhysicsEngine::createDynamicRigidBody(
 	const CollisionShapeHandle& collisionShapeHandle,
 	std::unique_ptr<IMotionChangeListener> motionStateListener
 )
 {
-	return createRigidBody(collisionShapeHandle, glm::vec3(), glm::quat(), 1.0f, 1.0f, 1.0f, std::move(motionStateListener));
+	return createDynamicRigidBody(collisionShapeHandle, glm::vec3(), glm::quat(), 1.0f, 1.0f, 1.0f, std::move(motionStateListener));
 }
 
-CollisionBodyHandle PhysicsEngine::createRigidBody(
+CollisionBodyHandle PhysicsEngine::createDynamicRigidBody(
 	const CollisionShapeHandle& collisionShapeHandle,
 	const float32 mass,
 	const float32 friction,
@@ -90,10 +90,10 @@ CollisionBodyHandle PhysicsEngine::createRigidBody(
 	std::unique_ptr<IMotionChangeListener> motionStateListener
 )
 {
-	return createRigidBody(collisionShapeHandle, glm::vec3(), glm::quat(), mass, friction, restitution, std::move(motionStateListener));
+	return createDynamicRigidBody(collisionShapeHandle, glm::vec3(), glm::quat(), mass, friction, restitution, std::move(motionStateListener));
 }
 
-CollisionBodyHandle PhysicsEngine::createRigidBody(
+CollisionBodyHandle PhysicsEngine::createDynamicRigidBody(
 	const CollisionShapeHandle& collisionShapeHandle,
 	const glm::vec3& position,
 	const glm::quat& orientation,
@@ -120,6 +120,52 @@ CollisionBodyHandle PhysicsEngine::createRigidBody(
 	
 	physicsData.motionState = std::make_unique<BulletMotionState>(transform, std::move(motionStateListener));
 	btRigidBody::btRigidBodyConstructionInfo constructionInfo(bulletMass, physicsData.motionState.get(), shape.get(), localInertia);
+	constructionInfo.m_friction = friction;
+	constructionInfo.m_restitution = restitution;
+	physicsData.rigidBody = std::make_unique<btRigidBody>(constructionInfo);
+	
+	dynamicsWorld_->addRigidBody(physicsData.rigidBody.get());
+	
+	physicsData_.push_back(std::move(physicsData));
+	auto index = physicsData_.size() - 1;
+	
+	return CollisionBodyHandle(index);
+}
+
+CollisionBodyHandle PhysicsEngine::createStaticRigidBody(const CollisionShapeHandle& collisionShapeHandle)
+{
+	return createStaticRigidBody(collisionShapeHandle, glm::vec3(), glm::quat(), 1.0f, 1.0f);
+}
+
+CollisionBodyHandle PhysicsEngine::createStaticRigidBody(
+	const CollisionShapeHandle& collisionShapeHandle,
+	const float32 friction,
+	const float32 restitution
+)
+{
+	return createStaticRigidBody(collisionShapeHandle, glm::vec3(), glm::quat(), friction, restitution);
+}
+
+CollisionBodyHandle PhysicsEngine::createStaticRigidBody(
+	const CollisionShapeHandle& collisionShapeHandle,
+	const glm::vec3& position,
+	const glm::quat& orientation,
+	const float32 friction,
+	const float32 restitution
+)
+{
+	auto& shape = shapes_[collisionShapeHandle.getId()];
+	
+	btTransform transform;
+	transform.setRotation( btQuaternion(orientation.x, orientation.y, orientation.z, orientation.w) );
+	transform.setOrigin( btVector3(position.x, position.y, position.z) );
+	
+	btVector3 localInertia(0.0f, 0.0f, 0.0f);
+	
+	BulletPhysicsData physicsData;
+	
+	physicsData.motionState = std::make_unique<BulletMotionState>(transform, nullptr);
+	btRigidBody::btRigidBodyConstructionInfo constructionInfo(btScalar(0.0f), physicsData.motionState.get(), shape.get(), localInertia);
 	constructionInfo.m_friction = friction;
 	constructionInfo.m_restitution = restitution;
 	physicsData.rigidBody = std::make_unique<btRigidBody>(constructionInfo);

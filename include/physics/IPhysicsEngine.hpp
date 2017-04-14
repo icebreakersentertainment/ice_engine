@@ -34,18 +34,18 @@ public:
 	virtual void destroyStaticShape(const CollisionShapeHandle& collisionShapeHandle) = 0;
 	virtual void destroyAllStaticShapes() = 0;
 	
-	virtual CollisionBodyHandle createRigidBody(
+	virtual CollisionBodyHandle createDynamicRigidBody(
 		const CollisionShapeHandle& collisionShapeHandle,
 		std::unique_ptr<IMotionChangeListener> motionStateListener = nullptr
 	) = 0;
-	virtual CollisionBodyHandle createRigidBody(
+	virtual CollisionBodyHandle createDynamicRigidBody(
 		const CollisionShapeHandle& collisionShapeHandle,
 		const float32 mass,
 		const float32 friction,
 		const float32 restitution,
 		std::unique_ptr<IMotionChangeListener> motionStateListener = nullptr
 	) = 0;
-	virtual CollisionBodyHandle createRigidBody(
+	virtual CollisionBodyHandle createDynamicRigidBody(
 		const CollisionShapeHandle& collisionShapeHandle,
 		const glm::vec3& position,
 		const glm::quat& orientation,
@@ -53,6 +53,19 @@ public:
 		const float32 friction = 1.0f,
 		const float32 restitution = 1.0f,
 		std::unique_ptr<IMotionChangeListener> motionStateListener = nullptr
+	) = 0;
+	virtual CollisionBodyHandle createStaticRigidBody(const CollisionShapeHandle& collisionShapeHandle) = 0;
+	virtual CollisionBodyHandle createStaticRigidBody(
+		const CollisionShapeHandle& collisionShapeHandle,
+		const float32 friction,
+		const float32 restitution
+	) = 0;
+	virtual CollisionBodyHandle createStaticRigidBody(
+		const CollisionShapeHandle& collisionShapeHandle,
+		const glm::vec3& position,
+		const glm::quat& orientation,
+		const float32 friction = 1.0f,
+		const float32 restitution = 1.0f
 	) = 0;
 	virtual void destroyRigidBody(const CollisionBodyHandle& collisionBodyHandle) = 0;
 	virtual void destroyAllRigidBodies() = 0;

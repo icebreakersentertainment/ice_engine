@@ -39,6 +39,40 @@ public:
 
 	virtual void tick(const float32 elapsedTime) override;
 	
+	virtual physics::CollisionShapeHandle createStaticPlaneShape(const glm::vec3& planeNormal, const float32 planeConstant) override;
+	virtual physics::CollisionShapeHandle createStaticBoxShape(const glm::vec3& dimensions) override;
+	virtual void destroyStaticShape(const physics::CollisionShapeHandle& collisionShapeHandle) override;
+	virtual void destroyAllStaticShapes() override;
+	
+	virtual physics::CollisionBodyHandle createDynamicRigidBody(const physics::CollisionShapeHandle& collisionShapeHandle) override;
+	virtual physics::CollisionBodyHandle createDynamicRigidBody(
+		const physics::CollisionShapeHandle& collisionShapeHandle,
+		const float32 mass,
+		const float32 friction,
+		const float32 restitution
+	) override;
+	virtual physics::CollisionBodyHandle createDynamicRigidBody(
+		const physics::CollisionShapeHandle& collisionShapeHandle,
+		const glm::vec3& position,
+		const glm::quat& orientation,
+		const float32 mass = 1.0f,
+		const float32 friction = 1.0f,
+		const float32 restitution = 1.0f
+	) override;
+	virtual physics::CollisionBodyHandle createStaticRigidBody(const physics::CollisionShapeHandle& collisionShapeHandle) override;
+	virtual physics::CollisionBodyHandle createStaticRigidBody(
+		const physics::CollisionShapeHandle& collisionShapeHandle,
+		const float32 friction,
+		const float32 restitution
+	) override;
+	virtual physics::CollisionBodyHandle createStaticRigidBody(
+		const physics::CollisionShapeHandle& collisionShapeHandle,
+		const glm::vec3& position,
+		const glm::quat& orientation,
+		const float32 friction = 1.0f,
+		const float32 restitution = 1.0f
+	) override;
+	
 	virtual std::string getName() const override;
 	
 	virtual entities::Entity createEntity() override;

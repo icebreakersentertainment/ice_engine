@@ -14,6 +14,8 @@
 #include "entities/PositionOrientationComponent.hpp"
 
 #include "graphics/IGraphicsEngine.hpp"
+#include "physics/CollisionShapeHandle.hpp"
+#include "physics/CollisionBodyHandle.hpp"
 
 namespace hercules
 {
@@ -27,6 +29,40 @@ public:
 	;
 	
 	virtual void tick(const float32 elapsedTime) = 0;
+	
+	virtual physics::CollisionShapeHandle createStaticPlaneShape(const glm::vec3& planeNormal, const float32 planeConstant) = 0;
+	virtual physics::CollisionShapeHandle createStaticBoxShape(const glm::vec3& dimensions) = 0;
+	virtual void destroyStaticShape(const physics::CollisionShapeHandle& collisionShapeHandle) = 0;
+	virtual void destroyAllStaticShapes() = 0;
+	
+	virtual physics::CollisionBodyHandle createDynamicRigidBody(const physics::CollisionShapeHandle& collisionShapeHandle) = 0;
+	virtual physics::CollisionBodyHandle createDynamicRigidBody(
+		const physics::CollisionShapeHandle& collisionShapeHandle,
+		const float32 mass,
+		const float32 friction,
+		const float32 restitution
+	) = 0;
+	virtual physics::CollisionBodyHandle createDynamicRigidBody(
+		const physics::CollisionShapeHandle& collisionShapeHandle,
+		const glm::vec3& position,
+		const glm::quat& orientation,
+		const float32 mass = 1.0f,
+		const float32 friction = 1.0f,
+		const float32 restitution = 1.0f
+	) = 0;
+	virtual physics::CollisionBodyHandle createStaticRigidBody(const physics::CollisionShapeHandle& collisionShapeHandle) = 0;
+	virtual physics::CollisionBodyHandle createStaticRigidBody(
+		const physics::CollisionShapeHandle& collisionShapeHandle,
+		const float32 friction,
+		const float32 restitution
+	) = 0;
+	virtual physics::CollisionBodyHandle createStaticRigidBody(
+		const physics::CollisionShapeHandle& collisionShapeHandle,
+		const glm::vec3& position,
+		const glm::quat& orientation,
+		const float32 friction = 1.0f,
+		const float32 restitution = 1.0f
+	) = 0;
 	
 	virtual std::string getName() const = 0;
 	
