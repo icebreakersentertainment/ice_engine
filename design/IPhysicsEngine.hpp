@@ -51,6 +51,7 @@ virtual CollisionBodyHandle createStaticRigidBody(
 	const float32 friction = 1.0f,
 	const float32 restitution = 1.0f
 ) = 0;
+virtual void setMotionStateListener(const CollisionBodyHandle& collisionBodyHandle, std::unique_ptr<IMotionChangeListener> motionStateListener) = 0;
 virtual void destroyRigidBody(const CollisionBodyHandle& collisionBodyHandle) = 0;
 virtual void destroyAllRigidBodies() = 0;
 

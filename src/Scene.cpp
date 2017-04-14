@@ -101,7 +101,7 @@ Scene::Scene(
 		rotate(e, -90.0f, glm::vec3(1.0f, 0.0f, 0.0f));
 		translate(e, glm::vec3(0.0f, -6.0f, 0.0f));
 	}
-	
+	/*
 	{
 		auto model = gameEngine_->importModel("../assets/models/scoutship/scoutship.dae");
 		
@@ -109,9 +109,8 @@ Scene::Scene(
 		
 		auto e = createEntity();
 		
-		std::unique_ptr<HerculesMotionChangeListener> motionStateListener = std::make_unique<HerculesMotionChangeListener>(e, this);
-		auto collisionShapeHandle = physicsEngine_->createStaticBoxShape(glm::vec3(1.0f, 1.0f, 1.0f));
-		auto collisionBodyHandle = physicsEngine_->createDynamicRigidBody(collisionShapeHandle, 1.0f, 0.0f, 0.0f, std::move(motionStateListener));
+		auto collisionShapeHandle = createStaticBoxShape(glm::vec3(1.0f, 1.0f, 1.0f));
+		auto collisionBodyHandle = createDynamicRigidBody(collisionShapeHandle, 1.0f, 0.0f, 0.0f);
 		
 		entities::GraphicsComponent gc;
 		gc.renderableHandle = gameEngine_->createRenderable(modelHandle);
@@ -126,6 +125,7 @@ Scene::Scene(
 		//graphicsEngine_->scale(renderableHandle, 0.03f);
 		//graphicsEngine_->translate(renderableHandle, 6.0f, -4.0f, 0);
 	}
+	*/
 }
 
 Scene::~Scene()
@@ -209,6 +209,27 @@ physics::CollisionBodyHandle Scene::createStaticRigidBody(
 	return physicsEngine_->createStaticRigidBody(collisionShapeHandle, position, orientation, friction, restitution);
 }
 
+void Scene::addMotionChangeListener(const entities::Entity& entity)
+{
+	auto physicsComponent = entityComponentSystem_.entities.component<entities::PhysicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
+	
+	std::unique_ptr<HerculesMotionChangeListener> motionChangeListener = std::make_unique<HerculesMotionChangeListener>(entity, this);
+	
+	physicsEngine_->setMotionChangeListener(physicsComponent->collisionBodyHandle, std::move(motionChangeListener));
+}
+
+void Scene::removeMotionChangeListener(const entities::Entity& entity)
+{
+	auto physicsComponent = entityComponentSystem_.entities.component<entities::PhysicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
+	
+	physicsEngine_->setMotionChangeListener(physicsComponent->collisionBodyHandle, nullptr);
+}
+
+graphics::RenderableHandle Scene::createRenderable(const ModelHandle& modelHandle, const std::string& name)
+{
+	return gameEngine_->createRenderable(modelHandle, name);
+}
+
 std::string Scene::getName() const
 {
 	return name_;
@@ -233,6 +254,8 @@ void Scene::assign(const entities::Entity& entity, const entities::PhysicsCompon
 {
 	logger_->debug( "Assigning physics component to entity with id: " + std::to_string(entity.getId()) );
 	entityComponentSystem_.entities.assign<entities::PhysicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()), std::forward<const entities::PhysicsComponent>(component));
+	
+	addMotionChangeListener(entity);
 }
 
 void Scene::assign(const entities::Entity& entity, const entities::PositionOrientationComponent& component)

@@ -70,6 +70,7 @@ public:
 	virtual void destroyRigidBody(const CollisionBodyHandle& collisionBodyHandle) = 0;
 	virtual void destroyAllRigidBodies() = 0;
 	
+	virtual void setMotionChangeListener(const CollisionBodyHandle& collisionBodyHandle, std::unique_ptr<IMotionChangeListener> motionStateListener) = 0;
 	virtual void rotation(const CollisionBodyHandle& collisionBodyHandle, const glm::quat& orientation) = 0;
 	virtual glm::quat rotation(const CollisionBodyHandle& collisionBodyHandle) const = 0;
 	virtual void position(const CollisionBodyHandle& collisionBodyHandle, const float32 x, const float32 y, const float32 z) = 0;

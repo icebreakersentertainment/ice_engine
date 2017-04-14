@@ -78,6 +78,7 @@ public:
 	virtual void destroyRigidBody(const CollisionBodyHandle& collisionBodyHandle) override;
 	virtual void destroyAllRigidBodies() override;
 	
+	virtual void setMotionChangeListener(const CollisionBodyHandle& collisionBodyHandle, std::unique_ptr<IMotionChangeListener> motionStateListener) override;
 	virtual void rotation(const CollisionBodyHandle& collisionBodyHandle, const glm::quat& orientation) override;
 	virtual glm::quat rotation(const CollisionBodyHandle& collisionBodyHandle) const override;
 	virtual void position(const CollisionBodyHandle& collisionBodyHandle, const float32 x, const float32 y, const float32 z) override;

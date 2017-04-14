@@ -8,6 +8,8 @@
 
 #include "Types.hpp"
 
+#include "ModelHandle.hpp"
+
 #include "entities/Entity.hpp"
 #include "entities/GraphicsComponent.hpp"
 #include "entities/PhysicsComponent.hpp"
@@ -63,6 +65,8 @@ public:
 		const float32 friction = 1.0f,
 		const float32 restitution = 1.0f
 	) = 0;
+	
+	virtual graphics::RenderableHandle createRenderable(const ModelHandle& modelHandle, const std::string& name = std::string()) = 0;
 	
 	virtual std::string getName() const = 0;
 	

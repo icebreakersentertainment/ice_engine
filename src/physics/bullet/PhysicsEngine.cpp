@@ -188,6 +188,12 @@ void PhysicsEngine::destroyAllRigidBodies()
 	physicsData_.clear();
 }
 
+void PhysicsEngine::setMotionChangeListener(const CollisionBodyHandle& collisionBodyHandle, std::unique_ptr<IMotionChangeListener> motionStateListener)
+{
+	auto& physicsData = physicsData_[collisionBodyHandle.getId()];
+	
+	physicsData.motionState->setMotionChangeListener(std::move(motionStateListener));
+}
 
 void PhysicsEngine::rotation(const CollisionBodyHandle& collisionBodyHandle, const glm::quat& orientation)
 {

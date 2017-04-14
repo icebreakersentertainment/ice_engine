@@ -332,6 +332,11 @@ void GameEngine::initializeScriptingSubSystem()
 		"CollisionBodyHandle createStaticRigidBody(const CollisionShapeHandle& in, const vec3& in, const quat& in, const float, const float)",
 		asMETHODPR(IScene, createStaticRigidBody, (const physics::CollisionShapeHandle&, const glm::vec3&, const glm::quat&, const float32, const float32), physics::CollisionBodyHandle)
 	);
+	scriptingEngine_->registerClassMethod(
+		"IScene",
+		"RenderableHandle createRenderable(const ModelHandle& in, const string& in = string())",
+		asMETHODPR(IScene, createRenderable, (const ModelHandle&, const std::string&), graphics::RenderableHandle)
+	);
 	scriptingEngine_->registerClassMethod("IScene", "Entity createEntity()", asMETHODPR(IScene, createEntity, (), entities::Entity));
 	scriptingEngine_->registerClassMethod(
 		"IScene",
@@ -387,13 +392,6 @@ void GameEngine::initializeScriptingSubSystem()
 	);
 	
 	// IGameEngine functions available in the scripting engine
-	scriptingEngine_->registerGlobalFunction(
-		"RenderableHandle createRenderable(const ModelHandle& in, const string& in = string())",
-		asMETHODPR(IGameEngine, createRenderable, (const ModelHandle&, const std::string&), graphics::RenderableHandle),
-		asCALL_THISCALL_ASGLOBAL,
-		this
-	);
-	
 	scriptingEngine_->registerGlobalFunction(
 		"Model importModel(const string& in)",
 		asMETHODPR(IGameEngine, importModel, (const std::string&) const, graphics::model::Model),

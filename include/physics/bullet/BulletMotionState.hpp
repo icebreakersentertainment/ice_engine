@@ -26,36 +26,11 @@ public:
 	{
 	}
 	
-	/**
-	 * Call this to update the physics simulation from an external source.
-	 */
-	void position(const glm::vec3& position)
+	void setMotionChangeListener(std::unique_ptr<IMotionChangeListener> motionStateListener)
 	{
-		const btVector3 pos = btVector3(position.x, position.y, position.z);
-		
-		initialPosition_.setOrigin(pos);
+		motionStateListener_ = std::move(motionStateListener);
 	}
 	
-	/**
-	 * Call this to update the physics simulation from an external source.
-	 */
-	void orientation(const glm::quat& orientation)
-	{
-		const btQuaternion rot = btQuaternion(orientation.x, orientation.y, orientation.z, orientation.w);
-		
-		initialPosition_.setRotation(rot);
-	}
-	
-	/**
-	 * Call this to update the physics simulation from an external source.
-	 */
-	void setPositionAndOrientation(const glm::vec3& position, const glm::quat& orientation)
-	{
-		const btQuaternion rot = btQuaternion(orientation.x, orientation.y, orientation.z, orientation.w);
-		const btVector3 pos = btVector3(position.x, position.y, position.z);
-		initialPosition_ = btTransform(rot, pos);
-	}
-
 	btTransform getWorldTransform() const
 	{
 		return initialPosition_;

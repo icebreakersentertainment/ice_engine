@@ -73,6 +73,8 @@ public:
 		const float32 restitution = 1.0f
 	) override;
 	
+	virtual graphics::RenderableHandle createRenderable(const ModelHandle& modelHandle, const std::string& name = std::string()) override;
+	
 	virtual std::string getName() const override;
 	
 	virtual entities::Entity createEntity() override;
@@ -109,6 +111,9 @@ private:
 	// Entity system
 	entities::EntityComponentSystem entityComponentSystem_;
 	std::vector<entities::Entity> entities_;
+	
+	void addMotionChangeListener(const entities::Entity& entity);
+	void removeMotionChangeListener(const entities::Entity& entity);
 };
 
 }
