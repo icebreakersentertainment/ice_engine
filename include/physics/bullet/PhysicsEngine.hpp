@@ -23,9 +23,8 @@ namespace bullet
 
 struct BulletPhysicsData
 {
-	btCollisionShape* shape;
-	BulletMotionState* motionState;
-	btRigidBody* rigidBody;
+	std::unique_ptr<BulletMotionState> motionState;
+	std::unique_ptr<btRigidBody> rigidBody;
 };
 
 class PhysicsEngine : public IPhysicsEngine
@@ -38,17 +37,45 @@ public:
 	
 	virtual void setGravity(const glm::vec3& gravity) override;
 	
-	virtual CollisionShapeHandle createStaticPlane(const glm::vec3& planeNormal, const float32 planeConstant, std::unique_ptr<IMotionChangeListener> motionStateListener = nullptr) override;
-	virtual CollisionShapeHandle createBoxShape(const glm::vec3& dimensions, std::unique_ptr<IMotionChangeListener> motionStateListener = nullptr) override;
+	virtual CollisionShapeHandle createStaticPlaneShape(const glm::vec3& planeNormal, const float32 planeConstant) override;
+	virtual CollisionShapeHandle createStaticBoxShape(const glm::vec3& dimensions) override;
+	virtual void destroyStaticShape(const CollisionShapeHandle& collisionShapeHandle) override;
+	virtual void destroyAllStaticShapes() override;
 	
-	virtual void rotation(const CollisionShapeHandle& collisionShapeHandle, const glm::quat& orientation) override;
+	virtual CollisionBodyHandle createRigidBody(
+		const CollisionShapeHandle& collisionShapeHandle,
+		std::unique_ptr<IMotionChangeListener> motionStateListener = nullptr
+	) override;
+	virtual CollisionBodyHandle createRigidBody(
+		const CollisionShapeHandle& collisionShapeHandle,
+		const float32 mass,
+		const float32 friction,
+		const float32 restitution,
+		std::unique_ptr<IMotionChangeListener> motionStateListener = nullptr
+	) override;
+	virtual CollisionBodyHandle createRigidBody(
+		const CollisionShapeHandle& collisionShapeHandle,
+		const glm::vec3& position,
+		const glm::quat& orientation,
+		const float32 mass = 1.0f,
+		const float32 friction = 1.0f,
+		const float32 restitution = 1.0f,
+		std::unique_ptr<IMotionChangeListener> motionStateListener = nullptr
+	) override;
+	virtual void destroyRigidBody(const CollisionBodyHandle& collisionBodyHandle) override;
+	virtual void destroyAllRigidBodies() override;
 	
-	//virtual void scale(const CollisionShapeHandle& collisionShapeHandle, const float32 x, const float32 y, const float32 z) override;
-	//virtual void scale(const CollisionShapeHandle& collisionShapeHandle, const glm::vec3& scale) override;
-	//virtual void scale(const CollisionShapeHandle& collisionShapeHandle, const float32 scale) override;
-	
-	virtual void position(const CollisionShapeHandle& collisionShapeHandle, const float32 x, const float32 y, const float32 z) override;
-	virtual void position(const CollisionShapeHandle& collisionShapeHandle, const glm::vec3& position) override;
+	virtual void rotation(const CollisionBodyHandle& collisionBodyHandle, const glm::quat& orientation) override;
+	virtual glm::quat rotation(const CollisionBodyHandle& collisionBodyHandle) const override;
+	virtual void position(const CollisionBodyHandle& collisionBodyHandle, const float32 x, const float32 y, const float32 z) override;
+	virtual void position(const CollisionBodyHandle& collisionBodyHandle, const glm::vec3& position) override;
+	virtual glm::vec3 position(const CollisionBodyHandle& collisionBodyHandle) const override;
+	virtual void mass(const CollisionBodyHandle& collisionBodyHandle, const float32 mass) override;
+	virtual float32 mass(const CollisionBodyHandle& collisionBodyHandle) const override;
+	virtual void friction(const CollisionBodyHandle& collisionBodyHandle, const float32 friction) override;
+	virtual float32 friction(const CollisionBodyHandle& collisionBodyHandle) const override;
+	virtual void restitution(const CollisionBodyHandle& collisionBodyHandle, const float32 restitution) override;
+	virtual float32 restitution(const CollisionBodyHandle& collisionBodyHandle) const override;
 
 private:
 	PhysicsEngine(const PhysicsEngine& other);
@@ -63,8 +90,8 @@ private:
 	std::unique_ptr<btSequentialImpulseConstraintSolver> solver_;
 	std::unique_ptr<btDiscreteDynamicsWorld> dynamicsWorld_;
 	
-	std::vector<BulletPhysicsData> bulletPhysicsData_;
-	std::vector<BulletMotionState*> bulletMotionStates_;
+	std::vector<std::unique_ptr<btCollisionShape>> shapes_;
+	std::vector<BulletPhysicsData> physicsData_;
 };
 
 }

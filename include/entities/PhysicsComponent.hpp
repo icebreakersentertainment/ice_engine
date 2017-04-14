@@ -1,7 +1,7 @@
 #ifndef PHYSICSCOMPONENT_H_
 #define PHYSICSCOMPONENT_H_
 
-#include "physics/CollisionShapeHandle.hpp"
+#include "physics/CollisionBodyHandle.hpp"
 
 namespace hercules
 {
@@ -10,11 +10,11 @@ namespace entities
 
 struct PhysicsComponent
 {
-	PhysicsComponent(physics::CollisionShapeHandle collisionShapeHandle = physics::CollisionShapeHandle::INVALID) : collisionShapeHandle(collisionShapeHandle)
+	PhysicsComponent(physics::CollisionBodyHandle collisionBodyHandle = physics::CollisionBodyHandle::INVALID) : collisionBodyHandle(collisionBodyHandle)
 	{
 	};
 	
-	physics::CollisionShapeHandle collisionShapeHandle;
+	physics::CollisionBodyHandle collisionBodyHandle;
 };
 
 }

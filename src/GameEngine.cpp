@@ -259,12 +259,14 @@ void GameEngine::initializeScriptingSubSystem()
 	scriptingEngine_->registerClassMethod("RenderableHandle", "int32 getId() const", asMETHODPR(graphics::RenderableHandle, getId, () const, int32));
 	scriptingEngine_->registerObjectType("CollisionShapeHandle", sizeof(physics::CollisionShapeHandle), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<physics::CollisionShapeHandle>());
 	scriptingEngine_->registerClassMethod("CollisionShapeHandle", "int32 getId() const", asMETHODPR(physics::CollisionShapeHandle, getId, () const, int32));
+	scriptingEngine_->registerObjectType("CollisionBodyHandle", sizeof(physics::CollisionBodyHandle), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<physics::CollisionBodyHandle>());
+	scriptingEngine_->registerClassMethod("CollisionBodyHandle", "int32 getId() const", asMETHODPR(physics::CollisionBodyHandle, getId, () const, int32));
 	
 	scriptingEngine_->registerObjectType("GraphicsComponent", sizeof(entities::GraphicsComponent), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<entities::GraphicsComponent>());
 	scriptingEngine_->registerObjectProperty("GraphicsComponent", "vec3 scale", asOFFSET(entities::GraphicsComponent, scale));
 	scriptingEngine_->registerObjectProperty("GraphicsComponent", "RenderableHandle renderableHandle", asOFFSET(entities::GraphicsComponent, renderableHandle));
 	scriptingEngine_->registerObjectType("PhysicsComponent", sizeof(entities::PhysicsComponent), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<entities::PhysicsComponent>());
-	scriptingEngine_->registerObjectProperty("PhysicsComponent", "CollisionShapeHandle collisionShapeHandle", asOFFSET(entities::PhysicsComponent, collisionShapeHandle));
+	scriptingEngine_->registerObjectProperty("PhysicsComponent", "CollisionBodyHandle collisionBodyHandle", asOFFSET(entities::PhysicsComponent, collisionBodyHandle));
 	scriptingEngine_->registerObjectType("PositionOrientationComponent", sizeof(entities::PositionOrientationComponent), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<entities::PositionOrientationComponent>());
 	scriptingEngine_->registerObjectProperty("PositionOrientationComponent", "vec3 position", asOFFSET(entities::PositionOrientationComponent, position));
 	scriptingEngine_->registerObjectProperty("PositionOrientationComponent", "quat orientation", asOFFSET(entities::PositionOrientationComponent, orientation));

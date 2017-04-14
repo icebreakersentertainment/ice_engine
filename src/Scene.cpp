@@ -87,12 +87,13 @@ Scene::Scene(
 		
 		auto e = createEntity();
 		
-		auto collisionShapeHandle = physicsEngine_->createStaticPlane(glm::vec3(0.0f, 1.0f, 0.0f), 1.0f);
+		auto collisionShapeHandle = physicsEngine_->createStaticPlaneShape(glm::vec3(0.0f, 1.0f, 0.0f), 1.0f);
+		auto collisionBodyHandle = physicsEngine_->createRigidBody(collisionShapeHandle, 0.0f, 1.0f, 1.0f);
 		
 		entities::GraphicsComponent gc;
 		gc.renderableHandle = renderableHandle;
 		entities::PhysicsComponent pc;
-		pc.collisionShapeHandle = collisionShapeHandle;
+		pc.collisionBodyHandle = collisionBodyHandle;
 		assign(e, gc);
 		assign(e, pc);
 		
@@ -109,12 +110,13 @@ Scene::Scene(
 		auto e = createEntity();
 		
 		std::unique_ptr<HerculesMotionChangeListener> motionStateListener = std::make_unique<HerculesMotionChangeListener>(e, this);
-		auto collisionShapeHandle = physicsEngine_->createBoxShape(glm::vec3(1.0f, 1.0f, 1.0f), std::move(motionStateListener));
+		auto collisionShapeHandle = physicsEngine_->createStaticBoxShape(glm::vec3(1.0f, 1.0f, 1.0f));
+		auto collisionBodyHandle = physicsEngine_->createRigidBody(collisionShapeHandle, 1.0f, 0.0f, 0.0f, std::move(motionStateListener));
 		
 		entities::GraphicsComponent gc;
 		gc.renderableHandle = gameEngine_->createRenderable(modelHandle);
 		entities::PhysicsComponent pc;
-		pc.collisionShapeHandle = collisionShapeHandle;
+		pc.collisionBodyHandle = collisionBodyHandle;
 		assign(e, gc);
 		assign(e, pc);
 		
@@ -190,7 +192,7 @@ void Scene::rotate(const entities::Entity& entity, const float32 degrees, const 
 	}
 	
 	graphicsEngine_->rotation(graphicsComponent->renderableHandle, component->orientation);
-	physicsEngine_->rotation(physicsComponent->collisionShapeHandle, component->orientation);
+	physicsEngine_->rotation(physicsComponent->collisionBodyHandle, component->orientation);
 }
 	
 void Scene::rotate(const entities::Entity& entity, const glm::quat& orientation, const graphics::TransformSpace& relativeTo)
@@ -216,7 +218,7 @@ void Scene::rotate(const entities::Entity& entity, const glm::quat& orientation,
 	}
 	
 	graphicsEngine_->rotation(graphicsComponent->renderableHandle, component->orientation);
-	physicsEngine_->rotation(physicsComponent->collisionShapeHandle, component->orientation);
+	physicsEngine_->rotation(physicsComponent->collisionBodyHandle, component->orientation);
 }
 
 void Scene::rotation(const entities::Entity& entity, const float32 degrees, const glm::vec3& axis)
@@ -230,7 +232,7 @@ void Scene::rotation(const entities::Entity& entity, const float32 degrees, cons
 	component->orientation = glm::normalize( glm::angleAxis(glm::radians(degrees), axis) );
 	
 	graphicsEngine_->rotation(graphicsComponent->renderableHandle, component->orientation);
-	physicsEngine_->rotation(physicsComponent->collisionShapeHandle, component->orientation);
+	physicsEngine_->rotation(physicsComponent->collisionBodyHandle, component->orientation);
 }
 
 void Scene::rotation(const entities::Entity& entity, const glm::quat& orientation)
@@ -244,7 +246,7 @@ void Scene::rotation(const entities::Entity& entity, const glm::quat& orientatio
 	component->orientation = glm::normalize( orientation );
 	
 	graphicsEngine_->rotation(graphicsComponent->renderableHandle, component->orientation);
-	physicsEngine_->rotation(physicsComponent->collisionShapeHandle, component->orientation);
+	physicsEngine_->rotation(physicsComponent->collisionBodyHandle, component->orientation);
 }
 
 void Scene::translate(const entities::Entity& entity, const glm::vec3& translate)
@@ -258,7 +260,7 @@ void Scene::translate(const entities::Entity& entity, const glm::vec3& translate
 	component->position += translate;
 	
 	graphicsEngine_->position(graphicsComponent->renderableHandle, component->position);
-	physicsEngine_->position(physicsComponent->collisionShapeHandle, component->position);
+	physicsEngine_->position(physicsComponent->collisionBodyHandle, component->position);
 }
 
 void Scene::scale(const entities::Entity& entity, const float32 scale)
@@ -303,7 +305,7 @@ void Scene::lookAt(const entities::Entity& entity, const glm::vec3& lookAt)
 	component->orientation =  glm::normalize( component->orientation * glm::quat_cast( lookAtMatrix ) );
 	
 	graphicsEngine_->rotation(graphicsComponent->renderableHandle, component->orientation);
-	physicsEngine_->rotation(physicsComponent->collisionShapeHandle, component->orientation);
+	physicsEngine_->rotation(physicsComponent->collisionBodyHandle, component->orientation);
 }
 
 void Scene::position(const entities::Entity& entity, const glm::vec3& position)
@@ -317,7 +319,7 @@ void Scene::position(const entities::Entity& entity, const glm::vec3& position)
 	component->position = position;
 	
 	graphicsEngine_->position(graphicsComponent->renderableHandle, position);
-	physicsEngine_->position(physicsComponent->collisionShapeHandle, position);
+	physicsEngine_->position(physicsComponent->collisionBodyHandle, position);
 }
 
 void Scene::position(const entities::Entity& entity, const float32 x, const float32 y, const float32 z)
@@ -331,7 +333,7 @@ void Scene::position(const entities::Entity& entity, const float32 x, const floa
 	component->position = glm::vec3(x, y, z);
 	
 	graphicsEngine_->position(graphicsComponent->renderableHandle, x, y, z);
-	physicsEngine_->position(physicsComponent->collisionShapeHandle, x, y, z);
+	physicsEngine_->position(physicsComponent->collisionBodyHandle, x, y, z);
 }
 
 }

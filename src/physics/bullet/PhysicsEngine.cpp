@@ -43,96 +43,215 @@ void PhysicsEngine::setGravity(const glm::vec3& gravity)
 	dynamicsWorld_->setGravity(btVector3(gravity.x, gravity.y, gravity.z));
 }
 
-CollisionShapeHandle PhysicsEngine::createStaticPlane(const glm::vec3& planeNormal, const float32 planeConstant, std::unique_ptr<IMotionChangeListener> motionStateListener)
+CollisionShapeHandle PhysicsEngine::createStaticPlaneShape(const glm::vec3& planeNormal, const float32 planeConstant)
 {
-	BulletPhysicsData bulletPhysicsData;
-	bulletPhysicsData.shape = new btStaticPlaneShape(btVector3(planeNormal.x, planeNormal.y, planeNormal.z), planeConstant);
+	auto shape = std::make_unique<btStaticPlaneShape>(btVector3(planeNormal.x, planeNormal.y, planeNormal.z), btScalar(planeConstant));
 	
-	btTransform groundShapeTransform;
-	groundShapeTransform.setIdentity();
-	groundShapeTransform.setOrigin(btVector3());
-	
-	bulletPhysicsData.motionState = new BulletMotionState(groundShapeTransform, std::move(motionStateListener));
-	btRigidBody::btRigidBodyConstructionInfo rbGroundInfo(0, bulletPhysicsData.motionState, bulletPhysicsData.shape);
-	rbGroundInfo.m_friction = 1.0f;
-	rbGroundInfo.m_restitution = 1.0f;
-	bulletPhysicsData.rigidBody = new btRigidBody(rbGroundInfo);
-	
-	dynamicsWorld_->addRigidBody(bulletPhysicsData.rigidBody);
-	
-	bulletPhysicsData_.push_back(bulletPhysicsData);
-	auto index = bulletPhysicsData_.size() - 1;
+	shapes_.push_back(std::move(shape));
+	auto index = shapes_.size() - 1;
 	
 	return CollisionShapeHandle(index);
 }
 
-CollisionShapeHandle PhysicsEngine::createBoxShape(const glm::vec3& dimensions, std::unique_ptr<IMotionChangeListener> motionStateListener)
+CollisionShapeHandle PhysicsEngine::createStaticBoxShape(const glm::vec3& dimensions)
 {
-	BulletPhysicsData bulletPhysicsData;
-	bulletPhysicsData.shape = new btBoxShape(btVector3(dimensions.x, dimensions.y, dimensions.z));
+	auto shape = std::make_unique<btBoxShape>(btVector3(dimensions.x, dimensions.y, dimensions.z));
 	
-	btTransform boxShapeTransform;
-	boxShapeTransform.setIdentity();
-	boxShapeTransform.setOrigin(btVector3());
+	shapes_.push_back(std::move(shape));
+	auto index = shapes_.size() - 1;
 	
-	btScalar mass(1.0f);
+	return CollisionShapeHandle(index);
+}
+
+void PhysicsEngine::destroyStaticShape(const CollisionShapeHandle& collisionShapeHandle)
+{
+	//std::vector<std::unique_ptr<btCollisionShape>> shapes_;
+	//std::vector<BulletPhysicsData> physicsData_;
+}
+
+void PhysicsEngine::destroyAllStaticShapes()
+{
+	shapes_.clear();
+}
+
+CollisionBodyHandle PhysicsEngine::createRigidBody(
+	const CollisionShapeHandle& collisionShapeHandle,
+	std::unique_ptr<IMotionChangeListener> motionStateListener
+)
+{
+	return createRigidBody(collisionShapeHandle, glm::vec3(), glm::quat(), 1.0f, 1.0f, 1.0f, std::move(motionStateListener));
+}
+
+CollisionBodyHandle PhysicsEngine::createRigidBody(
+	const CollisionShapeHandle& collisionShapeHandle,
+	const float32 mass,
+	const float32 friction,
+	const float32 restitution,
+	std::unique_ptr<IMotionChangeListener> motionStateListener
+)
+{
+	return createRigidBody(collisionShapeHandle, glm::vec3(), glm::quat(), mass, friction, restitution, std::move(motionStateListener));
+}
+
+CollisionBodyHandle PhysicsEngine::createRigidBody(
+	const CollisionShapeHandle& collisionShapeHandle,
+	const glm::vec3& position,
+	const glm::quat& orientation,
+	const float32 mass,
+	const float32 friction,
+	const float32 restitution,
+	std::unique_ptr<IMotionChangeListener> motionStateListener
+)
+{
+	auto& shape = shapes_[collisionShapeHandle.getId()];
+	
+	btTransform transform;
+	transform.setRotation( btQuaternion(orientation.x, orientation.y, orientation.z, orientation.w) );
+	transform.setOrigin( btVector3(position.x, position.y, position.z) );
+	
+	btScalar bulletMass(mass);
 	btVector3 localInertia(0.0f, 0.0f, 0.0f);
-	bulletPhysicsData.shape->calculateLocalInertia(mass, localInertia);
+	if (bulletMass != btScalar(0.0f))
+	{
+		shape->calculateLocalInertia(bulletMass, localInertia);
+	}
 	
-	bulletPhysicsData.motionState = new BulletMotionState(boxShapeTransform, std::move(motionStateListener));
-	btRigidBody::btRigidBodyConstructionInfo boxInfo(mass, bulletPhysicsData.motionState, bulletPhysicsData.shape, localInertia);
-	//boxInfo.m_friction = 1.0f;
-	//boxInfo.m_restitution = 1.0f;
-	bulletPhysicsData.rigidBody = new btRigidBody(boxInfo);
+	BulletPhysicsData physicsData;
 	
-	dynamicsWorld_->addRigidBody(bulletPhysicsData.rigidBody);
+	physicsData.motionState = std::make_unique<BulletMotionState>(transform, std::move(motionStateListener));
+	btRigidBody::btRigidBodyConstructionInfo constructionInfo(bulletMass, physicsData.motionState.get(), shape.get(), localInertia);
+	constructionInfo.m_friction = friction;
+	constructionInfo.m_restitution = restitution;
+	physicsData.rigidBody = std::make_unique<btRigidBody>(constructionInfo);
 	
-	bulletPhysicsData_.push_back(bulletPhysicsData);
-	auto index = bulletPhysicsData_.size() - 1;
+	dynamicsWorld_->addRigidBody(physicsData.rigidBody.get());
 	
-	return CollisionShapeHandle(index);
+	physicsData_.push_back(std::move(physicsData));
+	auto index = physicsData_.size() - 1;
+	
+	return CollisionBodyHandle(index);
 }
 
-void PhysicsEngine::rotation(const CollisionShapeHandle& collisionShapeHandle, const glm::quat& orientation)
+void PhysicsEngine::destroyRigidBody(const CollisionBodyHandle& collisionBodyHandle)
 {
-	const auto id = collisionShapeHandle.getId();
 	
-	auto& bulletPhysicsData = bulletPhysicsData_[id];
+}
+
+void PhysicsEngine::destroyAllRigidBodies()
+{
+	physicsData_.clear();
+}
+
+
+void PhysicsEngine::rotation(const CollisionBodyHandle& collisionBodyHandle, const glm::quat& orientation)
+{
+	auto& physicsData = physicsData_[collisionBodyHandle.getId()];
 	
-	btTransform transform = bulletPhysicsData.motionState->getWorldTransform();
+	btTransform transform = physicsData.motionState->getWorldTransform();
 	
 	const btQuaternion quat = btQuaternion(orientation.x, orientation.y, orientation.z, orientation.w);
 	transform.setRotation(quat);
 	
-	bulletPhysicsData.rigidBody->setWorldTransform(transform);
+	physicsData.rigidBody->setWorldTransform(transform);
 }
 
-void PhysicsEngine::position(const CollisionShapeHandle& collisionShapeHandle, const float32 x, const float32 y, const float32 z)
+glm::quat PhysicsEngine::rotation(const CollisionBodyHandle& collisionBodyHandle) const
 {
-	const auto id = collisionShapeHandle.getId();
+	auto& physicsData = physicsData_[collisionBodyHandle.getId()];
 	
-	auto& bulletPhysicsData = bulletPhysicsData_[id];
+	const btQuaternion rotation = physicsData.motionState->getWorldTransform().getRotation();
 	
-	btTransform transform = bulletPhysicsData.motionState->getWorldTransform();
+	return glm::quat(rotation.w(), rotation.x(), rotation.y(), rotation.z());
+}
+
+void PhysicsEngine::position(const CollisionBodyHandle& collisionBodyHandle, const float32 x, const float32 y, const float32 z)
+{
+	auto& physicsData = physicsData_[collisionBodyHandle.getId()];
+	
+	btTransform transform = physicsData.motionState->getWorldTransform();
 	
 	const btVector3 pos = btVector3(x, y, z);
 	transform.setOrigin(pos);
 	
-	bulletPhysicsData.rigidBody->setWorldTransform(transform);
+	physicsData.rigidBody->setWorldTransform(transform);
 }
 
-void PhysicsEngine::position(const CollisionShapeHandle& collisionShapeHandle, const glm::vec3& position)
+void PhysicsEngine::position(const CollisionBodyHandle& collisionBodyHandle, const glm::vec3& position)
 {
-	const auto id = collisionShapeHandle.getId();
-	
-	auto& bulletPhysicsData = bulletPhysicsData_[id];
+	auto& physicsData = physicsData_[collisionBodyHandle.getId()];
 
-	btTransform transform = bulletPhysicsData.motionState->getWorldTransform();
+	btTransform transform = physicsData.motionState->getWorldTransform();
 	
 	const btVector3 pos = btVector3(position.x, position.y, position.z);
 	transform.setOrigin(pos);
 	
-	bulletPhysicsData.rigidBody->setWorldTransform(transform);
+	physicsData.rigidBody->setWorldTransform(transform);
+}
+
+glm::vec3 PhysicsEngine::position(const CollisionBodyHandle& collisionBodyHandle) const
+{
+	auto& physicsData = physicsData_[collisionBodyHandle.getId()];
+	
+	const btVector3 position = physicsData.motionState->getWorldTransform().getOrigin();
+	
+	return glm::vec3(position.x(), position.y(), position.z());
+}
+
+void PhysicsEngine::mass(const CollisionBodyHandle& collisionBodyHandle, const float32 mass)
+{
+	auto& physicsData = physicsData_[collisionBodyHandle.getId()];
+	
+	auto shape = physicsData.rigidBody->getCollisionShape();
+	
+	btScalar bulletMass(mass);
+	btVector3 localInertia(0.0f, 0.0f, 0.0f);
+	if (bulletMass != btScalar(0.0f))
+	{
+		shape->calculateLocalInertia(bulletMass, localInertia);
+	}
+	
+	physicsData.rigidBody->setMassProps(bulletMass, localInertia);
+}
+
+float32 PhysicsEngine::mass(const CollisionBodyHandle& collisionBodyHandle) const
+{
+	auto& physicsData = physicsData_[collisionBodyHandle.getId()];
+	
+	const auto inverseMass = physicsData.rigidBody->getInvMass();
+	
+	return pow(inverseMass, -1.0f);
+}
+
+void PhysicsEngine::friction(const CollisionBodyHandle& collisionBodyHandle, const float32 friction)
+{
+	auto& physicsData = physicsData_[collisionBodyHandle.getId()];
+	
+	physicsData.rigidBody->setFriction(btScalar(friction));
+}
+
+float32 PhysicsEngine::friction(const CollisionBodyHandle& collisionBodyHandle) const
+{
+	auto& physicsData = physicsData_[collisionBodyHandle.getId()];
+	
+	const btScalar friction = physicsData.rigidBody->getFriction();
+	
+	return friction;
+}
+
+void PhysicsEngine::restitution(const CollisionBodyHandle& collisionBodyHandle, const float32 restitution)
+{
+	auto& physicsData = physicsData_[collisionBodyHandle.getId()];
+	
+	physicsData.rigidBody->setRestitution(btScalar(restitution));
+}
+
+float32 PhysicsEngine::restitution(const CollisionBodyHandle& collisionBodyHandle) const
+{
+	auto& physicsData = physicsData_[collisionBodyHandle.getId()];
+	
+	const btScalar restitution = physicsData.rigidBody->getRestitution();
+	
+	return restitution;
 }
 
 }
