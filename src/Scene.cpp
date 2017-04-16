@@ -256,13 +256,11 @@ uint32 Scene::getNumEntities() const
 
 void Scene::assign(const entities::Entity& entity, const entities::GraphicsComponent& component)
 {
-	logger_->debug( "Assigning graphics component to entity with id: " + std::to_string(entity.getId()) );
 	entityComponentSystem_.entities.assign<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()), std::forward<const entities::GraphicsComponent>(component));
 }
 
 void Scene::assign(const entities::Entity& entity, const entities::PhysicsComponent& component)
 {
-	logger_->debug( "Assigning physics component to entity with id: " + std::to_string(entity.getId()) );
 	entityComponentSystem_.entities.assign<entities::PhysicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()), std::forward<const entities::PhysicsComponent>(component));
 	
 	addMotionChangeListener(entity);
@@ -270,14 +268,11 @@ void Scene::assign(const entities::Entity& entity, const entities::PhysicsCompon
 
 void Scene::assign(const entities::Entity& entity, const entities::PositionOrientationComponent& component)
 {
-	logger_->debug( "Assigning position and orientation component to entity with id: " + std::to_string(entity.getId()) );
 	entityComponentSystem_.entities.assign<entities::PositionOrientationComponent>(static_cast<entityx::Entity::Id>(entity.getId()), std::forward<const entities::PositionOrientationComponent>(component));
 }
 
 void Scene::rotate(const entities::Entity& entity, const float32 degrees, const glm::vec3& axis, const graphics::TransformSpace& relativeTo)
 {
-	logger_->debug( "Rotating entity with id: " + std::to_string(entity.getId()) );
-	
 	auto component = entityComponentSystem_.entities.component<entities::PositionOrientationComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
 	auto graphicsComponent = entityComponentSystem_.entities.component<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
 	auto physicsComponent = entityComponentSystem_.entities.component<entities::PhysicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
@@ -302,8 +297,6 @@ void Scene::rotate(const entities::Entity& entity, const float32 degrees, const 
 
 void Scene::rotate(const entities::Entity& entity, const glm::quat& orientation, const graphics::TransformSpace& relativeTo)
 {
-	logger_->debug( "Rotating entity with id: " + std::to_string(entity.getId()) );
-	
 	auto component = entityComponentSystem_.entities.component<entities::PositionOrientationComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
 	auto graphicsComponent = entityComponentSystem_.entities.component<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
 	auto physicsComponent = entityComponentSystem_.entities.component<entities::PhysicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
@@ -328,8 +321,6 @@ void Scene::rotate(const entities::Entity& entity, const glm::quat& orientation,
 
 void Scene::rotation(const entities::Entity& entity, const float32 degrees, const glm::vec3& axis)
 {
-	logger_->debug( "Setting rotation for entity with id: " + std::to_string(entity.getId()) );
-	
 	auto component = entityComponentSystem_.entities.component<entities::PositionOrientationComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
 	auto graphicsComponent = entityComponentSystem_.entities.component<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
 	auto physicsComponent = entityComponentSystem_.entities.component<entities::PhysicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
@@ -342,8 +333,6 @@ void Scene::rotation(const entities::Entity& entity, const float32 degrees, cons
 
 void Scene::rotation(const entities::Entity& entity, const glm::quat& orientation)
 {
-	logger_->debug( "Setting rotation for entity with id: " + std::to_string(entity.getId()) );
-	
 	auto component = entityComponentSystem_.entities.component<entities::PositionOrientationComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
 	auto graphicsComponent = entityComponentSystem_.entities.component<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
 	auto physicsComponent = entityComponentSystem_.entities.component<entities::PhysicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
@@ -356,8 +345,6 @@ void Scene::rotation(const entities::Entity& entity, const glm::quat& orientatio
 
 void Scene::translate(const entities::Entity& entity, const glm::vec3& translate)
 {
-	logger_->debug( "Translating entity with id: " + std::to_string(entity.getId()) );
-	
 	auto component = entityComponentSystem_.entities.component<entities::PositionOrientationComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
 	auto graphicsComponent = entityComponentSystem_.entities.component<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
 	auto physicsComponent = entityComponentSystem_.entities.component<entities::PhysicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
@@ -370,8 +357,6 @@ void Scene::translate(const entities::Entity& entity, const glm::vec3& translate
 
 void Scene::scale(const entities::Entity& entity, const float32 scale)
 {
-	logger_->debug( "Set scale for entity with id: " + std::to_string(entity.getId()) );
-	
 	auto component = entityComponentSystem_.entities.component<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
 	component->scale = glm::vec3(scale, scale, scale);
 	
@@ -380,8 +365,6 @@ void Scene::scale(const entities::Entity& entity, const float32 scale)
 
 void Scene::scale(const entities::Entity& entity, const glm::vec3& scale)
 {
-	logger_->debug( "Set scale for entity with id: " + std::to_string(entity.getId()) );
-	
 	auto component = entityComponentSystem_.entities.component<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
 	component->scale = scale;
 	
@@ -390,8 +373,6 @@ void Scene::scale(const entities::Entity& entity, const glm::vec3& scale)
 
 void Scene::scale(const entities::Entity& entity, const float32 x, const float32 y, const float32 z)
 {
-	logger_->debug( "Set scale for entity with id: " + std::to_string(entity.getId()) );
-	
 	auto component = entityComponentSystem_.entities.component<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
 	component->scale = glm::vec3(x, y, z);
 	
@@ -400,8 +381,6 @@ void Scene::scale(const entities::Entity& entity, const float32 x, const float32
 
 void Scene::lookAt(const entities::Entity& entity, const glm::vec3& lookAt)
 {
-	logger_->debug( "Set look at for entity with id: " + std::to_string(entity.getId()) );
-	
 	auto component = entityComponentSystem_.entities.component<entities::PositionOrientationComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
 	auto graphicsComponent = entityComponentSystem_.entities.component<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
 	auto physicsComponent = entityComponentSystem_.entities.component<entities::PhysicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
@@ -415,8 +394,6 @@ void Scene::lookAt(const entities::Entity& entity, const glm::vec3& lookAt)
 
 void Scene::position(const entities::Entity& entity, const glm::vec3& position)
 {
-	logger_->debug( "Set position for entity with id: " + std::to_string(entity.getId()) );
-	
 	auto component = entityComponentSystem_.entities.component<entities::PositionOrientationComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
 	auto graphicsComponent = entityComponentSystem_.entities.component<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
 	auto physicsComponent = entityComponentSystem_.entities.component<entities::PhysicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
@@ -429,8 +406,6 @@ void Scene::position(const entities::Entity& entity, const glm::vec3& position)
 
 void Scene::position(const entities::Entity& entity, const float32 x, const float32 y, const float32 z)
 {
-	logger_->debug( "Set position for entity with id: " + std::to_string(entity.getId()) );
-	
 	auto component = entityComponentSystem_.entities.component<entities::PositionOrientationComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
 	auto graphicsComponent = entityComponentSystem_.entities.component<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
 	auto physicsComponent = entityComponentSystem_.entities.component<entities::PhysicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
