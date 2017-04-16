@@ -1,42 +1,44 @@
 class ModelHandle
 {
 };
-class ModelInstanceHandle
-{
-};
-class AnimationList
-{
-};
-class SkeletonInstanceHandle
-{
-};
+
+virtual void setIGameInstance(const scripting::ScriptObjectHandle& scriptObjectHandle) = 0;
+virtual void setIGameInstance(asIScriptObject* obj) = 0; // eww
+virtual void setIGameInstance(const IGame* game) = 0;
+virtual void setBootstrapScript(const std::string& filename) = 0;
+
+virtual void run();
 
 
-virtual Model importModel(const std::string& filename) const = 0;
 
-virtual ModelHandle loadModel(const std::string& filename, const std::string& name) = 0;
-virtual ModelHandle loadModel(const Model& model, const std::string& name) = 0;
+/* RESOURCE STUFF */
+virtual AudioSample* loadAudioSample(const std::string& filename, const std::string& name) = 0;
+virtual Image* loadImage(const std::string& filename, const std::string& name) = 0;
+virtual Model* loadModel(const std::string& filename, const std::string& name) = 0;
+virtual Model* importModel(const std::string& filename, const std::string& name) = 0;
+
+virtual void unloadAudioSample(const std::string& name) = 0;
+virtual void unloadImage(const std::string& name) = 0;
 virtual void unloadModel(const std::string& name) = 0;
-virtual void unloadModel(const ModelHandle& modelHandle) = 0;
-virtual void unloadAllModels() = 0;
-virtual ModelHandle getModel(const std::string& name) const = 0;
 
-virtual ModelInstanceHandle createModelInstance(const std::string& modelName, const std::string& name = std::string()) = 0;
-virtual ModelInstanceHandle createModelInstance(const ModelHandle& modelHandle, const std::string& name = std::string()) = 0;
-virtual void destroyModelInstance(const std::string& name) = 0;
-virtual void destroyModelInstance(const ModelHandle& modelHandle) = 0;
-virtual void destroyAllModelInstances() = 0;
-virtual ModelInstanceHandle getModelInstance(const std::string& name) const = 0;
+virtual AudioSample* getAudioSample(const std::string& name) const = 0;
+virtual Image* getImage(const std::string& name) const = 0;
+virtual Model* getModel(const std::string& name) const = 0;
 
-virtual AnimationList getAnimations(const std::string& modelName) const = 0;
-virtual AnimationList getAnimations(const ModelHandle& modelHandle) const = 0;
-virtual AnimationHandle getAnimation(const std::string& modelName, const std::string& animationName) const = 0;
-virtual AnimationHandle getAnimation(const ModelHandle& modelHandle, const std::string& animationName) const = 0;
 
-virtual SkeletonInstanceHandle createSkeleton(const std::string& modelName) const = 0;
-virtual SkeletonInstanceHandle createSkeleton(const ModelHandle& modelHandle) const = 0;
-virtual Skeleton createSkeleton(const std::string& modelName) const = 0;
-virtual Skeleton createSkeleton(const ModelHandle& modelHandle) const = 0;
 
-virtual void assign(const ModelInstanceHandle& modelInstancehandle, const AnimationHandle& animationHandle) = 0;
-virtual void assign(const ModelInstanceHandle& modelInstancehandle, const SkeletonInstanceHandle& skeletonInstanceHandle) = 0;
+/* MODEL STUFF */
+virtual ModelHandle loadStaticModel(const graphics::model::Model& model) = 0;
+
+
+
+/* SCENE STUFF */
+virtual IScene* createScene(const std::string& name) = 0;
+virtual void destroyScene(const std::string& name) = 0;
+virtual void destroyScene(const IScene* scene) = 0;
+virtual IScene* getScene(const std::string& name) const = 0;
+
+
+
+/* Implements the IEventListener interface */
+virtual bool processEvent(const graphics::Event& event) = 0;

@@ -71,6 +71,8 @@ public:
 	virtual std::string getName() const = 0;
 	
 	virtual entities::Entity createEntity() = 0;
+	virtual void destroyEntity(const entities::Entity& entity) = 0;
+	virtual uint32 getNumEntities() const = 0;
 	
 	virtual void assign(const entities::Entity& entity, const entities::GraphicsComponent& component) = 0;
 	virtual void assign(const entities::Entity& entity, const entities::PhysicsComponent& component) = 0;

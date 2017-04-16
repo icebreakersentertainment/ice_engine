@@ -18,6 +18,13 @@ namespace scripting
 namespace angel_script
 {
 
+struct ScriptObjectData
+{
+	ScriptHandle scriptHandle;
+	std::string className;
+	asIScriptObject* object;
+};
+
 class ScriptingEngine : public IScriptingEngine
 {
 public:
@@ -87,8 +94,36 @@ public:
 	virtual void execute(const ScriptHandle& scriptHandle, const std::string& function, ParameterList& arguments, int64& returnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) override;
 	virtual void execute(const ScriptHandle& scriptHandle, const std::string& function, ParameterList& arguments, uint64& returnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) override;
 	
+	virtual void execute(const ScriptObjectHandle& scriptObjectHandle, const std::string& function = std::string("void main()"), const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) override;
+	virtual void execute(const ScriptObjectHandle& scriptObjectHandle, const std::string& function, std::function<void(void*)> returnObjectParser, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) override;
+	virtual void execute(const ScriptObjectHandle& scriptObjectHandle, const std::string& function, float32& returnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) override;
+	virtual void execute(const ScriptObjectHandle& scriptObjectHandle, const std::string& function, float64& returnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) override;
+	virtual void execute(const ScriptObjectHandle& scriptObjectHandle, const std::string& function, int8& returnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) override;
+	virtual void execute(const ScriptObjectHandle& scriptObjectHandle, const std::string& function, uint8& returnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) override;
+	virtual void execute(const ScriptObjectHandle& scriptObjectHandle, const std::string& function, int16& returnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) override;
+	virtual void execute(const ScriptObjectHandle& scriptObjectHandle, const std::string& function, uint16& returnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) override;
+	virtual void execute(const ScriptObjectHandle& scriptObjectHandle, const std::string& function, int32& returnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) override;
+	virtual void execute(const ScriptObjectHandle& scriptObjectHandle, const std::string& function, uint32& returnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) override;
+	virtual void execute(const ScriptObjectHandle& scriptObjectHandle, const std::string& function, int64& returnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) override;
+	virtual void execute(const ScriptObjectHandle& scriptObjectHandle, const std::string& function, uint64& returnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) override;
+	virtual void execute(const ScriptObjectHandle& scriptObjectHandle, const std::string& function, ParameterList& arguments, std::function<void(void*)> returnObjectParser = [](void*){}, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) override;
+	virtual void execute(const ScriptObjectHandle& scriptObjectHandle, const std::string& function, ParameterList& arguments, float32& returnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) override;
+	virtual void execute(const ScriptObjectHandle& scriptObjectHandle, const std::string& function, ParameterList& arguments, float64& returnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) override;
+	virtual void execute(const ScriptObjectHandle& scriptObjectHandle, const std::string& function, ParameterList& arguments, int8& returnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) override;
+	virtual void execute(const ScriptObjectHandle& scriptObjectHandle, const std::string& function, ParameterList& arguments, uint8& returnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) override;
+	virtual void execute(const ScriptObjectHandle& scriptObjectHandle, const std::string& function, ParameterList& arguments, int16& returnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) override;
+	virtual void execute(const ScriptObjectHandle& scriptObjectHandle, const std::string& function, ParameterList& arguments, uint16& returnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) override;
+	virtual void execute(const ScriptObjectHandle& scriptObjectHandle, const std::string& function, ParameterList& arguments, int32& returnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) override;
+	virtual void execute(const ScriptObjectHandle& scriptObjectHandle, const std::string& function, ParameterList& arguments, uint32& returnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) override;
+	virtual void execute(const ScriptObjectHandle& scriptObjectHandle, const std::string& function, ParameterList& arguments, int64& returnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) override;
+	virtual void execute(const ScriptObjectHandle& scriptObjectHandle, const std::string& function, ParameterList& arguments, uint64& returnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) override;
+	
 	virtual ExecutionContextHandle createExecutionContext() override;
-		
+	
+	virtual ScriptObjectHandle registerScriptObject(const ScriptHandle& scriptHandle, const std::string& className, asIScriptObject* object) override;
+	virtual void unregisterScriptObject(const ScriptObjectHandle& scriptObjectHandle) override;
+	virtual void unregisterAllScriptObjects() override;
+	
 	virtual void registerGlobalFunction(const std::string& name, const asSFuncPtr& funcPointer, asDWORD callConv, void* objForThiscall = nullptr) override;
 	virtual void registerGlobalProperty(const std::string& declaration, void* pointer) override;
 	
@@ -102,16 +137,13 @@ public:
 		
 	virtual void registerClassMethod(const std::string& className, const std::string& methodSignature, const asSFuncPtr& funcPointer) override;
 	
-	virtual void loadScript(const std::string& name, const std::string& filename) override;
-	virtual void loadScripts() override;
-	virtual void loadScripts(const std::string& directory) override;
-	virtual void unloadScripts() override;
+	virtual void registerInterface(const std::string& name) override;
+	virtual void registerInterfaceMethod(const std::string& name, const std::string& declaration) override;
 	
-	virtual void runScript(const std::string& filename, const std::string& function = std::string("void main()")) override;
-	
-	virtual void discardModule(const std::string& name) override;
-	
-	virtual AsObject* createAsObject(const std::string& moduleName, const std::string& className) override;
+	virtual ScriptHandle loadScript(const std::string& filename, const std::string& name = std::string()) override;
+	virtual void destroyScript(const std::string& name) override;
+	virtual void destroyScript(const ScriptHandle& scriptHandle) override;
+	virtual void destroyAllScripts() override;
 	
 	// More 'advanced' functions for angel script
 	virtual void registerObjectType(const std::string& obj, const int32 byteSize, asDWORD flags) override;
@@ -122,27 +154,6 @@ public:
 	virtual void MessageCallback(const asSMessageInfo* msg, void* param) override;
 	static void print(const std::string& msg);
 	static void println(const std::string& msg);
-
-	virtual void initContext(const std::string& function, const std::string& module) override;
-	virtual void setArgDWord(asUINT arg, asDWORD value) override;
-	virtual void setArgQWord(asUINT arg, asQWORD value) override;
-	virtual void setArgFloat(asUINT arg, const float32 value) override;
-	virtual void setArgDouble(asUINT arg, const float64 value) override;
-	virtual void setArgAddress(asUINT arg, void* addr) override;
-	virtual void setArgByte(asUINT arg, asBYTE value) override;
-	virtual void setArgObject(asUINT arg, void* obj) override;
-	virtual void setArgWord(asUINT arg, asWORD value) override;
-	virtual void run() override;
-	
-	asDWORD getReturnDWord();
-	asQWORD getReturnQWord();
-	float32 getReturnFloat();
-	float64 getReturnDouble();
-	void* getReturnAddress();
-	asBYTE getReturnByte();
-	void* getReturnObject();
-	asWORD getReturnWord();
-	void releaseContext();
 
 private:
 	ScriptingEngine(const ScriptingEngine& other);
@@ -161,25 +172,37 @@ private:
 	std::unique_ptr<CScriptBuilder> builder_;
 	asIScriptEngine* engine_;
 	std::vector< asIScriptContext* > contexts_;
-	asIScriptModule* defaultModule_;
+	std::vector< asIScriptModule* > modules_;
+	std::vector< ScriptObjectData > scriptObjectData_;
+	
+	std::vector<asIScriptFunction*> scriptFunctions_;
+	std::vector<asIScriptFunction*> scriptObjectFunctions_;
+	
+	asIScriptModule* getModule(const ScriptObjectHandle& scriptObjectHandle) const;
+	asIScriptFunction* getMethod(const ScriptObjectHandle& scriptObjectHandle, const std::string& function) const;
+	asIScriptFunction* getMethod(const ScriptObjectFunctionHandle& scriptObjectFunctionHandle) const;
+	asITypeInfo* getType(const ScriptObjectHandle& scriptObjectHandle) const;
 	
 	asIScriptContext* getContext(const ExecutionContextHandle& executionContextHandle) const;
 	asIScriptModule* createModuleFromScript(const std::string& moduleName, const std::string& scriptData) const;
 	void destroyModule(const std::string& moduleName);
+	
 	void setArguments(asIScriptContext* context, ParameterList& arguments) const;
-	void callFunction(asIScriptContext* context, asIScriptModule* module, const std::string& function) const;
-	void callFunction(asIScriptContext* context, asIScriptModule* module, const std::string& function, ParameterList& arguments) const;
-	void callFunction(asIScriptContext* context, const ScriptHandle& scriptHandle, const std::string& function) const;
-	void callFunction(asIScriptContext* context, const ScriptHandle& scriptHandle, const std::string& function, ParameterList& arguments) const;
+	
+	void callFunction(asIScriptContext* context, asIScriptModule* module, asIScriptFunction* function, asIScriptObject* object, ParameterList& arguments = ParameterList()) const;
+	void callFunction(asIScriptContext* context, asIScriptModule* module, asIScriptFunction* function, ParameterList& arguments = ParameterList()) const;
+	void callFunction(asIScriptContext* context, asIScriptModule* module, const std::string& function, ParameterList& arguments = ParameterList()) const;
+	void callFunction(asIScriptContext* context, asIScriptModule* module, const ScriptFunctionHandle& scriptFunctionHandle, ParameterList& arguments = ParameterList()) const;
+	void callFunction(asIScriptContext* context, const ScriptHandle& scriptHandle, const std::string& function, ParameterList& arguments = ParameterList()) const;
+	void callFunction(asIScriptContext* context, const ScriptHandle& scriptHandle, const ScriptFunctionHandle& scriptFunctionHandle, ParameterList& arguments = ParameterList()) const;
+	void callFunction(asIScriptContext* context, const ScriptObjectHandle& scriptObjectHandle, const std::string& function, ParameterList& arguments = ParameterList()) const;
+	void callFunction(asIScriptContext* context, const ScriptObjectHandle& scriptObjectHandle, ScriptObjectFunctionHandle& scriptObjectFunctionHandle, ParameterList& arguments = ParameterList()) const;
 	
 	void assertNoAngelscriptError(const int32 returnCode) const;
 	
-	void startNewModule(const std::string& module);
-	void addScript(const std::string& script);
-	void buildModule();
-	void discardModules();
-	
 	asIScriptFunction* getFunctionByDecl(const std::string& function, asIScriptModule* module = nullptr) const;
+	
+	void discardModule(const std::string& name);
 	
 	static const std::string ONE_TIME_RUN_SCRIPT_MODULE_NAME;
 	static const uint32 MAX_EXECUTION_CONTEXTS = 32;

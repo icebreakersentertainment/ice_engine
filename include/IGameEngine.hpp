@@ -16,6 +16,8 @@
 
 #include "graphics/model/Model.hpp"
 
+#include "scripting/IScriptingEngine.hpp"
+
 namespace hercules
 {
 
@@ -42,6 +44,7 @@ public:
 	
 	virtual GameState getState() = 0;
 	
+	virtual void setIGameInstance(asIScriptObject* obj) = 0;
 	virtual void setBootstrapScript(const std::string& filename) = 0;
 	
 	virtual graphics::model::Model importModel(const std::string& filename) const = 0;

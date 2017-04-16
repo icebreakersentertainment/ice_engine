@@ -279,6 +279,12 @@ void GameEngine::initializeScriptingSubSystem()
 	scriptingEngine_->registerObjectType("Model", sizeof(graphics::model::Model), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<graphics::model::Model>());
 	//scriptingEngine_->registerObjectProperty("Model", "vectorMesh meshes", asOFFSET(graphics::model::Model, meshes));
 	
+	// IGame
+	scriptingEngine_->registerInterface("IGame");
+	scriptingEngine_->registerInterfaceMethod("IGame", "void initialize()");
+	scriptingEngine_->registerInterfaceMethod("IGame", "void destroy()");
+	scriptingEngine_->registerInterfaceMethod("IGame", "void tick(const float)");
+	
 	// IScene
 	scriptingEngine_->registerObjectType("IScene", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	scriptingEngine_->registerClassMethod("IScene", "string getName() const", asMETHODPR(IScene, getName, () const, std::string));
@@ -393,12 +399,17 @@ void GameEngine::initializeScriptingSubSystem()
 	
 	// IGameEngine functions available in the scripting engine
 	scriptingEngine_->registerGlobalFunction(
+		"void setIGameInstance(IGame@ game)",
+		asMETHODPR(IGameEngine, setIGameInstance, (asIScriptObject* obj), void),
+		asCALL_THISCALL_ASGLOBAL,
+		this
+	);
+	scriptingEngine_->registerGlobalFunction(
 		"Model importModel(const string& in)",
 		asMETHODPR(IGameEngine, importModel, (const std::string&) const, graphics::model::Model),
 		asCALL_THISCALL_ASGLOBAL,
 		this
 	);
-	
 	scriptingEngine_->registerGlobalFunction(
 		"ModelHandle loadStaticModel(const Model& in)",
 		asMETHODPR(IGameEngine, loadStaticModel, (const graphics::model::Model&), ModelHandle),
@@ -813,6 +824,13 @@ IScene* GameEngine::getScene(const std::string& name) const
 	return nullptr;
 }
 
+scripting::ScriptHandle scriptHandle;
+scripting::ScriptObjectHandle scriptObjectHandle;
+void GameEngine::setIGameInstance(asIScriptObject* obj)
+{
+	scriptObjectHandle = scriptingEngine_->registerScriptObject(scriptHandle, "Game", obj);
+}
+
 void GameEngine::setBootstrapScript(const std::string& filename)
 {
 	bootstrapScriptName_ = filename;
@@ -1001,8 +1019,6 @@ int32 GameEngine::getTimeForScripting()
 	return timeForScripting_;
 }
 
-float32 runningTime;
-std::vector< glm::mat4 > transformations;
 void GameEngine::run()
 {
 	setState(GAME_STATE_MAIN_MENU);
@@ -1026,7 +1042,7 @@ void GameEngine::run()
 	auto end = std::chrono::high_resolution_clock::now();
 	auto previousFpsTime = begin;
 	float32 tempFps = 0.0f;
-	float32 deltaTime = 0.0f;
+	float32 delta = 0.0f;
 	
 	/*
 	sf::Clock clock;
@@ -1037,186 +1053,57 @@ void GameEngine::run()
 	sf::Time lastGuiUpdateTime = sf::Time();
 	sf::Time lastAngelscriptUpdateTime = sf::Time();
 	float32 tempFps = 0.0f;
-	float32 deltaTime = 0.0f;
+	float32 delta = 0.0f;
 	*/
 	setState(GAME_STATE_MAIN_MENU);
 	
 	int temp = 0;
+	//float32 runningTime;
+	//std::vector< glm::mat4 > transformations;
 	
-	scriptingEngine_->runScript(bootstrapScriptName_);
+	scriptHandle = scriptingEngine_->loadScript(bootstrapScriptName_);
+	scriptingEngine_->execute(scriptHandle, "void main()");
+	
+	scriptingEngine_->execute(scriptObjectHandle, "void initialize()");
 	
 	while ( running_ )
 	{
 		begin = std::chrono::high_resolution_clock::now();
-		deltaTime = std::chrono::duration<float32>(begin - end).count();
+		delta = std::chrono::duration<float32>(begin - end).count();
 		
-		//std::cout << "deltaTime: " << deltaTime << std::endl;
+		graphicsEngine_->setMouseRelativeMode(false);
+		graphicsEngine_->setCursorVisible(true);
+
+		handleEvents();
 		
-		switch ( state_ )
+		tempFps++;
+		
+		if (std::chrono::duration<float32>(begin - previousFpsTime).count() > 1.0f)
 		{
-			case GAME_STATE_MAIN_MENU:
-				//sfmlWindow_->setMouseCursorVisible(true);
-				graphicsEngine_->setMouseRelativeMode(false);
-				graphicsEngine_->setCursorVisible(true);
-				//camera_->tick(deltaTime);
-	
-				handleEvents();
-				
-				tempFps++;
-				
-				if (std::chrono::duration<float32>(begin - previousFpsTime).count() > 1.0f)
-				{
-					previousFpsTime = begin;
-					currentFps_ = tempFps;
-					std::cout << "currentFps_: " << currentFps_ << std::endl;
-					tempFps = 0;
-				}
-				
-				for (auto& scene : scenes_)
-				{
-					scene->tick(deltaTime);
-				}
-				
-				/*
-				if ( sf::Keyboard::isKeyPressed(sf::Keyboard::N))
-				{
-					setState(GAME_STATE_START_NEW_GAME);
-				}
-				*/
-				
-				end = begin;
-				break;
-			
-			case GAME_STATE_START_NEW_GAME:
-				//sfmlWindow_->setMouseCursorVisible(false);
-				graphicsEngine_->setMouseRelativeMode(true);
-				graphicsEngine_->setCursorVisible(false);
-				
-				//camera_->tick(deltaTime);
-				//igui_->processMessages();
-				//igui_->update();
-
-				handleEvents();
-				
-				startNewGame();
-				
-				setState(GAME_STATE_LOAD_NEW_GAME);
-				
-				break;
-			
-			case GAME_STATE_LOAD_NEW_GAME:
-				{
-					bool doneLoading = threadPool_->getActiveWorkerCount() == 0u && threadPool_->getWorkQueueCount() == 0u;
-					doneLoading = doneLoading && openGlLoader_->getWorkQueueCount() == 0u;
-					
-					if (doneLoading)
-					{
-						setState(GAME_STATE_IN_GAME);
-					}
-					else
-					{
-						// Load any opengl assets (this needs work...)
-						openGlLoader_->tick();
-						//openGlLoader_->tick();
-						
-						//igui_->processMessages();
-						
-						if (temp > 200)
-						{
-							//igui_->update();
-							temp = 0;
-						}
-						
-						temp++;
-					}
-				}
-				break;
-	
-			case GAME_STATE_IN_GAME:
-				{
-					//auto c = clock.getElapsedTime();
-					handleEvents();
-					//timeForInput_ = clock.getElapsedTime().asMilliseconds() - c.asMilliseconds();
-				}
-				
-				{
-					//physicsEngine_->tick(0.15f);
-				}
-			
-				{
-					//auto c = clock.getElapsedTime();
-					
-					// force mouse to center of window (so that we can use relative mouse movement for player movement)
-					/*
-					if ( !inConsole_ )
-					{
-						const sf::Vector2u windowSize = sfmlWindow_->getSize();
-						glm::vec2 windowPosition = window_->getPosition();
-						
-						const sf::Vector2i mousePos = sf::Mouse::getPosition();
-						const sf::Vector2i windowCenter = sf::Vector2i(windowPosition.x + windowSize.x / 2, windowPosition.y + windowSize.y / 2);
-						sf::Mouse::setPosition(windowCenter);
-						sfmlWindow_->setMouseCursorVisible(false);
-						
-						GameEngine::rotationX = (-1.0f) * (float32)(mousePos.x - windowCenter.x);
-						GameEngine::rotationY = (-1.0f) * (float32)(mousePos.y - windowCenter.y);
-						GameEngine::mousePosX = mousePos.x;
-						GameEngine::mousePosY = mousePos.y;
-					
-						if ( sf::Keyboard::isKeyPressed(sf::Keyboard::W))
-							camera_->moveForward();
-			
-						if ( sf::Keyboard::isKeyPressed(sf::Keyboard::S))
-							camera_->moveBack();
-			
-						if ( sf::Keyboard::isKeyPressed(sf::Keyboard::A))
-							camera_->moveLeft();
-						
-						if ( sf::Keyboard::isKeyPressed(sf::Keyboard::D))
-							camera_->moveRight();
-			
-						if ( GameEngine::rotationX != 0.0f )
-						{
-							camera_->rotate( GameEngine::rotationX, glm::vec3(0.0f, 1.0f, 0.0f) );
-							GameEngine::rotationX = 0.0f;
-						}
-			
-						if ( GameEngine::rotationY != 0.0f )
-						{
-							camera_->rotate( GameEngine::rotationY, glm::vec3(1.0f, 0.0f, 0.0f) );
-							GameEngine::rotationY = 0.0f;
-						}
-		
-						camera_->tick(deltaTime);
-					}
-					else
-					{
-						sfmlWindow_->setMouseCursorVisible(true);
-					}
-					
-					timeForMisc_ = clock.getElapsedTime().asMilliseconds() - c.asMilliseconds();
-					*/
-				}
-				
-				{
-					// TODO: actually calculate the elapsed time
-					//auto c = clock.getElapsedTime();
-					//tick(deltaTime);
-					//timeForTick_ = clock.getElapsedTime().asMilliseconds() - c.asMilliseconds();
-				}
-	
-				break;
-			
-			default:
-				std::string message = std::string("Game is in an unknown state!");
-				logger_->error(message);
-				assert(0);
-				// TODO: Throw exception
-				// throw exception::InvalidStateException(message);
-				
-				break;
+			previousFpsTime = begin;
+			currentFps_ = tempFps;
+			std::cout << "currentFps_: " << currentFps_ << " numEntities: " << scenes_[0]->getNumEntities() << std::endl;
+			tempFps = 0;
 		}
-
+		
+		scripting::ParameterList params;
+		params.add(delta);
+		
+		scriptingEngine_->execute(scriptObjectHandle, "void tick(const float)", params);
+		
+		for (auto& scene : scenes_)
+		{
+			scene->tick(delta);
+		}
+		
+		/*
+		// Load any opengl assets (this needs work...)
+		if (openGlLoader_->getWorkQueueCount() != 0u)
+		{
+			openGlLoader_->tick();
+		}
+		*/
+		
 		// test animation
 		/*
 		transformations = std::vector< glm::mat4 >(100, glm::mat4(1.0));
@@ -1231,73 +1118,19 @@ void GameEngine::run()
 		//transformations = std::vector< glm::mat4 >(100, glm::mat4(1.0));
 		//graphicsEngine_->update(skeletonHandle, &transformations[0], 100 * sizeof(glm::mat4));
 		
-		if ( retVal == -1 )
-		{
-			running_ = false;
-		}
-		else
-		{
-			/*
-			previousTime = currentTime;
-			currentTime = clock.getElapsedTime();
-			deltaTime = (float32)(currentTime.asMilliseconds() - previousTime.asMilliseconds()) / 1000.0f;
-			tempFps++;
-
-			if (currentTime.asMilliseconds() - previousFpsTime.asMilliseconds() > 1000.0f)
-			{
-				previousFpsTime = currentTime;
-				currentFps_ = tempFps;
-				tempFps = 0;
-			}
-
-			//igui_->processMessages();
-
-			// update gui every 200 ms
-			if ( currentTime.asMilliseconds() - lastGuiUpdateTime.asMilliseconds() > 200 )
-			{
-				auto c = clock.getElapsedTime();
-				//igui_->update();
-				lastGuiUpdateTime = currentTime;
-				timeForGuiUpdate_ = clock.getElapsedTime().asMilliseconds() - c.asMilliseconds();
-			}
-			
-			// run angelscript every 50 ms
-			if ( currentTime.asMilliseconds() - lastAngelscriptUpdateTime.asMilliseconds() > 50 )
-			{
-				auto c = clock.getElapsedTime();
-				lastAngelscriptUpdateTime = currentTime;
-				angelscriptTest();
-				timeForScripting_ = clock.getElapsedTime().asMilliseconds() - c.asMilliseconds();
-				
-			}
-			
-			// render the scene
-			//openGlLoader_->block();
-			auto c = clock.getElapsedTime();
-			glrProgram_->render();
-			timeForRender_ = clock.getElapsedTime().asMilliseconds() - c.asMilliseconds();
-			//openGlLoader_->unblock();
-			*/
-			graphicsEngine_->render( 0.01f );
-		}
-		
-		/*
-		if ( sf::Keyboard::isKeyPressed(sf::Keyboard::Escape))
-		{
-			done = true;
-		}
-		*/
+		graphicsEngine_->render(delta);
+	
+		end = begin;
 	}
+	
+	scriptingEngine_->unregisterAllScriptObjects();
+	scriptingEngine_->destroyAllScripts();
 
 	//igui_->release(mainGui_);
 	
 	//mainGui_ = nullptr;
 	
 	//igui_ = nullptr;
-
-	//window_->destroy();
-
-	//scriptingEngine_->destroy();
 
 	destroy();
 }

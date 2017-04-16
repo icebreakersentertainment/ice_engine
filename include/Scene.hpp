@@ -78,6 +78,8 @@ public:
 	virtual std::string getName() const override;
 	
 	virtual entities::Entity createEntity() override;
+	virtual void destroyEntity(const entities::Entity& entity) override;
+	virtual uint32 getNumEntities() const override;
 	
 	virtual void assign(const entities::Entity& entity, const entities::GraphicsComponent& component) override;
 	virtual void assign(const entities::Entity& entity, const entities::PhysicsComponent& component) override;

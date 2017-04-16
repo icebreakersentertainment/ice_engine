@@ -7,11 +7,11 @@
 
 #include <angelscript/angelscript.h>
 
-#include "scripting/angel_script/AsObject.hpp"
-
 #include "scripting/ExecutionContextHandle.hpp"
 #include "scripting/ScriptHandle.hpp"
 #include "scripting/ScriptObjectHandle.hpp"
+#include "scripting/ScriptFunctionHandle.hpp"
+#include "scripting/ScriptObjectFunctionHandle.hpp"
 #include "scripting/ParameterList.hpp"
 
 #include "Types.hpp"
@@ -92,7 +92,35 @@ public:
 	virtual void execute(const ScriptHandle& scriptHandle, const std::string& function, ParameterList& arguments, int64& returnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) = 0;
 	virtual void execute(const ScriptHandle& scriptHandle, const std::string& function, ParameterList& arguments, uint64& returnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) = 0;
 	
+	virtual void execute(const ScriptObjectHandle& scriptObjectHandle, const std::string& function = std::string("void main()"), const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) = 0;
+	virtual void execute(const ScriptObjectHandle& scriptObjectHandle, const std::string& function, std::function<void(void*)> returnObjectParser, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) = 0;
+	virtual void execute(const ScriptObjectHandle& scriptObjectHandle, const std::string& function, float32& returnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) = 0;
+	virtual void execute(const ScriptObjectHandle& scriptObjectHandle, const std::string& function, float64& returnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) = 0;
+	virtual void execute(const ScriptObjectHandle& scriptObjectHandle, const std::string& function, int8& returnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) = 0;
+	virtual void execute(const ScriptObjectHandle& scriptObjectHandle, const std::string& function, uint8& returnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) = 0;
+	virtual void execute(const ScriptObjectHandle& scriptObjectHandle, const std::string& function, int16& returnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) = 0;
+	virtual void execute(const ScriptObjectHandle& scriptObjectHandle, const std::string& function, uint16& returnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) = 0;
+	virtual void execute(const ScriptObjectHandle& scriptObjectHandle, const std::string& function, int32& returnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) = 0;
+	virtual void execute(const ScriptObjectHandle& scriptObjectHandle, const std::string& function, uint32& returnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) = 0;
+	virtual void execute(const ScriptObjectHandle& scriptObjectHandle, const std::string& function, int64& returnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) = 0;
+	virtual void execute(const ScriptObjectHandle& scriptObjectHandle, const std::string& function, uint64& returnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) = 0;
+	virtual void execute(const ScriptObjectHandle& scriptObjectHandle, const std::string& function, ParameterList& arguments, std::function<void(void*)> returnObjectParser = [](void*){}, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) = 0;
+	virtual void execute(const ScriptObjectHandle& scriptObjectHandle, const std::string& function, ParameterList& arguments, float32& returnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) = 0;
+	virtual void execute(const ScriptObjectHandle& scriptObjectHandle, const std::string& function, ParameterList& arguments, float64& returnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) = 0;
+	virtual void execute(const ScriptObjectHandle& scriptObjectHandle, const std::string& function, ParameterList& arguments, int8& returnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) = 0;
+	virtual void execute(const ScriptObjectHandle& scriptObjectHandle, const std::string& function, ParameterList& arguments, uint8& returnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) = 0;
+	virtual void execute(const ScriptObjectHandle& scriptObjectHandle, const std::string& function, ParameterList& arguments, int16& returnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) = 0;
+	virtual void execute(const ScriptObjectHandle& scriptObjectHandle, const std::string& function, ParameterList& arguments, uint16& returnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) = 0;
+	virtual void execute(const ScriptObjectHandle& scriptObjectHandle, const std::string& function, ParameterList& arguments, int32& returnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) = 0;
+	virtual void execute(const ScriptObjectHandle& scriptObjectHandle, const std::string& function, ParameterList& arguments, uint32& returnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) = 0;
+	virtual void execute(const ScriptObjectHandle& scriptObjectHandle, const std::string& function, ParameterList& arguments, int64& returnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) = 0;
+	virtual void execute(const ScriptObjectHandle& scriptObjectHandle, const std::string& function, ParameterList& arguments, uint64& returnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) = 0;
+	
 	virtual ExecutionContextHandle createExecutionContext() = 0;
+	
+	virtual ScriptObjectHandle registerScriptObject(const ScriptHandle& scriptHandle, const std::string& className, asIScriptObject* object) = 0;
+	virtual void unregisterScriptObject(const ScriptObjectHandle& scriptObjectHandle) = 0;
+	virtual void unregisterAllScriptObjects() = 0;
 	
 	virtual void registerGlobalFunction(const std::string& name, const asSFuncPtr& funcPointer, asDWORD callConv, void* objForThiscall = nullptr) = 0;
 	virtual void registerGlobalProperty(const std::string& declaration, void* pointer) = 0;
@@ -107,16 +135,13 @@ public:
 		
 	virtual void registerClassMethod(const std::string& className, const std::string& methodSignature, const asSFuncPtr& funcPointer) = 0;
 	
-	virtual void loadScript(const std::string& name, const std::string& filename) = 0;
-	virtual void loadScripts() = 0;
-	virtual void loadScripts(const std::string& directory) = 0;
-	virtual void unloadScripts() = 0;
+	virtual void registerInterface(const std::string& name) = 0;
+	virtual void registerInterfaceMethod(const std::string& name, const std::string& declaration) = 0;
 	
-	virtual void discardModule(const std::string& name) = 0;
-	
-	virtual void runScript(const std::string& filename, const std::string& function = std::string("void main()")) = 0;
-	
-	virtual angel_script::AsObject* createAsObject(const std::string& moduleName, const std::string& className) = 0;
+	virtual ScriptHandle loadScript(const std::string& filename, const std::string& name = std::string()) = 0;
+	virtual void destroyScript(const std::string& name) = 0;
+	virtual void destroyScript(const ScriptHandle& scriptHandle) = 0;
+	virtual void destroyAllScripts() = 0;
 	
 	// More 'advanced' functions for angel script
 	virtual void registerObjectType(const std::string& obj, const int32 byteSize, asDWORD flags) = 0;
@@ -126,17 +151,6 @@ public:
 
 	virtual void MessageCallback(const asSMessageInfo* msg, void* param) = 0;
 
-	virtual void initContext(const std::string& function, const std::string& module) = 0;
-	virtual void setArgDWord(asUINT arg, asDWORD value) = 0;
-	virtual void setArgQWord(asUINT arg, asQWORD value) = 0;
-	virtual void setArgFloat(asUINT arg, const float32 value) = 0;
-	virtual void setArgDouble(asUINT arg, const float64 value) = 0;
-	virtual void setArgAddress(asUINT arg, void* addr) = 0;
-	virtual void setArgByte(asUINT arg, asBYTE value) = 0;
-	virtual void setArgObject(asUINT arg, void* obj) = 0;
-	virtual void setArgWord(asUINT arg, asWORD value) = 0;
-	virtual void run() = 0;
-	
 };
 
 }

@@ -244,6 +244,16 @@ entities::Entity Scene::createEntity()
 	return entities::Entity( e.id().id() );
 }
 
+void Scene::destroyEntity(const entities::Entity& entity)
+{
+	entityComponentSystem_.entities.destroy(static_cast<entityx::Entity::Id>(entity.getId()));
+}
+
+uint32 Scene::getNumEntities() const
+{
+	return entityComponentSystem_.entities.size();
+}
+
 void Scene::assign(const entities::Entity& entity, const entities::GraphicsComponent& component)
 {
 	logger_->debug( "Assigning graphics component to entity with id: " + std::to_string(entity.getId()) );

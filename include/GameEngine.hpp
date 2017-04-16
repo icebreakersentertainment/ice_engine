@@ -37,6 +37,8 @@ public:
 	virtual void run();
 
 	virtual GameState getState() override;
+	
+	virtual void setIGameInstance(asIScriptObject* obj) override;
 
 	/**
 	 * 

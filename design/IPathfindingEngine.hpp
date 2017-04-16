@@ -1,0 +1,7 @@
+class PathfindingSceneHandle
+{
+};
+class PathHandle
+{
+};
+
