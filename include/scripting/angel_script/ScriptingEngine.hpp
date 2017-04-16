@@ -189,14 +189,22 @@ private:
 	
 	void setArguments(asIScriptContext* context, ParameterList& arguments) const;
 	
-	void callFunction(asIScriptContext* context, asIScriptModule* module, asIScriptFunction* function, asIScriptObject* object, ParameterList& arguments = ParameterList()) const;
-	void callFunction(asIScriptContext* context, asIScriptModule* module, asIScriptFunction* function, ParameterList& arguments = ParameterList()) const;
-	void callFunction(asIScriptContext* context, asIScriptModule* module, const std::string& function, ParameterList& arguments = ParameterList()) const;
-	void callFunction(asIScriptContext* context, asIScriptModule* module, const ScriptFunctionHandle& scriptFunctionHandle, ParameterList& arguments = ParameterList()) const;
-	void callFunction(asIScriptContext* context, const ScriptHandle& scriptHandle, const std::string& function, ParameterList& arguments = ParameterList()) const;
-	void callFunction(asIScriptContext* context, const ScriptHandle& scriptHandle, const ScriptFunctionHandle& scriptFunctionHandle, ParameterList& arguments = ParameterList()) const;
-	void callFunction(asIScriptContext* context, const ScriptObjectHandle& scriptObjectHandle, const std::string& function, ParameterList& arguments = ParameterList()) const;
-	void callFunction(asIScriptContext* context, const ScriptObjectHandle& scriptObjectHandle, ScriptObjectFunctionHandle& scriptObjectFunctionHandle, ParameterList& arguments = ParameterList()) const;
+	void callFunction(asIScriptContext* context, asIScriptModule* module, asIScriptFunction* function, asIScriptObject* object) const;
+	void callFunction(asIScriptContext* context, asIScriptModule* module, asIScriptFunction* function, asIScriptObject* object, ParameterList& arguments) const;
+	void callFunction(asIScriptContext* context, asIScriptModule* module, asIScriptFunction* function) const;
+	void callFunction(asIScriptContext* context, asIScriptModule* module, asIScriptFunction* function, ParameterList& arguments) const;
+	void callFunction(asIScriptContext* context, asIScriptModule* module, const std::string& function) const;
+	void callFunction(asIScriptContext* context, asIScriptModule* module, const std::string& function, ParameterList& arguments) const;
+	void callFunction(asIScriptContext* context, asIScriptModule* module, const ScriptFunctionHandle& scriptFunctionHandle) const;
+	void callFunction(asIScriptContext* context, asIScriptModule* module, const ScriptFunctionHandle& scriptFunctionHandle, ParameterList& arguments) const;
+	void callFunction(asIScriptContext* context, const ScriptHandle& scriptHandle, const std::string& function) const;
+	void callFunction(asIScriptContext* context, const ScriptHandle& scriptHandle, const std::string& function, ParameterList& arguments) const;
+	void callFunction(asIScriptContext* context, const ScriptHandle& scriptHandle, const ScriptFunctionHandle& scriptFunctionHandle) const;
+	void callFunction(asIScriptContext* context, const ScriptHandle& scriptHandle, const ScriptFunctionHandle& scriptFunctionHandle, ParameterList& arguments) const;
+	void callFunction(asIScriptContext* context, const ScriptObjectHandle& scriptObjectHandle, const std::string& function) const;
+	void callFunction(asIScriptContext* context, const ScriptObjectHandle& scriptObjectHandle, const std::string& function, ParameterList& arguments) const;
+	void callFunction(asIScriptContext* context, const ScriptObjectHandle& scriptObjectHandle, ScriptObjectFunctionHandle& scriptObjectFunctionHandle) const;
+	void callFunction(asIScriptContext* context, const ScriptObjectHandle& scriptObjectHandle, ScriptObjectFunctionHandle& scriptObjectFunctionHandle, ParameterList& arguments) const;
 	
 	void assertNoAngelscriptError(const int32 returnCode) const;
 	

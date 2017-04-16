@@ -272,6 +272,42 @@ void ScriptingEngine::setArguments(asIScriptContext* context, ParameterList& arg
 	}
 }
 
+void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptModule* module, asIScriptFunction* function, asIScriptObject* object) const
+{
+	logger_->debug( std::string("Preparing function: ") + function->GetName());
+	
+	assert(function->GetParamCount() == 0);
+	
+	int32 r = context->Prepare(function);
+	assertNoAngelscriptError(r);
+	
+	if (object != nullptr)
+	{
+		context->SetObject(object);
+	}
+	
+	logger_->debug( std::string("Executing function: ") + function->GetName());
+	
+	r = context->Execute();
+	
+	if ( r != asEXECUTION_FINISHED )
+	{
+		std::string msg = std::string();
+		
+		// The execution didn't complete as expected. Determine what happened.
+		if ( r == asEXECUTION_EXCEPTION )
+		{
+			// An exception occurred, let the script writer know what happened so it can be corrected.
+			msg = std::string("An exception occurred: ");
+			msg += GetExceptionInfo(context, true);
+			//msg += std::string(context->GetExceptionString());
+			throw Exception("ScriptEngine: " + msg);
+		}
+		
+		assertNoAngelscriptError(r);
+	}
+}
+
 void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptModule* module, asIScriptFunction* function, asIScriptObject* object, ParameterList& arguments) const
 {
 	logger_->debug( std::string("Preparing function: ") + function->GetName());
@@ -313,9 +349,21 @@ void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptModule* m
 	}
 }
 
+void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptModule* module, asIScriptFunction* function) const
+{
+	callFunction(context, module, function, nullptr);
+}
+
 void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptModule* module, asIScriptFunction* function, ParameterList& arguments) const
 {
 	callFunction(context, module, function, nullptr, arguments);
+}
+
+void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptModule* module, const std::string& function) const
+{
+	auto func = getFunctionByDecl(function, module);
+	
+	callFunction(context, module, func);
 }
 
 void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptModule* module, const std::string& function, ParameterList& arguments) const
@@ -325,6 +373,13 @@ void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptModule* m
 	callFunction(context, module, func, arguments);
 }
 
+void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptModule* module, const ScriptFunctionHandle& scriptFunctionHandle) const
+{
+	auto function = scriptFunctions_[scriptFunctionHandle.getId()];
+	
+	callFunction(context, module, function);
+}
+
 void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptModule* module, const ScriptFunctionHandle& scriptFunctionHandle, ParameterList& arguments) const
 {
 	auto function = scriptFunctions_[scriptFunctionHandle.getId()];
@@ -332,10 +387,24 @@ void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptModule* m
 	callFunction(context, module, function, arguments);
 }
 
+void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptHandle& scriptHandle, const std::string& function) const
+{
+	auto module = modules_[scriptHandle.getId()];
+	callFunction(context, module, function);
+}
+
 void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptHandle& scriptHandle, const std::string& function, ParameterList& arguments) const
 {
 	auto module = modules_[scriptHandle.getId()];
 	callFunction(context, module, function, arguments);
+}
+
+void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptHandle& scriptHandle, const ScriptFunctionHandle& scriptFunctionHandle) const
+{
+	auto module = modules_[scriptHandle.getId()];
+	auto function = scriptFunctions_[scriptFunctionHandle.getId()];
+	
+	callFunction(context, module, function);
 }
 
 void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptHandle& scriptHandle, const ScriptFunctionHandle& scriptFunctionHandle, ParameterList& arguments) const
@@ -346,6 +415,15 @@ void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptHandle
 	callFunction(context, module, function, arguments);
 }
 
+void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptObjectHandle& scriptObjectHandle, const std::string& function) const
+{
+	auto module = getModule(scriptObjectHandle);
+	auto object = scriptObjectData_[scriptObjectHandle.getId()].object;
+	auto objectFunction = getMethod(scriptObjectHandle, function);
+	
+	callFunction(context, module, objectFunction, object);
+}
+
 void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptObjectHandle& scriptObjectHandle, const std::string& function, ParameterList& arguments) const
 {
 	auto module = getModule(scriptObjectHandle);
@@ -353,6 +431,15 @@ void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptObject
 	auto objectFunction = getMethod(scriptObjectHandle, function);
 	
 	callFunction(context, module, objectFunction, object, arguments);
+}
+
+void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptObjectHandle& scriptObjectHandle, ScriptObjectFunctionHandle& scriptObjectFunctionHandle) const
+{
+	auto module = getModule(scriptObjectHandle);
+	auto object = scriptObjectData_[scriptObjectHandle.getId()].object;
+	auto objectFunction = getMethod(scriptObjectFunctionHandle);
+	
+	callFunction(context, module, objectFunction, object);
 }
 
 void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptObjectHandle& scriptObjectHandle, ScriptObjectFunctionHandle& scriptObjectFunctionHandle, ParameterList& arguments) const
