@@ -11,6 +11,26 @@ virtual void run();
 
 
 
+/* CAMERA STUFF */
+virtual CameraHandle createCamera(const glm::vec3& position = glm::vec3(), const glm::vec3& lookAt = glm::vec3(vec3)) = 0;
+virtual CameraHandle createCamera(const glm::vec3& position, const glm::quat& orientation) = 0;
+virtual CameraHandle getCamera() const = 0;
+virtual void destroyCamera(const CameraHandle& cameraHandle) = 0;
+
+virtual void rotate(const CameraHandle& cameraHandle, const float32 degrees, const glm::vec3& axis, const graphics::TransformSpace& relativeTo = graphics::TransformSpace::TS_LOCAL) = 0;
+virtual void rotate(const CameraHandle& cameraHandle, const glm::quat& orientation, const graphics::TransformSpace& relativeTo = graphics::TransformSpace::TS_LOCAL) = 0;
+virtual void rotation(const CameraHandle& cameraHandle, const float32 degrees, const glm::vec3& axis) = 0;
+virtual void rotation(const CameraHandle& cameraHandle, const glm::quat& orientation) = 0;
+virtual glm::quat rotation(const CameraHandle& cameraHandle) const = 0;
+virtual void translate(const CameraHandle& cameraHandle, const glm::vec3& translate) = 0;
+virtual void lookAt(const CameraHandle& cameraHandle, const glm::vec3& lookAt) = 0;
+
+virtual void position(const CameraHandle& cameraHandle, const glm::vec3& position) = 0;
+virtual void position(const CameraHandle& cameraHandle, const float32 x, const float32 y, const float32 z) = 0;
+virtual glm::vec3 position(const CameraHandle& cameraHandle) const = 0;
+
+
+
 /* RESOURCE STUFF */
 virtual AudioSample* loadAudioSample(const std::string& filename, const std::string& name) = 0;
 virtual Image* loadImage(const std::string& filename, const std::string& name) = 0;

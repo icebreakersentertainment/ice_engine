@@ -13,6 +13,7 @@
 #include "graphics/IGraphicsEngine.hpp"
 #include "graphics/Event.hpp"
 
+#include "handles/HandleVector.hpp"
 #include "utilities/Properties.hpp"
 #include "fs/IFileSystem.hpp"
 #include "logger/ILogger.hpp"
@@ -54,19 +55,19 @@ struct GlTexture2d
 	GLuint id;
 };
 
-struct Renderable
-{
-	Vao vao;
-	Ubo ubo;
-	GlTexture2d texture;
-};
-
-
 struct GraphicsData
 {
 	glm::vec3 position;
 	glm::vec3 scale;
 	glm::quat orientation;
+};
+
+struct Renderable
+{
+	Vao vao;
+	Ubo ubo;
+	GlTexture2d texture;
+	GraphicsData graphicsData;
 };
 
 struct Camera
@@ -166,13 +167,12 @@ private:
 	SDL_GLContext openglContext_;
 	
 	std::vector<IEventListener*> eventListeners_;
-	std::vector<Renderable> renderables_;
-	std::vector<Vao> vertexArrayObjects_;
-	std::vector<Ubo> uniformBufferObjects_;
-	std::vector<GlTexture2d> texture2dObjects_;
+	handles::HandleVector<Renderable, RenderableHandle> renderables_;
+	handles::HandleVector<Vao, MeshHandle> meshes_;
+	handles::HandleVector<Ubo, SkeletonHandle> skeletons_;
+	handles::HandleVector<GlTexture2d, TextureHandle> texture2ds_;
 	Camera camera_;
 	
-	std::vector<GraphicsData> graphicsData_;
 	glm::mat4 model_;
 	glm::mat4 view_;
 	glm::mat4 projection_;
@@ -193,6 +193,7 @@ private:
 	static Event convertSdlEvent(const SDL_Event& event);
 	static KeySym convertSdlKeySym(const SDL_Keysym& keySym);
 	static ScanCode convertSdlScancode(const SDL_Scancode& sdlScancode);
+	static KeyMod convertSdlKeymod(const uint16 sdlKeymod);
 	static KeyCode convertSdlKeycode(const SDL_Keycode& sdlKeycode);
 };
 

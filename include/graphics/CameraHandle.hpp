@@ -1,17 +1,17 @@
 #ifndef CAMERA_HANDLE_H_
 #define CAMERA_HANDLE_H_
 
-#include "ResourceHandle.hpp"
+#include "handles/Handle.hpp"
 
 namespace hercules
 {
 namespace graphics
 {
 
-class CameraHandle : public ResourceHandle
+class CameraHandle : public handles::Handle
 {
 public:
-	using ResourceHandle::ResourceHandle;
+	using handles::Handle::Handle;
 	
 	static const CameraHandle INVALID;
 };

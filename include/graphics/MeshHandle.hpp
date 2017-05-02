@@ -1,17 +1,17 @@
 #ifndef MESH_HANDLE_H_
 #define MESH_HANDLE_H_
 
-#include "ResourceHandle.hpp"
+#include "handles/Handle.hpp"
 
 namespace hercules
 {
 namespace graphics
 {
 
-class MeshHandle : public ResourceHandle
+class MeshHandle : public handles::Handle
 {
 public:
-	using ResourceHandle::ResourceHandle;
+	using handles::Handle::Handle;
 	
 	static const MeshHandle INVALID;
 };

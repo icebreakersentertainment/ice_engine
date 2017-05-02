@@ -1,7 +1,7 @@
 #ifndef SHADER_HANDLE_H_
 #define SHADER_HANDLE_H_
 
-#include "ResourceHandle.hpp"
+#include "handles/Handle.hpp"
 
 namespace hercules
 {
@@ -20,10 +20,10 @@ enum struct ShaderType
 	COMPUTE
 };
 
-class ShaderHandle : public ResourceHandle
+class ShaderHandle : public handles::Handle
 {
 public:
-	using ResourceHandle::ResourceHandle;
+	using handles::Handle::Handle;
 	
 	static const ShaderHandle INVALID;
 };

@@ -343,6 +343,12 @@ void Scene::rotation(const entities::Entity& entity, const glm::quat& orientatio
 	physicsEngine_->rotation(physicsComponent->collisionBodyHandle, component->orientation);
 }
 
+glm::quat Scene::rotation(const entities::Entity& entity)
+{
+	auto component = entityComponentSystem_.entities.component<entities::PositionOrientationComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
+	return component->orientation;
+}
+
 void Scene::translate(const entities::Entity& entity, const glm::vec3& translate)
 {
 	auto component = entityComponentSystem_.entities.component<entities::PositionOrientationComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
@@ -377,6 +383,12 @@ void Scene::scale(const entities::Entity& entity, const float32 x, const float32
 	component->scale = glm::vec3(x, y, z);
 	
 	graphicsEngine_->scale(component->renderableHandle, x, y, z);
+}
+
+glm::vec3 Scene::scale(const entities::Entity& entity)
+{
+	auto component = entityComponentSystem_.entities.component<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
+	return component->scale;
 }
 
 void Scene::lookAt(const entities::Entity& entity, const glm::vec3& lookAt)
@@ -414,6 +426,12 @@ void Scene::position(const entities::Entity& entity, const float32 x, const floa
 	
 	graphicsEngine_->position(graphicsComponent->renderableHandle, x, y, z);
 	physicsEngine_->position(physicsComponent->collisionBodyHandle, x, y, z);
+}
+
+glm::vec3 Scene::position(const entities::Entity& entity)
+{
+	auto component = entityComponentSystem_.entities.component<entities::PositionOrientationComponent>(static_cast<entityx::Entity::Id>(entity.getId()));
+	return component->position;
 }
 
 }

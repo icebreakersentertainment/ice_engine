@@ -237,7 +237,13 @@ void PhysicsEngine::position(const CollisionBodyHandle& collisionBodyHandle, con
 	const btVector3 pos = btVector3(position.x, position.y, position.z);
 	transform.setOrigin(pos);
 	
+	//physicsData.rigidBody->setCenterOfMassTransform(transform);
+	//physicsData.rigidBody->clearForces();
+	//physicsData.rigidBody->setLinearVelocity(btVector3(0,0,0));
+	//physicsData.rigidBody->setAngularVelocity(btVector3(0,0,0));
+	
 	physicsData.rigidBody->setWorldTransform(transform);
+	//physicsData.rigidBody->getMotionState()->setWorldTransform(transform);
 }
 
 glm::vec3 PhysicsEngine::position(const CollisionBodyHandle& collisionBodyHandle) const

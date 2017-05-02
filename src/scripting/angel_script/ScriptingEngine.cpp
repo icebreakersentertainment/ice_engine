@@ -3,8 +3,8 @@
 
 #include "scripting/angel_script/ScriptingEngine.hpp"
 
-#define AS_USE_STLNAMES = 1
 #include "scripting/angel_script/scripthelper/scripthelper.h"
+#include "scripting/angel_script/scriptarray/scriptarray.h"
 #include "scripting/angel_script/scriptstdstring/scriptstdstring.h"
 //#include "scripting/angel_script/glm_bindings/Vec3.h"
 #include "scripting/angel_script/scriptvector/scriptvector.hpp"
@@ -135,6 +135,8 @@ void ScriptingEngine::initialize()
 	 */
 	RegisterStdString(engine_);
 	
+	RegisterScriptArray(engine_, true);
+	
 	RegisterVectorBindings<int8>(engine_, "vectorInt8", "int8");
 	RegisterVectorBindings<uint8>(engine_, "vectorUInt8", "uint8");
 	RegisterVectorBindings<int16>(engine_, "vectorInt16", "int16");
@@ -150,6 +152,7 @@ void ScriptingEngine::initialize()
 	RegisterGlmBindings(engine_);
 	
 	RegisterVectorBindings<glm::vec3>(engine_, "vectorVec3", "vec3");
+	RegisterVectorBindings<glm::quat>(engine_, "vectorQuat", "quat");
 	
 	/* The CScriptBuilder helper is an add-on that does the loading/processing
 	 * of a script file
@@ -193,7 +196,8 @@ asIScriptModule* ScriptingEngine::createModuleFromScript(const std::string& modu
 	CScriptBuilder builder = CScriptBuilder();
 	builder.StartNewModule(engine_, moduleName.c_str());
 	builder.AddSectionFromMemory("", scriptData.c_str(), scriptData.length());
-	builder.BuildModule();
+	int32 r = builder.BuildModule();
+	assertNoAngelscriptError(r);
 	return builder.GetModule();
 }
 
@@ -274,8 +278,6 @@ void ScriptingEngine::setArguments(asIScriptContext* context, ParameterList& arg
 
 void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptModule* module, asIScriptFunction* function, asIScriptObject* object) const
 {
-	logger_->debug( std::string("Preparing function: ") + function->GetName());
-	
 	assert(function->GetParamCount() == 0);
 	
 	int32 r = context->Prepare(function);
@@ -285,8 +287,6 @@ void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptModule* m
 	{
 		context->SetObject(object);
 	}
-	
-	logger_->debug( std::string("Executing function: ") + function->GetName());
 	
 	r = context->Execute();
 	
@@ -309,9 +309,7 @@ void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptModule* m
 }
 
 void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptModule* module, asIScriptFunction* function, asIScriptObject* object, ParameterList& arguments) const
-{
-	logger_->debug( std::string("Preparing function: ") + function->GetName());
-	
+{	
 	assert(function->GetParamCount() == arguments.size());
 	
 	int32 r = context->Prepare(function);
@@ -326,8 +324,6 @@ void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptModule* m
 	{
 		context->SetObject(object);
 	}
-	
-	logger_->debug( std::string("Executing function: ") + function->GetName());
 	
 	r = context->Execute();
 	
@@ -1221,7 +1217,8 @@ ScriptHandle ScriptingEngine::loadScript(const std::string& filename, const std:
 	int32 r = builder.AddSectionFromFile(file.c_str());
 	assertNoAngelscriptError(r);
 	
-	builder.BuildModule();
+	r = builder.BuildModule();
+	assertNoAngelscriptError(r);
 	
 	modules_.push_back(builder.GetModule());
 	auto index = modules_.size() - 1;

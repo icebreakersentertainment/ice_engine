@@ -82,7 +82,7 @@ private:
 	bool running_;
 	GameState state_;
 
-	void tick(float32 elapsedTime);
+	void tick(const float32 delta);
 	void initialize();
 	void destroy();
 	void exit();

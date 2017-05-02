@@ -98,33 +98,48 @@ void GameEngine::startNewGame()
 	// Create world
 }
 
-void GameEngine::tick(float32 elapsedTime)
+scripting::ScriptHandle scriptHandle;
+scripting::ScriptObjectHandle scriptObjectHandle;
+void GameEngine::tick(const float32 delta)
 {
-	switch ( state_ )
+	graphicsEngine_->setMouseRelativeMode(false);
+	graphicsEngine_->setCursorVisible(true);
+
+	handleEvents();
+	
+	scripting::ParameterList params;
+	params.add(delta);
+	
+	scriptingEngine_->execute(scriptObjectHandle, "void tick(const float)", params);
+	
+	for (auto& scene : scenes_)
 	{
-		case GAME_STATE_UNKNOWN:
-			break;
-		
-		case GAME_STATE_MAIN_MENU:
-			
-			break;
-	
-	
-		case GAME_STATE_IN_GAME:
-			
-			// TODO: Probably need to rethink how I do this?
-			//smgr_->getTerrainManager( nullptr )->update(1);
-			// Load any opengl assets (this needs work...)
-			openGlLoader_->tick();
-			openGlLoader_->tick();
-			openGlLoader_->tick();
-			openGlLoader_->tick();
-			openGlLoader_->tick();
-			break;
-	
-		default:
-			break;
+		scene->tick(delta);
 	}
+	
+	/*
+	// Load any opengl assets (this needs work...)
+	if (openGlLoader_->getWorkQueueCount() != 0u)
+	{
+		openGlLoader_->tick();
+	}
+	*/
+	
+	// test animation
+	/*
+	transformations = std::vector< glm::mat4 >(100, glm::mat4(1.0));
+	auto animatedBoneNodes = animations[0].animatedBoneNodes;
+	auto duration = animations[0].duration;
+	auto ticksPerSecond = animations[0].ticksPerSecond;
+	runningTime += 0.01;
+	graphics::model::animateSkeleton(transformations, globalInverseTransformation, animatedBoneNodes, rootBoneNode, boneData[0], duration, ticksPerSecond, runningTime, 0, 0);
+	graphicsEngine_->update(skeletonHandle, &transformations[0], 100 * sizeof(glm::mat4));
+	*/
+
+	//transformations = std::vector< glm::mat4 >(100, glm::mat4(1.0));
+	//graphicsEngine_->update(skeletonHandle, &transformations[0], 100 * sizeof(glm::mat4));
+	
+	graphicsEngine_->render(delta);
 }
 
 void GameEngine::destroy()
@@ -256,7 +271,9 @@ void GameEngine::initializeScriptingSubSystem()
 	scriptingEngine_->registerObjectType("ModelHandle", sizeof(ModelHandle), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<ModelHandle>());
 	scriptingEngine_->registerClassMethod("ModelHandle", "int32 getId() const", asMETHODPR(ModelHandle, getId, () const, int32));
 	scriptingEngine_->registerObjectType("RenderableHandle", sizeof(graphics::RenderableHandle), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<graphics::RenderableHandle>());
-	scriptingEngine_->registerClassMethod("RenderableHandle", "int32 getId() const", asMETHODPR(graphics::RenderableHandle, getId, () const, int32));
+	scriptingEngine_->registerClassMethod("RenderableHandle", "uint64 id() const", asMETHODPR(graphics::RenderableHandle, id, () const, uint64));
+	scriptingEngine_->registerClassMethod("RenderableHandle", "uint32 index() const", asMETHODPR(graphics::RenderableHandle, index, () const, uint32));
+	scriptingEngine_->registerClassMethod("RenderableHandle", "uint32 version() const", asMETHODPR(graphics::RenderableHandle, version, () const, uint32));
 	scriptingEngine_->registerObjectType("CollisionShapeHandle", sizeof(physics::CollisionShapeHandle), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<physics::CollisionShapeHandle>());
 	scriptingEngine_->registerClassMethod("CollisionShapeHandle", "int32 getId() const", asMETHODPR(physics::CollisionShapeHandle, getId, () const, int32));
 	scriptingEngine_->registerObjectType("CollisionBodyHandle", sizeof(physics::CollisionBodyHandle), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<physics::CollisionBodyHandle>());
@@ -368,6 +385,11 @@ void GameEngine::initializeScriptingSubSystem()
 	);
 	scriptingEngine_->registerClassMethod(
 		"IScene",
+		"quat rotation(const Entity& in) const",
+		asMETHODPR(IScene, rotation, (const entities::Entity&), glm::quat)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IScene",
 		"void scale(const Entity& in, const float)",
 		asMETHODPR(IScene, scale, (const entities::Entity&, const float32), void)
 	);
@@ -375,6 +397,11 @@ void GameEngine::initializeScriptingSubSystem()
 		"IScene",
 		"void scale(const Entity& in, const vec3& in)",
 		asMETHODPR(IScene, scale, (const entities::Entity&, const glm::vec3&), void)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IScene",
+		"vec3 scale(const Entity& in) const",
+		asMETHODPR(IScene, scale, (const entities::Entity&), glm::vec3)
 	);
 	scriptingEngine_->registerClassMethod(
 		"IScene",
@@ -395,6 +422,11 @@ void GameEngine::initializeScriptingSubSystem()
 		"IScene",
 		"void position(const Entity& in, const float, const float, const float)",
 		asMETHODPR(IScene, position, (const entities::Entity&, const float32, const float32, const float32), void)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IScene",
+		"vec3 position(const Entity& in) const",
+		asMETHODPR(IScene, position, (const entities::Entity&), glm::vec3)
 	);
 	
 	// IGameEngine functions available in the scripting engine
@@ -824,8 +856,6 @@ IScene* GameEngine::getScene(const std::string& name) const
 	return nullptr;
 }
 
-scripting::ScriptHandle scriptHandle;
-scripting::ScriptObjectHandle scriptObjectHandle;
 void GameEngine::setIGameInstance(asIScriptObject* obj)
 {
 	scriptObjectHandle = scriptingEngine_->registerScriptObject(scriptHandle, "Game", obj);
@@ -1071,11 +1101,6 @@ void GameEngine::run()
 		begin = std::chrono::high_resolution_clock::now();
 		delta = std::chrono::duration<float32>(begin - end).count();
 		
-		graphicsEngine_->setMouseRelativeMode(false);
-		graphicsEngine_->setCursorVisible(true);
-
-		handleEvents();
-		
 		tempFps++;
 		
 		if (std::chrono::duration<float32>(begin - previousFpsTime).count() > 1.0f)
@@ -1086,39 +1111,7 @@ void GameEngine::run()
 			tempFps = 0;
 		}
 		
-		scripting::ParameterList params;
-		params.add(delta);
-		
-		scriptingEngine_->execute(scriptObjectHandle, "void tick(const float)", params);
-		
-		for (auto& scene : scenes_)
-		{
-			scene->tick(delta);
-		}
-		
-		/*
-		// Load any opengl assets (this needs work...)
-		if (openGlLoader_->getWorkQueueCount() != 0u)
-		{
-			openGlLoader_->tick();
-		}
-		*/
-		
-		// test animation
-		/*
-		transformations = std::vector< glm::mat4 >(100, glm::mat4(1.0));
-		auto animatedBoneNodes = animations[0].animatedBoneNodes;
-		auto duration = animations[0].duration;
-		auto ticksPerSecond = animations[0].ticksPerSecond;
-		runningTime += 0.01;
-		graphics::model::animateSkeleton(transformations, globalInverseTransformation, animatedBoneNodes, rootBoneNode, boneData[0], duration, ticksPerSecond, runningTime, 0, 0);
-		graphicsEngine_->update(skeletonHandle, &transformations[0], 100 * sizeof(glm::mat4));
-		*/
-
-		//transformations = std::vector< glm::mat4 >(100, glm::mat4(1.0));
-		//graphicsEngine_->update(skeletonHandle, &transformations[0], 100 * sizeof(glm::mat4));
-		
-		graphicsEngine_->render(delta);
+		tick(delta);
 	
 		end = begin;
 	}

@@ -1,17 +1,17 @@
 #ifndef TEXTURE_HANDLE_H_
 #define TEXTURE_HANDLE_H_
 
-#include "ResourceHandle.hpp"
+#include "handles/Handle.hpp"
 
 namespace hercules
 {
 namespace graphics
 {
 
-class TextureHandle : public ResourceHandle
+class TextureHandle : public handles::Handle
 {
 public:
-	using ResourceHandle::ResourceHandle;
+	using handles::Handle::Handle;
 	
 	static const TextureHandle INVALID;
 };

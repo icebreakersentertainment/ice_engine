@@ -35,7 +35,7 @@ public:
 	{
 		return initialPosition_;
 	}
-
+	
 	virtual void getWorldTransform(btTransform& worldTrans) const override
 	{
 		worldTrans = initialPosition_;
