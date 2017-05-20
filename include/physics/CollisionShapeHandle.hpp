@@ -1,17 +1,17 @@
 #ifndef COLLISION_SHAPE_HANDLE_H_
 #define COLLISION_SHAPE_HANDLE_H_
 
-#include "physics/ResourceHandle.hpp"
+#include "handles/Handle.hpp"
 
 namespace hercules
 {
 namespace physics
 {
 
-class CollisionShapeHandle : public ResourceHandle
+class CollisionShapeHandle : public handles::Handle
 {
 public:
-	using ResourceHandle::ResourceHandle;
+	using handles::Handle::Handle;
 	
 	static const CollisionShapeHandle INVALID;
 };

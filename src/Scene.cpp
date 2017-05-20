@@ -2,10 +2,6 @@
 
 #include "HerculesMotionChangeListener.hpp"
 
-#include "physics/PhysicsFactory.hpp"
-
-#include "utilities/ImageLoader.hpp"
-
 namespace hercules
 {
 
@@ -13,6 +9,7 @@ Scene::Scene(
 		const std::string& name,
 		IGameEngine* gameEngine,
 		graphics::IGraphicsEngine* graphicsEngine,
+		physics::IPhysicsEngine* physicsEngine,
 		utilities::Properties* properties,
 		fs::IFileSystem* fileSystem,
 		logger::ILogger* logger,
@@ -23,109 +20,13 @@ Scene::Scene(
 		name_(name),
 		gameEngine_(gameEngine),
 		graphicsEngine_(graphicsEngine),
+		physicsEngine_(physicsEngine),
 		properties_(properties),
 		fileSystem_(fileSystem),
 		logger_(logger),
 		threadPool_(threadPool),
 		openGlLoader_(openGlLoader)
 {
-	logger_->info( "initialize physics for scene." );
-	physicsEngine_ = physics::PhysicsFactory::createPhysicsEngine(properties_, fileSystem_, logger_);
-	
-	{
-		std::vector<glm::vec3> vertices;
-		
-		/*
-		vertices.push_back( glm::vec3(0.5f, 0.0f, 0.5f) );
-		vertices.push_back( glm::vec3(0.5f, 0.0f, -0.5f) );
-		vertices.push_back( glm::vec3(-0.5f, 0.0f, -0.5f) );
-		vertices.push_back( glm::vec3(-0.5f, 0.0f, 0.5f) );
-		*/
-		
-		vertices.push_back( glm::vec3(0.5f,  0.5f, 0.0f) );
-		vertices.push_back( glm::vec3(0.5f, -0.5f, 0.0f) );
-		vertices.push_back( glm::vec3(-0.5f, -0.5f, 0.0f) );
-		vertices.push_back( glm::vec3(-0.5f,  0.5f, 0.0f) );
-		
-		std::vector<uint32> indices;
-		// First triangle
-		indices.push_back(0);
-		indices.push_back(1);
-		indices.push_back(3);
-		// Second triangle
-		indices.push_back(1);
-		indices.push_back(2);
-		indices.push_back(3);
-		
-		std::vector<glm::vec4> colors;
-		
-		colors.push_back( glm::vec4(1.0f, 0.0f, 0.0f, 1.0f) );
-		colors.push_back( glm::vec4(0.0f, 1.0f, 0.0f, 1.0f) );
-		colors.push_back( glm::vec4(0.0f, 0.0f, 1.0f, 1.0f) );
-		colors.push_back( glm::vec4(1.0f, 1.0f, 0.0f, 1.0f) );
-		
-		std::vector<glm::vec3> normals;
-		
-		normals.push_back( glm::vec3(0.5f,  0.5f, 0.0f) );
-		normals.push_back( glm::vec3(0.5f, -0.5f, 0.0f) );
-		normals.push_back( glm::vec3(-0.5f, -0.5f, 0.0f) );
-		normals.push_back( glm::vec3(-0.5f,  0.5f, 0.0f) );
-		
-		std::vector<glm::vec2> textureCoordinates;
-		
-		textureCoordinates.push_back( glm::vec2(1.0f, 1.0f) );
-		textureCoordinates.push_back( glm::vec2(1.0f, 0.0f) );
-		textureCoordinates.push_back( glm::vec2(0.0f, 0.0f) );
-		textureCoordinates.push_back( glm::vec2(0.0f, 1.0f) );
-		
-		auto il = utilities::ImageLoader(logger_);
-		auto image = il.loadImageData("../assets/models/scoutship/ship1_glass.jpg");
-		
-		auto meshHandle = graphicsEngine_->createStaticMesh(vertices, indices, colors, normals, textureCoordinates);
-		auto textureHandle = graphicsEngine_->createTexture2d(image);
-		auto renderableHandle = graphicsEngine_->createRenderable(meshHandle, textureHandle);
-		
-		auto e = createEntity();
-		
-		auto collisionShapeHandle = physicsEngine_->createStaticPlaneShape(glm::vec3(0.0f, 1.0f, 0.0f), 1.0f);
-		auto collisionBodyHandle = physicsEngine_->createStaticRigidBody(collisionShapeHandle);
-		
-		entities::GraphicsComponent gc;
-		gc.renderableHandle = renderableHandle;
-		entities::PhysicsComponent pc;
-		pc.collisionBodyHandle = collisionBodyHandle;
-		assign(e, gc);
-		assign(e, pc);
-		
-		scale(e, 20.0f);
-		rotate(e, -90.0f, glm::vec3(1.0f, 0.0f, 0.0f));
-		translate(e, glm::vec3(0.0f, -6.0f, 0.0f));
-	}
-	/*
-	{
-		auto model = gameEngine_->importModel("../assets/models/scoutship/scoutship.dae");
-		
-		auto modelHandle = gameEngine_->loadStaticModel(model);
-		
-		auto e = createEntity();
-		
-		auto collisionShapeHandle = createStaticBoxShape(glm::vec3(1.0f, 1.0f, 1.0f));
-		auto collisionBodyHandle = createDynamicRigidBody(collisionShapeHandle, 1.0f, 0.0f, 0.0f);
-		
-		entities::GraphicsComponent gc;
-		gc.renderableHandle = gameEngine_->createRenderable(modelHandle);
-		entities::PhysicsComponent pc;
-		pc.collisionBodyHandle = collisionBodyHandle;
-		assign(e, gc);
-		assign(e, pc);
-		
-		scale(e, 0.002f);
-		translate(e, glm::vec3(1.0f, 0.0f, 1.0f));
-		
-		//graphicsEngine_->scale(renderableHandle, 0.03f);
-		//graphicsEngine_->translate(renderableHandle, 6.0f, -4.0f, 0);
-	}
-	*/
 }
 
 Scene::~Scene()
@@ -225,9 +126,9 @@ void Scene::removeMotionChangeListener(const entities::Entity& entity)
 	physicsEngine_->setMotionChangeListener(physicsComponent->collisionBodyHandle, nullptr);
 }
 
-graphics::RenderableHandle Scene::createRenderable(const ModelHandle& modelHandle, const std::string& name)
+graphics::RenderableHandle Scene::createRenderable(const ModelHandle& modelHandle, const graphics::ShaderProgramHandle& shaderProgramHandle, const std::string& name)
 {
-	return gameEngine_->createRenderable(modelHandle, name);
+	return gameEngine_->createRenderable(modelHandle, shaderProgramHandle, name);
 }
 
 std::string Scene::getName() const

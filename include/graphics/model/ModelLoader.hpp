@@ -16,9 +16,9 @@ namespace graphics
 namespace model
 {
 
-Model load(const std::string& filename, logger::ILogger* logger, fs::IFileSystem* fileSystem);
+std::unique_ptr<Model> load(const std::string& filename, logger::ILogger* logger, fs::IFileSystem* fileSystem);
 
-Model import(const std::string& filename, logger::ILogger* logger, fs::IFileSystem* fileSystem);
+std::unique_ptr<Model> import(const std::string& filename, logger::ILogger* logger, fs::IFileSystem* fileSystem);
 
 void save(const std::string& filename, const Model& model, logger::ILogger* logger, fs::IFileSystem* fileSystem);
 

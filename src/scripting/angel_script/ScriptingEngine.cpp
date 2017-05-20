@@ -151,7 +151,12 @@ void ScriptingEngine::initialize()
 	
 	RegisterGlmBindings(engine_);
 	
+	RegisterVectorBindings<glm::vec2>(engine_, "vectorVec2", "vec2");
 	RegisterVectorBindings<glm::vec3>(engine_, "vectorVec3", "vec3");
+	RegisterVectorBindings<glm::vec4>(engine_, "vectorVec4", "vec4");
+	RegisterVectorBindings<glm::ivec2>(engine_, "vectorIVec2", "ivec2");
+	RegisterVectorBindings<glm::ivec3>(engine_, "vectorIVec3", "ivec3");
+	RegisterVectorBindings<glm::ivec4>(engine_, "vectorIVec4", "ivec4");
 	RegisterVectorBindings<glm::quat>(engine_, "vectorQuat", "quat");
 	
 	/* The CScriptBuilder helper is an add-on that does the loading/processing
@@ -1188,6 +1193,48 @@ void ScriptingEngine::registerInterfaceMethod(const std::string& name, const std
 		{
 			msg = std::string("Unable to register the interface method: ");
 			msg += declaration;
+		}
+		
+		throw Exception("ScriptEngine: " + msg);
+	}
+}
+
+void ScriptingEngine::registerEnum(const std::string& type)
+{
+	int32 r = engine_->RegisterEnum(type.c_str());
+	
+	if (r < 0)
+	{
+		std::string msg = std::string();
+
+		if ( type.length() > 80 )
+		{
+			msg = std::string("Unable to register the enum: (cannot display type; it is too long!)");
+		}
+		else
+		{
+			msg = std::string("Unable to register the enum: ") + type;
+		}
+		
+		throw Exception("ScriptEngine: " + msg);
+	}
+}
+
+void ScriptingEngine::registerEnumValue(const std::string& type, const std::string& name, const int32 value)
+{
+	int32 r = engine_->RegisterEnumValue(type.c_str(), name.c_str(), value);
+	
+	if (r < 0)
+	{
+		std::string msg = std::string();
+
+		if ( type.length() > 80 )
+		{
+			msg = std::string("Unable to register the enum value: (cannot display type; it is too long!)");
+		}
+		else
+		{
+			msg = std::string("Unable to register the enum value: ") + type;
 		}
 		
 		throw Exception("ScriptEngine: " + msg);

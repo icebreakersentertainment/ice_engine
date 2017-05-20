@@ -1,5 +1,4 @@
 #include "graphics/GraphicsFactory.hpp"
-//#include "graphics/bgfx/GraphicsEngine.hpp"
 #include "graphics/custom/GraphicsEngine.hpp"
 
 namespace hercules

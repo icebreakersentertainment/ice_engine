@@ -1,9 +1,6 @@
 class RenderSceneHandle
 {
 };
-class ShaderProgramHandle
-{
-};
 
 virtual void setViewport(const uint32 width, const uint32 height) = 0;
 virtual void render(const float32 delta, const RenderSceneHandle& renderSceneHandle) = 0;
@@ -58,20 +55,9 @@ virtual void destroyRenderScene(const RenderSceneHandle& renderSceneHandle) = 0;
 
 
 
-/* SHADER STUFF */
-virtual ShaderHandle createVertexShader(const std::string& data) = 0;
-virtual ShaderHandle createFragmentShader(const std::string& data) = 0;
-virtual bool valid(const ShaderHandle& shaderHandle) const = 0;
-virtual void destroyShader(const ShaderHandle& shaderHandle) = 0;
-virtual ShaderProgramHandle createShaderProgram(const ShaderHandle& vertexShaderHandle, const ShaderHandle& fragmentShaderHandle) = 0;
-virtual bool valid(const ShaderProgramHandle& shaderProgramHandle) const = 0;
-virtual void destroyShaderProgram(const ShaderProgramHandle& shaderProgramHandle) = 0;
-
-
-
 /* RENDERABLE STUFF */
-virtual RenderableHandle createRenderable(const RenderSceneHandle& renderSceneHandle, const MeshHandle& meshHandle, const TextureHandle& textureHandle, const ShaderProgramHandle& shaderProgramHandle) = 0;
-virtual RenderableHandle createRenderable(const MeshHandle& meshHandle, const TextureHandle& textureHandle, const ShaderProgramHandle& shaderProgramHandle) = 0;
+virtual RenderableHandle createRenderable(const RenderSceneHandle& renderSceneHandle, const MeshHandle& meshHandle, const TextureHandle& textureHandle) = 0;
+virtual RenderableHandle createRenderable(const MeshHandle& meshHandle, const TextureHandle& textureHandle) = 0;
 
 
 

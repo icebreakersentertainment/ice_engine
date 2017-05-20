@@ -20,6 +20,7 @@
 #include "graphics/model/Animate.hpp"
 
 #include "graphics/GraphicsFactory.hpp"
+#include "physics/PhysicsFactory.hpp"
 #include "scripting/ScriptingFactory.hpp"
 
 #include "graphics/Event.hpp"
@@ -83,7 +84,7 @@ void GameEngine::startNewGame()
 	//DEBUG_LOG("--== Starting new game ==--")
 
 	// Create player
-	player_ = std::unique_ptr<Player>( new Player(/*camera_.get()*/) );
+	
 	// create world
 	//world::World::getInstance()->initialize();
 
@@ -205,6 +206,7 @@ void GameEngine::initializeSoundSubSystem()
 
 void GameEngine::initializePhysicsSubSystem()
 {
+	physicsEngine_ = physics::PhysicsFactory::createPhysicsEngine(properties_.get(), fileSystem_.get(), logger_.get());
 }
 
 void GameEngine::initializeGraphicsSubSystem()
@@ -270,14 +272,35 @@ void GameEngine::initializeScriptingSubSystem()
 	
 	scriptingEngine_->registerObjectType("ModelHandle", sizeof(ModelHandle), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<ModelHandle>());
 	scriptingEngine_->registerClassMethod("ModelHandle", "int32 getId() const", asMETHODPR(ModelHandle, getId, () const, int32));
+	
+	scriptingEngine_->registerObjectType("MeshHandle", sizeof(graphics::MeshHandle), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<graphics::MeshHandle>());
+	scriptingEngine_->registerClassMethod("MeshHandle", "uint64 id() const", asMETHODPR(graphics::MeshHandle, id, () const, uint64));
+	scriptingEngine_->registerClassMethod("MeshHandle", "uint32 index() const", asMETHODPR(graphics::MeshHandle, index, () const, uint32));
+	scriptingEngine_->registerClassMethod("MeshHandle", "uint32 version() const", asMETHODPR(graphics::MeshHandle, version, () const, uint32));
+	scriptingEngine_->registerObjectType("TextureHandle", sizeof(graphics::TextureHandle), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<graphics::TextureHandle>());
+	scriptingEngine_->registerClassMethod("TextureHandle", "uint64 id() const", asMETHODPR(graphics::TextureHandle, id, () const, uint64));
+	scriptingEngine_->registerClassMethod("TextureHandle", "uint32 index() const", asMETHODPR(graphics::TextureHandle, index, () const, uint32));
+	scriptingEngine_->registerClassMethod("TextureHandle", "uint32 version() const", asMETHODPR(graphics::TextureHandle, version, () const, uint32));
 	scriptingEngine_->registerObjectType("RenderableHandle", sizeof(graphics::RenderableHandle), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<graphics::RenderableHandle>());
 	scriptingEngine_->registerClassMethod("RenderableHandle", "uint64 id() const", asMETHODPR(graphics::RenderableHandle, id, () const, uint64));
 	scriptingEngine_->registerClassMethod("RenderableHandle", "uint32 index() const", asMETHODPR(graphics::RenderableHandle, index, () const, uint32));
 	scriptingEngine_->registerClassMethod("RenderableHandle", "uint32 version() const", asMETHODPR(graphics::RenderableHandle, version, () const, uint32));
+	scriptingEngine_->registerObjectType("ShaderHandle", sizeof(graphics::ShaderHandle), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<graphics::ShaderHandle>());
+	scriptingEngine_->registerClassMethod("ShaderHandle", "uint64 id() const", asMETHODPR(graphics::ShaderHandle, id, () const, uint64));
+	scriptingEngine_->registerClassMethod("ShaderHandle", "uint32 index() const", asMETHODPR(graphics::ShaderHandle, index, () const, uint32));
+	scriptingEngine_->registerClassMethod("ShaderHandle", "uint32 version() const", asMETHODPR(graphics::ShaderHandle, version, () const, uint32));
+	scriptingEngine_->registerObjectType("ShaderProgramHandle", sizeof(graphics::ShaderProgramHandle), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<graphics::ShaderProgramHandle>());
+	scriptingEngine_->registerClassMethod("ShaderProgramHandle", "uint64 id() const", asMETHODPR(graphics::ShaderProgramHandle, id, () const, uint64));
+	scriptingEngine_->registerClassMethod("ShaderProgramHandle", "uint32 index() const", asMETHODPR(graphics::ShaderProgramHandle, index, () const, uint32));
+	scriptingEngine_->registerClassMethod("ShaderProgramHandle", "uint32 version() const", asMETHODPR(graphics::ShaderProgramHandle, version, () const, uint32));
 	scriptingEngine_->registerObjectType("CollisionShapeHandle", sizeof(physics::CollisionShapeHandle), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<physics::CollisionShapeHandle>());
-	scriptingEngine_->registerClassMethod("CollisionShapeHandle", "int32 getId() const", asMETHODPR(physics::CollisionShapeHandle, getId, () const, int32));
+	scriptingEngine_->registerClassMethod("CollisionShapeHandle", "uint64 id() const", asMETHODPR(physics::CollisionShapeHandle, id, () const, uint64));
+	scriptingEngine_->registerClassMethod("CollisionShapeHandle", "uint32 index() const", asMETHODPR(physics::CollisionShapeHandle, index, () const, uint32));
+	scriptingEngine_->registerClassMethod("CollisionShapeHandle", "uint32 version() const", asMETHODPR(physics::CollisionShapeHandle, version, () const, uint32));
 	scriptingEngine_->registerObjectType("CollisionBodyHandle", sizeof(physics::CollisionBodyHandle), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<physics::CollisionBodyHandle>());
-	scriptingEngine_->registerClassMethod("CollisionBodyHandle", "int32 getId() const", asMETHODPR(physics::CollisionBodyHandle, getId, () const, int32));
+	scriptingEngine_->registerClassMethod("CollisionBodyHandle", "uint64 id() const", asMETHODPR(physics::CollisionBodyHandle, id, () const, uint64));
+	scriptingEngine_->registerClassMethod("CollisionBodyHandle", "uint32 index() const", asMETHODPR(physics::CollisionBodyHandle, index, () const, uint32));
+	scriptingEngine_->registerClassMethod("CollisionBodyHandle", "uint32 version() const", asMETHODPR(physics::CollisionBodyHandle, version, () const, uint32));
 	
 	scriptingEngine_->registerObjectType("GraphicsComponent", sizeof(entities::GraphicsComponent), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<entities::GraphicsComponent>());
 	scriptingEngine_->registerObjectProperty("GraphicsComponent", "vec3 scale", asOFFSET(entities::GraphicsComponent, scale));
@@ -288,12 +311,19 @@ void GameEngine::initializeScriptingSubSystem()
 	scriptingEngine_->registerObjectProperty("PositionOrientationComponent", "vec3 position", asOFFSET(entities::PositionOrientationComponent, position));
 	scriptingEngine_->registerObjectProperty("PositionOrientationComponent", "quat orientation", asOFFSET(entities::PositionOrientationComponent, orientation));
 	
+	// Enums available
+	scriptingEngine_->registerEnum("TransformSpace");
+	scriptingEngine_->registerEnumValue("TransformSpace", "TS_LOCAL", graphics::TransformSpace::TS_LOCAL);
+	scriptingEngine_->registerEnumValue("TransformSpace", "TS_WORLD", graphics::TransformSpace::TS_WORLD);
+	
 	// Register Model/Mesh/etc
 	//RegisterVectorBindings<glm::vec3>(engine_, "vectorVec3", "vec3");
 	//scriptingEngine_->registerObjectType("Mesh", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	//scriptingEngine_->registerObjectProperty("Mesh", "vectorMVec3 vertices", asOFFSET(graphics::model::Mesh, vertices));
 	//scriptingEngine_->registerObjectType("Model", 0, asOBJ_REF | asOBJ_NOCOUNT);
-	scriptingEngine_->registerObjectType("Model", sizeof(graphics::model::Model), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<graphics::model::Model>());
+	//scriptingEngine_->registerObjectType("Model", sizeof(graphics::model::Model), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<graphics::model::Model>());
+	scriptingEngine_->registerObjectType("Model", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	scriptingEngine_->registerObjectType("Image", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	//scriptingEngine_->registerObjectProperty("Model", "vectorMesh meshes", asOFFSET(graphics::model::Model, meshes));
 	
 	// IGame
@@ -357,8 +387,8 @@ void GameEngine::initializeScriptingSubSystem()
 	);
 	scriptingEngine_->registerClassMethod(
 		"IScene",
-		"RenderableHandle createRenderable(const ModelHandle& in, const string& in = string())",
-		asMETHODPR(IScene, createRenderable, (const ModelHandle&, const std::string&), graphics::RenderableHandle)
+		"RenderableHandle createRenderable(const ModelHandle& in, const ShaderProgramHandle& in, const string& in = string())",
+		asMETHODPR(IScene, createRenderable, (const ModelHandle&, const graphics::ShaderProgramHandle&, const std::string&), graphics::RenderableHandle)
 	);
 	scriptingEngine_->registerClassMethod("IScene", "Entity createEntity()", asMETHODPR(IScene, createEntity, (), entities::Entity));
 	scriptingEngine_->registerClassMethod(
@@ -371,13 +401,16 @@ void GameEngine::initializeScriptingSubSystem()
 		"void assign(const Entity& in, const PhysicsComponent& in)", 
 		asMETHODPR(IScene, assign, (const entities::Entity&, const entities::PhysicsComponent&), void)
 	);
-	/*
 	scriptingEngine_->registerClassMethod(
 		"IScene",
-		"void rotate(const Entity& in, const quat& in)",
-		asMETHODPR(IScene, rotate, (const entities::Entity&, const glm::quat&), void)
+		"void rotate(const Entity& in, const quat& in, const TransformSpace& in = TransformSpace::TS_LOCAL)",
+		asMETHODPR(IScene, rotate, (const entities::Entity&, const glm::quat&, const graphics::TransformSpace&), void)
 	);
-	*/
+	scriptingEngine_->registerClassMethod(
+		"IScene",
+		"void rotate(const Entity& in, const float, const vec3& in, const TransformSpace& in = TransformSpace::TS_LOCAL)",
+		asMETHODPR(IScene, rotate, (const entities::Entity&, const float32, const glm::vec3&, const graphics::TransformSpace&), void)
+	);
 	scriptingEngine_->registerClassMethod(
 		"IScene",
 		"void rotation(const Entity& in, const quat& in)",
@@ -429,6 +462,67 @@ void GameEngine::initializeScriptingSubSystem()
 		asMETHODPR(IScene, position, (const entities::Entity&), glm::vec3)
 	);
 	
+	// IGraphicsEngine
+	scriptingEngine_->registerObjectType("IGraphicsEngine", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	scriptingEngine_->registerGlobalProperty("IGraphicsEngine graphics", graphicsEngine_.get());
+	scriptingEngine_->registerClassMethod(
+		"IGraphicsEngine",
+		"MeshHandle createStaticMesh(const vectorVec3& in, const vectorUInt32& in, const vectorVec4& in, const vectorVec3& in, const vectorVec2& in)",
+		asMETHODPR(graphics::IGraphicsEngine, createStaticMesh, (const std::vector<glm::vec3>&, const std::vector<uint32>&, const std::vector<glm::vec4>&, const std::vector<glm::vec3>&, const std::vector<glm::vec2>&), graphics::MeshHandle)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IGraphicsEngine",
+		"TextureHandle createTexture2d(Image@)",
+		asMETHODPR(graphics::IGraphicsEngine, createTexture2d, (const utilities::Image&), graphics::TextureHandle)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IGraphicsEngine",
+		"RenderableHandle createRenderable(const MeshHandle& in, const TextureHandle& in, const ShaderProgramHandle& in)",
+		asMETHODPR(graphics::IGraphicsEngine, createRenderable, (const graphics::MeshHandle&, const graphics::TextureHandle&, const graphics::ShaderProgramHandle&), graphics::RenderableHandle)
+	);
+	
+	// IPhysicsEngine
+	scriptingEngine_->registerObjectType("IPhysicsEngine", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	scriptingEngine_->registerGlobalProperty("IPhysicsEngine physics", physicsEngine_.get());
+	scriptingEngine_->registerClassMethod(
+		"IPhysicsEngine",
+		"CollisionShapeHandle createStaticPlaneShape(const vec3& in, const float)",
+		asMETHODPR(physics::IPhysicsEngine, createStaticPlaneShape, (const glm::vec3&, const float32), physics::CollisionShapeHandle)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IPhysicsEngine",
+		"CollisionBodyHandle createStaticRigidBody(const CollisionShapeHandle& in)",
+		asMETHODPR(physics::IPhysicsEngine, createStaticRigidBody, (const physics::CollisionShapeHandle&), physics::CollisionBodyHandle)
+	);
+	
+	/*
+	    std::vector<glm::vec3> vertices;
+		std::vector<uint32> indices;
+		std::vector<glm::vec4> colors;
+		std::vector<glm::vec3> normals;
+		std::vector<glm::vec2> textureCoordinates;
+		* 
+		auto meshHandle = graphicsEngine_->createStaticMesh(vertices, indices, colors, normals, textureCoordinates);
+		auto textureHandle = graphicsEngine_->createTexture2d(image);
+		auto renderableHandle = graphicsEngine_->createRenderable(meshHandle, textureHandle);
+		
+		auto e = createEntity();
+		
+		auto collisionShapeHandle = physicsEngine_->createStaticPlaneShape(vec3(0.0f, 1.0f, 0.0f), 1.0f);
+		auto collisionBodyHandle = physicsEngine_->createStaticRigidBody(collisionShapeHandle);
+		
+		entities::GraphicsComponent gc;
+		gc.renderableHandle = renderableHandle;
+		entities::PhysicsComponent pc;
+		pc.collisionBodyHandle = collisionBodyHandle;
+		assign(e, gc);
+		assign(e, pc);
+		
+		scale(e, 20.0f);
+		rotate(e, -90.0f, vec3(1.0f, 0.0f, 0.0f));
+		translate(e, vec3(0.0f, -6.0f, 0.0f));
+		*/
+	
 	// IGameEngine functions available in the scripting engine
 	scriptingEngine_->registerGlobalFunction(
 		"void setIGameInstance(IGame@ game)",
@@ -437,14 +531,110 @@ void GameEngine::initializeScriptingSubSystem()
 		this
 	);
 	scriptingEngine_->registerGlobalFunction(
-		"Model importModel(const string& in)",
-		asMETHODPR(IGameEngine, importModel, (const std::string&) const, graphics::model::Model),
+		"IGraphicsEngine@ getGraphicsEngine()",
+		asMETHODPR(IGameEngine, getGraphicsEngine, () const, graphics::IGraphicsEngine*),
 		asCALL_THISCALL_ASGLOBAL,
 		this
 	);
 	scriptingEngine_->registerGlobalFunction(
-		"ModelHandle loadStaticModel(const Model& in)",
-		asMETHODPR(IGameEngine, loadStaticModel, (const graphics::model::Model&), ModelHandle),
+		"IPhysicsEngine@ getPhysicsEngine()",
+		asMETHODPR(IGameEngine, getPhysicsEngine, () const, physics::IPhysicsEngine*),
+		asCALL_THISCALL_ASGLOBAL,
+		this
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"Model@ importModel(const string& in, const string& in)",
+		asMETHODPR(IGameEngine, importModel, (const std::string&, const std::string&), graphics::model::Model*),
+		asCALL_THISCALL_ASGLOBAL,
+		this
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"Image@ loadImage(const string& in, const string& in)",
+		asMETHODPR(IGameEngine, loadImage, (const std::string&, const std::string&), utilities::Image*),
+		asCALL_THISCALL_ASGLOBAL,
+		this
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"void unloadModel(const string& in)",
+		asMETHODPR(IGameEngine, unloadModel, (const std::string&), void),
+		asCALL_THISCALL_ASGLOBAL,
+		this
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"void unloadImage(const string& in)",
+		asMETHODPR(IGameEngine, unloadImage, (const std::string&), void),
+		asCALL_THISCALL_ASGLOBAL,
+		this
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"ModelHandle loadStaticModel(Model@)",
+		asMETHODPR(IGameEngine, loadStaticModel, (const graphics::model::Model*), ModelHandle),
+		asCALL_THISCALL_ASGLOBAL,
+		this
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"ShaderHandle createVertexShader(const string& in, const string& in)",
+		asMETHODPR(IGameEngine, createVertexShader, (const std::string&, const std::string&), graphics::ShaderHandle),
+		asCALL_THISCALL_ASGLOBAL,
+		this
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"ShaderHandle createVertexShaderFromSource(const string& in, const string& in)",
+		asMETHODPR(IGameEngine, createVertexShaderFromSource, (const std::string&, const std::string&), graphics::ShaderHandle),
+		asCALL_THISCALL_ASGLOBAL,
+		this
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"ShaderHandle createFragmentShader(const string& in, const string& in)",
+		asMETHODPR(IGameEngine, createFragmentShader, (const std::string&, const std::string&), graphics::ShaderHandle),
+		asCALL_THISCALL_ASGLOBAL,
+		this
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"ShaderHandle createFragmentShaderFromSource(const string& in, const string& in)",
+		asMETHODPR(IGameEngine, createFragmentShaderFromSource, (const std::string&, const std::string&), graphics::ShaderHandle),
+		asCALL_THISCALL_ASGLOBAL,
+		this
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"ShaderHandle getShader(const string& in)",
+		asMETHODPR(IGameEngine, getShader, (const std::string&) const, graphics::ShaderHandle),
+		asCALL_THISCALL_ASGLOBAL,
+		this
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"void destroyShader(const string& in)",
+		asMETHODPR(IGameEngine, destroyShader, (const std::string&), void),
+		asCALL_THISCALL_ASGLOBAL,
+		this
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"ShaderHandle destroyShader(const ShaderHandle& in)",
+		asMETHODPR(IGameEngine, destroyShader, (const graphics::ShaderHandle&), void),
+		asCALL_THISCALL_ASGLOBAL,
+		this
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"ShaderProgramHandle createShaderProgram(const string& in, const ShaderHandle& in, const ShaderHandle& in)",
+		asMETHODPR(IGameEngine, createShaderProgram, (const std::string&, const graphics::ShaderHandle&, const graphics::ShaderHandle&), graphics::ShaderProgramHandle),
+		asCALL_THISCALL_ASGLOBAL,
+		this
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"ShaderProgramHandle getShaderProgram(const string& in)",
+		asMETHODPR(IGameEngine, getShaderProgram, (const std::string&) const, graphics::ShaderProgramHandle),
+		asCALL_THISCALL_ASGLOBAL,
+		this
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"void destroyShaderProgram(const string& in)",
+		asMETHODPR(IGameEngine, destroyShaderProgram, (const std::string&), void),
+		asCALL_THISCALL_ASGLOBAL,
+		this
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"void destroyShaderProgram(const ShaderProgramHandle& in)",
+		asMETHODPR(IGameEngine, destroyShaderProgram, (const graphics::ShaderProgramHandle&), void),
 		asCALL_THISCALL_ASGLOBAL,
 		this
 	);
@@ -835,9 +1025,33 @@ IScene* GameEngine::createScene(const std::string& name)
 {
 	logger_->debug( "Create Scene with name: " + name );
 	
-	scenes_.push_back( std::make_unique<Scene>(name, this, graphicsEngine_.get(), properties_.get(), fileSystem_.get(), logger_.get(), threadPool_.get(), openGlLoader_.get()) );
+	scenes_.push_back( std::make_unique<Scene>(name, this, graphicsEngine_.get(), physicsEngine_.get(), properties_.get(), fileSystem_.get(), logger_.get(), threadPool_.get(), openGlLoader_.get()) );
 	
 	return scenes_.back().get();
+}
+
+void GameEngine::destroyScene(const std::string& name)
+{
+	auto scene = getScene(name);
+	
+	if (scene != nullptr)
+	{
+		destroyScene(scene);
+	}
+}
+
+void GameEngine::destroyScene(IScene* scene)
+{
+	auto func = [scene](const std::unique_ptr<IScene>& s) {
+		return s.get() == scene;
+	};
+	
+	auto it = std::find_if(scenes_.begin(), scenes_.end(), func);
+	
+	if (it != scenes_.end())
+	{
+		scenes_.erase(it);
+	}
 }
 
 IScene* GameEngine::getScene(const std::string& name) const
@@ -880,22 +1094,71 @@ void GameEngine::setBootstrapScript(const std::string& filename)
 	*/
 }
 
-graphics::model::Model GameEngine::importModel(const std::string& filename) const
+graphics::IGraphicsEngine* GameEngine::getGraphicsEngine() const
+{
+	return graphicsEngine_.get();
+}
+
+physics::IPhysicsEngine* GameEngine::getPhysicsEngine() const
+{
+	return physicsEngine_.get();
+}
+
+utilities::Image* GameEngine::loadImage(const std::string& name, const std::string& filename)
+{
+	if (!fileSystem_->exists(filename))
+	{
+		throw std::runtime_error("Image file '" + filename + "' does not exist.");
+	}
+	
+	auto il = utilities::ImageLoader(logger_.get());
+	
+	resourceCache_.addImage( name, il.loadImageData(filename) );
+	
+	return resourceCache_.getImage(name);
+}
+
+graphics::model::Model* GameEngine::loadModel(const std::string& name, const std::string& filename)
+{
+	throw std::exception("loadModel not yet implemented.");
+}
+
+graphics::model::Model* GameEngine::importModel(const std::string& name, const std::string& filename)
 {
 	if (!fileSystem_->exists(filename))
 	{
 		throw std::runtime_error("Model file '" + filename + "' does not exist.");
 	}
 	
-	auto model = graphics::model::import(filename, logger_.get(), fileSystem_.get());
+	resourceCache_.addModel( name, graphics::model::import(filename, logger_.get(), fileSystem_.get()) );
 	
-	return std::move(model);
+	return resourceCache_.getModel(name);
 }
 
-ModelHandle GameEngine::loadStaticModel(const graphics::model::Model& model)
+void GameEngine::unloadImage(const std::string& name)
 {
-	auto meshHandle = graphicsEngine_->createStaticMesh(model.meshes[0].vertices, model.meshes[0].indices, model.meshes[0].colors, model.meshes[0].normals, model.meshes[0].textureCoordinates);
-	auto textureHandle = graphicsEngine_->createTexture2d(model.textures[0].image);
+	return resourceCache_.removeImage(name);
+}
+
+void GameEngine::unloadModel(const std::string& name)
+{
+	return resourceCache_.removeModel(name);
+}
+
+utilities::Image* GameEngine::getImage(const std::string& name) const
+{
+	return resourceCache_.getImage(name);
+}
+
+graphics::model::Model* GameEngine::getModel(const std::string& name) const
+{
+	return resourceCache_.getModel(name);
+}
+
+ModelHandle GameEngine::loadStaticModel(const graphics::model::Model* model)
+{
+	auto meshHandle = graphicsEngine_->createStaticMesh(model->meshes[0].vertices, model->meshes[0].indices, model->meshes[0].colors, model->meshes[0].normals, model->meshes[0].textureCoordinates);
+	auto textureHandle = graphicsEngine_->createTexture2d(model->textures[0].image);
 	
 	staticModels_.push_back(std::tuple<graphics::MeshHandle, graphics::TextureHandle>(meshHandle, textureHandle));
 	
@@ -904,11 +1167,175 @@ ModelHandle GameEngine::loadStaticModel(const graphics::model::Model& model)
 	return ModelHandle(index);
 }
 
-graphics::RenderableHandle GameEngine::createRenderable(const ModelHandle& modelHandle, const std::string& name)
+graphics::ShaderHandle GameEngine::createVertexShader(const std::string& name, const std::string& filename)
+{
+	logger_->debug("Loading vertex shader '" + name + "': " + filename);
+	
+	auto shaderSource = fileSystem_->readAll(filename);
+	
+	return createVertexShaderFromSource(name, shaderSource);
+}
+
+graphics::ShaderHandle GameEngine::createVertexShaderFromSource(const std::string& name, const std::string& data)
+{
+	logger_->debug("Creating vertex shader from source: " + data);
+	
+	if (graphicsEngine_->valid(getShader(name)))
+	{
+		throw std::runtime_error("Vertex shader with name '" + name + "' already exists.");
+	}
+	
+	auto handle = graphicsEngine_->createVertexShader(data);
+	
+	shaderHandles_[name] = handle;
+	
+	return handle;
+}
+
+graphics::ShaderHandle GameEngine::createFragmentShader(const std::string& name, const std::string& filename)
+{
+	logger_->debug("Loading fragment shader '" + name + "': " + filename);
+	
+	auto shaderSource = fileSystem_->readAll(filename);
+	
+	return createFragmentShaderFromSource(name, shaderSource);
+}
+
+graphics::ShaderHandle GameEngine::createFragmentShaderFromSource(const std::string& name, const std::string& data)
+{
+	logger_->debug("Creating fragment shader from source: " + data);
+	
+	if (graphicsEngine_->valid(getShader(name)))
+	{
+		throw std::runtime_error("Fragment shader with name '" + name + "' already exists.");
+	}
+	
+	auto handle = graphicsEngine_->createFragmentShader(data);
+	
+	shaderHandles_[name] = handle;
+	
+	return handle;
+}
+
+graphics::ShaderHandle GameEngine::getShader(const std::string& name) const
+{
+	auto it = shaderHandles_.find(name);
+	if (it != shaderHandles_.end())
+	{
+		return it->second;
+	}
+	
+	return graphics::ShaderHandle();
+}
+
+void GameEngine::destroyShader(const std::string& name)
+{
+	logger_->debug("Destroying shader '" + name + "'");
+	
+	auto it = shaderHandles_.find(name);
+	if (it != shaderHandles_.end())
+	{
+		graphicsEngine_->destroyShader(it->second);
+		shaderHandles_.erase(it);
+	}
+	else
+	{
+		logger_->warn("Cannot destroy shader '" + name + "' - shader was not found.");
+	}
+}
+
+void GameEngine::destroyShader(const graphics::ShaderHandle& shaderHandle)
+{
+	logger_->debug("Destroying shader with id '" + std::to_string(shaderHandle.id()) + "'");
+	
+	auto func = [&shaderHandle](const auto& pair) {
+		return pair.second == shaderHandle;
+	};
+	
+	auto it = std::find_if(shaderHandles_.begin(), shaderHandles_.end(), func);
+	
+	if (it != shaderHandles_.end())
+	{
+		graphicsEngine_->destroyShader(it->second);
+		shaderHandles_.erase(it);
+	}
+	else
+	{
+		logger_->warn("Cannot destroy shader with id '" + std::to_string(shaderHandle.id()) + "' - shader was not found.");
+	}
+}
+
+
+graphics::ShaderProgramHandle GameEngine::createShaderProgram(const std::string& name, const graphics::ShaderHandle& vertexShaderHandle, const graphics::ShaderHandle& fragmentShaderHandle)
+{
+	logger_->debug("Creating shader program '" + name + "' from vertex id '" + std::to_string(vertexShaderHandle.id()) + "' and fragment id '" + std::to_string(fragmentShaderHandle.id()) + "'");
+	
+	if (graphicsEngine_->valid(getShaderProgram(name)))
+	{
+		throw std::runtime_error("Shader program with name '" + name + "' already exists.");
+	}
+	
+	auto handle = graphicsEngine_->createShaderProgram(vertexShaderHandle, fragmentShaderHandle);
+	
+	shaderProgramHandles_[name] = handle;
+	
+	return handle;
+}
+
+graphics::ShaderProgramHandle GameEngine::getShaderProgram(const std::string& name) const
+{
+	auto it = shaderProgramHandles_.find(name);
+	if (it != shaderProgramHandles_.end())
+	{
+		return it->second;
+	}
+	
+	return graphics::ShaderProgramHandle();
+}
+
+void GameEngine::destroyShaderProgram(const std::string& name)
+{
+	logger_->debug("Destroying shader program '" + name + "'");
+	
+	auto it = shaderProgramHandles_.find(name);
+	if (it != shaderProgramHandles_.end())
+	{
+		graphicsEngine_->destroyShaderProgram(it->second);
+		shaderProgramHandles_.erase(it);
+	}
+	else
+	{
+		logger_->warn("Cannot destroy shader program '" + name + "' - shader program was not found.");
+	}
+}
+
+void GameEngine::destroyShaderProgram(const graphics::ShaderProgramHandle& shaderProgramHandle)
+{
+	logger_->debug("Destroying shader program with id '" + std::to_string(shaderProgramHandle.id()) + "'");
+	
+	auto func = [&shaderProgramHandle](const auto& pair) {
+		return pair.second == shaderProgramHandle;
+	};
+	
+	auto it = std::find_if(shaderProgramHandles_.begin(), shaderProgramHandles_.end(), func);
+	
+	if (it != shaderProgramHandles_.end())
+	{
+		graphicsEngine_->destroyShaderProgram(it->second);
+		shaderProgramHandles_.erase(it);
+	}
+	else
+	{
+		logger_->warn("Cannot destroy shader program with id '" + std::to_string(shaderProgramHandle.id()) + "' - shader program was not found.");
+	}
+}
+
+
+graphics::RenderableHandle GameEngine::createRenderable(const ModelHandle& modelHandle, const graphics::ShaderProgramHandle& shaderProgramHandle, const std::string& name)
 {
 	auto data = staticModels_[modelHandle.getId()];
 	
-	return graphicsEngine_->createRenderable(std::get<0>(data), std::get<1>(data));
+	return graphicsEngine_->createRenderable(std::get<0>(data), std::get<1>(data), shaderProgramHandle);
 }
 
 void GameEngine::handleEvents()

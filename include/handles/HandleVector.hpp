@@ -41,12 +41,13 @@ public:
 	{
 	}
 	
-	HandleType create()
+	template <typename ... Args>
+	HandleType create(Args ... args)
 	{
 		HandleData<T, HandleType> handleData;
 		
 		handleData.pointer = memoryPool_.malloc();
-		new (handleData.pointer) T();
+		new (handleData.pointer) T(std::forward<Args>(args) ...);
 		
 		if (freeList_.size() > 0)
 		{
@@ -86,7 +87,8 @@ public:
 	
 	bool valid(const HandleType& handle) const
 	{
-		return (handleData_[handle.index()].handle == handle && handle.version() != 0);
+		const auto index = handle.index();
+		return (index < handleData_.size() && handleData_[index].handle == handle && handle.version() != 0);
 	}
 	
 	HandleType handle(const uint64 id) const
@@ -114,6 +116,14 @@ public:
 	size_t size() const
 	{
 		return handleData_.size() - freeList_.size();
+	}
+	
+	void clear()
+	{
+		handleData_.clear();
+		freeList_.clear();
+		
+		memoryPool_.releaseMemory();
 	}
 	
 	T* get(const HandleType& handle) const

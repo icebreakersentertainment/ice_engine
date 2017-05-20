@@ -138,6 +138,9 @@ public:
 	virtual void registerInterface(const std::string& name) = 0;
 	virtual void registerInterfaceMethod(const std::string& name, const std::string& declaration) = 0;
 	
+	virtual void registerEnum(const std::string& type) = 0;
+	virtual void registerEnumValue(const std::string& type, const std::string& name, const int32 value) = 0;
+	
 	virtual ScriptHandle loadScript(const std::string& filename, const std::string& name = std::string()) = 0;
 	virtual void destroyScript(const std::string& name) = 0;
 	virtual void destroyScript(const ScriptHandle& scriptHandle) = 0;

@@ -10,6 +10,7 @@
 #include "physics/CollisionShapeHandle.hpp"
 #include "physics/bullet/BulletMotionState.hpp"
 
+#include "handles/HandleVector.hpp"
 #include "utilities/Properties.hpp"
 #include "fs/IFileSystem.hpp"
 #include "logger/ILogger.hpp"
@@ -105,7 +106,7 @@ private:
 	std::unique_ptr<btDiscreteDynamicsWorld> dynamicsWorld_;
 	
 	std::vector<std::unique_ptr<btCollisionShape>> shapes_;
-	std::vector<BulletPhysicsData> physicsData_;
+	handles::HandleVector<BulletPhysicsData, CollisionBodyHandle> physicsData_;
 };
 
 }

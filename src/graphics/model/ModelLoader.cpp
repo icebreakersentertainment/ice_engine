@@ -1,4 +1,5 @@
 #include <vector>
+#include <memory>
 #include <iostream>
 #include <fstream>
 #include <sstream>
@@ -171,14 +172,15 @@ Texture importTexture(const std::string& name, const std::string& filename, uint
 		data.filename = fullPath;
 		
 		auto il = utilities::ImageLoader(logger);
-		data.image = il.loadImageData(fullPath);
+		auto image = il.loadImageData(fullPath).release();
+		data.image = std::move(*(image));
 	}
 	else
 	{
 		logger->debug( "No texture specified." );
 	}
 	
-	return data;
+	return std::move(data);
 }
 
 glm::mat4 convertAssImpMatrix(const aiMatrix4x4* m)
@@ -246,7 +248,7 @@ Material importMaterial(const std::string& name, const std::string& filename, ui
 	
 	logger->debug( "done importing material." );
 	
-	return data;
+	return std::move(data);
 }
 
 BoneData importBones(const std::string& name, const std::string& filename, uint32 index, const aiMesh* mesh, logger::ILogger* logger, fs::IFileSystem* fileSystem)
@@ -303,7 +305,7 @@ BoneNode importBoneNode( const aiNode* node )
 		boneNode.children.push_back( importBoneNode( node->mChildren[i] ) );
 	}
 	
-	return boneNode;
+	return std::move(boneNode);
 }
 
 AnimationSet importAnimations(const std::string& name, const std::string& filename, const aiScene* scene, logger::ILogger* logger, fs::IFileSystem* fileSystem)
@@ -406,14 +408,14 @@ AnimationSet importAnimations(const std::string& name, const std::string& filena
 
 	logger->debug( "done importing animation." );
 	
-	return animationSet;
+	return std::move(animationSet);
 }
 
-Model importModelData(const std::string& name, const std::string& filename, logger::ILogger* logger, fs::IFileSystem* fileSystem)
+std::unique_ptr<Model> importModelData(const std::string& name, const std::string& filename, logger::ILogger* logger, fs::IFileSystem* fileSystem)
 {
 	logger->debug( "Importing model data from file '" + filename + "'." );
 
-	auto model = Model();
+	auto model = std::make_unique<Model>();
 
 	// We don't currently support aiProcess_JoinIdenticalVertices or aiProcess_FindInvalidData
 	// aiProcess_FindInvalidData - I think it's due to the reduction of animation tracks containing redundant keys..
@@ -437,23 +439,23 @@ Model importModelData(const std::string& name, const std::string& filename, logg
 	
 	try
 	{
-		model.meshes.resize( scene->mNumMeshes );
-		model.materials.resize( scene->mNumMeshes );
-		model.textures.resize( scene->mNumMeshes );
-		model.boneData.resize( scene->mNumMeshes );
+		model->meshes.resize( scene->mNumMeshes );
+		model->materials.resize( scene->mNumMeshes );
+		model->textures.resize( scene->mNumMeshes );
+		model->boneData.resize( scene->mNumMeshes );
 		
 		auto animationSet = importAnimations(name, filename, scene, logger, fileSystem);
 		
 		// Create bone structure (tree structure)
-		model.rootBoneNode = animationSet.rootBoneNode;
+		model->rootBoneNode = animationSet.rootBoneNode;
 		
 		// Set the global inverse transformation
-		model.globalInverseTransformation = animationSet.globalInverseTransformation;
+		model->globalInverseTransformation = animationSet.globalInverseTransformation;
 		
 		// Load the animation information
 		for ( auto& kv : animationSet.animations)
 		{
-			model.animations.push_back(kv.second);
+			model->animations.push_back(kv.second);
 			/*
 			// Create animated bone node information
 			auto animatedBoneNodes = std::map< std::string, AnimatedBoneNode >();
@@ -475,7 +477,7 @@ Model importModelData(const std::string& name, const std::string& filename, logg
 			
 			assert(animation != nullptr);
 			
-			model.animations.push_back(animation);
+			model->animations.push_back(animation);
 			
 			// TODO: add animations properly (i.e. with names specifying the animation i guess?)
 			//std::cout << "anim: " << animation->getName() << std::endl;
@@ -483,26 +485,26 @@ Model importModelData(const std::string& name, const std::string& filename, logg
 		}
 		
 		std::stringstream msg;
-		msg << "Model has " << model.meshes.size() << " meshes.";
+		msg << "Model has " << model->meshes.size() << " meshes.";
 		logger->debug( msg.str() );
 		
-		for ( uint32 i=0; i < model.meshes.size(); i++ )
+		for ( uint32 i=0; i < model->meshes.size(); i++ )
 		{
-			model.meshes[i] = Mesh();
-			model.materials[i] = Material();
-			model.textures[i] = Texture();
-			model.boneData[i] = BoneData();
+			model->meshes[i] = Mesh();
+			model->materials[i] = Material();
+			model->textures[i] = Texture();
+			model->boneData[i] = BoneData();
 			
-			model.boneData[i] = importBones( name, filename, i, scene->mMeshes[i], logger, fileSystem );
-			model.meshes[i] = importMesh( name, filename, i, scene->mMeshes[i], model.boneData[i].boneIndexMap, logger, fileSystem );
-			model.materials[i] = importMaterial( name, filename, i, scene->mMaterials[ scene->mMeshes[i]->mMaterialIndex ], logger, fileSystem );
-			model.textures[i] = importTexture( name, filename, i, scene->mMaterials[ scene->mMeshes[i]->mMaterialIndex ], logger, fileSystem );
+			model->boneData[i] = importBones( name, filename, i, scene->mMeshes[i], logger, fileSystem );
+			model->meshes[i] = importMesh( name, filename, i, scene->mMeshes[i], model->boneData[i].boneIndexMap, logger, fileSystem );
+			model->materials[i] = importMaterial( name, filename, i, scene->mMaterials[ scene->mMeshes[i]->mMaterialIndex ], logger, fileSystem );
+			model->textures[i] = importTexture( name, filename, i, scene->mMaterials[ scene->mMeshes[i]->mMaterialIndex ], logger, fileSystem );
 		}
 		
 		bool hasTextures = false;
-		for ( uint32 i=0; i < model.meshes.size(); i++ )
+		for ( uint32 i=0; i < model->meshes.size(); i++ )
 		{
-			if (model.textures[i].filename != std::string(""))
+			if (model->textures[i].filename != std::string(""))
 			{
 				hasTextures = true;
 				break;
@@ -531,13 +533,13 @@ Model importModelData(const std::string& name, const std::string& filename, logg
 
 }
 
-Model load(const std::string& filename, logger::ILogger* logger, fs::IFileSystem* fileSystem)
+std::unique_ptr<Model> load(const std::string& filename, logger::ILogger* logger, fs::IFileSystem* fileSystem)
 {
 	auto name = fileSystem->getFilenameWithoutExtension(filename);
 	
 	logger->debug( "Loading model '" + name + "' - " + filename + "." );
 	
-	auto model = Model();
+	auto model = std::make_unique<Model>();
 	
 	//model = loadModelData(name, filename);
 
@@ -546,7 +548,7 @@ Model load(const std::string& filename, logger::ILogger* logger, fs::IFileSystem
 	return std::move(model);
 }
 
-Model import(const std::string& filename, logger::ILogger* logger, fs::IFileSystem* fileSystem)
+std::unique_ptr<Model> import(const std::string& filename, logger::ILogger* logger, fs::IFileSystem* fileSystem)
 {
 	auto name = fileSystem->getFilenameWithoutExtension(filename);
 	
@@ -561,7 +563,7 @@ Model import(const std::string& filename, logger::ILogger* logger, fs::IFileSyst
 	aiAttachLogStream(&stream);
 #endif
 	
-	auto model = Model();
+	std::unique_ptr<Model> model;
 	try
 	{
 		model = importModelData(name, filename, logger, fileSystem);

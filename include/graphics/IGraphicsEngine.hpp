@@ -9,11 +9,14 @@
 #include "Types.hpp"
 
 #include "IEventListener.hpp"
+#include "TransformSpace.hpp"
 #include "RenderableHandle.hpp"
 #include "MeshHandle.hpp"
 #include "TextureHandle.hpp"
 #include "SkeletonHandle.hpp"
 #include "CameraHandle.hpp"
+#include "ShaderHandle.hpp"
+#include "ShaderProgramHandle.hpp"
 
 #include "model/Model.hpp"
 
@@ -21,12 +24,6 @@ namespace hercules
 {
 namespace graphics
 {
-
-enum TransformSpace
-{
-	TS_LOCAL = 0,
-	TS_WORLD
-};
 
 class IGraphicsEngine
 {
@@ -69,7 +66,15 @@ public:
 	
 	virtual TextureHandle createTexture2d(const utilities::Image& image) = 0;
 	
-	virtual RenderableHandle createRenderable(const MeshHandle& meshHandle, const TextureHandle& textureHandle) = 0;
+	virtual ShaderHandle createVertexShader(const std::string& data) = 0;
+	virtual ShaderHandle createFragmentShader(const std::string& data) = 0;
+	virtual bool valid(const ShaderHandle& shaderHandle) const = 0;
+	virtual void destroyShader(const ShaderHandle& shaderHandle) = 0;
+	virtual ShaderProgramHandle createShaderProgram(const ShaderHandle& vertexShaderHandle, const ShaderHandle& fragmentShaderHandle) = 0;
+	virtual bool valid(const ShaderProgramHandle& shaderProgramHandle) const = 0;
+	virtual void destroyShaderProgram(const ShaderProgramHandle& shaderProgramHandle) = 0;
+	
+	virtual RenderableHandle createRenderable(const MeshHandle& meshHandle, const TextureHandle& textureHandle, const ShaderProgramHandle& shaderProgramHandle) = 0;
 	
 	virtual void rotate(const CameraHandle& cameraHandle, const glm::quat& quaternion, const TransformSpace& relativeTo = TransformSpace::TS_LOCAL) = 0;
 	virtual void rotate(const RenderableHandle& renderableHandle, const glm::quat& quaternion, const TransformSpace& relativeTo = TransformSpace::TS_LOCAL) = 0;

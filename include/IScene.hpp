@@ -15,7 +15,8 @@
 #include "entities/PhysicsComponent.hpp"
 #include "entities/PositionOrientationComponent.hpp"
 
-#include "graphics/IGraphicsEngine.hpp"
+#include "graphics/TransformSpace.hpp"
+#include "graphics/ShaderProgramHandle.hpp"
 #include "physics/CollisionShapeHandle.hpp"
 #include "physics/CollisionBodyHandle.hpp"
 
@@ -66,7 +67,7 @@ public:
 		const float32 restitution = 1.0f
 	) = 0;
 	
-	virtual graphics::RenderableHandle createRenderable(const ModelHandle& modelHandle, const std::string& name = std::string()) = 0;
+	virtual graphics::RenderableHandle createRenderable(const ModelHandle& modelHandle, const graphics::ShaderProgramHandle& shaderProgramHandle, const std::string& name = std::string()) = 0;
 	
 	virtual std::string getName() const = 0;
 	

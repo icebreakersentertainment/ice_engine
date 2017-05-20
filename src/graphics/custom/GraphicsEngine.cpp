@@ -73,11 +73,6 @@ GraphicsEngine::GraphicsEngine(utilities::Properties* properties, fs::IFileSyste
 		throw std::runtime_error(msg);
 	}
 	
-	auto vertexShaderUri = std::string("../data/shaders/basic_with_texture.vert");
-	auto fragmentShaderUri = std::string("../data/shaders/basic_with_texture.frag");
-	
-	shaderProgram_ = createShaderProgram(vertexShaderUri, fragmentShaderUri);
-	
 	// Set up the model, view, and projection matrices
 	model_ = glm::scale(glm::mat4(1.0f), glm::vec3(0.5f));
 	view_ = glm::mat4(1.0f);
@@ -129,35 +124,26 @@ void GraphicsEngine::render(const float32 delta)
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	
-	glUseProgram(shaderProgram_);
-	
-	/*
-	{
-		GLint numActiveUniforms = 0;
-		glGetProgramInterfaceiv(shaderProgram_, GL_UNIFORM, GL_ACTIVE_RESOURCES, &numActiveUniforms);
-		
-		std::vector<GLchar> nameData(256);
-		for(int unif = 0; unif < numActiveUniforms; ++unif)
-		{
-			GLint arraySize = 0;
-			GLenum type = 0;
-			GLsizei actualLength = 0;
-			glGetActiveUniform(shaderProgram_, unif, nameData.size(), &actualLength, &arraySize, &type, &nameData[0]);
-			std::string name((char*)&nameData[0], actualLength);
-		}
-	}
-	*/
-	
-	const int modelMatrixLocation = glGetUniformLocation(shaderProgram_, "modelMatrix");
-	const int pvmMatrixLocation = glGetUniformLocation(shaderProgram_, "pvmMatrix");
-	const int normalMatrixLocation = glGetUniformLocation(shaderProgram_, "normalMatrix");
+	int modelMatrixLocation = 0;
+	int pvmMatrixLocation = 0;
+	int normalMatrixLocation = 0;
 	
 	//assert( modelMatrixLocation >= 0);
-	assert( pvmMatrixLocation >= 0);
+	//assert( pvmMatrixLocation >= 0);
 	//assert( normalMatrixLocation >= 0);
 	
+	ShaderProgram currentShaderProgram;
 	for ( const auto& r : renderables_ )
 	{
+		if (currentShaderProgram.id != r.shaderProgram.id)
+		{
+			currentShaderProgram = r.shaderProgram;
+			modelMatrixLocation = glGetUniformLocation(currentShaderProgram.id, "modelMatrix");
+			pvmMatrixLocation = glGetUniformLocation(currentShaderProgram.id, "pvmMatrix");
+			normalMatrixLocation = glGetUniformLocation(currentShaderProgram.id, "normalMatrix");
+			glUseProgram(currentShaderProgram.id);
+		}
+		
 		glm::mat4 newModel = glm::translate(model_, r.graphicsData.position);
 		newModel = newModel * glm::mat4_cast( r.graphicsData.orientation );
 		newModel = glm::scale(newModel, r.graphicsData.scale);
@@ -173,7 +159,7 @@ void GraphicsEngine::render(const float32 delta)
 		
 		if (r.ubo.id > 0)
 		{
-			//const int bonesLocation = glGetUniformLocation(shaderProgram_, "bones");
+			//const int bonesLocation = glGetUniformLocation(currentShaderProgram.id, "bones");
 			//assert( bonesLocation >= 0);
 			//glBindBufferBase(GL_UNIFORM_BUFFER, bonesLocation, r.ubo.id);
 			glBindBufferBase(GL_UNIFORM_BUFFER, 0, r.ubo.id);
@@ -419,13 +405,71 @@ TextureHandle GraphicsEngine::createTexture2d(const utilities::Image& image)
 	return handle;
 }
 
-RenderableHandle GraphicsEngine::createRenderable(const MeshHandle& meshHandle, const TextureHandle& textureHandle)
+ShaderHandle GraphicsEngine::createVertexShader(const std::string& data)
+{
+	return shaders_.create( compileShader(data, GL_VERTEX_SHADER) );
+}
+
+ShaderHandle GraphicsEngine::createFragmentShader(const std::string& data)
+{
+	return shaders_.create( compileShader(data, GL_FRAGMENT_SHADER) );
+}
+
+bool GraphicsEngine::valid(const ShaderHandle& shaderHandle) const
+{
+	return shaders_.valid(shaderHandle);
+}
+
+void GraphicsEngine::destroyShader(const ShaderHandle& shaderHandle)
+{
+	if (!shaders_.valid(shaderHandle))
+	{
+		throw std::runtime_error("Invalid shader handle");
+	}
+	
+	const auto shader = shaders_[shaderHandle];
+	
+	glDeleteShader(shader.id);
+	
+	shaders_.destroy(shaderHandle);
+}
+
+ShaderProgramHandle GraphicsEngine::createShaderProgram(const ShaderHandle& vertexShaderHandle, const ShaderHandle& fragmentShaderHandle)
+{
+	const auto vertexShader = shaders_[vertexShaderHandle];
+	const auto fragmentShader = shaders_[fragmentShaderHandle];
+	
+	return shaderPrograms_.create( createShaderProgram(vertexShader.id, fragmentShader.id) );
+}
+
+bool GraphicsEngine::valid(const ShaderProgramHandle& shaderProgramHandle) const
+{
+	return shaderPrograms_.valid(shaderProgramHandle);
+}
+
+void GraphicsEngine::destroyShaderProgram(const ShaderProgramHandle& shaderProgramHandle)
+{
+	if (!shaderPrograms_.valid(shaderProgramHandle))
+	{
+		throw std::runtime_error("Invalid shader program handle");
+	}
+	
+	const auto shaderProgram = shaderPrograms_[shaderProgramHandle];
+	
+	glDeleteProgram(shaderProgram.id);
+	
+	shaderPrograms_.destroy(shaderProgramHandle);
+}
+
+
+RenderableHandle GraphicsEngine::createRenderable(const MeshHandle& meshHandle, const TextureHandle& textureHandle, const ShaderProgramHandle& shaderProgramHandle)
 {
 	auto handle = renderables_.create();
 	auto& renderable = renderables_[handle];
 	
 	renderable.vao = meshes_[meshHandle];
 	renderable.texture = texture2ds_[textureHandle];
+	renderable.shaderProgram = shaderPrograms_[shaderProgramHandle];
 	
 	renderable.graphicsData.position = glm::vec3(0.0f, 0.0f, 0.0f);
 	renderable.graphicsData.scale = glm::vec3(1.0f, 1.0f, 1.0f);
@@ -637,39 +681,6 @@ void GraphicsEngine::update(const SkeletonHandle& skeletonHandle, const void* da
 	//void* d = glMapBufferRange(GL_UNIFORM_BUFFER, 0, size, GL_MAP_WRITE_BIT | GL_MAP_INVALIDATE_RANGE_BIT);
 	//memcpy( d, data, size );
 	//glUnmapBuffer(GL_UNIFORM_BUFFER);
-}
-
-GLuint GraphicsEngine::createShaderProgram(const std::string& vertexShaderFile, const std::string& fragmentShaderFile)
-{
-	auto vertexShaderSource = fileSystem_->readAll(vertexShaderFile);
-	auto fragmentShaderSource = fileSystem_->readAll(fragmentShaderFile);
-	
-	return createShaderProgramFromSource(vertexShaderSource, fragmentShaderSource);
-}
-
-GLuint GraphicsEngine::createShaderProgramFromSource(const std::string& vertexShaderSource, const std::string& fragmentShaderSource)
-{
-	auto vertexShader = compileShader(vertexShaderSource, GL_VERTEX_SHADER);
-	auto fragmentShader = compileShader(fragmentShaderSource, GL_FRAGMENT_SHADER);
-	
-	GLuint shaderProgram = 0;
-	
-	try
-	{
-		shaderProgram = createShaderProgram(vertexShader, fragmentShader);
-	}
-	catch (const std::exception& e)
-	{
-		glDeleteShader(vertexShader);
-		glDeleteShader(fragmentShader);
-	
-		throw e;
-	}
-	
-	glDeleteShader(vertexShader);
-	glDeleteShader(fragmentShader);
-	
-	return shaderProgram;
 }
 
 GLuint GraphicsEngine::createShaderProgram(const GLuint vertexShader, const GLuint fragmentShader)

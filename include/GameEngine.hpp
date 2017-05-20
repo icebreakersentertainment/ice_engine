@@ -2,6 +2,7 @@
 #define GAMEENGINE_H_
 
 #include <vector>
+#include <map>
 #include <tuple>
 #include <memory>
 
@@ -12,7 +13,7 @@
 #include "fs/IFileSystem.hpp"
 
 #include "IGameEngine.hpp"
-#include "Player.hpp"
+#include "ResourceCache.hpp"
 #include "Camera.hpp"
 #include "ThreadPool.hpp"
 #include "OpenGlLoader.hpp"
@@ -45,11 +46,41 @@ public:
 	 */
 	virtual void setBootstrapScript(const std::string& filename) override;
 	
-	virtual graphics::model::Model importModel(const std::string& filename) const override;
-	virtual ModelHandle loadStaticModel(const graphics::model::Model& model) override;
-	virtual graphics::RenderableHandle createRenderable(const ModelHandle& modelHandle, const std::string& name = std::string()) override;
+	virtual graphics::IGraphicsEngine* getGraphicsEngine() const override;
+	virtual physics::IPhysicsEngine* getPhysicsEngine() const override;
+	
+	//virtual AudioSample* loadAudioSample(const std::string& name, const std::string& filename) override;
+	virtual utilities::Image* loadImage(const std::string& name, const std::string& filename) override;
+	virtual graphics::model::Model* loadModel(const std::string& name, const std::string& filename) override;
+	virtual graphics::model::Model* importModel(const std::string& name, const std::string& filename) override;
+	
+	//virtual void unloadAudioSample(const std::string& name) override;
+	virtual void unloadImage(const std::string& name) override;
+	virtual void unloadModel(const std::string& name) override;
+	
+	//virtual AudioSample* getAudioSample(const std::string& name) const override;
+	virtual utilities::Image* getImage(const std::string& name) const override;
+	virtual graphics::model::Model* getModel(const std::string& name) const override;
+	
+	virtual ModelHandle loadStaticModel(const graphics::model::Model* model) override;
+	virtual graphics::RenderableHandle createRenderable(const ModelHandle& modelHandle, const graphics::ShaderProgramHandle& shaderProgramHandle, const std::string& name = std::string()) override;
+	
+	virtual graphics::ShaderHandle createVertexShader(const std::string& name, const std::string& filename) override;
+	virtual graphics::ShaderHandle createVertexShaderFromSource(const std::string& name, const std::string& data) override;
+	virtual graphics::ShaderHandle createFragmentShader(const std::string& name, const std::string& filename) override;
+	virtual graphics::ShaderHandle createFragmentShaderFromSource(const std::string& name, const std::string& data) override;
+	virtual graphics::ShaderHandle getShader(const std::string& name) const override;
+	virtual void destroyShader(const std::string& name) override;
+	virtual void destroyShader(const graphics::ShaderHandle& shaderHandle) override;
+	
+	virtual graphics::ShaderProgramHandle createShaderProgram(const std::string& name, const graphics::ShaderHandle& vertexShaderHandle, const graphics::ShaderHandle& fragmentShaderHandle) override;
+	virtual graphics::ShaderProgramHandle getShaderProgram(const std::string& name) const override;
+	virtual void destroyShaderProgram(const std::string& name) override;
+	virtual void destroyShaderProgram(const graphics::ShaderProgramHandle& shaderProgramHandle) override;
 	
 	virtual IScene* createScene(const std::string& name) override;
+	virtual void destroyScene(const std::string& name) override;
+	virtual void destroyScene(IScene* scene) override;
 	virtual IScene* getScene(const std::string& name) const override;
 	
 	// Implements the IEventListener interface
@@ -68,16 +99,19 @@ private:
 	std::unique_ptr< graphics::IGraphicsEngine > graphicsEngine_;
 	graphics::CameraHandle cameraHandle_;
 	
-	std::unique_ptr< utilities::Properties > properties_;
-	std::unique_ptr< logger::ILogger > logger_;
-	
-	std::unique_ptr<Player> player_;
-	
+	std::unique_ptr< physics::IPhysicsEngine > physicsEngine_;
 	std::unique_ptr<scripting::IScriptingEngine> scriptingEngine_;
 	
+	std::vector<std::unique_ptr<IScene>> scenes_;
+	
+	std::unique_ptr< utilities::Properties > properties_;
+	std::unique_ptr< logger::ILogger > logger_;
 	std::unique_ptr<fs::IFileSystem> fileSystem_;
 	
-	std::vector<std::unique_ptr<IScene>> scenes_;
+	std::map<std::string, graphics::ShaderHandle> shaderHandles_;
+	std::map<std::string, graphics::ShaderProgramHandle> shaderProgramHandles_;
+	
+	ResourceCache resourceCache_;
 	
 	bool running_;
 	GameState state_;

@@ -140,6 +140,9 @@ public:
 	virtual void registerInterface(const std::string& name) override;
 	virtual void registerInterfaceMethod(const std::string& name, const std::string& declaration) override;
 	
+	virtual void registerEnum(const std::string& type) override;
+	virtual void registerEnumValue(const std::string& type, const std::string& name, const int32 value) override;
+	
 	virtual ScriptHandle loadScript(const std::string& filename, const std::string& name = std::string()) override;
 	virtual void destroyScript(const std::string& name) override;
 	virtual void destroyScript(const ScriptHandle& scriptHandle) override;

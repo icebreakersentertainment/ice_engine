@@ -2,6 +2,7 @@
 #define IMAGELOADER_H_
 
 #include <sstream>
+#include <memory>
 
 #include <FreeImage.h>
 
@@ -25,16 +26,11 @@ public:
 	{
 	};
 
-	Image loadImageData(const std::string filename, bool hasAlpha = true)
-	{
-		return loadImageData(filename.c_str());
-	};
-
-	Image loadImageData(const char* filename, bool hasAlpha = true)
+	std::unique_ptr<Image> loadImageData(const std::string filename, bool hasAlpha = true)
 	{
 		logger_->debug( "Loading image." );
-		FREE_IMAGE_FORMAT format = FreeImage_GetFileType(filename, 0);
-		FIBITMAP* imageBitmap = FreeImage_Load(format, filename);
+		FREE_IMAGE_FORMAT format = FreeImage_GetFileType(filename.c_str(), 0);
+		FIBITMAP* imageBitmap = FreeImage_Load(format, filename.c_str());
 
 		if (imageBitmap == nullptr)
 		{
@@ -66,7 +62,7 @@ public:
 
 		char* pixels = (char*) FreeImage_GetBits(imageBitmap);
 
-		auto retImage = Image();
+		auto retImage = std::make_unique<Image>();
 		
 		if ( pixels != nullptr )
 		{
@@ -85,17 +81,17 @@ public:
 			int imageBytesLength = pixelSize * w * h;
 			
 			// Transfer raw data into a vector
-			retImage.data = std::vector<char>(pixels, pixels+imageBytesLength);
+			retImage->data = std::vector<char>(pixels, pixels+imageBytesLength);
 			
-			retImage.width = w;
-			retImage.height = h;
+			retImage->width = w;
+			retImage->height = h;
 			if (hasAlpha)
 			{
-				retImage.format = FORMAT_RGBA;
+				retImage->format = FORMAT_RGBA;
 			}
 			else
 			{
-				retImage.format = FORMAT_RGB;
+				retImage->format = FORMAT_RGB;
 			}
 		}
 		

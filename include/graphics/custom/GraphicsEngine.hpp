@@ -62,12 +62,29 @@ struct GraphicsData
 	glm::quat orientation;
 };
 
+struct Shader
+{
+	Shader(GLuint id = 0) : id(id)
+	{}
+	
+	GLuint id;
+};
+
+struct ShaderProgram
+{
+	ShaderProgram(GLuint id = 0) : id(id)
+	{}
+	
+	GLuint id;
+};
+
 struct Renderable
 {
 	Vao vao;
 	Ubo ubo;
 	GlTexture2d texture;
 	GraphicsData graphicsData;
+	ShaderProgram shaderProgram;
 };
 
 struct Camera
@@ -115,7 +132,15 @@ public:
 	
 	virtual TextureHandle createTexture2d(const utilities::Image& image) override;
 	
-	virtual RenderableHandle createRenderable(const MeshHandle& meshHandle, const TextureHandle& textureHandle) override;
+	virtual ShaderHandle createVertexShader(const std::string& data) override;
+	virtual ShaderHandle createFragmentShader(const std::string& data) override;
+	virtual bool valid(const ShaderHandle& shaderHandle) const override;
+	virtual void destroyShader(const ShaderHandle& shaderHandle) override;
+	virtual ShaderProgramHandle createShaderProgram(const ShaderHandle& vertexShaderHandle, const ShaderHandle& fragmentShaderHandle) override;
+	virtual bool valid(const ShaderProgramHandle& shaderProgramHandle) const override;
+	virtual void destroyShaderProgram(const ShaderProgramHandle& shaderProgramHandle) override;
+	
+	virtual RenderableHandle createRenderable(const MeshHandle& meshHandle, const TextureHandle& textureHandle, const ShaderProgramHandle& shaderProgramHandle) override;
 	
 	virtual void rotate(const CameraHandle& cameraHandle, const glm::quat& quaternion, const TransformSpace& relativeTo = TransformSpace::TS_LOCAL) override;
 	virtual void rotate(const RenderableHandle& renderableHandle, const glm::quat& quaternion, const TransformSpace& relativeTo = TransformSpace::TS_LOCAL) override;
@@ -167,6 +192,8 @@ private:
 	SDL_GLContext openglContext_;
 	
 	std::vector<IEventListener*> eventListeners_;
+	handles::HandleVector<Shader, ShaderHandle> shaders_;
+	handles::HandleVector<ShaderProgram, ShaderProgramHandle> shaderPrograms_;
 	handles::HandleVector<Renderable, RenderableHandle> renderables_;
 	handles::HandleVector<Vao, MeshHandle> meshes_;
 	handles::HandleVector<Ubo, SkeletonHandle> skeletons_;
@@ -181,8 +208,6 @@ private:
 	fs::IFileSystem* fileSystem_;
 	logger::ILogger* logger_;
 	
-	GLuint createShaderProgram(const std::string& vertexShaderFile, const std::string& fragmentShaderFile);
-	GLuint createShaderProgramFromSource(const std::string& vertexShaderSource, const std::string& fragmentShaderSource);
 	GLuint createShaderProgram(const GLuint vertexShader, const GLuint fragmentShader);
 	GLuint compileShader(const std::string& source, const GLenum type);
 	

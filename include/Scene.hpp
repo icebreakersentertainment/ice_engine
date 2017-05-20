@@ -29,6 +29,7 @@ public:
 		const std::string& name,
 		IGameEngine* gameEngine,
 		graphics::IGraphicsEngine* graphicsEngine,
+		physics::IPhysicsEngine* physicsEngine,
 		utilities::Properties* properties,
 		fs::IFileSystem* fileSystem,
 		logger::ILogger* logger,
@@ -73,7 +74,7 @@ public:
 		const float32 restitution = 1.0f
 	) override;
 	
-	virtual graphics::RenderableHandle createRenderable(const ModelHandle& modelHandle, const std::string& name = std::string()) override;
+	virtual graphics::RenderableHandle createRenderable(const ModelHandle& modelHandle, const graphics::ShaderProgramHandle& shaderProgramHandle, const std::string& name = std::string()) override;
 	
 	virtual std::string getName() const override;
 	
@@ -105,13 +106,12 @@ private:
 	std::string name_;
 	IGameEngine* gameEngine_;
 	graphics::IGraphicsEngine* graphicsEngine_;
+	physics::IPhysicsEngine* physicsEngine_;
 	utilities::Properties* properties_;
 	fs::IFileSystem* fileSystem_;
 	logger::ILogger* logger_;
 	IThreadPool* threadPool_;
 	IOpenGlLoader* openGlLoader_;
-	
-	std::unique_ptr< physics::IPhysicsEngine > physicsEngine_;
 	
 	// Entity system
 	entities::EntityComponentSystem entityComponentSystem_;
