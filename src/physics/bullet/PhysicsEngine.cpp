@@ -65,7 +65,7 @@ CollisionShapeHandle PhysicsEngine::createStaticBoxShape(const glm::vec3& dimens
 
 void PhysicsEngine::destroyStaticShape(const CollisionShapeHandle& collisionShapeHandle)
 {
-	throw std::exception("Method not implemented");
+	throw std::logic_error("Method not implemented");
 }
 
 void PhysicsEngine::destroyAllStaticShapes()

@@ -809,7 +809,7 @@ utilities::Image* GameEngine::loadImage(const std::string& name, const std::stri
 
 graphics::model::Model* GameEngine::loadModel(const std::string& name, const std::string& filename)
 {
-	throw std::exception("loadModel not yet implemented.");
+	throw std::logic_error("loadModel not yet implemented.");
 }
 
 graphics::model::Model* GameEngine::importModel(const std::string& name, const std::string& filename)
