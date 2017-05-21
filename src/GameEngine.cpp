@@ -196,8 +196,6 @@ void GameEngine::initializeFileSystemSubSystem()
 void GameEngine::initializeInputSubSystem()
 {
 	logger_->info( "initialize keyboard and mouse." );
-	//sfmlWindow_ = (sf::Window*)window_->getInternalWindowPointer();
-	//sfmlWindow_->setKeyRepeatEnabled(false);
 }
 void GameEngine::initializeSoundSubSystem()
 {
@@ -213,51 +211,9 @@ void GameEngine::initializeGraphicsSubSystem()
 {
 	logger_->info( "initializing graphics." );
 	
-	//properties_->getIntValue( std::string("window.depth") );
-	//properties_->getBoolValue( std::string("window.fullscreen") );
-	//properties_->getBoolValue( std::string("window.vsync") );
-	
 	graphicsEngine_ = graphics::GraphicsFactory::createGraphicsEngine( properties_.get(), fileSystem_.get(), logger_.get() );
 	
 	graphicsEngine_->addEventListener(this);
-	
-	/*
-	logger_->debug( "create glr program." );
-	glr::ProgramSettings settings = glr::ProgramSettings();
-	settings.defaultTextureDir = std::string( Constants::MODELS_DIRECTORY );
-	glrProgram_ = std::unique_ptr<glr::GlrProgram>( new glr::GlrProgram(settings) );
-
-	logger_->debug( "create window." );
-	window_ = glrProgram_->createWindow(
-		Constants::GAME_NAME,
-		Constants::GAME_NAME,
-		properties_->getIntValue( std::string("window.width") ),
-		properties_->getIntValue( std::string("window.height") ),
-		properties_->getIntValue( std::string("window.depth") ),
-		properties_->getBoolValue( std::string("window.fullscreen") ),
-		properties_->getBoolValue( std::string("window.vsync") )
-	);
-	
-	assert(glrProgram_->getOpenGlDevice() != nullptr);
-	assert(glrProgram_->getOpenGlDevice()->getShaderProgramManager() != nullptr);
-	
-	logger_->debug( "create scene manager." );
-
-	smgr_ = glrProgram_->getSceneManager();
-	
-	assert(smgr_ != nullptr);
-	
-	logger_->debug( "Initializing custom shaders..." );
-	smgr_->getShaderProgramManager()->loadShaderPrograms(std::string("./data/shaders"));
-	
-	logger_->debug( "create camera." );
-	glr::ICamera* camera = smgr_->createCamera();
-	camera->setPosition(13.0f, 8.0f, -6.0f);
-	camera->lookAt( glm::vec3(24.0f, 3.0f, 24.0f) );
-	
-	auto fpsCamera = std::unique_ptr< glr::extras::FpsCamera >( new glr::extras::FpsCamera(camera, 0.060f) );
-	camera_ = std::unique_ptr< Camera >( new Camera( std::move(fpsCamera) ) );
-	*/
 }
 
 void GameEngine::initializeScriptingSubSystem()
@@ -495,34 +451,6 @@ void GameEngine::initializeScriptingSubSystem()
 		asMETHODPR(physics::IPhysicsEngine, createStaticRigidBody, (const physics::CollisionShapeHandle&), physics::CollisionBodyHandle)
 	);
 	
-	/*
-	    std::vector<glm::vec3> vertices;
-		std::vector<uint32> indices;
-		std::vector<glm::vec4> colors;
-		std::vector<glm::vec3> normals;
-		std::vector<glm::vec2> textureCoordinates;
-		* 
-		auto meshHandle = graphicsEngine_->createStaticMesh(vertices, indices, colors, normals, textureCoordinates);
-		auto textureHandle = graphicsEngine_->createTexture2d(image);
-		auto renderableHandle = graphicsEngine_->createRenderable(meshHandle, textureHandle);
-		
-		auto e = createEntity();
-		
-		auto collisionShapeHandle = physicsEngine_->createStaticPlaneShape(vec3(0.0f, 1.0f, 0.0f), 1.0f);
-		auto collisionBodyHandle = physicsEngine_->createStaticRigidBody(collisionShapeHandle);
-		
-		entities::GraphicsComponent gc;
-		gc.renderableHandle = renderableHandle;
-		entities::PhysicsComponent pc;
-		pc.collisionBodyHandle = collisionBodyHandle;
-		assign(e, gc);
-		assign(e, pc);
-		
-		scale(e, 20.0f);
-		rotate(e, -90.0f, vec3(1.0f, 0.0f, 0.0f));
-		translate(e, vec3(0.0f, -6.0f, 0.0f));
-		*/
-	
 	// IGameEngine functions available in the scripting engine
 	scriptingEngine_->registerGlobalFunction(
 		"void setIGameInstance(IGame@ game)",
@@ -652,107 +580,6 @@ void GameEngine::initializeScriptingSubSystem()
 		asCALL_THISCALL_ASGLOBAL,
 		this
 	);
-	
-	// TESTING - loading scripts and creating objects
-	//scriptingEngine_->loadScript(std::string("Main"), std::string("Main.as"));
-	
-	//auto asObject = scriptingEngine_->createAsObject(std::string("Main"), std::string("Main"));
-	
-	//asObject->callMethod( std::string("void tick()") );
-	
-	/*
-	// Register Classes available to scripts
-	scriptingEngine_->registerClass(
-		std::string("Entity"),
-		std::string("Entity@ f()"),
-		std::string("void f()"),
-		std::string("void f()"),
-		asFUNCTION(entities::EntityFactory::entityRefFactory),
-		asMETHOD(entities::Entity, addRef),
-		asMETHOD(entities::Entity, releaseRef)
-	);
-	
-	scriptingEngine_->registerClass(
-		std::string("GraphicsComponent"),
-		std::string("GraphicsComponent@ f()"),
-		std::string("void f()"),
-		std::string("void f()"),
-		asFUNCTION(entities::GraphicsComponentFactory::graphicsComponentRefFactory),
-		asMETHOD(entities::GraphicsComponent, addRef),
-		asMETHOD(entities::GraphicsComponent, releaseRef)
-	);
-	
-	scriptingEngine_->registerClassMethod(std::string("Entity"), std::string("void addComponent(GraphicsComponent@)"), asMETHODPR(entities::Entity, addComponent, (entities::GraphicsComponent*), void));
-	
-	scriptingEngine_->registerClassMethod(std::string("GraphicsComponent"), std::string("void rotate(float, const vec3 &in)"), asMETHODPR(entities::GraphicsComponent, rotate, (float, const Vec3 &), void));
-	scriptingEngine_->registerClassMethod(std::string("GraphicsComponent"), std::string("void translate(const vec3 &in)"), asMETHODPR(entities::GraphicsComponent, translate, (const Vec3 &), void));
-	scriptingEngine_->registerClassMethod(std::string("GraphicsComponent"), std::string("void setScale(float, float, float)"), asMETHODPR(entities::GraphicsComponent, setScale, (float, float, float), void));
-	scriptingEngine_->registerClassMethod(std::string("GraphicsComponent"), std::string("void lookAt(const vec3 &in)"), asMETHODPR(entities::GraphicsComponent, lookAt, (const Vec3 &), void));
-	scriptingEngine_->registerClassMethod(std::string("GraphicsComponent"), std::string("void setPosition(const vec3 &in)"), asMETHODPR(entities::GraphicsComponent, setPosition, (const Vec3 &), void));
-	scriptingEngine_->registerClassMethod(std::string("GraphicsComponent"), std::string("void setPosition(float, float, float)"), asMETHODPR(entities::GraphicsComponent, setPosition, (float, float, float), void));
-	
-	// Global functions
-	scriptingEngine_->registerGlobalFunction(
-		std::string("Entity@ getEntity(const string& in)"),
-		asMETHODPR(IGameEngine, getEntity, (const std::string&), entities::Entity*),
-		asCALL_THISCALL_ASGLOBAL,
-		this
-	);
-	
-	scriptingEngine_->registerGlobalFunction(
-		std::string("Entity@ createEntity()"),
-		asMETHODPR(IGameEngine, createEntity, (), entities::Entity*),
-		asCALL_THISCALL_ASGLOBAL,
-		this
-	);
-	
-	// Set global constants
-	scriptingEngine_->registerGlobalProperty(std::string("const uint COMPONENT_TYPE_GRAPHICS"), &GameEngine::COMPONENT_TYPE_GRAPHICS);
-	
-	// TESTING - loading scripts and creating objects
-	scriptingEngine_->loadScript(std::string("Main"), std::string("Main.as"));
-	
-	auto asObject = scriptingEngine_->createAsObject(std::string("Main"), std::string("Main"));
-	
-	asObject->callMethod( std::string("void tick()") );
-	*/
-	/*
-	scriptingEngine_ = std::unique_ptr<as_wrapper::Scripting>( new as_wrapper::Scripting() );
-	
-	bool success = true;
-	success = success && scriptingEngine_->registerClass(
-		std::string("TestAtom"), 
-		std::string("TestAtom@ f()"), 
-		std::string("void f()"), 
-		std::string("void f()"), 
-		asFUNCTION(angel_script::ClassFactory::atomRefFactory), 
-		asMETHOD(angel_script::TestAtom, addRef), 
-		asMETHOD(angel_script::TestAtom, releaseRef)
-	);
-	
-	success = success && scriptingEngine_->registerClassMethod(std::string("TestAtom"), std::string("void test()"), asMETHOD(angel_script::TestAtom, test));
-	
-	
-	
-	if ( !success )
-	{
-		logger_->warn( "Warning: Not all object/method registration completed successfully!" );
-	}
-
-	// load all of the scripts
-	scriptingEngine_->loadScripts();
-
-	// testing
-	scriptingEngine_->initContext( std::string("void eat(TestAtom atom)"), std::string("test"));
-	angel_script::TestAtom* atom = new angel_script::TestAtom();
-	scriptingEngine_->setArgObject(0, atom);
-	delete atom;
-
-	//scriptingEngine_->initContext(text, "test");
-
-	int r = scriptingEngine_->run();
-	scriptingEngine_->releaseContext();
-	*/
 }
 
 void GameEngine::initializeThreadingSubSystem()
@@ -772,9 +599,7 @@ void GameEngine::initializeDataStoreSubSystem()
 
 void GameEngine::initializeEntitySubSystem()
 {
-	//logger_->info( "Load entity system..." );
-	//entityEvents_ = entityx::ptr<entityx::EventManager>(new entityx::EventManager());
-	//entities_ = entityx::ptr<entityx::EntityManager>(new entityx::EntityManager(entityEvents_));
+	logger_->info( "Load entity system..." );
 }
 
 std::vector<graphics::model::BoneData> boneData;
@@ -884,142 +709,6 @@ void GameEngine::loadUserInterface()
 	mainGui_->setVisible(true);
 	*/
 }
-
-/*
-void GameEngine::receiveKeyboardEvent(sf::Event evt)
-{
-	int wvmods = 0;
-	
-	switch(evt.type)
-	{
-	case sf::Event::TextEntered:
-		if ( evt.text.unicode == '`' || evt.text.unicode == '~' )
-		{
-			inConsole_ = !inConsole_;
-		}
-		else
-		{
-			//igui_->keyEvent(true, wvmods, evt.text.unicode, 0);
-			//igui_->keyEvent(false, wvmods, evt.text.unicode, 0);
-		}
-
-		std::cout << "textentered: " << evt.text.unicode << std::endl;
-	
-	case sf::Event::KeyPressed:
-		{
-			switch(evt.key.code)
-			{
-			case sf::Keyboard::Left:
-				//igui_->keyEvent(true, wvmods, 276, 0);
-				break;
-			case sf::Keyboard::Up:
-				//igui_->keyEvent(true, wvmods, 273, 0);
-				break;
-			case sf::Keyboard::Right:
-				//igui_->keyEvent(true, wvmods, 275, 0);
-				break;
-			case sf::Keyboard::Down:
-				//igui_->keyEvent(true, wvmods, 274, 0);
-				break;
-			default:
-				break;
-			}
-		}
-	
-	case sf::Event::KeyReleased:
-		{
-			switch(evt.key.code)
-			{
-			case sf::Keyboard::Left:
-				//igui_->keyEvent(false, wvmods, 276, 0);
-				break;
-			case sf::Keyboard::Up:
-				//igui_->keyEvent(false, wvmods, 273, 0);
-				break;
-			case sf::Keyboard::Right:
-				//igui_->keyEvent(false, wvmods, 275, 0);
-				break;
-			case sf::Keyboard::Down:
-				//igui_->keyEvent(false, wvmods, 274, 0);
-				break;
-			default:
-				break;
-			}
-		}
-
-	default:
-		break;
-	}
-	
-	// reload shaders
-	if (evt.text.unicode == 44) // /u44 = comma key
-	{
-		//glrProgram_->reloadShaders();
-	}
-}
-*/
-
-/*
-void GameEngine::receiveMouseEvent(sf::Event evt)
-{
-	switch (evt.type)
-	{
-	case sf::Event::MouseMoved:
-		//GameEngine::rotationX = (-1.0f) * (float32)(evt.mouseMove.x - GameEngine::mousePosX);
-		//GameEngine::rotationY = (-1.0f) * (float32)(evt.mouseMove.y - GameEngine::mousePosY);
-		//GameEngine::mousePosX = evt.mouseMove.x;
-		//GameEngine::mousePosY = evt.mouseMove.y;
-
-		//igui_->mouseMoved(evt.mouseMove.x, evt.mouseMove.y);
-		break;
-
-	case sf::Event::MouseButtonPressed:
-		switch(evt.mouseButton.button)
-		{
-		case sf::Mouse::Left:
-			//igui_->mouseButton(0, evt.mouseButton.x, evt.mouseButton.y, true);
-			break;
-		
-		case sf::Mouse::Right:
-			//igui_->mouseButton(1, evt.mouseButton.x, evt.mouseButton.y, true);
-			break;
-		
-		default:
-			break;
-		}
-		
-		break;
-
-	case sf::Event::MouseButtonReleased:
-		switch(evt.mouseButton.button)
-		{
-		case sf::Mouse::Left:
-			//igui_->mouseButton(0, evt.mouseButton.x, evt.mouseButton.y, false);
-			break;
-		
-		case sf::Mouse::Right:
-			//igui_->mouseButton(1, evt.mouseButton.x, evt.mouseButton.y, false);
-			break;
-		
-		default:
-			break;
-		}
-
-		break;
-
-	case sf::Event::MouseWheelMoved:
-	{
-		// TODO: Make a constant for this
-		float32 mouseScrollWheelSensitivity = 15.0f;
-		//igui_->mouseWheel(evt.mouseWheel.x, evt.mouseWheel.y, 0, (int32)(mouseScrollWheelSensitivity * evt.mouseWheel.delta));
-	}
-	default:
-		break;
-	}
-	
-	
-}
-*/
 
 IScene* GameEngine::createScene(const std::string& name)
 {
@@ -1341,35 +1030,6 @@ graphics::RenderableHandle GameEngine::createRenderable(const ModelHandle& model
 void GameEngine::handleEvents()
 {
 	graphicsEngine_->processEvents();
-	/*
-	sf::Event event;
-
-	// while there are pending events...
-	while ( sfmlWindow_->pollEvent(event) )
-	{
-		switch ( event.type )
-		{
-		// window closed
-		case sf::Event::Closed:
-			//window.close();
-			break;
-
-		// key pressed
-		//case sf::Event::KeyPressed:
-		//	break;
-
-		case sf::Event::Resized:
-			window_->resize(event.size.width, event.size.height);
-			break;
-
-		// process keyboard and mouse events
-		default:
-			receiveKeyboardEvent(event);
-			receiveMouseEvent(event);
-			break;
-		}
-	}
-	*/
 }
 
 bool GameEngine::processEvent(const graphics::Event& event)
