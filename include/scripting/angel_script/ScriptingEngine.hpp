@@ -42,9 +42,9 @@ public:
 	ScriptingEngine(utilities::Properties* properties, fs::IFileSystem* fileSystem, logger::ILogger* logger);
 	virtual ~ScriptingEngine();
 	
-	virtual void run(const std::string& filename, const std::string& function = std::string("void main()"), const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle()) override;
-	virtual void run(const std::string& filename, const std::string& function, ParameterList& arguments, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle()) override;
-	virtual void run(const std::string& filename, const std::string& function, ParameterList& arguments, std::function<void(void*)> returnObjectParser, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle()) override;
+	virtual void run(const std::string& filename, const std::string& function = std::string("void main()"), const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) override;
+	virtual void run(const std::string& filename, const std::string& function, ParameterList& arguments, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) override;
+	virtual void run(const std::string& filename, const std::string& function, ParameterList& arguments, std::function<void(void*)> returnObjectParser, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) override;
 	virtual void run(const std::string& filename, const std::string& function, ParameterList& arguments, float32& returnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) override;
 	virtual void run(const std::string& filename, const std::string& function, ParameterList& arguments, float64& returnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) override;
 	virtual void run(const std::string& filename, const std::string& function, ParameterList& arguments, int8& returnValue, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) override;

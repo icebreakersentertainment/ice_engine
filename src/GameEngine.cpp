@@ -1032,6 +1032,82 @@ void GameEngine::handleEvents()
 	graphicsEngine_->processEvents();
 }
 
+void GameEngine::addKeyboardEventListener(IKeyboardEventListener* keyboardEventListener)
+{
+	if (std::find(keyboardEventListeners_.begin(), keyboardEventListeners_.end(), keyboardEventListener) != keyboardEventListeners_.end())
+	{
+		throw std::runtime_error("Keyboard event listener already exists.");
+	}
+	
+	keyboardEventListeners_.push_back(keyboardEventListener);
+}
+
+void GameEngine::addMouseMotionEventListener(IMouseMotionEventListener* mouseMotionEventListener)
+{
+	if (std::find(mouseMotionEventListeners_.begin(), mouseMotionEventListeners_.end(), mouseMotionEventListener) != mouseMotionEventListeners_.end())
+	{
+		throw std::runtime_error("Mouse motion event listener already exists.");
+	}
+	
+	mouseMotionEventListeners_.push_back(mouseMotionEventListener);
+}
+
+void GameEngine::addMouseButtonEventListener(IMouseButtonEventListener* mouseButtonEventListener)
+{
+	if (std::find(mouseButtonEventListeners_.begin(), mouseButtonEventListeners_.end(), mouseButtonEventListener) != mouseButtonEventListeners_.end())
+	{
+		throw std::runtime_error("Mouse button event listener already exists.");
+	}
+	
+	mouseButtonEventListeners_.push_back(mouseButtonEventListener);
+}
+
+void GameEngine::addMouseWheelEventListener(IMouseWheelEventListener* mouseWheelEventListener)
+{
+	if (std::find(mouseWheelEventListeners_.begin(), mouseWheelEventListeners_.end(), mouseWheelEventListener) != mouseWheelEventListeners_.end())
+	{
+		throw std::runtime_error("Mouse wheel event listener already exists.");
+	}
+	
+	mouseWheelEventListeners_.push_back(mouseWheelEventListener);
+}
+
+void GameEngine::removeKeyboardEventListener(IKeyboardEventListener* keyboardEventListener)
+{
+	auto it = std::find(keyboardEventListeners_.begin(), keyboardEventListeners_.end(), keyboardEventListener);
+	if (it != keyboardEventListeners_.end())
+	{
+		keyboardEventListeners_.erase(it);
+	}
+}
+
+void GameEngine::removeMouseMotionEventListener(IMouseMotionEventListener* mouseMotionEventListener)
+{
+	auto it = std::find(mouseMotionEventListeners_.begin(), mouseMotionEventListeners_.end(), mouseMotionEventListener);
+	if (it != mouseMotionEventListeners_.end())
+	{
+		mouseMotionEventListeners_.erase(it);
+	}
+}
+
+void GameEngine::removeMouseButtonEventListener(IMouseButtonEventListener* mouseButtonEventListener)
+{
+	auto it = std::find(mouseButtonEventListeners_.begin(), mouseButtonEventListeners_.end(), mouseButtonEventListener);
+	if (it != mouseButtonEventListeners_.end())
+	{
+		mouseButtonEventListeners_.erase(it);
+	}
+}
+
+void GameEngine::removeMouseWheelEventListener(IMouseWheelEventListener* mouseWheelEventListener)
+{
+	auto it = std::find(mouseWheelEventListeners_.begin(), mouseWheelEventListeners_.end(), mouseWheelEventListener);
+	if (it != mouseWheelEventListeners_.end())
+	{
+		mouseWheelEventListeners_.erase(it);
+	}
+}
+
 bool GameEngine::processEvent(const graphics::Event& event)
 {
 	switch(event.type)

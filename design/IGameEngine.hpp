@@ -80,10 +80,14 @@ virtual IScene* getScene(const std::string& name) const = 0;
 
 
 /* EVENT LISTENERS */
-virtual bool addKeyboardEventListener(IKeyboardEventListener* keyboardEventListener) = 0;
-virtual bool addMouseMotionEventListener(IMouseMotionEventListener* mouseMotionEventListener) = 0;
-virtual bool addMouseButtonEventListener(IMouseButtonEventListener* mouseButtonEventListener) = 0;
-virtual bool addMouseWheelEventListener(IMouseWheelEventListener* mouseWheelEventListener) = 0;
+virtual void addKeyboardEventListener(IKeyboardEventListener* keyboardEventListener) = 0;
+virtual void addMouseMotionEventListener(IMouseMotionEventListener* mouseMotionEventListener) = 0;
+virtual void addMouseButtonEventListener(IMouseButtonEventListener* mouseButtonEventListener) = 0;
+virtual void addMouseWheelEventListener(IMouseWheelEventListener* mouseWheelEventListener) = 0;
+virtual void removeKeyboardEventListener(IKeyboardEventListener* keyboardEventListener) = 0;
+virtual void removeMouseMotionEventListener(IMouseMotionEventListener* mouseMotionEventListener) = 0;
+virtual void removeMouseButtonEventListener(IMouseButtonEventListener* mouseButtonEventListener) = 0;
+virtual void removeMouseWheelEventListener(IMouseWheelEventListener* mouseWheelEventListener) = 0;
 
 
 

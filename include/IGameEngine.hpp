@@ -11,6 +11,10 @@
 
 #include "ModelHandle.hpp"
 #include "IScene.hpp"
+#include "IKeyboardEventListener.hpp"
+#include "IMouseMotionEventListener.hpp"
+#include "IMouseButtonEventListener.hpp"
+#include "IMouseWheelEventListener.hpp"
 
 #include "graphics/IGraphicsEngine.hpp"
 
@@ -85,6 +89,15 @@ public:
 	virtual void destroyScene(const std::string& name) = 0;
 	virtual void destroyScene(IScene* scene) = 0;
 	virtual IScene* getScene(const std::string& name) const = 0;
+	
+	virtual void addKeyboardEventListener(IKeyboardEventListener* keyboardEventListener) = 0;
+	virtual void addMouseMotionEventListener(IMouseMotionEventListener* mouseMotionEventListener) = 0;
+	virtual void addMouseButtonEventListener(IMouseButtonEventListener* mouseButtonEventListener) = 0;
+	virtual void addMouseWheelEventListener(IMouseWheelEventListener* mouseWheelEventListener) = 0;
+	virtual void removeKeyboardEventListener(IKeyboardEventListener* keyboardEventListener) = 0;
+	virtual void removeMouseMotionEventListener(IMouseMotionEventListener* mouseMotionEventListener) = 0;
+	virtual void removeMouseButtonEventListener(IMouseButtonEventListener* mouseButtonEventListener) = 0;
+	virtual void removeMouseWheelEventListener(IMouseWheelEventListener* mouseWheelEventListener) = 0;
 };
 
 }

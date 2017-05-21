@@ -35,7 +35,7 @@ public:
 	);
 	virtual ~GameEngine();
 
-	virtual void run();
+	virtual void run() override;
 
 	virtual GameState getState() override;
 	
@@ -58,7 +58,7 @@ public:
 	virtual void unloadImage(const std::string& name) override;
 	virtual void unloadModel(const std::string& name) override;
 	
-	//virtual AudioSample* getAudioSample(const std::string& name) const override;
+	//virtual AudioSample* getAudioSample(const std::string& name) const
 	virtual utilities::Image* getImage(const std::string& name) const override;
 	virtual graphics::model::Model* getModel(const std::string& name) const override;
 	
@@ -83,6 +83,15 @@ public:
 	virtual void destroyScene(IScene* scene) override;
 	virtual IScene* getScene(const std::string& name) const override;
 	
+	virtual void addKeyboardEventListener(IKeyboardEventListener* keyboardEventListener) override;
+	virtual void addMouseMotionEventListener(IMouseMotionEventListener* mouseMotionEventListener) override;
+	virtual void addMouseButtonEventListener(IMouseButtonEventListener* mouseButtonEventListener) override;
+	virtual void addMouseWheelEventListener(IMouseWheelEventListener* mouseWheelEventListener) override;
+	virtual void removeKeyboardEventListener(IKeyboardEventListener* keyboardEventListener) override;
+	virtual void removeMouseMotionEventListener(IMouseMotionEventListener* mouseMotionEventListener) override;
+	virtual void removeMouseButtonEventListener(IMouseButtonEventListener* mouseButtonEventListener) override;
+	virtual void removeMouseWheelEventListener(IMouseWheelEventListener* mouseWheelEventListener) override;
+	
 	// Implements the IEventListener interface
 	virtual bool processEvent(const graphics::Event& event) override;
 
@@ -101,6 +110,11 @@ private:
 	
 	std::unique_ptr< physics::IPhysicsEngine > physicsEngine_;
 	std::unique_ptr<scripting::IScriptingEngine> scriptingEngine_;
+	
+	std::vector<IKeyboardEventListener*> keyboardEventListeners_;
+	std::vector<IMouseMotionEventListener*> mouseMotionEventListeners_;
+	std::vector<IMouseButtonEventListener*> mouseButtonEventListeners_;
+	std::vector<IMouseWheelEventListener*> mouseWheelEventListeners_;
 	
 	std::vector<std::unique_ptr<IScene>> scenes_;
 	

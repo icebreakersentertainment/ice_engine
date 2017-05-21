@@ -1,7 +1,7 @@
 #ifndef IMOUSEMOTIONEVENTLISTENER_H_
 #define IMOUSEMOTIONEVENTLISTENER_H_
 
-#include "Event.hpp"
+#include "graphics/Event.hpp"
 
 namespace hercules
 {

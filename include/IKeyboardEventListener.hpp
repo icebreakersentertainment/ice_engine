@@ -1,7 +1,7 @@
 #ifndef IKEYBOARDEVENTLISTENER_H_
 #define IKEYBOARDEVENTLISTENER_H_
 
-#include "Event.hpp"
+#include "graphics/Event.hpp"
 
 namespace hercules
 {
