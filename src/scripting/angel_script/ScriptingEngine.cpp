@@ -175,18 +175,20 @@ void ScriptingEngine::initialize()
 	assertNoAngelscriptError(r);
 	
 	// initialize default context
-	contexts_ = std::vector< asIScriptContext* >();
-	contexts_.push_back( engine_->CreateContext() );
+	auto handle = contextData_.create();
+	auto& contextData = contextData_[handle];
+	
+	contextData.context = engine_->CreateContext();
 }
 
 asIScriptContext* ScriptingEngine::getContext(const ExecutionContextHandle& executionContextHandle) const
 {
-	if (executionContextHandle.getId() >= contexts_.size())
+	if (executionContextHandle.index() >= contextData_.size())
 	{
 		throw Exception("ExecutionContextHandle is not valid");
 	}
 	
-	auto context = contexts_[executionContextHandle.getId()];
+	auto context = contextData_[executionContextHandle].context;
 	
 	if (context == nullptr)
 	{
@@ -376,42 +378,42 @@ void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptModule* m
 
 void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptModule* module, const ScriptFunctionHandle& scriptFunctionHandle) const
 {
-	auto function = scriptFunctions_[scriptFunctionHandle.getId()];
+	auto function = scriptFunctions_[scriptFunctionHandle.index()];
 	
 	callFunction(context, module, function);
 }
 
 void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptModule* module, const ScriptFunctionHandle& scriptFunctionHandle, ParameterList& arguments) const
 {
-	auto function = scriptFunctions_[scriptFunctionHandle.getId()];
+	auto function = scriptFunctions_[scriptFunctionHandle.index()];
 	
 	callFunction(context, module, function, arguments);
 }
 
 void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptHandle& scriptHandle, const std::string& function) const
 {
-	auto module = modules_[scriptHandle.getId()];
+	auto module = moduleData_[scriptHandle].module;
 	callFunction(context, module, function);
 }
 
 void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptHandle& scriptHandle, const std::string& function, ParameterList& arguments) const
 {
-	auto module = modules_[scriptHandle.getId()];
+	auto module = moduleData_[scriptHandle].module;
 	callFunction(context, module, function, arguments);
 }
 
 void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptHandle& scriptHandle, const ScriptFunctionHandle& scriptFunctionHandle) const
 {
-	auto module = modules_[scriptHandle.getId()];
-	auto function = scriptFunctions_[scriptFunctionHandle.getId()];
+	auto module = moduleData_[scriptHandle].module;
+	auto function = scriptFunctions_[scriptFunctionHandle.index()];
 	
 	callFunction(context, module, function);
 }
 
 void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptHandle& scriptHandle, const ScriptFunctionHandle& scriptFunctionHandle, ParameterList& arguments) const
 {
-	auto module = modules_[scriptHandle.getId()];
-	auto function = scriptFunctions_[scriptFunctionHandle.getId()];
+	auto module = moduleData_[scriptHandle].module;
+	auto function = scriptFunctions_[scriptFunctionHandle.index()];
 	
 	callFunction(context, module, function, arguments);
 }
@@ -419,7 +421,7 @@ void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptHandle
 void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptObjectHandle& scriptObjectHandle, const std::string& function) const
 {
 	auto module = getModule(scriptObjectHandle);
-	auto object = scriptObjectData_[scriptObjectHandle.getId()].object;
+	auto object = scriptObjectData_[scriptObjectHandle].object;
 	auto objectFunction = getMethod(scriptObjectHandle, function);
 	
 	callFunction(context, module, objectFunction, object);
@@ -428,7 +430,7 @@ void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptObject
 void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptObjectHandle& scriptObjectHandle, const std::string& function, ParameterList& arguments) const
 {
 	auto module = getModule(scriptObjectHandle);
-	auto object = scriptObjectData_[scriptObjectHandle.getId()].object;
+	auto object = scriptObjectData_[scriptObjectHandle].object;
 	auto objectFunction = getMethod(scriptObjectHandle, function);
 	
 	callFunction(context, module, objectFunction, object, arguments);
@@ -437,7 +439,7 @@ void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptObject
 void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptObjectHandle& scriptObjectHandle, ScriptObjectFunctionHandle& scriptObjectFunctionHandle) const
 {
 	auto module = getModule(scriptObjectHandle);
-	auto object = scriptObjectData_[scriptObjectHandle.getId()].object;
+	auto object = scriptObjectData_[scriptObjectHandle].object;
 	auto objectFunction = getMethod(scriptObjectFunctionHandle);
 	
 	callFunction(context, module, objectFunction, object);
@@ -446,7 +448,7 @@ void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptObject
 void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptObjectHandle& scriptObjectHandle, ScriptObjectFunctionHandle& scriptObjectFunctionHandle, ParameterList& arguments) const
 {
 	auto module = getModule(scriptObjectHandle);
-	auto object = scriptObjectData_[scriptObjectHandle.getId()].object;
+	auto object = scriptObjectData_[scriptObjectHandle].object;
 	auto objectFunction = getMethod(scriptObjectFunctionHandle);
 	
 	callFunction(context, module, objectFunction, object, arguments);
@@ -1075,28 +1077,29 @@ void ScriptingEngine::execute(const ScriptObjectHandle& scriptObjectHandle, cons
 
 ExecutionContextHandle ScriptingEngine::createExecutionContext()
 {
-	if (contexts_.size() == ScriptingEngine::MAX_EXECUTION_CONTEXTS)
+	if (contextData_.size() == ScriptingEngine::MAX_EXECUTION_CONTEXTS)
 	{
 		throw Exception("Maximum number of execution contexts reached.");
 	}
 	
-	contexts_.push_back( engine_->CreateContext() );
-	auto index = contexts_.size() - 1;
+	auto handle = contextData_.create();
+	auto& contextData = contextData_[handle];
 	
-	return ExecutionContextHandle(index);
+	contextData.context = engine_->CreateContext();
+	
+	return handle;
 }
 
 ScriptObjectHandle ScriptingEngine::registerScriptObject(const ScriptHandle& scriptHandle, const std::string& className, asIScriptObject* object)
 {
-	auto scriptObjectData = ScriptObjectData();
+	auto handle = scriptObjectData_.create();
+	auto& scriptObjectData = scriptObjectData_[handle];
+	
 	scriptObjectData.scriptHandle = scriptHandle;
 	scriptObjectData.className = className;
 	scriptObjectData.object = object;
 	
-	scriptObjectData_.push_back(scriptObjectData);
-	auto index = scriptObjectData_.size() - 1;
-	
-	return ScriptObjectHandle(index);
+	return handle;
 }
 
 void ScriptingEngine::unregisterScriptObject(const ScriptObjectHandle& scriptObjectHandle)
@@ -1267,10 +1270,12 @@ ScriptHandle ScriptingEngine::loadScript(const std::string& filename, const std:
 	r = builder.BuildModule();
 	assertNoAngelscriptError(r);
 	
-	modules_.push_back(builder.GetModule());
-	auto index = modules_.size() - 1;
+	auto handle = moduleData_.create();
+	auto& moduleData = moduleData_[handle];
 	
-	return ScriptHandle(index);
+	moduleData.module = builder.GetModule();
+	
+	return handle;
 }
 
 void ScriptingEngine::destroyScript(const std::string& name)
@@ -1382,11 +1387,11 @@ void ScriptingEngine::registerObjectBehaviour(const std::string& obj, asEBehavio
 
 void ScriptingEngine::destroy()
 {
-	for ( auto c : contexts_ )
+	for ( auto c : contextData_ )
 	{
-		if (c != nullptr)
+		if (c.context != nullptr)
 		{
-			c->Release();
+			c.context->Release();
 		}
 	}
 	
@@ -1423,18 +1428,18 @@ asIScriptFunction* ScriptingEngine::getFunctionByDecl(const std::string& functio
 
 asIScriptModule* ScriptingEngine::getModule(const ScriptObjectHandle& scriptObjectHandle) const
 {
-	const auto scriptObjectData = scriptObjectData_[scriptObjectHandle.getId()];
+	const auto scriptObjectData = scriptObjectData_[scriptObjectHandle];
 	
-	auto module = modules_[scriptObjectData.scriptHandle.getId()];
+	auto module = moduleData_[scriptObjectData.scriptHandle].module;
 	
 	return module;
 }
 
 asITypeInfo* ScriptingEngine::getType(const ScriptObjectHandle& scriptObjectHandle) const
 {
-	const auto scriptObjectData = scriptObjectData_[scriptObjectHandle.getId()];
+	const auto& scriptObjectData = scriptObjectData_[scriptObjectHandle];
 	
-	auto module = modules_[scriptObjectData.scriptHandle.getId()];
+	auto module = moduleData_[scriptObjectData.scriptHandle].module;
 	
 	auto type = module->GetTypeInfoByDecl(scriptObjectData.className.c_str());
 	
@@ -1451,7 +1456,7 @@ asIScriptFunction* ScriptingEngine::getMethod(const ScriptObjectHandle& scriptOb
 
 asIScriptFunction* ScriptingEngine::getMethod(const ScriptObjectFunctionHandle& scriptObjectFunctionHandle) const
 {
-	auto objectFunction = scriptObjectFunctions_[scriptObjectFunctionHandle.getId()];
+	auto objectFunction = scriptObjectFunctions_[scriptObjectFunctionHandle.index()];
 	
 	return objectFunction;
 }

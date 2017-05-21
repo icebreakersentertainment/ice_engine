@@ -7,6 +7,7 @@
 
 #include "scripting/angel_script/scriptbuilder/scriptbuilder.h"
 
+#include "handles/HandleVector.hpp"
 #include "utilities/Properties.hpp"
 #include "fs/IFileSystem.hpp"
 #include "logger/ILogger.hpp"
@@ -17,6 +18,16 @@ namespace scripting
 {
 namespace angel_script
 {
+
+struct ScriptContextData
+{
+	asIScriptContext* context;
+};
+
+struct ScriptModuleData
+{
+	asIScriptModule* module;
+};
 
 struct ScriptObjectData
 {
@@ -174,9 +185,9 @@ private:
 	asIScriptContext* ctx_;
 	std::unique_ptr<CScriptBuilder> builder_;
 	asIScriptEngine* engine_;
-	std::vector< asIScriptContext* > contexts_;
-	std::vector< asIScriptModule* > modules_;
-	std::vector< ScriptObjectData > scriptObjectData_;
+	handles::HandleVector<ScriptContextData, ExecutionContextHandle> contextData_;
+	handles::HandleVector<ScriptModuleData, ScriptHandle> moduleData_;
+	handles::HandleVector<ScriptObjectData, ScriptObjectHandle> scriptObjectData_;
 	
 	std::vector<asIScriptFunction*> scriptFunctions_;
 	std::vector<asIScriptFunction*> scriptObjectFunctions_;
