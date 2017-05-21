@@ -79,5 +79,13 @@ virtual IScene* getScene(const std::string& name) const = 0;
 
 
 
+/* EVENT LISTENERS */
+virtual bool addKeyboardEventListener(IKeyboardEventListener* keyboardEventListener) = 0;
+virtual bool addMouseMotionEventListener(IMouseMotionEventListener* mouseMotionEventListener) = 0;
+virtual bool addMouseButtonEventListener(IMouseButtonEventListener* mouseButtonEventListener) = 0;
+virtual bool addMouseWheelEventListener(IMouseWheelEventListener* mouseWheelEventListener) = 0;
+
+
+
 /* Implements the IEventListener interface */
 virtual bool processEvent(const graphics::Event& event) = 0;
