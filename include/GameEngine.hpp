@@ -3,7 +3,7 @@
 
 #include <vector>
 #include <map>
-#include <tuple>
+#include <utility>
 #include <memory>
 
 #include "extras/FpsCamera.hpp"
@@ -115,10 +115,10 @@ private:
 	std::vector<IMouseMotionEventListener*> mouseMotionEventListeners_;
 	std::vector<IMouseButtonEventListener*> mouseButtonEventListeners_;
 	std::vector<IMouseWheelEventListener*> mouseWheelEventListeners_;
-	std::vector<scripting::ScriptObjectHandle> scriptKeyboardEventListeners_;
-	std::vector<scripting::ScriptObjectHandle> scriptMouseMotionEventListeners_;
-	std::vector<scripting::ScriptObjectHandle> scriptMouseButtonEventListeners_;
-	std::vector<scripting::ScriptObjectHandle> scriptMouseWheelEventListeners_;
+	std::vector<std::pair<scripting::ScriptObjectHandle, scripting::ScriptObjectFunctionHandle>> scriptKeyboardEventListeners_;
+	std::vector<std::pair<scripting::ScriptObjectHandle, scripting::ScriptObjectFunctionHandle>> scriptMouseMotionEventListeners_;
+	std::vector<std::pair<scripting::ScriptObjectHandle, scripting::ScriptObjectFunctionHandle>> scriptMouseButtonEventListeners_;
+	std::vector<std::pair<scripting::ScriptObjectHandle, scripting::ScriptObjectFunctionHandle>> scriptMouseWheelEventListeners_;
 	
 	std::vector<std::unique_ptr<IScene>> scenes_;
 	
@@ -206,7 +206,7 @@ private:
 	
 	static uint32 COMPONENT_TYPE_GRAPHICS;
 	
-	std::vector<std::tuple<graphics::MeshHandle, graphics::TextureHandle>> staticModels_;
+	std::vector<std::pair<graphics::MeshHandle, graphics::TextureHandle>> staticModels_;
 	
 	// testing
 	std::unique_ptr<ThreadPool> threadPool_;

@@ -283,7 +283,7 @@ void ScriptingEngine::setArguments(asIScriptContext* context, ParameterList& arg
 	}
 }
 
-void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptModule* module, asIScriptFunction* function, asIScriptObject* object) const
+void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptFunction* function, asIScriptObject* object) const
 {
 	assert(function->GetParamCount() == 0);
 	
@@ -315,7 +315,7 @@ void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptModule* m
 	}
 }
 
-void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptModule* module, asIScriptFunction* function, asIScriptObject* object, ParameterList& arguments) const
+void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptFunction* function, asIScriptObject* object, ParameterList& arguments) const
 {	
 	assert(function->GetParamCount() == arguments.size());
 	
@@ -352,42 +352,42 @@ void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptModule* m
 	}
 }
 
-void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptModule* module, asIScriptFunction* function) const
+void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptFunction* function) const
 {
-	callFunction(context, module, function, nullptr);
+	callFunction(context, function, nullptr);
 }
 
-void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptModule* module, asIScriptFunction* function, ParameterList& arguments) const
+void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptFunction* function, ParameterList& arguments) const
 {
-	callFunction(context, module, function, nullptr, arguments);
+	callFunction(context, function, nullptr, arguments);
 }
 
 void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptModule* module, const std::string& function) const
 {
 	auto func = getFunctionByDecl(function, module);
 	
-	callFunction(context, module, func);
+	callFunction(context, func);
 }
 
 void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptModule* module, const std::string& function, ParameterList& arguments) const
 {
 	auto func = getFunctionByDecl(function, module);
 	
-	callFunction(context, module, func, arguments);
+	callFunction(context, func, arguments);
 }
 
-void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptModule* module, const ScriptFunctionHandle& scriptFunctionHandle) const
+void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptFunctionHandle& scriptFunctionHandle) const
 {
-	auto function = scriptFunctions_[scriptFunctionHandle.index()];
+	auto function = functionData_[scriptFunctionHandle].function;
 	
-	callFunction(context, module, function);
+	callFunction(context, function);
 }
 
-void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptModule* module, const ScriptFunctionHandle& scriptFunctionHandle, ParameterList& arguments) const
+void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptFunctionHandle& scriptFunctionHandle, ParameterList& arguments) const
 {
-	auto function = scriptFunctions_[scriptFunctionHandle.index()];
+	auto function = functionData_[scriptFunctionHandle].function;
 	
-	callFunction(context, module, function, arguments);
+	callFunction(context, function, arguments);
 }
 
 void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptHandle& scriptHandle, const std::string& function) const
@@ -402,56 +402,36 @@ void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptHandle
 	callFunction(context, module, function, arguments);
 }
 
-void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptHandle& scriptHandle, const ScriptFunctionHandle& scriptFunctionHandle) const
-{
-	auto module = moduleData_[scriptHandle].module;
-	auto function = scriptFunctions_[scriptFunctionHandle.index()];
-	
-	callFunction(context, module, function);
-}
-
-void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptHandle& scriptHandle, const ScriptFunctionHandle& scriptFunctionHandle, ParameterList& arguments) const
-{
-	auto module = moduleData_[scriptHandle].module;
-	auto function = scriptFunctions_[scriptFunctionHandle.index()];
-	
-	callFunction(context, module, function, arguments);
-}
-
 void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptObjectHandle& scriptObjectHandle, const std::string& function) const
 {
-	auto module = getModule(scriptObjectHandle);
 	auto object = scriptObjectData_[scriptObjectHandle].object;
 	auto objectFunction = getMethod(scriptObjectHandle, function);
 	
-	callFunction(context, module, objectFunction, object);
+	callFunction(context, objectFunction, object);
 }
 
 void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptObjectHandle& scriptObjectHandle, const std::string& function, ParameterList& arguments) const
 {
-	auto module = getModule(scriptObjectHandle);
 	auto object = scriptObjectData_[scriptObjectHandle].object;
 	auto objectFunction = getMethod(scriptObjectHandle, function);
 	
-	callFunction(context, module, objectFunction, object, arguments);
+	callFunction(context, objectFunction, object, arguments);
 }
 
-void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptObjectHandle& scriptObjectHandle, ScriptObjectFunctionHandle& scriptObjectFunctionHandle) const
+void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptObjectHandle& scriptObjectHandle, const ScriptObjectFunctionHandle& scriptObjectFunctionHandle) const
 {
-	auto module = getModule(scriptObjectHandle);
 	auto object = scriptObjectData_[scriptObjectHandle].object;
-	auto objectFunction = getMethod(scriptObjectFunctionHandle);
+	auto objectFunction = objectFunctionData_[scriptObjectFunctionHandle].function;
 	
-	callFunction(context, module, objectFunction, object);
+	callFunction(context, objectFunction, object);
 }
 
-void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptObjectHandle& scriptObjectHandle, ScriptObjectFunctionHandle& scriptObjectFunctionHandle, ParameterList& arguments) const
+void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptObjectHandle& scriptObjectHandle, const ScriptObjectFunctionHandle& scriptObjectFunctionHandle, ParameterList& arguments) const
 {
-	auto module = getModule(scriptObjectHandle);
 	auto object = scriptObjectData_[scriptObjectHandle].object;
-	auto objectFunction = getMethod(scriptObjectFunctionHandle);
+	auto objectFunction = objectFunctionData_[scriptObjectFunctionHandle].function;
 	
-	callFunction(context, module, objectFunction, object, arguments);
+	callFunction(context, objectFunction, object, arguments);
 }
 
 void ScriptingEngine::run(const std::string& filename, const std::string& function, const ExecutionContextHandle& executionContextHandle)
@@ -747,6 +727,169 @@ void ScriptingEngine::execute(const std::string& scriptData, const std::string& 
 	callFunction(context, module, function, arguments);
 	returnValue = context->GetReturnQWord();
 	destroyModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME);
+}
+
+
+
+/* EXECUTE SCRIPT FUNCTION HANDLE FUNCTIONS */
+void ScriptingEngine::execute(const ScriptFunctionHandle& scriptFunctionHandle, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptFunctionHandle);
+}
+
+void ScriptingEngine::execute(const ScriptFunctionHandle& scriptFunctionHandle, std::function<void(void*)> returnObjectParser, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptFunctionHandle);
+	returnObjectParser(context->GetReturnObject());
+}
+
+void ScriptingEngine::execute(const ScriptFunctionHandle& scriptFunctionHandle, float32& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptFunctionHandle);
+	returnValue = context->GetReturnFloat();
+}
+
+void ScriptingEngine::execute(const ScriptFunctionHandle& scriptFunctionHandle, float64& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptFunctionHandle);
+	returnValue = context->GetReturnDouble();
+}
+
+void ScriptingEngine::execute(const ScriptFunctionHandle& scriptFunctionHandle, int8& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptFunctionHandle);
+	returnValue = context->GetReturnByte();
+}
+
+void ScriptingEngine::execute(const ScriptFunctionHandle& scriptFunctionHandle, uint8& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptFunctionHandle);
+	returnValue = context->GetReturnByte();
+}
+
+void ScriptingEngine::execute(const ScriptFunctionHandle& scriptFunctionHandle, int16& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptFunctionHandle);
+	returnValue = context->GetReturnWord();
+}
+
+void ScriptingEngine::execute(const ScriptFunctionHandle& scriptFunctionHandle, uint16& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptFunctionHandle);
+	returnValue = context->GetReturnWord();
+}
+
+void ScriptingEngine::execute(const ScriptFunctionHandle& scriptFunctionHandle, int32& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptFunctionHandle);
+	returnValue = context->GetReturnDWord();
+}
+
+void ScriptingEngine::execute(const ScriptFunctionHandle& scriptFunctionHandle, uint32& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptFunctionHandle);
+	returnValue = context->GetReturnDWord();
+}
+
+void ScriptingEngine::execute(const ScriptFunctionHandle& scriptFunctionHandle, int64& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptFunctionHandle);
+	returnValue = context->GetReturnQWord();
+}
+
+void ScriptingEngine::execute(const ScriptFunctionHandle& scriptFunctionHandle, uint64& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptFunctionHandle);
+	returnValue = context->GetReturnQWord();
+}
+
+void ScriptingEngine::execute(const ScriptFunctionHandle& scriptFunctionHandle, ParameterList& arguments, std::function<void(void*)> returnObjectParser, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptFunctionHandle, arguments);
+	returnObjectParser(context->GetReturnObject());
+}
+
+void ScriptingEngine::execute(const ScriptFunctionHandle& scriptFunctionHandle, ParameterList& arguments, float32& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptFunctionHandle, arguments);
+	returnValue = context->GetReturnFloat();
+}
+
+void ScriptingEngine::execute(const ScriptFunctionHandle& scriptFunctionHandle, ParameterList& arguments, float64& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptFunctionHandle, arguments);
+	returnValue = context->GetReturnDouble();
+}
+
+void ScriptingEngine::execute(const ScriptFunctionHandle& scriptFunctionHandle, ParameterList& arguments, int8& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptFunctionHandle, arguments);
+	returnValue = context->GetReturnByte();
+}
+
+void ScriptingEngine::execute(const ScriptFunctionHandle& scriptFunctionHandle, ParameterList& arguments, uint8& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptFunctionHandle, arguments);
+	returnValue = context->GetReturnByte();
+}
+
+void ScriptingEngine::execute(const ScriptFunctionHandle& scriptFunctionHandle, ParameterList& arguments, int16& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptFunctionHandle, arguments);
+	returnValue = context->GetReturnWord();
+}
+
+void ScriptingEngine::execute(const ScriptFunctionHandle& scriptFunctionHandle, ParameterList& arguments, uint16& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptFunctionHandle, arguments);
+	returnValue = context->GetReturnWord();
+}
+
+void ScriptingEngine::execute(const ScriptFunctionHandle& scriptFunctionHandle, ParameterList& arguments, int32& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptFunctionHandle, arguments);
+	returnValue = context->GetReturnDWord();
+}
+
+void ScriptingEngine::execute(const ScriptFunctionHandle& scriptFunctionHandle, ParameterList& arguments, uint32& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptFunctionHandle, arguments);
+	returnValue = context->GetReturnDWord();
+}
+
+void ScriptingEngine::execute(const ScriptFunctionHandle& scriptFunctionHandle, ParameterList& arguments, int64& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptFunctionHandle, arguments);
+	returnValue = context->GetReturnQWord();
+}
+
+void ScriptingEngine::execute(const ScriptFunctionHandle& scriptFunctionHandle, ParameterList& arguments, uint64& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptFunctionHandle, arguments);
+	returnValue = context->GetReturnQWord();
 }
 
 
@@ -1075,6 +1218,169 @@ void ScriptingEngine::execute(const ScriptObjectHandle& scriptObjectHandle, cons
 	returnValue = context->GetReturnQWord();
 }
 
+
+
+/* EXECUTE SCRIPT OBJECT FUNCTION HANDLE FUNCTIONS */
+void ScriptingEngine::execute(const ScriptObjectHandle& scriptObjectHandle, const ScriptObjectFunctionHandle& scriptObjectFunctionHandle, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptObjectHandle, scriptObjectFunctionHandle);
+}
+
+void ScriptingEngine::execute(const ScriptObjectHandle& scriptObjectHandle, const ScriptObjectFunctionHandle& scriptObjectFunctionHandle, std::function<void(void*)> returnObjectParser, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptObjectHandle, scriptObjectFunctionHandle);
+	returnObjectParser(context->GetReturnObject());
+}
+
+void ScriptingEngine::execute(const ScriptObjectHandle& scriptObjectHandle, const ScriptObjectFunctionHandle& scriptObjectFunctionHandle, float32& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptObjectHandle, scriptObjectFunctionHandle);
+	returnValue = context->GetReturnFloat();
+}
+
+void ScriptingEngine::execute(const ScriptObjectHandle& scriptObjectHandle, const ScriptObjectFunctionHandle& scriptObjectFunctionHandle, float64& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptObjectHandle, scriptObjectFunctionHandle);
+	returnValue = context->GetReturnDouble();
+}
+
+void ScriptingEngine::execute(const ScriptObjectHandle& scriptObjectHandle, const ScriptObjectFunctionHandle& scriptObjectFunctionHandle, int8& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptObjectHandle, scriptObjectFunctionHandle);
+	returnValue = context->GetReturnByte();
+}
+
+void ScriptingEngine::execute(const ScriptObjectHandle& scriptObjectHandle, const ScriptObjectFunctionHandle& scriptObjectFunctionHandle, uint8& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptObjectHandle, scriptObjectFunctionHandle);
+	returnValue = context->GetReturnByte();
+}
+
+void ScriptingEngine::execute(const ScriptObjectHandle& scriptObjectHandle, const ScriptObjectFunctionHandle& scriptObjectFunctionHandle, int16& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptObjectHandle, scriptObjectFunctionHandle);
+	returnValue = context->GetReturnWord();
+}
+
+void ScriptingEngine::execute(const ScriptObjectHandle& scriptObjectHandle, const ScriptObjectFunctionHandle& scriptObjectFunctionHandle, uint16& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptObjectHandle, scriptObjectFunctionHandle);
+	returnValue = context->GetReturnWord();
+}
+
+void ScriptingEngine::execute(const ScriptObjectHandle& scriptObjectHandle, const ScriptObjectFunctionHandle& scriptObjectFunctionHandle, int32& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptObjectHandle, scriptObjectFunctionHandle);
+	returnValue = context->GetReturnDWord();
+}
+
+void ScriptingEngine::execute(const ScriptObjectHandle& scriptObjectHandle, const ScriptObjectFunctionHandle& scriptObjectFunctionHandle, uint32& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptObjectHandle, scriptObjectFunctionHandle);
+	returnValue = context->GetReturnDWord();
+}
+
+void ScriptingEngine::execute(const ScriptObjectHandle& scriptObjectHandle, const ScriptObjectFunctionHandle& scriptObjectFunctionHandle, int64& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptObjectHandle, scriptObjectFunctionHandle);
+	returnValue = context->GetReturnQWord();
+}
+
+void ScriptingEngine::execute(const ScriptObjectHandle& scriptObjectHandle, const ScriptObjectFunctionHandle& scriptObjectFunctionHandle, uint64& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptObjectHandle, scriptObjectFunctionHandle);
+	returnValue = context->GetReturnQWord();
+}
+
+void ScriptingEngine::execute(const ScriptObjectHandle& scriptObjectHandle, const ScriptObjectFunctionHandle& scriptObjectFunctionHandle, ParameterList& arguments, std::function<void(void*)> returnObjectParser, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptObjectHandle, scriptObjectFunctionHandle, arguments);
+	returnObjectParser(context->GetReturnObject());
+}
+
+void ScriptingEngine::execute(const ScriptObjectHandle& scriptObjectHandle, const ScriptObjectFunctionHandle& scriptObjectFunctionHandle, ParameterList& arguments, float32& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptObjectHandle, scriptObjectFunctionHandle, arguments);
+	returnValue = context->GetReturnFloat();
+}
+
+void ScriptingEngine::execute(const ScriptObjectHandle& scriptObjectHandle, const ScriptObjectFunctionHandle& scriptObjectFunctionHandle, ParameterList& arguments, float64& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptObjectHandle, scriptObjectFunctionHandle, arguments);
+	returnValue = context->GetReturnDouble();
+}
+
+void ScriptingEngine::execute(const ScriptObjectHandle& scriptObjectHandle, const ScriptObjectFunctionHandle& scriptObjectFunctionHandle, ParameterList& arguments, int8& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptObjectHandle, scriptObjectFunctionHandle, arguments);
+	returnValue = context->GetReturnByte();
+}
+
+void ScriptingEngine::execute(const ScriptObjectHandle& scriptObjectHandle, const ScriptObjectFunctionHandle& scriptObjectFunctionHandle, ParameterList& arguments, uint8& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptObjectHandle, scriptObjectFunctionHandle, arguments);
+	returnValue = context->GetReturnByte();
+}
+
+void ScriptingEngine::execute(const ScriptObjectHandle& scriptObjectHandle, const ScriptObjectFunctionHandle& scriptObjectFunctionHandle, ParameterList& arguments, int16& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptObjectHandle, scriptObjectFunctionHandle, arguments);
+	returnValue = context->GetReturnWord();
+}
+
+void ScriptingEngine::execute(const ScriptObjectHandle& scriptObjectHandle, const ScriptObjectFunctionHandle& scriptObjectFunctionHandle, ParameterList& arguments, uint16& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptObjectHandle, scriptObjectFunctionHandle, arguments);
+	returnValue = context->GetReturnWord();
+}
+
+void ScriptingEngine::execute(const ScriptObjectHandle& scriptObjectHandle, const ScriptObjectFunctionHandle& scriptObjectFunctionHandle, ParameterList& arguments, int32& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptObjectHandle, scriptObjectFunctionHandle, arguments);
+	returnValue = context->GetReturnDWord();
+}
+
+void ScriptingEngine::execute(const ScriptObjectHandle& scriptObjectHandle, const ScriptObjectFunctionHandle& scriptObjectFunctionHandle, ParameterList& arguments, uint32& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptObjectHandle, scriptObjectFunctionHandle, arguments);
+	returnValue = context->GetReturnDWord();
+}
+
+void ScriptingEngine::execute(const ScriptObjectHandle& scriptObjectHandle, const ScriptObjectFunctionHandle& scriptObjectFunctionHandle, ParameterList& arguments, int64& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptObjectHandle, scriptObjectFunctionHandle, arguments);
+	returnValue = context->GetReturnQWord();
+}
+
+void ScriptingEngine::execute(const ScriptObjectHandle& scriptObjectHandle, const ScriptObjectFunctionHandle& scriptObjectFunctionHandle, ParameterList& arguments, uint64& returnValue, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptObjectHandle, scriptObjectFunctionHandle, arguments);
+	returnValue = context->GetReturnQWord();
+}
+
 ExecutionContextHandle ScriptingEngine::createExecutionContext()
 {
 	if (contextData_.size() == ScriptingEngine::MAX_EXECUTION_CONTEXTS)
@@ -1293,6 +1599,30 @@ void ScriptingEngine::destroyAllScripts()
 	
 }
 
+ScriptFunctionHandle ScriptingEngine::getScriptFunction(const ScriptHandle& scriptHandle, const std::string& function)
+{
+	auto& moduleData = moduleData_[scriptHandle];
+	
+	auto handle = functionData_.create();
+	auto& functionData = functionData_[handle];
+	
+	functionData.function = getFunctionByDecl(function, moduleData.module);
+	
+	return handle;
+}
+
+ScriptObjectFunctionHandle ScriptingEngine::getScriptObjectFunction(const ScriptObjectHandle& scriptObjectHandle, const std::string& function)
+{
+	auto& scriptObjectData = scriptObjectData_[scriptObjectHandle];
+	
+	auto handle = objectFunctionData_.create();
+	auto& objectFunctionData = objectFunctionData_[handle];
+	
+	objectFunctionData.function = getFunctionByDecl(function, scriptObjectData.object);
+	
+	return handle;
+}
+
 void ScriptingEngine::registerObjectType(const std::string& obj, int32 byteSize, asDWORD flags)
 {
 	int32 r = engine_->RegisterObjectType(obj.c_str(), byteSize, flags);
@@ -1401,9 +1731,34 @@ void ScriptingEngine::destroy()
 	engine_->ShutDownAndRelease();
 }
 
-asIScriptFunction* ScriptingEngine::getFunctionByDecl(const std::string& function, asIScriptModule* module) const
+asIScriptFunction* ScriptingEngine::getFunctionByDecl(const std::string& function, const asIScriptModule* module) const
 {
 	auto func = module->GetFunctionByDecl( function.c_str() );
+	
+	if ( func == nullptr )
+	{
+		// The function couldn't be found. Instruct the script writer to include the expected function in the script.
+		std::string msg = std::string();
+
+		if ( function.length() > 80 )
+		{
+			msg = std::string("Function name too long.");
+		}
+		else
+		{
+			msg = std::string("Unable to locate the specified function: ");
+			msg += function;
+		}
+
+		throw Exception("ScriptEngine: " + msg);
+	}
+	
+	return func;
+}
+
+asIScriptFunction* ScriptingEngine::getFunctionByDecl(const std::string& function, const asIScriptObject* object) const
+{
+	auto func = object->GetObjectType()->GetMethodByDecl(function.c_str());
 	
 	if ( func == nullptr )
 	{
@@ -1452,13 +1807,6 @@ asIScriptFunction* ScriptingEngine::getMethod(const ScriptObjectHandle& scriptOb
 	auto type = getType(scriptObjectHandle);
 	
 	return type->GetMethodByDecl(function.c_str());
-}
-
-asIScriptFunction* ScriptingEngine::getMethod(const ScriptObjectFunctionHandle& scriptObjectFunctionHandle) const
-{
-	auto objectFunction = scriptObjectFunctions_[scriptObjectFunctionHandle.index()];
-	
-	return objectFunction;
 }
 
 // Implement a simple message callback function

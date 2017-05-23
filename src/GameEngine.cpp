@@ -1468,7 +1468,7 @@ ModelHandle GameEngine::loadStaticModel(const graphics::model::Model* model)
 	auto meshHandle = graphicsEngine_->createStaticMesh(model->meshes[0].vertices, model->meshes[0].indices, model->meshes[0].colors, model->meshes[0].normals, model->meshes[0].textureCoordinates);
 	auto textureHandle = graphicsEngine_->createTexture2d(model->textures[0].image);
 	
-	staticModels_.push_back(std::tuple<graphics::MeshHandle, graphics::TextureHandle>(meshHandle, textureHandle));
+	staticModels_.push_back(std::make_pair(meshHandle, textureHandle));
 	
 	auto index = staticModels_.size() - 1;
 	
@@ -1641,9 +1641,9 @@ void GameEngine::destroyShaderProgram(const graphics::ShaderProgramHandle& shade
 
 graphics::RenderableHandle GameEngine::createRenderable(const ModelHandle& modelHandle, const graphics::ShaderProgramHandle& shaderProgramHandle, const std::string& name)
 {
-	auto data = staticModels_[modelHandle.getId()];
+	auto& data = staticModels_[modelHandle.getId()];
 	
-	return graphicsEngine_->createRenderable(std::get<0>(data), std::get<1>(data), shaderProgramHandle);
+	return graphicsEngine_->createRenderable(data.first, data.second, shaderProgramHandle);
 }
 
 void GameEngine::handleEvents()
@@ -1729,22 +1729,34 @@ void GameEngine::removeMouseWheelEventListener(IMouseWheelEventListener* mouseWh
 
 void GameEngine::addKeyboardEventListener(asIScriptObject* listener)
 {
-	scriptKeyboardEventListeners_.push_back( scriptingEngine_->registerScriptObject(scriptHandle, listener) );
+	auto scriptObjectHandle = scriptingEngine_->registerScriptObject(scriptHandle, listener);
+	auto scriptObjectFunctionHandle = scriptingEngine_->getScriptObjectFunction(scriptObjectHandle, "bool processEvent(const KeyboardEvent& in)");
+	
+	scriptKeyboardEventListeners_.push_back( std::make_pair(scriptObjectHandle, scriptObjectFunctionHandle) );
 }
 
 void GameEngine::addMouseMotionEventListener(asIScriptObject* listener)
 {
-	scriptMouseMotionEventListeners_.push_back( scriptingEngine_->registerScriptObject(scriptHandle, listener) );
+	auto scriptObjectHandle = scriptingEngine_->registerScriptObject(scriptHandle, listener);
+	auto scriptObjectFunctionHandle = scriptingEngine_->getScriptObjectFunction(scriptObjectHandle, "bool processEvent(const MouseMotionEvent& in)");
+	
+	scriptMouseMotionEventListeners_.push_back( std::make_pair(scriptObjectHandle, scriptObjectFunctionHandle) );
 }
 
 void GameEngine::addMouseButtonEventListener(asIScriptObject* listener)
 {
-	scriptMouseButtonEventListeners_.push_back( scriptingEngine_->registerScriptObject(scriptHandle, listener) );
+	auto scriptObjectHandle = scriptingEngine_->registerScriptObject(scriptHandle, listener);
+	auto scriptObjectFunctionHandle = scriptingEngine_->getScriptObjectFunction(scriptObjectHandle, "bool processEvent(const MouseButtonEvent& in)");
+	
+	scriptMouseButtonEventListeners_.push_back( std::make_pair(scriptObjectHandle, scriptObjectFunctionHandle) );
 }
 
 void GameEngine::addMouseWheelEventListener(asIScriptObject* listener)
 {
-	scriptMouseWheelEventListeners_.push_back( scriptingEngine_->registerScriptObject(scriptHandle, listener) );
+	auto scriptObjectHandle = scriptingEngine_->registerScriptObject(scriptHandle, listener);
+	auto scriptObjectFunctionHandle = scriptingEngine_->getScriptObjectFunction(scriptObjectHandle, "bool processEvent(const MouseWheelEvent& in)");
+	
+	scriptMouseWheelEventListeners_.push_back( std::make_pair(scriptObjectHandle, scriptObjectFunctionHandle) );
 }
 
 void GameEngine::removeKeyboardEventListener(asIScriptObject* listener)
@@ -1786,13 +1798,13 @@ bool GameEngine::processEvent(const graphics::Event& event)
 			{
 				bool returnValue = listener->processEvent(event.key);
 			}
-			for (auto scriptObjectHandle : scriptKeyboardEventListeners_)
+			for (const auto& data : scriptKeyboardEventListeners_)
 			{
 				scripting::ParameterList arguments;
 				arguments.addRef(event.key);
 				uint8 returnValue = false;
 				
-				scriptingEngine_->execute(scriptObjectHandle, "bool processEvent(const KeyboardEvent& in)", arguments, returnValue);
+				scriptingEngine_->execute(data.first, data.second, arguments, returnValue);
 			}
 			
 			if (event.key.keySym.scancode == graphics::SCANCODE_ESCAPE)
@@ -1808,13 +1820,13 @@ bool GameEngine::processEvent(const graphics::Event& event)
 			{
 				bool returnValue = listener->processEvent(event.motion);
 			}
-			for (auto scriptObjectHandle : scriptMouseMotionEventListeners_)
+			for (const auto& data : scriptMouseMotionEventListeners_)
 			{
 				scripting::ParameterList arguments;
 				arguments.addRef(event.motion);
 				uint8 returnValue = false;
 				
-				scriptingEngine_->execute(scriptObjectHandle, "bool processEvent(const MouseMotionEvent& in)", arguments, returnValue);
+				scriptingEngine_->execute(data.first, data.second, arguments, returnValue);
 			}
 			
 			{
@@ -1833,13 +1845,13 @@ bool GameEngine::processEvent(const graphics::Event& event)
 			{
 				bool returnValue = listener->processEvent(event.button);
 			}
-			for (auto scriptObjectHandle : scriptMouseButtonEventListeners_)
+			for (const auto& data : scriptMouseButtonEventListeners_)
 			{
 				scripting::ParameterList arguments;
 				arguments.addRef(event.button);
 				uint8 returnValue = false;
 				
-				scriptingEngine_->execute(scriptObjectHandle, "bool processEvent(const MouseButtonEvent& in)", arguments, returnValue);
+				scriptingEngine_->execute(data.first, data.second, arguments, returnValue);
 			}
 			break;
 			
@@ -1848,13 +1860,13 @@ bool GameEngine::processEvent(const graphics::Event& event)
 			{
 				bool returnValue = listener->processEvent(event.wheel);
 			}
-			for (auto scriptObjectHandle : scriptMouseWheelEventListeners_)
+			for (const auto& data : scriptMouseWheelEventListeners_)
 			{
 				scripting::ParameterList arguments;
 				arguments.addRef(event.wheel);
 				uint8 returnValue = false;
 				
-				scriptingEngine_->execute(scriptObjectHandle, "bool processEvent(const MouseWheelEvent& in)", arguments, returnValue);
+				scriptingEngine_->execute(data.first, data.second, arguments, returnValue);
 			}
 			break;
 		
