@@ -4,6 +4,7 @@
 #include "Types.hpp"
 
 #include "graphics/Keyboard.hpp"
+#include "graphics/Mouse.hpp"
 
 namespace hercules
 {
@@ -58,7 +59,7 @@ struct MouseButtonEvent
 	uint32 type;
 	uint8 button;
 	uint8 state;
-	uint8 padding2;
+	uint8 clicks;
 	uint8 padding3;
 	int32 x;
 	int32 y;
@@ -69,6 +70,7 @@ struct MouseWheelEvent
 	uint32 type;
 	int32 x;
 	int32 y;
+	uint32 direction;
 };
 
 union Event

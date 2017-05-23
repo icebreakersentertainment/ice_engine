@@ -1090,13 +1090,13 @@ ExecutionContextHandle ScriptingEngine::createExecutionContext()
 	return handle;
 }
 
-ScriptObjectHandle ScriptingEngine::registerScriptObject(const ScriptHandle& scriptHandle, const std::string& className, asIScriptObject* object)
+ScriptObjectHandle ScriptingEngine::registerScriptObject(const ScriptHandle& scriptHandle, asIScriptObject* object)
 {
 	auto handle = scriptObjectData_.create();
 	auto& scriptObjectData = scriptObjectData_[handle];
 	
 	scriptObjectData.scriptHandle = scriptHandle;
-	scriptObjectData.className = className;
+	scriptObjectData.className = object->GetObjectType()->GetName();
 	scriptObjectData.object = object;
 	
 	return handle;

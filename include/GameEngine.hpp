@@ -115,6 +115,10 @@ private:
 	std::vector<IMouseMotionEventListener*> mouseMotionEventListeners_;
 	std::vector<IMouseButtonEventListener*> mouseButtonEventListeners_;
 	std::vector<IMouseWheelEventListener*> mouseWheelEventListeners_;
+	std::vector<scripting::ScriptObjectHandle> scriptKeyboardEventListeners_;
+	std::vector<scripting::ScriptObjectHandle> scriptMouseMotionEventListeners_;
+	std::vector<scripting::ScriptObjectHandle> scriptMouseButtonEventListeners_;
+	std::vector<scripting::ScriptObjectHandle> scriptMouseWheelEventListeners_;
 	
 	std::vector<std::unique_ptr<IScene>> scenes_;
 	
@@ -175,6 +179,15 @@ private:
 	int32 getTimeForInput();
 	int32 getTimeForGuiUpdate();
 	int32 getTimeForScripting();
+	
+	void addKeyboardEventListener(asIScriptObject* keyboardEventListener);
+	void addMouseMotionEventListener(asIScriptObject* mouseMotionEventListener);
+	void addMouseButtonEventListener(asIScriptObject* mouseButtonEventListener);
+	void addMouseWheelEventListener(asIScriptObject* mouseWheelEventListener);
+	void removeKeyboardEventListener(asIScriptObject* keyboardEventListener);
+	void removeMouseMotionEventListener(asIScriptObject* mouseMotionEventListener);
+	void removeMouseButtonEventListener(asIScriptObject* mouseButtonEventListener);
+	void removeMouseWheelEventListener(asIScriptObject* mouseWheelEventListener);
 	
 	// Initialization stuff
 	void initializeLoggingSubSystem();

@@ -118,7 +118,7 @@ public:
 	
 	virtual ExecutionContextHandle createExecutionContext() = 0;
 	
-	virtual ScriptObjectHandle registerScriptObject(const ScriptHandle& scriptHandle, const std::string& className, asIScriptObject* object) = 0;
+	virtual ScriptObjectHandle registerScriptObject(const ScriptHandle& scriptHandle, asIScriptObject* object) = 0;
 	virtual void unregisterScriptObject(const ScriptObjectHandle& scriptObjectHandle) = 0;
 	virtual void unregisterAllScriptObjects() = 0;
 	

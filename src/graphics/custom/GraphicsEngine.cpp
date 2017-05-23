@@ -894,6 +894,34 @@ Event GraphicsEngine::convertSdlEvent(const SDL_Event& event)
 			
 			break;
 		
+		case SDL_MOUSEBUTTONDOWN:
+			e.type = MOUSEBUTTONDOWN;
+			e.button.button = event.button.button;
+			e.button.state = event.button.state;
+			e.button.clicks = event.button.clicks;
+			e.button.x = event.button.x;
+			e.button.y = event.button.y;
+			
+			break;
+		
+		case SDL_MOUSEBUTTONUP:
+			e.type = MOUSEBUTTONUP;
+			e.button.button = event.button.button;
+			e.button.state = event.button.state;
+			e.button.clicks = event.button.clicks;
+			e.button.x = event.button.x;
+			e.button.y = event.button.y;
+			
+			break;
+		
+		case SDL_MOUSEWHEEL:
+			e.type = MOUSEWHEEL;
+			e.wheel.x = event.wheel.x;
+			e.wheel.y = event.wheel.y;
+			e.wheel.direction = event.wheel.direction;
+			
+			break;
+		
 		default:
 			e.type = UNKNOWN;
 			break;

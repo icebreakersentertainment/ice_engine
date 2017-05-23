@@ -131,7 +131,7 @@ public:
 	
 	virtual ExecutionContextHandle createExecutionContext() override;
 	
-	virtual ScriptObjectHandle registerScriptObject(const ScriptHandle& scriptHandle, const std::string& className, asIScriptObject* object) override;
+	virtual ScriptObjectHandle registerScriptObject(const ScriptHandle& scriptHandle, asIScriptObject* object) override;
 	virtual void unregisterScriptObject(const ScriptObjectHandle& scriptObjectHandle) override;
 	virtual void unregisterAllScriptObjects() override;
 	
