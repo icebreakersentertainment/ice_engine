@@ -85,6 +85,8 @@ public:
 	virtual void rotation(const RenderableHandle& renderableHandle, const glm::quat& quaternion) = 0;
 	virtual void rotation(const CameraHandle& cameraHandle, const float32 degrees, const glm::vec3& axis) = 0;
 	virtual void rotation(const RenderableHandle& renderableHandle, const float32 degrees, const glm::vec3& axis) = 0;
+	virtual glm::quat rotation(const CameraHandle& cameraHandle) const = 0;
+	virtual glm::quat rotation(const RenderableHandle& renderableHandle) const = 0;
 	
 	virtual void translate(const CameraHandle& cameraHandle, const float32 x, const float32 y, const float32 z) = 0;
 	virtual void translate(const RenderableHandle& renderableHandle, const float32 x, const float32 y, const float32 z) = 0;
@@ -94,11 +96,14 @@ public:
 	virtual void scale(const RenderableHandle& renderableHandle, const float32 x, const float32 y, const float32 z) = 0;
 	virtual void scale(const RenderableHandle& renderableHandle, const glm::vec3& scale) = 0;
 	virtual void scale(const RenderableHandle& renderableHandle, const float32 scale) = 0;
+	virtual glm::vec3 scale(const RenderableHandle& renderableHandle) const = 0;
 	
 	virtual void position(const RenderableHandle& renderableHandle, const float32 x, const float32 y, const float32 z) = 0;
 	virtual void position(const CameraHandle& cameraHandle, const float32 x, const float32 y, const float32 z) = 0;
 	virtual void position(const RenderableHandle& renderableHandle, const glm::vec3& position) = 0;
 	virtual void position(const CameraHandle& cameraHandle, const glm::vec3& position) = 0;
+	virtual glm::vec3 position(const RenderableHandle& renderableHandle) const = 0;
+	virtual glm::vec3 position(const CameraHandle& cameraHandle) const = 0;
 	
 	virtual void lookAt(const RenderableHandle& renderableHandle, const glm::vec3& lookAt) = 0;
 	virtual void lookAt(const CameraHandle& cameraHandle, const glm::vec3& lookAt) = 0;

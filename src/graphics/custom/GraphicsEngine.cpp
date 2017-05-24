@@ -578,6 +578,16 @@ void GraphicsEngine::rotation(const RenderableHandle& renderableHandle, const fl
 	renderable.graphicsData.orientation = glm::normalize( glm::angleAxis(glm::radians(degrees), axis) );
 }
 
+glm::quat GraphicsEngine::rotation(const CameraHandle& cameraHandle) const
+{
+	return camera_.orientation;
+}
+
+glm::quat GraphicsEngine::rotation(const RenderableHandle& renderableHandle) const
+{
+	return renderables_[renderableHandle].graphicsData.orientation;
+}
+
 void GraphicsEngine::translate(const CameraHandle& cameraHandle, const float32 x, const float32 y, const float32 z)
 {
 	camera_.position += glm::vec3(x, y, z);
@@ -623,6 +633,11 @@ void GraphicsEngine::scale(const RenderableHandle& renderableHandle, const float
 	renderable.graphicsData.scale = glm::vec3(scale, scale, scale);
 }
 
+glm::vec3 GraphicsEngine::scale(const RenderableHandle& renderableHandle) const
+{
+	return renderables_[renderableHandle].graphicsData.scale;
+}
+
 void GraphicsEngine::position(const RenderableHandle& renderableHandle, const float32 x, const float32 y, const float32 z)
 {
 	auto& renderable = renderables_[renderableHandle];
@@ -644,6 +659,16 @@ void GraphicsEngine::position(const RenderableHandle& renderableHandle, const gl
 void GraphicsEngine::position(const CameraHandle& cameraHandle, const glm::vec3& position)
 {
 	camera_.position = position;
+}
+
+glm::vec3 GraphicsEngine::position(const RenderableHandle& renderableHandle) const
+{
+	return renderables_[renderableHandle].graphicsData.position;
+}
+
+glm::vec3 GraphicsEngine::position(const CameraHandle& cameraHandle) const
+{
+	return camera_.position;
 }
 
 void GraphicsEngine::lookAt(const RenderableHandle& renderableHandle, const glm::vec3& lookAt)

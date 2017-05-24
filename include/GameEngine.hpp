@@ -106,7 +106,6 @@ private:
 	// Gui
 	//glr::gui::IGuiComponent* mainGui_;
 	std::unique_ptr< graphics::IGraphicsEngine > graphicsEngine_;
-	graphics::CameraHandle cameraHandle_;
 	
 	std::unique_ptr< physics::IPhysicsEngine > physicsEngine_;
 	std::unique_ptr<scripting::IScriptingEngine> scriptingEngine_;

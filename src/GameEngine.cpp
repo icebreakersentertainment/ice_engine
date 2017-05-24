@@ -755,6 +755,10 @@ void GameEngine::initializeScriptingSubSystem()
 	scriptingEngine_->registerObjectType("ModelHandle", sizeof(ModelHandle), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<ModelHandle>());
 	scriptingEngine_->registerClassMethod("ModelHandle", "int32 getId() const", asMETHODPR(ModelHandle, getId, () const, int32));
 	
+	scriptingEngine_->registerObjectType("CameraHandle", sizeof(graphics::CameraHandle), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<graphics::CameraHandle>());
+	scriptingEngine_->registerClassMethod("CameraHandle", "uint64 id() const", asMETHODPR(graphics::CameraHandle, id, () const, uint64));
+	scriptingEngine_->registerClassMethod("CameraHandle", "uint32 index() const", asMETHODPR(graphics::CameraHandle, index, () const, uint32));
+	scriptingEngine_->registerClassMethod("CameraHandle", "uint32 version() const", asMETHODPR(graphics::CameraHandle, version, () const, uint32));
 	scriptingEngine_->registerObjectType("MeshHandle", sizeof(graphics::MeshHandle), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<graphics::MeshHandle>());
 	scriptingEngine_->registerClassMethod("MeshHandle", "uint64 id() const", asMETHODPR(graphics::MeshHandle, id, () const, uint64));
 	scriptingEngine_->registerClassMethod("MeshHandle", "uint32 index() const", asMETHODPR(graphics::MeshHandle, index, () const, uint32));
@@ -945,7 +949,7 @@ void GameEngine::initializeScriptingSubSystem()
 	);
 	scriptingEngine_->registerClassMethod(
 		"IScene",
-		"quat rotation(const Entity& in) const",
+		"quat rotation(const Entity& in)",
 		asMETHODPR(IScene, rotation, (const entities::Entity&), glm::quat)
 	);
 	scriptingEngine_->registerClassMethod(
@@ -960,7 +964,7 @@ void GameEngine::initializeScriptingSubSystem()
 	);
 	scriptingEngine_->registerClassMethod(
 		"IScene",
-		"vec3 scale(const Entity& in) const",
+		"vec3 scale(const Entity& in)",
 		asMETHODPR(IScene, scale, (const entities::Entity&), glm::vec3)
 	);
 	scriptingEngine_->registerClassMethod(
@@ -985,13 +989,18 @@ void GameEngine::initializeScriptingSubSystem()
 	);
 	scriptingEngine_->registerClassMethod(
 		"IScene",
-		"vec3 position(const Entity& in) const",
+		"vec3 position(const Entity& in)",
 		asMETHODPR(IScene, position, (const entities::Entity&), glm::vec3)
 	);
 	
 	// IGraphicsEngine
 	scriptingEngine_->registerObjectType("IGraphicsEngine", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	scriptingEngine_->registerGlobalProperty("IGraphicsEngine graphics", graphicsEngine_.get());
+	scriptingEngine_->registerClassMethod(
+		"IGraphicsEngine",
+		"CameraHandle createCamera(const vec3& in, const vec3& in)",
+		asMETHODPR(graphics::IGraphicsEngine, createCamera, (const glm::vec3&, const glm::vec3&), graphics::CameraHandle)
+	);
 	scriptingEngine_->registerClassMethod(
 		"IGraphicsEngine",
 		"MeshHandle createStaticMesh(const vectorVec3& in, const vectorUInt32& in, const vectorVec4& in, const vectorVec3& in, const vectorVec2& in)",
@@ -1006,6 +1015,46 @@ void GameEngine::initializeScriptingSubSystem()
 		"IGraphicsEngine",
 		"RenderableHandle createRenderable(const MeshHandle& in, const TextureHandle& in, const ShaderProgramHandle& in)",
 		asMETHODPR(graphics::IGraphicsEngine, createRenderable, (const graphics::MeshHandle&, const graphics::TextureHandle&, const graphics::ShaderProgramHandle&), graphics::RenderableHandle)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IGraphicsEngine",
+		"void rotate(const CameraHandle& in, const quat& in, const TransformSpace& in = TransformSpace::TS_LOCAL)",
+		asMETHODPR(graphics::IGraphicsEngine, rotate, (const graphics::CameraHandle&, const glm::quat&, const graphics::TransformSpace&), void)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IGraphicsEngine",
+		"void rotate(const CameraHandle& in, const float, const vec3& in, const TransformSpace& in = TransformSpace::TS_LOCAL)",
+		asMETHODPR(graphics::IGraphicsEngine, rotate, (const graphics::CameraHandle&, const float32, const glm::vec3&, const graphics::TransformSpace&), void)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IGraphicsEngine",
+		"void rotation(const CameraHandle& in, const quat& in)",
+		asMETHODPR(graphics::IGraphicsEngine, rotation, (const graphics::CameraHandle&, const glm::quat&), void)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IGraphicsEngine",
+		"quat rotation(const CameraHandle& in) const",
+		asMETHODPR(graphics::IGraphicsEngine, rotation, (const graphics::CameraHandle&) const, glm::quat)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IGraphicsEngine",
+		"void translate(const CameraHandle& in, const vec3& in)",
+		asMETHODPR(graphics::IGraphicsEngine, translate, (const graphics::CameraHandle&, const glm::vec3&), void)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IGraphicsEngine",
+		"void position(const CameraHandle& in, const vec3& in)",
+		asMETHODPR(graphics::IGraphicsEngine, position, (const graphics::CameraHandle&, const glm::vec3&), void)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IGraphicsEngine",
+		"void position(const CameraHandle& in, const float, const float, const float)",
+		asMETHODPR(graphics::IGraphicsEngine, position, (const graphics::CameraHandle&, const float32, const float32, const float32), void)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IGraphicsEngine",
+		"vec3 position(const CameraHandle& in) const",
+		asMETHODPR(graphics::IGraphicsEngine, position, (const graphics::CameraHandle&) const, glm::vec3)
 	);
 	
 	// IPhysicsEngine
@@ -1228,7 +1277,7 @@ glm::mat4 globalInverseTransformation;
 graphics::SkeletonHandle skeletonHandle;
 void GameEngine::test()
 {
-	cameraHandle_ = graphicsEngine_->createCamera(glm::vec3(0.0f, 0.0f, 0.5f), glm::vec3(0.0f, 0.0f, 0.0f));
+	
 }
 
 void GameEngine::loadEssentialGameData()
@@ -1829,14 +1878,6 @@ bool GameEngine::processEvent(const graphics::Event& event)
 				scriptingEngine_->execute(data.first, data.second, arguments, returnValue);
 			}
 			
-			{
-				const auto degrees = event.motion.xrel / 5.5f;
-				graphicsEngine_->rotate(cameraHandle_, -degrees, glm::vec3(0.0f, 1.0f, 0.0f), graphics::TransformSpace::TS_LOCAL);
-			}
-			{
-				const auto degrees = event.motion.yrel / 5.5f;
-				graphicsEngine_->rotate(cameraHandle_, -degrees, glm::vec3(1.0f, 0.0f, 0.0f), graphics::TransformSpace::TS_WORLD);
-			}
 			break;
 		
 		case graphics::MOUSEBUTTONDOWN:
