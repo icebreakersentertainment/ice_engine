@@ -949,8 +949,8 @@ void GameEngine::initializeScriptingSubSystem()
 	);
 	scriptingEngine_->registerClassMethod(
 		"IScene",
-		"quat rotation(const Entity& in)",
-		asMETHODPR(IScene, rotation, (const entities::Entity&), glm::quat)
+		"quat rotation(const Entity& in) const",
+		asMETHODPR(IScene, rotation, (const entities::Entity&) const, glm::quat)
 	);
 	scriptingEngine_->registerClassMethod(
 		"IScene",
@@ -964,8 +964,8 @@ void GameEngine::initializeScriptingSubSystem()
 	);
 	scriptingEngine_->registerClassMethod(
 		"IScene",
-		"vec3 scale(const Entity& in)",
-		asMETHODPR(IScene, scale, (const entities::Entity&), glm::vec3)
+		"vec3 scale(const Entity& in) const",
+		asMETHODPR(IScene, scale, (const entities::Entity&) const, glm::vec3)
 	);
 	scriptingEngine_->registerClassMethod(
 		"IScene",
@@ -989,8 +989,8 @@ void GameEngine::initializeScriptingSubSystem()
 	);
 	scriptingEngine_->registerClassMethod(
 		"IScene",
-		"vec3 position(const Entity& in)",
-		asMETHODPR(IScene, position, (const entities::Entity&), glm::vec3)
+		"vec3 position(const Entity& in) const",
+		asMETHODPR(IScene, position, (const entities::Entity&) const, glm::vec3)
 	);
 	
 	// IGraphicsEngine

@@ -90,17 +90,17 @@ public:
 	virtual void rotate(const entities::Entity& entity, const glm::quat& orientation, const graphics::TransformSpace& relativeTo = graphics::TransformSpace::TS_LOCAL) override;
 	virtual void rotation(const entities::Entity& entity, const float32 degrees, const glm::vec3& axis) override;
 	virtual void rotation(const entities::Entity& entity, const glm::quat& orientation) override;
-	virtual glm::quat rotation(const entities::Entity& entity) override;
+	virtual glm::quat rotation(const entities::Entity& entity) const override;
 	virtual void translate(const entities::Entity& entity, const glm::vec3& translate) override;
 	virtual void scale(const entities::Entity& entity, const float32 scale) override;
 	virtual void scale(const entities::Entity& entity, const glm::vec3& scale) override;
 	virtual void scale(const entities::Entity& entity, const float32 x, const float32 y, const float32 z) override;
-	virtual glm::vec3 scale(const entities::Entity& entity) override;
+	virtual glm::vec3 scale(const entities::Entity& entity) const override;
 	virtual void lookAt(const entities::Entity& entity, const glm::vec3& lookAt) override;
 	
 	virtual void position(const entities::Entity& entity, const glm::vec3& position) override;
 	virtual void position(const entities::Entity& entity, const float32 x, const float32 y, const float32 z) override;
-	virtual glm::vec3 position(const entities::Entity& entity) override;
+	virtual glm::vec3 position(const entities::Entity& entity) const override;
 	
 private:
 	std::string name_;
