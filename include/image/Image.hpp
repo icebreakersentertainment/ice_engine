@@ -7,7 +7,7 @@
 
 namespace hercules
 {
-namespace utilities
+namespace image
 {
 
 enum Format

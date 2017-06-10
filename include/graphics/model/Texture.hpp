@@ -3,10 +3,7 @@
 
 #include <string>
 
-#include "utilities/Image.hpp"
-
-//#include "glw/TextureSettings.hpp"
-//#include "graphics/model/VertexBoneData.hpp"
+#include "image/Image.hpp"
 
 namespace hercules
 {
@@ -18,7 +15,7 @@ namespace model
 struct Texture
 {
 	std::string filename;
-	utilities::Image image;
+	image::Image image;
 	//glw::TextureSettings settings;
 };
 

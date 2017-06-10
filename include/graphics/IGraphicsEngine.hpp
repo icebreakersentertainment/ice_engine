@@ -64,7 +64,7 @@ public:
 	
 	virtual SkeletonHandle createSkeleton(const uint32 numberOfBones) = 0;
 	
-	virtual TextureHandle createTexture2d(const utilities::Image& image) = 0;
+	virtual TextureHandle createTexture2d(const image::Image& image) = 0;
 	
 	virtual ShaderHandle createVertexShader(const std::string& data) = 0;
 	virtual ShaderHandle createFragmentShader(const std::string& data) = 0;

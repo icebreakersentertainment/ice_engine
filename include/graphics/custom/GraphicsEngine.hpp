@@ -130,7 +130,7 @@ public:
 	
 	virtual SkeletonHandle createSkeleton(const uint32 numberOfBones) override;
 	
-	virtual TextureHandle createTexture2d(const utilities::Image& image) override;
+	virtual TextureHandle createTexture2d(const image::Image& image) override;
 	
 	virtual ShaderHandle createVertexShader(const std::string& data) override;
 	virtual ShaderHandle createFragmentShader(const std::string& data) override;

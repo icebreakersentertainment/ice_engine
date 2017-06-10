@@ -26,8 +26,9 @@
 #include "graphics/model/Texture.hpp"
 #include "graphics/model/Material.hpp"
 
-#include "utilities/ImageLoader.hpp"
+#include "image/ImageLoader.hpp"
 #include "utilities/AssImpUtilities.hpp"
+#include "utilities/IoUtilities.hpp"
 
 namespace hercules
 {
@@ -171,8 +172,8 @@ Texture importTexture(const std::string& name, const std::string& filename, uint
 		
 		data.filename = fullPath;
 		
-		auto il = utilities::ImageLoader(logger);
-		auto image = il.loadImageData(fullPath).release();
+		auto file = fileSystem->open(fullPath, fs::FileFlags::READ | fs::FileFlags::BINARY);
+		auto image = image::import(utilities::readAllBytes(file->getInputStream())).release();
 		data.image = std::move(*(image));
 	}
 	else

@@ -27,7 +27,9 @@
 
 #include "logger/Logger.hpp"
 #include "fs/FileSystem.hpp"
-#include "utilities/ImageLoader.hpp"
+#include "image/ImageLoader.hpp"
+
+#include "utilities/IoUtilities.hpp"
 
 namespace hercules
 {
@@ -1009,7 +1011,7 @@ void GameEngine::initializeScriptingSubSystem()
 	scriptingEngine_->registerClassMethod(
 		"IGraphicsEngine",
 		"TextureHandle createTexture2d(Image@)",
-		asMETHODPR(graphics::IGraphicsEngine, createTexture2d, (const utilities::Image&), graphics::TextureHandle)
+		asMETHODPR(graphics::IGraphicsEngine, createTexture2d, (const image::Image&), graphics::TextureHandle)
 	);
 	scriptingEngine_->registerClassMethod(
 		"IGraphicsEngine",
@@ -1146,7 +1148,7 @@ void GameEngine::initializeScriptingSubSystem()
 	);
 	scriptingEngine_->registerGlobalFunction(
 		"Image@ loadImage(const string& in, const string& in)",
-		asMETHODPR(IGameEngine, loadImage, (const std::string&, const std::string&), utilities::Image*),
+		asMETHODPR(IGameEngine, loadImage, (const std::string&, const std::string&), image::Image*),
 		asCALL_THISCALL_ASGLOBAL,
 		this
 	);
@@ -1461,16 +1463,16 @@ physics::IPhysicsEngine* GameEngine::getPhysicsEngine() const
 	return physicsEngine_.get();
 }
 
-utilities::Image* GameEngine::loadImage(const std::string& name, const std::string& filename)
+image::Image* GameEngine::loadImage(const std::string& name, const std::string& filename)
 {
+	logger_->debug("Loading image: " + filename);
 	if (!fileSystem_->exists(filename))
 	{
 		throw std::runtime_error("Image file '" + filename + "' does not exist.");
 	}
 	
-	auto il = utilities::ImageLoader(logger_.get());
-	
-	resourceCache_.addImage( name, il.loadImageData(filename) );
+	auto file = fileSystem_->open(filename, fs::FileFlags::READ | fs::FileFlags::BINARY);
+	resourceCache_.addImage( name, image::import(utilities::readAllBytes(file->getInputStream())) );
 	
 	return resourceCache_.getImage(name);
 }
@@ -1502,7 +1504,7 @@ void GameEngine::unloadModel(const std::string& name)
 	return resourceCache_.removeModel(name);
 }
 
-utilities::Image* GameEngine::getImage(const std::string& name) const
+image::Image* GameEngine::getImage(const std::string& name) const
 {
 	return resourceCache_.getImage(name);
 }

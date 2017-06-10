@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <sstream>
 #include <exception>
 #include <stdexcept>
 #include <system_error>
@@ -11,8 +12,6 @@
 #define GLM_FORCE_RADIANS
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/string_cast.hpp>
-
-#include "utilities/ImageLoader.hpp"
 
 namespace hercules
 {
@@ -113,6 +112,7 @@ void GraphicsEngine::setViewport(const uint32 width, const uint32 height)
 
 void GraphicsEngine::render(const float32 delta)
 {
+	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	glEnable(GL_DEPTH_TEST);
 	
 	// Setup camera
@@ -386,7 +386,7 @@ SkeletonHandle GraphicsEngine::createSkeleton(const uint32 numberOfBones)
 	return handle;
 }
 
-TextureHandle GraphicsEngine::createTexture2d(const utilities::Image& image)
+TextureHandle GraphicsEngine::createTexture2d(const image::Image& image)
 {
 	auto handle = texture2ds_.create();
 	auto& texture = texture2ds_[handle];
@@ -394,7 +394,7 @@ TextureHandle GraphicsEngine::createTexture2d(const utilities::Image& image)
 	uint32 width = 0;
 	uint32 height = 0;
 	
-	auto format = utilities::getOpenGlImageFormat(image.format);
+	auto format = image::getOpenGlImageFormat(image.format);
 	
 	glGenTextures(1, &texture.id);
 	glBindTexture(GL_TEXTURE_2D, texture.id);
@@ -407,11 +407,13 @@ TextureHandle GraphicsEngine::createTexture2d(const utilities::Image& image)
 
 ShaderHandle GraphicsEngine::createVertexShader(const std::string& data)
 {
+	logger_->debug("Creating vertex shader from data: " + data);
 	return shaders_.create( compileShader(data, GL_VERTEX_SHADER) );
 }
 
 ShaderHandle GraphicsEngine::createFragmentShader(const std::string& data)
 {
+	logger_->debug("Creating fragment shader from data: " + data);
 	return shaders_.create( compileShader(data, GL_FRAGMENT_SHADER) );
 }
 

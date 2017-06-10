@@ -50,7 +50,7 @@ public:
 	virtual physics::IPhysicsEngine* getPhysicsEngine() const override;
 	
 	//virtual AudioSample* loadAudioSample(const std::string& name, const std::string& filename) override;
-	virtual utilities::Image* loadImage(const std::string& name, const std::string& filename) override;
+	virtual image::Image* loadImage(const std::string& name, const std::string& filename) override;
 	virtual graphics::model::Model* loadModel(const std::string& name, const std::string& filename) override;
 	virtual graphics::model::Model* importModel(const std::string& name, const std::string& filename) override;
 	
@@ -59,7 +59,7 @@ public:
 	virtual void unloadModel(const std::string& name) override;
 	
 	//virtual AudioSample* getAudioSample(const std::string& name) const
-	virtual utilities::Image* getImage(const std::string& name) const override;
+	virtual image::Image* getImage(const std::string& name) const override;
 	virtual graphics::model::Model* getModel(const std::string& name) const override;
 	
 	virtual ModelHandle loadStaticModel(const graphics::model::Model* model) override;

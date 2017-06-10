@@ -24,6 +24,8 @@
 
 #include "scripting/IScriptingEngine.hpp"
 
+#include "image/Image.hpp"
+
 namespace hercules
 {
 
@@ -57,7 +59,7 @@ public:
 	virtual physics::IPhysicsEngine* getPhysicsEngine() const = 0;
 	
 	//virtual AudioSample* loadAudioSample(const std::string& name, const std::string& filename) = 0;
-	virtual utilities::Image* loadImage(const std::string& name, const std::string& filename) = 0;
+	virtual image::Image* loadImage(const std::string& name, const std::string& filename) = 0;
 	virtual graphics::model::Model* loadModel(const std::string& name, const std::string& filename) = 0;
 	virtual graphics::model::Model* importModel(const std::string& name, const std::string& filename) = 0;
 	
@@ -66,7 +68,7 @@ public:
 	virtual void unloadModel(const std::string& name) = 0;
 	
 	//virtual AudioSample* getAudioSample(const std::string& name) const = 0;
-	virtual utilities::Image* getImage(const std::string& name) const = 0;
+	virtual image::Image* getImage(const std::string& name) const = 0;
 	virtual graphics::model::Model* getModel(const std::string& name) const = 0;
 	
 	virtual ModelHandle loadStaticModel(const graphics::model::Model* model) = 0;
