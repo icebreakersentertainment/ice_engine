@@ -20,7 +20,7 @@
 #include "graphics/model/ModelLoader.hpp"
 #include "graphics/model/Animate.hpp"
 
-#include "graphics/GraphicsFactory.hpp"
+#include "graphics/GraphicsEngineFactory.hpp"
 #include "physics/PhysicsFactory.hpp"
 #include "scripting/ScriptingFactory.hpp"
 
@@ -35,13 +35,6 @@
 namespace hercules
 {
 
-float32 GameEngine::rotationX = 0.0f;
-float32 GameEngine::rotationY = 0.0f;
-int32 GameEngine::mousePosX = 0;
-int32 GameEngine::mousePosY = 0;
-
-uint32 GameEngine::COMPONENT_TYPE_GRAPHICS = 0;
-
 GameEngine::GameEngine(
 	std::unique_ptr<utilities::Properties> properties,
 	std::unique_ptr<hercules::logger::ILogger> logger
@@ -50,15 +43,19 @@ GameEngine::GameEngine(
 	properties_(std::move(properties)),
 	logger_(std::move(logger))
 {
-	running_ = true;
+	initialize();
+}
 
-	// set the initial state
-	state_ = GAME_STATE_STARTUP;
-	
-	bootstrapScriptName_ = std::string("bootstrap.as");
-	
-	inConsole_ = false;
-	
+GameEngine::GameEngine(
+	std::unique_ptr<utilities::Properties> properties,
+	std::unique_ptr<hercules::logger::ILogger> logger,
+	std::unique_ptr<graphics::IGraphicsEngineFactory> graphicsEngineFactory
+)
+	: 
+	properties_(std::move(properties)),
+	logger_(std::move(logger)),
+	graphicsEngineFactory_(std::move(graphicsEngineFactory))
+{
 	initialize();
 }
 
@@ -152,6 +149,15 @@ void GameEngine::destroy()
 
 void GameEngine::initialize()
 {
+	running_ = true;
+
+	// set the initial state
+	state_ = GAME_STATE_STARTUP;
+	
+	bootstrapScriptName_ = std::string("bootstrap.as");
+	
+	inConsole_ = false;
+	
 	initializeLoggingSubSystem();
 	
 	logger_->info( "Initializing..." );
@@ -214,7 +220,12 @@ void GameEngine::initializeGraphicsSubSystem()
 {
 	logger_->info( "initializing graphics." );
 	
-	graphicsEngine_ = graphics::GraphicsFactory::createGraphicsEngine( properties_.get(), fileSystem_.get(), logger_.get() );
+	if (!graphicsEngineFactory_)
+	{
+		graphicsEngineFactory_ = std::make_unique<graphics::GraphicsEngineFactory>();
+	}
+	
+	graphicsEngine_ = graphicsEngineFactory_->create( properties_.get(), fileSystem_.get(), logger_.get() );
 	
 	graphicsEngine_->addEventListener(this);
 }

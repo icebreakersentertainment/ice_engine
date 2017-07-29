@@ -18,6 +18,7 @@
 #include "ThreadPool.hpp"
 #include "OpenGlLoader.hpp"
 
+#include "graphics/IGraphicsEngineFactory.hpp"
 #include "graphics/IGraphicsEngine.hpp"
 #include "graphics/IEventListener.hpp"
 
@@ -32,6 +33,11 @@ public:
 	GameEngine(
 		std::unique_ptr<utilities::Properties> properties,
 		std::unique_ptr<hercules::logger::ILogger> logger
+	);
+	GameEngine(
+		std::unique_ptr<utilities::Properties> properties,
+		std::unique_ptr<hercules::logger::ILogger> logger,
+		std::unique_ptr<graphics::IGraphicsEngineFactory> graphicsEngineFactory
 	);
 	virtual ~GameEngine();
 
@@ -114,6 +120,9 @@ private:
 	
 	// Gui
 	//glr::gui::IGuiComponent* mainGui_;
+	
+	//Graphics
+	std::unique_ptr<graphics::IGraphicsEngineFactory> graphicsEngineFactory_;
 	std::unique_ptr< graphics::IGraphicsEngine > graphicsEngine_;
 	
 	std::unique_ptr< physics::IPhysicsEngine > physicsEngine_;
