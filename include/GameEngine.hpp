@@ -92,6 +92,15 @@ public:
 	virtual void removeMouseButtonEventListener(IMouseButtonEventListener* mouseButtonEventListener) override;
 	virtual void removeMouseWheelEventListener(IMouseWheelEventListener* mouseWheelEventListener) override;
 	
+	void addKeyboardEventListener(asIScriptObject* keyboardEventListener);
+	void addMouseMotionEventListener(asIScriptObject* mouseMotionEventListener);
+	void addMouseButtonEventListener(asIScriptObject* mouseButtonEventListener);
+	void addMouseWheelEventListener(asIScriptObject* mouseWheelEventListener);
+	void removeKeyboardEventListener(asIScriptObject* keyboardEventListener);
+	void removeMouseMotionEventListener(asIScriptObject* mouseMotionEventListener);
+	void removeMouseButtonEventListener(asIScriptObject* mouseButtonEventListener);
+	void removeMouseWheelEventListener(asIScriptObject* mouseWheelEventListener);
+	
 	// Implements the IEventListener interface
 	virtual bool processEvent(const graphics::Event& event) override;
 
@@ -178,15 +187,6 @@ private:
 	int32 getTimeForInput();
 	int32 getTimeForGuiUpdate();
 	int32 getTimeForScripting();
-	
-	void addKeyboardEventListener(asIScriptObject* keyboardEventListener);
-	void addMouseMotionEventListener(asIScriptObject* mouseMotionEventListener);
-	void addMouseButtonEventListener(asIScriptObject* mouseButtonEventListener);
-	void addMouseWheelEventListener(asIScriptObject* mouseWheelEventListener);
-	void removeKeyboardEventListener(asIScriptObject* keyboardEventListener);
-	void removeMouseMotionEventListener(asIScriptObject* mouseMotionEventListener);
-	void removeMouseButtonEventListener(asIScriptObject* mouseButtonEventListener);
-	void removeMouseWheelEventListener(asIScriptObject* mouseWheelEventListener);
 	
 	// Initialization stuff
 	void initializeLoggingSubSystem();
