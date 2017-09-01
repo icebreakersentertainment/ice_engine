@@ -5,6 +5,7 @@
 
 #include "IGameEngine.hpp"
 #include "utilities/Properties.hpp"
+#include "IPluginManager.hpp"
 #include "logger/ILogger.hpp"
 
 namespace hercules
@@ -16,6 +17,7 @@ public:
 
 	static std::unique_ptr<IGameEngine> createGameEngine(
 		std::unique_ptr<utilities::Properties> properties,
+		std::unique_ptr<hercules::IPluginManager> pluginManager,
 		std::unique_ptr<hercules::logger::ILogger> logger
 	);
 

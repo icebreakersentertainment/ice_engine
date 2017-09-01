@@ -3,6 +3,7 @@
 
 #include "Types.hpp"
 
+#include "graphics/Video.hpp"
 #include "graphics/Keyboard.hpp"
 #include "graphics/Mouse.hpp"
 
@@ -17,6 +18,8 @@ enum EventType
 	
 	QUIT,
 	
+	WINDOWEVENT,
+	
 	KEYDOWN,
 	KEYUP,
 	
@@ -29,6 +32,19 @@ enum EventType
 struct GenericEvent
 {
 	uint32 type;
+};
+
+struct WindowEvent
+{
+	uint32 type;
+	uint32 timestamp;
+	uint32 windowId;
+	WindowEventType eventType;
+	uint8 padding1;
+	uint8 padding2;
+	uint8 padding3;
+	sint32 data1;
+	sint32 data2;
 };
 
 struct KeyboardEvent
@@ -77,6 +93,7 @@ union Event
 {
 	uint32 type;
 	GenericEvent generic;
+	WindowEvent window;
 	KeyboardEvent key;
 	MouseMotionEvent motion;
 	MouseButtonEvent button;

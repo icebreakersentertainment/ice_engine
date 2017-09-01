@@ -37,10 +37,12 @@ namespace hercules
 
 GameEngine::GameEngine(
 	std::unique_ptr<utilities::Properties> properties,
+	std::unique_ptr<hercules::IPluginManager> pluginManager,
 	std::unique_ptr<hercules::logger::ILogger> logger
 )
 	: 
 	properties_(std::move(properties)),
+	pluginManager_(std::move(pluginManager)),
 	logger_(std::move(logger))
 {
 	initialize();
@@ -49,11 +51,13 @@ GameEngine::GameEngine(
 GameEngine::GameEngine(
 	std::unique_ptr<utilities::Properties> properties,
 	std::unique_ptr<hercules::logger::ILogger> logger,
+	std::unique_ptr<hercules::IPluginManager> pluginManager,
 	std::unique_ptr<graphics::IGraphicsEngineFactory> graphicsEngineFactory
 )
 	: 
 	properties_(std::move(properties)),
 	logger_(std::move(logger)),
+	pluginManager_(std::move(pluginManager)),
 	graphicsEngineFactory_(std::move(graphicsEngineFactory))
 {
 	initialize();
@@ -67,6 +71,11 @@ GameEngine::~GameEngine()
 GameState GameEngine::getState()
 {
 	return state_;
+}
+
+const EngineStatistics& GameEngine::getEngineStatistics() const
+{
+	return engineStatistics_;
 }
 
 void GameEngine::exit()
@@ -118,6 +127,11 @@ void GameEngine::tick(const float32 delta)
 		scene->tick(delta);
 	}
 	
+	for (auto& gui : guis_)
+	{
+		gui->tick(delta);
+	}
+	
 	/*
 	// Load any opengl assets (this needs work...)
 	if (openGlLoader_->getWorkQueueCount() != 0u)
@@ -125,22 +139,6 @@ void GameEngine::tick(const float32 delta)
 		openGlLoader_->tick();
 	}
 	*/
-	
-	// test animation
-	/*
-	transformations = std::vector< glm::mat4 >(100, glm::mat4(1.0));
-	auto animatedBoneNodes = animations[0].animatedBoneNodes;
-	auto duration = animations[0].duration;
-	auto ticksPerSecond = animations[0].ticksPerSecond;
-	runningTime += 0.01;
-	graphics::model::animateSkeleton(transformations, globalInverseTransformation, animatedBoneNodes, rootBoneNode, boneData[0], duration, ticksPerSecond, runningTime, 0, 0);
-	graphicsEngine_->update(skeletonHandle, &transformations[0], 100 * sizeof(glm::mat4));
-	*/
-
-	//transformations = std::vector< glm::mat4 >(100, glm::mat4(1.0));
-	//graphicsEngine_->update(skeletonHandle, &transformations[0], 100 * sizeof(glm::mat4));
-	
-	graphicsEngine_->render(delta);
 }
 
 void GameEngine::destroy()
@@ -449,6 +447,35 @@ graphics::IGraphicsEngine* GameEngine::getGraphicsEngine() const
 physics::IPhysicsEngine* GameEngine::getPhysicsEngine() const
 {
 	return physicsEngine_.get();
+}
+
+graphics::gui::IGui* GameEngine::createGui(const std::string& name)
+{
+	const auto& guiPlugins = pluginManager_->getGuiPlugins();
+	
+	auto guiPlugin = std::find_if(guiPlugins.begin(), guiPlugins.end(), [&name](const auto& guiPlugin) -> bool { return guiPlugin->getName() == name; });
+	
+	if (guiPlugin == guiPlugins.end())
+	{
+		throw std::runtime_error("Gui plugin with name '"  + name + "' does not exist.");
+	}
+	
+	auto gui = (*guiPlugin)->createFactory()->create(properties_.get(), fileSystem_.get(), logger_.get(), graphicsEngine_.get());
+	guis_.push_back(std::move(gui));
+	return guis_.back().get();
+}
+
+void GameEngine::destroyGui(const graphics::gui::IGui* gui)
+{
+	auto it = std::find_if(guis_.begin(), guis_.end(), [gui](const auto& guiUniquePtr) -> bool { return guiUniquePtr.get() == gui; });
+	if (it != guis_.end())
+	{
+		guis_.erase(it);
+	}
+	else
+	{
+		logger_->warn("Cannot destroy gui - gui was not found.");
+	}
 }
 
 image::Image* GameEngine::loadImage(const std::string& name, const std::string& filename)
@@ -829,6 +856,21 @@ bool GameEngine::processEvent(const graphics::Event& event)
 			return true;
 			break;
 		
+		case graphics::WINDOWEVENT:
+			std::cout << "Processing window event." << std::endl;
+			
+			switch(event.window.eventType)
+			{
+				case graphics::WINDOWEVENT_RESIZED:
+					graphicsEngine_->setViewport(event.window.data1, event.window.data2);
+					
+				default:
+					break;
+			}
+			
+			return true;
+			break;
+		
 		case graphics::KEYDOWN:
 		case graphics::KEYUP:
 			std::cout << "Processing key event." << std::endl;
@@ -844,6 +886,11 @@ bool GameEngine::processEvent(const graphics::Event& event)
 				uint8 returnValue = false;
 				
 				scriptingEngine_->execute(data.first, data.second, arguments, returnValue);
+			}
+			
+			for (auto& gui : guis_)
+			{
+				gui->processEvent(event.key);
 			}
 			
 			if (event.key.keySym.scancode == graphics::SCANCODE_ESCAPE)
@@ -868,6 +915,11 @@ bool GameEngine::processEvent(const graphics::Event& event)
 				scriptingEngine_->execute(data.first, data.second, arguments, returnValue);
 			}
 			
+			for (auto& gui : guis_)
+			{
+				gui->processEvent(event.motion);
+			}
+			
 			break;
 		
 		case graphics::MOUSEBUTTONDOWN:
@@ -884,6 +936,12 @@ bool GameEngine::processEvent(const graphics::Event& event)
 				
 				scriptingEngine_->execute(data.first, data.second, arguments, returnValue);
 			}
+			
+			for (auto& gui : guis_)
+			{
+				gui->processEvent(event.button);
+			}
+			
 			break;
 			
 		case graphics::MOUSEWHEEL:
@@ -899,6 +957,12 @@ bool GameEngine::processEvent(const graphics::Event& event)
 				
 				scriptingEngine_->execute(data.first, data.second, arguments, returnValue);
 			}
+			
+			for (auto& gui : guis_)
+			{
+				gui->processEvent(event.wheel);
+			}
+			
 			break;
 		
 		default:
@@ -976,7 +1040,7 @@ int32 GameEngine::getTimeForScripting()
 void GameEngine::run()
 {
 	setState(GAME_STATE_MAIN_MENU);
-
+	
 	int retVal = 0;
 
 	timeForPhysics_ = 0;
@@ -992,26 +1056,14 @@ void GameEngine::run()
 	logger_->info( "We have liftoff..." );
 	
 	// start our clock
-	auto begin = std::chrono::high_resolution_clock::now();
-	auto end = std::chrono::high_resolution_clock::now();
-	auto previousFpsTime = begin;
+	auto beginFpsTime = std::chrono::high_resolution_clock::now();
+	auto endFpsTime = std::chrono::high_resolution_clock::now();
+	auto previousFpsTime = beginFpsTime;
 	float32 tempFps = 0.0f;
 	float32 delta = 0.0f;
 	
-	/*
-	sf::Clock clock;
-
-	sf::Time currentTime = clock.getElapsedTime();
-	sf::Time previousTime = clock.getElapsedTime();
-	sf::Time previousFpsTime = clock.getElapsedTime();
-	sf::Time lastGuiUpdateTime = sf::Time();
-	sf::Time lastAngelscriptUpdateTime = sf::Time();
-	float32 tempFps = 0.0f;
-	float32 delta = 0.0f;
-	*/
 	setState(GAME_STATE_MAIN_MENU);
 	
-	int temp = 0;
 	//float32 runningTime;
 	//std::vector< glm::mat4 > transformations;
 	
@@ -1022,32 +1074,58 @@ void GameEngine::run()
 	
 	while ( running_ )
 	{
-		begin = std::chrono::high_resolution_clock::now();
-		delta = std::chrono::duration<float32>(begin - end).count();
+		beginFpsTime = std::chrono::high_resolution_clock::now();
+		delta = std::chrono::duration<float32>(beginFpsTime - endFpsTime).count();
 		
 		tempFps++;
 		
-		if (std::chrono::duration<float32>(begin - previousFpsTime).count() > 1.0f)
+		if (std::chrono::duration<float32>(beginFpsTime - previousFpsTime).count() > 1.0f)
 		{
-			previousFpsTime = begin;
+			previousFpsTime = beginFpsTime;
 			currentFps_ = tempFps;
-			std::cout << "currentFps_: " << currentFps_ << " numEntities: " << scenes_[0]->getNumEntities() << std::endl;
 			tempFps = 0;
 		}
 		
 		tick(delta);
+		
+		// test animation
+		/*
+		transformations = std::vector< glm::mat4 >(100, glm::mat4(1.0));
+		auto animatedBoneNodes = animations[0].animatedBoneNodes;
+		auto duration = animations[0].duration;
+		auto ticksPerSecond = animations[0].ticksPerSecond;
+		runningTime += 0.01;
+		graphics::model::animateSkeleton(transformations, globalInverseTransformation, animatedBoneNodes, rootBoneNode, boneData[0], duration, ticksPerSecond, runningTime, 0, 0);
+		graphicsEngine_->update(skeletonHandle, &transformations[0], 100 * sizeof(glm::mat4));
+		*/
 	
-		end = begin;
+		//transformations = std::vector< glm::mat4 >(100, glm::mat4(1.0));
+		//graphicsEngine_->update(skeletonHandle, &transformations[0], 100 * sizeof(glm::mat4));
+		
+		auto beginRenderTime = std::chrono::high_resolution_clock::now();
+		
+		graphicsEngine_->beginRender();
+		
+		graphicsEngine_->render();
+		
+		for (auto& gui : guis_)
+		{
+			gui->render();
+		}
+		
+		graphicsEngine_->endRender();
+		
+		auto endRenderTime = std::chrono::high_resolution_clock::now();
+		
+		engineStatistics_.renderTime = std::chrono::duration<float32>(endRenderTime - beginRenderTime).count();
+	
+		endFpsTime = beginFpsTime;
+		
+		engineStatistics_.fps = currentFps_;
 	}
 	
 	scriptingEngine_->unregisterAllScriptObjects();
 	scriptingEngine_->destroyAllScripts();
-
-	//igui_->release(mainGui_);
-	
-	//mainGui_ = nullptr;
-	
-	//igui_ = nullptr;
 
 	destroy();
 }

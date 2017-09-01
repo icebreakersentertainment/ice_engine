@@ -17,6 +17,7 @@
 #include "Camera.hpp"
 #include "ThreadPool.hpp"
 #include "OpenGlLoader.hpp"
+#include "IPluginManager.hpp"
 
 #include "graphics/IGraphicsEngineFactory.hpp"
 #include "graphics/IGraphicsEngine.hpp"
@@ -32,11 +33,13 @@ class GameEngine : public IGameEngine, public graphics::IEventListener
 public:
 	GameEngine(
 		std::unique_ptr<utilities::Properties> properties,
+		std::unique_ptr<hercules::IPluginManager> pluginManager,
 		std::unique_ptr<hercules::logger::ILogger> logger
 	);
 	GameEngine(
 		std::unique_ptr<utilities::Properties> properties,
 		std::unique_ptr<hercules::logger::ILogger> logger,
+		std::unique_ptr<hercules::IPluginManager> pluginManager,
 		std::unique_ptr<graphics::IGraphicsEngineFactory> graphicsEngineFactory
 	);
 	virtual ~GameEngine();
@@ -44,6 +47,8 @@ public:
 	virtual void run() override;
 
 	virtual GameState getState() override;
+	
+	virtual const EngineStatistics& getEngineStatistics() const override;
 	
 	virtual void setIGameInstance(asIScriptObject* obj) override;
 
@@ -54,6 +59,9 @@ public:
 	
 	virtual graphics::IGraphicsEngine* getGraphicsEngine() const override;
 	virtual physics::IPhysicsEngine* getPhysicsEngine() const override;
+	
+	virtual graphics::gui::IGui* createGui(const std::string& name) override;
+	virtual void destroyGui(const graphics::gui::IGui* gui) override;
 	
 	//virtual AudioSample* loadAudioSample(const std::string& name, const std::string& filename) override;
 	virtual image::Image* loadImage(const std::string& name, const std::string& filename) override;
@@ -124,9 +132,13 @@ private:
 	//Graphics
 	std::unique_ptr<graphics::IGraphicsEngineFactory> graphicsEngineFactory_;
 	std::unique_ptr< graphics::IGraphicsEngine > graphicsEngine_;
+	std::vector<std::unique_ptr< graphics::gui::IGui >> guis_;
+	
 	
 	std::unique_ptr< physics::IPhysicsEngine > physicsEngine_;
 	std::unique_ptr<scripting::IScriptingEngine> scriptingEngine_;
+	
+	std::unique_ptr<hercules::IPluginManager> pluginManager_;
 	
 	std::vector<IKeyboardEventListener*> keyboardEventListeners_;
 	std::vector<IMouseMotionEventListener*> mouseMotionEventListeners_;
@@ -150,6 +162,8 @@ private:
 	
 	bool running_;
 	GameState state_;
+	
+	EngineStatistics engineStatistics_;
 
 	void tick(const float32 delta);
 	void initialize();

@@ -8,6 +8,8 @@
 
 #include "Types.hpp"
 
+#include "SceneStatistics.hpp"
+
 #include "ModelHandle.hpp"
 
 #include "entities/Entity.hpp"
@@ -70,6 +72,8 @@ public:
 	virtual graphics::RenderableHandle createRenderable(const ModelHandle& modelHandle, const graphics::ShaderProgramHandle& shaderProgramHandle, const std::string& name = std::string()) = 0;
 	
 	virtual std::string getName() const = 0;
+	
+	virtual const SceneStatistics& getSceneStatistics() const = 0;
 	
 	virtual entities::Entity createEntity() = 0;
 	virtual void destroyEntity(const entities::Entity& entity) = 0;

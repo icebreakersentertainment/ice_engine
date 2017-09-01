@@ -78,6 +78,8 @@ public:
 	
 	virtual std::string getName() const override;
 	
+	virtual const SceneStatistics& getSceneStatistics() const override;
+	
 	virtual entities::Entity createEntity() override;
 	virtual void destroyEntity(const entities::Entity& entity) override;
 	virtual uint32 getNumEntities() const override;
@@ -112,6 +114,8 @@ private:
 	logger::ILogger* logger_;
 	IThreadPool* threadPool_;
 	IOpenGlLoader* openGlLoader_;
+	
+	SceneStatistics sceneStatistics_;
 	
 	// Entity system
 	entities::EntityComponentSystem entityComponentSystem_;

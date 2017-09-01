@@ -21,11 +21,11 @@ namespace custom
 {
 
 GraphicsEngine::GraphicsEngine(utilities::Properties* properties, fs::IFileSystem* fileSystem, logger::ILogger* logger)
+	:
+	properties_(properties),
+	fileSystem_(fileSystem),
+	logger_(logger)
 {
-	properties_ = properties;
-	fileSystem_ = fileSystem;
-	logger_ = logger;
-	
 	width_ = properties->getIntValue(std::string("window.width"), 1024);
 	height_ = properties->getIntValue(std::string("window.height"), 768);
 	
@@ -109,8 +109,13 @@ void GraphicsEngine::setViewport(const uint32 width, const uint32 height)
 	
 	glViewport(0, 0, width_, height_);
 }
+	
+glm::uvec2 GraphicsEngine::getViewport() const
+{
+	return glm::uvec2(width_, height_);
+}
 
-void GraphicsEngine::render(const float32 delta)
+void GraphicsEngine::beginRender()
 {
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 	glEnable(GL_DEPTH_TEST);
@@ -123,7 +128,10 @@ void GraphicsEngine::render(const float32 delta)
 	
 	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	
+}
+
+void GraphicsEngine::render()
+{
 	int modelMatrixLocation = 0;
 	int pvmMatrixLocation = 0;
 	int normalMatrixLocation = 0;
@@ -170,7 +178,10 @@ void GraphicsEngine::render(const float32 delta)
 		glDrawElements(r.vao.ebo.mode, r.vao.ebo.count, r.vao.ebo.type, 0);
 		glBindVertexArray(0);
 	}
-	
+}
+
+void GraphicsEngine::endRender()
+{
 	SDL_GL_SwapWindow( sdlWindow_ );
 }
 
@@ -897,6 +908,15 @@ Event GraphicsEngine::convertSdlEvent(const SDL_Event& event)
 			e.type = QUIT;
 			break;
 		
+		case SDL_WINDOWEVENT:
+			e.type = WINDOWEVENT;
+			e.window.eventType = convertSdlWindowEventId(event.window.event);
+			e.window.timestamp = event.window.timestamp;
+			e.window.windowId = event.window.windowID;
+			e.window.data1 = event.window.data1;
+			e.window.data2 = event.window.data2;
+			break;
+		
 		case SDL_KEYDOWN:
 			e.type = KEYDOWN;
 			e.key.keySym = convertSdlKeySym(event.key.keysym);
@@ -955,6 +975,50 @@ Event GraphicsEngine::convertSdlEvent(const SDL_Event& event)
 	}
 	
 	return e;
+}
+
+WindowEventType GraphicsEngine::convertSdlWindowEventId(const uint8 windowEventId)
+{
+	switch(windowEventId)
+	{
+		case SDL_WINDOWEVENT_NONE:
+			return WINDOWEVENT_NONE;
+	    case SDL_WINDOWEVENT_SHOWN:
+			return WINDOWEVENT_SHOWN;
+	    case SDL_WINDOWEVENT_HIDDEN:
+			return WINDOWEVENT_HIDDEN;
+	    case SDL_WINDOWEVENT_EXPOSED:
+			return WINDOWEVENT_EXPOSED;
+	    case SDL_WINDOWEVENT_MOVED:
+			return WINDOWEVENT_MOVED;
+	    case SDL_WINDOWEVENT_RESIZED:
+			return WINDOWEVENT_RESIZED;
+	    case SDL_WINDOWEVENT_SIZE_CHANGED:
+			return WINDOWEVENT_SIZE_CHANGED;
+	    case SDL_WINDOWEVENT_MINIMIZED:
+			return WINDOWEVENT_MINIMIZED;
+	    case SDL_WINDOWEVENT_MAXIMIZED:
+			return WINDOWEVENT_MAXIMIZED;
+	    case SDL_WINDOWEVENT_RESTORED:
+			return WINDOWEVENT_RESTORED;
+	    case SDL_WINDOWEVENT_ENTER:
+			return WINDOWEVENT_ENTER;
+	    case SDL_WINDOWEVENT_LEAVE:
+			return WINDOWEVENT_LEAVE;
+	    case SDL_WINDOWEVENT_FOCUS_GAINED:
+			return WINDOWEVENT_FOCUS_GAINED;
+	    case SDL_WINDOWEVENT_FOCUS_LOST:
+			return WINDOWEVENT_FOCUS_LOST;
+	    case SDL_WINDOWEVENT_CLOSE:
+			return WINDOWEVENT_CLOSE;
+	    case SDL_WINDOWEVENT_TAKE_FOCUS:
+			return WINDOWEVENT_TAKE_FOCUS;
+	    case SDL_WINDOWEVENT_HIT_TEST:
+			return WINDOWEVENT_HIT_TEST;
+	    
+		default:
+			return WINDOWEVENT_UNKNOWN;
+	}
 }
 
 KeySym GraphicsEngine::convertSdlKeySym(const SDL_Keysym& keySym)

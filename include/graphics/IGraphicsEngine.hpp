@@ -34,7 +34,11 @@ public:
 	;
 	
 	virtual void setViewport(const uint32 width, const uint32 height) = 0;
-	virtual void render(const float32 delta) = 0;
+	virtual glm::uvec2 getViewport() const = 0;
+	
+	virtual void beginRender() = 0;
+	virtual void render() = 0;
+	virtual void endRender() = 0;
 	
 	virtual CameraHandle createCamera(const glm::vec3& position, const glm::vec3& lookAt = glm::vec3(0.0f, 0.0f, 0.0f)) = 0;
 	

@@ -1,3 +1,5 @@
+#include <chrono>
+
 #include "Scene.hpp"
 
 #include "HerculesMotionChangeListener.hpp"
@@ -35,7 +37,13 @@ Scene::~Scene()
 
 void Scene::tick(const float32 elapsedTime)
 {
+	auto beginPhysicsTime = std::chrono::high_resolution_clock::now();
+		
 	physicsEngine_->tick(elapsedTime);
+	
+	auto endPhysicsTime = std::chrono::high_resolution_clock::now();
+	
+	sceneStatistics_.physicsTime = std::chrono::duration<float32>(endPhysicsTime - beginPhysicsTime).count();
 }
 
 physics::CollisionShapeHandle Scene::createStaticPlaneShape(const glm::vec3& planeNormal, const float32 planeConstant)
@@ -134,6 +142,11 @@ graphics::RenderableHandle Scene::createRenderable(const ModelHandle& modelHandl
 std::string Scene::getName() const
 {
 	return name_;
+}
+
+const SceneStatistics& Scene::getSceneStatistics() const
+{
+	return sceneStatistics_;
 }
 
 entities::Entity Scene::createEntity()

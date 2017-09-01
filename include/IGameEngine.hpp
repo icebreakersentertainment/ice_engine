@@ -9,6 +9,7 @@
 #include "Platform.hpp"
 #include "Types.hpp"
 
+#include "EngineStatistics.hpp"
 #include "ModelHandle.hpp"
 #include "IScene.hpp"
 #include "IKeyboardEventListener.hpp"
@@ -17,6 +18,7 @@
 #include "IMouseWheelEventListener.hpp"
 
 #include "graphics/IGraphicsEngine.hpp"
+#include "graphics/gui/IGui.hpp"
 
 #include "graphics/model/Model.hpp"
 
@@ -52,11 +54,16 @@ public:
 	
 	virtual GameState getState() = 0;
 	
+	virtual const EngineStatistics& getEngineStatistics() const = 0;
+	
 	virtual void setIGameInstance(asIScriptObject* obj) = 0;
 	virtual void setBootstrapScript(const std::string& filename) = 0;
 	
 	virtual graphics::IGraphicsEngine* getGraphicsEngine() const = 0;
 	virtual physics::IPhysicsEngine* getPhysicsEngine() const = 0;
+	
+	virtual graphics::gui::IGui* createGui(const std::string& name) = 0;
+	virtual void destroyGui(const graphics::gui::IGui* gui) = 0;
 	
 	//virtual AudioSample* loadAudioSample(const std::string& name, const std::string& filename) = 0;
 	virtual image::Image* loadImage(const std::string& name, const std::string& filename) = 0;

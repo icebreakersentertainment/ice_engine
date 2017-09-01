@@ -14,7 +14,8 @@
 #include "IMouseWheelEventListener.hpp"
 
 #include "graphics/IGraphicsEngine.hpp"
-#include "graphics/IGraphicsEngine.hpp"
+
+#include "graphics/gui/IGui.hpp"
 
 #include "graphics/model/Model.hpp"
 
@@ -570,7 +571,16 @@ void ScriptingEngineBindingDelegate::bind()
 	scriptingEngine_->registerEnumValue("MouseButtonCode", "BUTTON_RIGHT", graphics::BUTTON_RIGHT);
 	scriptingEngine_->registerEnumValue("MouseButtonCode", "BUTTON_X1", graphics::BUTTON_X1);
 	scriptingEngine_->registerEnumValue("MouseButtonCode", "BUTTON_X2", graphics::BUTTON_X2);
-		
+	
+	scriptingEngine_->registerEnum("WindowFlags");
+	scriptingEngine_->registerEnumValue("WindowFlags", "HERCULES_TITLE_BAR", graphics::gui::HERCULES_TITLE_BAR);
+	scriptingEngine_->registerEnumValue("WindowFlags", "HERCULES_SHOW_BORDERS", graphics::gui::HERCULES_SHOW_BORDERS);
+	scriptingEngine_->registerEnumValue("WindowFlags", "HERCULES_MOVABLE", graphics::gui::HERCULES_MOVABLE);
+	scriptingEngine_->registerEnumValue("WindowFlags", "HERCULES_NO_SCROLLBAR", graphics::gui::HERCULES_NO_SCROLLBAR);
+	scriptingEngine_->registerEnumValue("WindowFlags", "HERCULES_CLOSABLE", graphics::gui::HERCULES_CLOSABLE);
+	scriptingEngine_->registerEnumValue("WindowFlags", "HERCULES_MINIMIZABLE", graphics::gui::HERCULES_MINIMIZABLE);
+	scriptingEngine_->registerEnumValue("WindowFlags", "HERCULES_RESIZABLE", graphics::gui::HERCULES_RESIZABLE);
+	
 	// Types available in the scripting engine
 	scriptingEngine_->registerObjectType("Entity", sizeof(entities::Entity), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<entities::Entity>());
 	scriptingEngine_->registerClassMethod("Entity", "uint64 getId() const", asMETHODPR(entities::Entity, getId, () const, uint64));
@@ -670,11 +680,49 @@ void ScriptingEngineBindingDelegate::bind()
 	scriptingEngine_->registerObjectType("Image", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	//scriptingEngine_->registerObjectProperty("Model", "vectorMesh meshes", asOFFSET(graphics::model::Model, meshes));
 	
+	scriptingEngine_->registerObjectType("EngineStatistics", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	scriptingEngine_->registerObjectProperty("EngineStatistics", "float fps", asOFFSET(EngineStatistics, fps));
+	scriptingEngine_->registerObjectProperty("EngineStatistics", "float renderTime", asOFFSET(EngineStatistics, renderTime));
+	scriptingEngine_->registerObjectType("SceneStatistics", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	scriptingEngine_->registerObjectProperty("SceneStatistics", "float physicsTime", asOFFSET(SceneStatistics, physicsTime));
+	scriptingEngine_->registerObjectProperty("SceneStatistics", "float renderTime", asOFFSET(SceneStatistics, renderTime));
+	
 	// IGame
 	scriptingEngine_->registerInterface("IGame");
 	scriptingEngine_->registerInterfaceMethod("IGame", "void initialize()");
 	scriptingEngine_->registerInterfaceMethod("IGame", "void destroy()");
 	scriptingEngine_->registerInterfaceMethod("IGame", "void tick(const float)");
+	
+	// Gui
+	scriptingEngine_->registerObjectType("ILabel", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	scriptingEngine_->registerClassMethod(
+		"ILabel",
+		"void setLabel(const string& in)",
+		asMETHODPR(graphics::gui::ILabel, setLabel, (const std::string&), void)
+	);
+	scriptingEngine_->registerObjectType("IButton", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	scriptingEngine_->registerObjectType("IWindow", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	scriptingEngine_->registerClassMethod(
+		"IWindow",
+		"ILabel@ createLabel(const uint32, const uint32, const uint32, const uint32, const string = string())",
+		asMETHODPR(graphics::gui::IWindow, createLabel, (const uint32, const uint32, const uint32, const uint32, const std::string), graphics::gui::ILabel*)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IWindow",
+		"IButton@ createButton(const uint32, const uint32, const uint32, const uint32, const string = string())",
+		asMETHODPR(graphics::gui::IWindow, createButton, (const uint32, const uint32, const uint32, const uint32, const std::string), graphics::gui::IButton*)
+	);
+	scriptingEngine_->registerObjectType("IGui", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	scriptingEngine_->registerClassMethod(
+		"IGui",
+		"IWindow@ createWindow(const uint32, const uint32, const uint32, const uint32, const string = string())",
+		asMETHODPR(graphics::gui::IGui, createWindow, (const uint32, const uint32, const uint32, const uint32, const std::string), graphics::gui::IWindow*)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IGui",
+		"IWindow@ createWindow(const uint32, const uint32, const uint32, const uint32, const uint32, const string = string())",
+		asMETHODPR(graphics::gui::IGui, createWindow, (const uint32, const uint32, const uint32, const uint32, const uint32, const std::string), graphics::gui::IWindow*)
+	);
 	
 	// Listeners
 	scriptingEngine_->registerInterface("IKeyboardEventListener");
@@ -689,6 +737,11 @@ void ScriptingEngineBindingDelegate::bind()
 	// IScene
 	scriptingEngine_->registerObjectType("IScene", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	scriptingEngine_->registerClassMethod("IScene", "string getName() const", asMETHODPR(IScene, getName, () const, std::string));
+	scriptingEngine_->registerClassMethod(
+		"IScene",
+		"const SceneStatistics@ getSceneStatistics()",
+		asMETHODPR(IScene, getSceneStatistics, () const, const SceneStatistics&)
+	);
 	scriptingEngine_->registerClassMethod(
 		"IScene",
 		"CollisionShapeHandle createStaticPlaneShape(const vec3& in, const float)",
@@ -896,6 +949,12 @@ void ScriptingEngineBindingDelegate::bind()
 	
 	// IGameEngine functions available in the scripting engine
 	scriptingEngine_->registerGlobalFunction(
+		"const EngineStatistics@ getEngineStatistics()",
+		asMETHODPR(IGameEngine, getEngineStatistics, () const, const EngineStatistics&),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
 		"void setIGameInstance(IGame@)",
 		asMETHODPR(IGameEngine, setIGameInstance, (asIScriptObject* obj), void),
 		asCALL_THISCALL_ASGLOBAL,
@@ -910,6 +969,18 @@ void ScriptingEngineBindingDelegate::bind()
 	scriptingEngine_->registerGlobalFunction(
 		"IPhysicsEngine@ getPhysicsEngine()",
 		asMETHODPR(IGameEngine, getPhysicsEngine, () const, physics::IPhysicsEngine*),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"IGui@ createGui(const string& in)",
+		asMETHODPR(IGameEngine, createGui, (const std::string&), graphics::gui::IGui*),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"void destroyGui(const IGui@)",
+		asMETHODPR(IGameEngine, destroyGui, (const graphics::gui::IGui*), void),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);

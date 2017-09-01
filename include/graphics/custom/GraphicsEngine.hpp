@@ -100,7 +100,11 @@ public:
 	virtual ~GraphicsEngine();
 	
 	virtual void setViewport(const uint32 width, const uint32 height) override;
-	virtual void render(const float32 delta) override;
+	virtual glm::uvec2 getViewport() const override;
+	
+	virtual void beginRender() override;
+	virtual void render() override;
+	virtual void endRender() override;
 	
 	virtual CameraHandle createCamera(const glm::vec3& position, const glm::vec3& lookAt = glm::vec3(0.0f, 0.0f, 0.0f)) override;
 	
@@ -221,6 +225,7 @@ private:
 	
 	void handleEvent(const Event& event);
 	static Event convertSdlEvent(const SDL_Event& event);
+	static WindowEventType convertSdlWindowEventId(const uint8 windowEventId);
 	static KeySym convertSdlKeySym(const SDL_Keysym& keySym);
 	static ScanCode convertSdlScancode(const SDL_Scancode& sdlScancode);
 	static KeyMod convertSdlKeymod(const uint16 sdlKeymod);
