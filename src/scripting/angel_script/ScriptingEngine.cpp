@@ -1550,27 +1550,12 @@ void ScriptingEngine::registerEnumValue(const std::string& type, const std::stri
 	}
 }
 
-ScriptHandle ScriptingEngine::loadScript(const std::string& filename, const std::string& name)
+ScriptHandle ScriptingEngine::loadScript(const std::string& source, const std::string& name)
 {
 	CScriptBuilder builder = CScriptBuilder();
 	builder.StartNewModule(engine_, name.c_str());
 	
-	// error check
-	if ( filename.length() > 150 )
-	{
-		throw Exception("ScriptEngine: Script filename too long.");
-	}
-	
-	if (!fileSystem_->exists(filename))
-	{
-		throw std::runtime_error("Script file '" + filename + "' does not exist.");
-	}
-
-	// TODO: maybe make this a constant or something..?  Or make the directory an instance variable?
-	//std::string file = fs::current_path().string() + std::string("/scripts/") + script;
-	std::string file = std::string("../data/scripts/") + filename;
-	
-	int32 r = builder.AddSectionFromFile(file.c_str());
+	int32 r = builder.AddSectionFromMemory(name.c_str(), source.c_str());
 	assertNoAngelscriptError(r);
 	
 	r = builder.BuildModule();

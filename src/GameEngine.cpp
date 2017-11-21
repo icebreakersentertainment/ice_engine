@@ -1067,7 +1067,18 @@ void GameEngine::run()
 	//float32 runningTime;
 	//std::vector< glm::mat4 > transformations;
 	
-	scriptHandle = scriptingEngine_->loadScript(bootstrapScriptName_);
+	{
+		auto filename = std::string("../data/scripts/") + bootstrapScriptName_;
+		if (!fileSystem_->exists(filename))
+		{
+			throw std::runtime_error("Script file '" + filename + "' does not exist.");
+		}
+		
+		auto source = fileSystem_->readAll(filename, fs::FileFlags::READ);
+		
+		scriptHandle = scriptingEngine_->loadScript(source);
+	}
+	
 	scriptingEngine_->execute(scriptHandle, "void main()");
 	
 	scriptingEngine_->execute(scriptObjectHandle, "void initialize()");

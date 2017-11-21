@@ -123,6 +123,7 @@ dependencies['sdl'] = {'name': 'SDL', 'version': '2.0.5', 'extension': extension
 dependencies['sqlite'] = {'name': 'SQLite', 'version': '3.16.2', 'extension': extension}
 dependencies['ctpl'] = {'name': 'CTPL', 'version': 'v.0.0.2', 'extension': extension}
 dependencies['freeimage'] = {'name': 'Free Image', 'version': '3.17.0', 'extension': extension}
+dependencies['celero'] = {'name': 'Celero', 'version': 'v2.1.0', 'extension': extension}
 
 def getFilename(name, version):
 	return '{0}_{1}_{2}_{3}{4}.{5}'.format(

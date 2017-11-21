@@ -12,22 +12,21 @@ else()
   )
 endif()
 
-project(hercules_tests)
+project(hercules_benchmarks)
 
-find_library(BOOST_UNIT_TEST_FRAMEWORK_LIBRARY NAMES
-  ${BOOST_FILENAME_PREFIX}boost_unit_test_framework${BOOST_FILENAME_POSTFIX}.so.${BOOST_VERSION}
-  ${BOOST_FILENAME_PREFIX}boost_unit_test_framework${BOOST_FILENAME_POSTFIX}
-  PATHS ../deps/boost/lib
-)
+option(HERCULES_BENCHMARKS_EXPORT_TO_CSV "HERCULES_BENCHMARKS_EXPORT_TO_CSV" FALSE)
+
+list(APPEND PROJECT_LINK_LIBRARY_DIRECTORIES ../deps/celero/lib)
+
+find_library(CELERO_LIBRARY NAMES celero PATHS ${PROJECT_LINK_LIBRARY_DIRECTORIES})
 
 include_directories(../include)
-include_directories(../deps/boost/include)
+include_directories(../deps/celero/include)
 
 if(WIN32)
   configure_file(../deps/freeimage/lib/FreeImage.dll ./${CMAKE_BUILD_TYPE}/ COPYONLY)
   configure_file(../deps/glew/lib/glew32.dll ./${CMAKE_BUILD_TYPE}/ COPYONLY)
   configure_file(../deps/assimp/lib/assimp.dll ./${CMAKE_BUILD_TYPE}/ COPYONLY)
-  file(COPY ../tests/fixtures DESTINATION ./)
 else()
   configure_file(${FREEIMAGE_LIBRARY} ./libfreeimage.so.3 COPYONLY)
   configure_file(${BOOST_SYSTEM_LIBRARY} ./ COPYONLY)
@@ -40,21 +39,19 @@ else()
   configure_file(${BOOST_LOG_SETUP_LIBRARY} ./ COPYONLY)
   configure_file(${BOOST_DATE_TIME_LIBRARY} ./ COPYONLY)
   configure_file(${BOOST_REGEX_LIBRARY} ./ COPYONLY)
-  configure_file(${BOOST_UNIT_TEST_FRAMEWORK_LIBRARY} ./ COPYONLY)
+  configure_file(${CELERO_LIBRARY} ./ COPYONLY)
   configure_file(${ASSIMP_LIBRARY} ./ COPYONLY)
   configure_file(${GLEW_LIBRARY} ./ COPYONLY)
   configure_file(${ENTITYX_LIBRARY} ./ COPYONLY)
-  file(COPY ../tests/fixtures DESTINATION ./)
 endif()
 
-macro(create_test TEST_NAME EXECUTABLE_NAME SOURCE)
+macro(create_benchmark BENCHMARK_NAME EXECUTABLE_NAME SOURCE)
   add_executable(${EXECUTABLE_NAME} "src/${SOURCE}")
   add_dependencies(${EXECUTABLE_NAME} hercules)
 
   if(MSVC)
     target_link_libraries(${EXECUTABLE_NAME} ../${CMAKE_BUILD_TYPE}/hercules)
   else()
-    add_definitions("-DBOOST_TEST_DYN_LINK")
     target_link_libraries(${EXECUTABLE_NAME} hercules)
   endif()
   
@@ -68,7 +65,7 @@ macro(create_test TEST_NAME EXECUTABLE_NAME SOURCE)
   target_link_libraries(${EXECUTABLE_NAME} ${BOOST_LOG_LIBRARY} )
   target_link_libraries(${EXECUTABLE_NAME} ${BOOST_LOG_SETUP_LIBRARY} )
   target_link_libraries(${EXECUTABLE_NAME} ${BOOST_DATE_TIME_LIBRARY} )
-  target_link_libraries(${EXECUTABLE_NAME} ${BOOST_UNIT_TEST_FRAMEWORK_LIBRARY} )
+  target_link_libraries(${EXECUTABLE_NAME} ${CELERO_LIBRARY} )
   target_link_libraries(${EXECUTABLE_NAME} ${BOOST_REGEX_LIBRARY} )
   target_link_libraries(${EXECUTABLE_NAME} ${ASSIMP_LIBRARY} )
   target_link_libraries(${EXECUTABLE_NAME} ${SDL_LIBRARY} )
@@ -94,9 +91,13 @@ macro(create_test TEST_NAME EXECUTABLE_NAME SOURCE)
     target_link_libraries(${EXECUTABLE_NAME} Psapi)
   endif()
   
-  add_test(${TEST_NAME} ${EXECUTABLE_NAME})
+  if(HERCULES_BENCHMARKS_EXPORT_TO_CSV)
+    add_test(${BENCHMARK_NAME} ${EXECUTABLE_NAME} -t ${BENCHMARK_NAME}.csv)
+  else()
+    add_test(${BENCHMARK_NAME} ${EXECUTABLE_NAME})
+  endif()
+  
+  
 endmacro()
 
-create_test(FileSystemTests FileSystemTests FileSystem.cpp)
-create_test(ScriptingEngineTests ScriptingEngineTests ScriptingEngine.cpp)
-create_test(ParameterTests ParameterTests Parameter.cpp)
+create_benchmark(ScriptingEngineBenchmarks ScriptingEngineBenchmarks ScriptingEngine.cpp)

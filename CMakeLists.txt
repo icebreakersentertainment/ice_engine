@@ -37,6 +37,7 @@ set(HERCULES_COMPILER_FLAGS "${HERCULES_COMPILER_FLAGS} -DAS_USE_STLNAMES")
 # Custom options
 option(HERCULES_BUILD_AS_LIBRARY "HERCULES_BUILD_AS_LIBRARY" FALSE)
 option(HERCULES_BUILD_TESTS "HERCULES_BUILD_TESTS" FALSE)
+option(HERCULES_BUILD_BENCHMARKS "HERCULES_BUILD_BENCHMARKS" FALSE)
 option(HERCULES_ENABLE_DEBUG_LOGGING "HERCULES_ENABLE_DEBUG_LOGGING" FALSE)
 
 if(CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_BUILD_TYPE MATCHES RelWithDebInfo OR HERCULES_ENABLE_DEBUG_LOGGING)
@@ -236,6 +237,12 @@ if (HERCULES_BUILD_TESTS)
   enable_testing()
   # Test project dependency
   add_subdirectory(tests)
+endif()
+
+if (HERCULES_BUILD_BENCHMARKS)
+  enable_testing()
+  # Test project dependency
+  add_subdirectory(benchmarks)
 endif()
 
 # Disable Position Independent Executable - this is starting to be enabled by default,
