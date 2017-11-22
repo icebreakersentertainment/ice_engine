@@ -18,7 +18,7 @@ option(HERCULES_BENCHMARKS_EXPORT_TO_CSV "HERCULES_BENCHMARKS_EXPORT_TO_CSV" FAL
 
 list(APPEND PROJECT_LINK_LIBRARY_DIRECTORIES ../deps/celero/lib)
 
-find_library(CELERO_LIBRARY NAMES celero PATHS ${PROJECT_LINK_LIBRARY_DIRECTORIES})
+find_library(CELERO_LIBRARY NAMES celero_static celero PATHS ${PROJECT_LINK_LIBRARY_DIRECTORIES})
 
 include_directories(../include)
 include_directories(../deps/celero/include)
@@ -39,11 +39,13 @@ else()
   configure_file(${BOOST_LOG_SETUP_LIBRARY} ./ COPYONLY)
   configure_file(${BOOST_DATE_TIME_LIBRARY} ./ COPYONLY)
   configure_file(${BOOST_REGEX_LIBRARY} ./ COPYONLY)
-  configure_file(${CELERO_LIBRARY} ./ COPYONLY)
   configure_file(${ASSIMP_LIBRARY} ./ COPYONLY)
   configure_file(${GLEW_LIBRARY} ./ COPYONLY)
   configure_file(${ENTITYX_LIBRARY} ./ COPYONLY)
 endif()
+
+# Flags
+add_definitions(-DCELERO_STATIC)
 
 macro(create_benchmark BENCHMARK_NAME EXECUTABLE_NAME SOURCE)
   add_executable(${EXECUTABLE_NAME} "src/${SOURCE}")
@@ -89,6 +91,7 @@ macro(create_benchmark BENCHMARK_NAME EXECUTABLE_NAME SOURCE)
     target_link_libraries(${EXECUTABLE_NAME} imm32)
     target_link_libraries(${EXECUTABLE_NAME} version)
     target_link_libraries(${EXECUTABLE_NAME} Psapi)
+    target_link_libraries(${EXECUTABLE_NAME} PowrProf)
   endif()
   
   if(HERCULES_BENCHMARKS_EXPORT_TO_CSV)
