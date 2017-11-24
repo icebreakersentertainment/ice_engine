@@ -32,15 +32,8 @@ template <typename T, typename HandleType>
 class HandleVector
 {
 public:
-	HandleVector()
-	{
-		currentVersion_ = 1;
-	}
+	HandleVector() = default;
 
-	virtual ~HandleVector()
-	{
-	}
-	
 	template <typename ... Args>
 	HandleType create(Args ... args)
 	{
@@ -194,7 +187,7 @@ private:
 	std::vector<HandleData<T, HandleType>> handleData_;
 	std::vector<uint32> freeList_;
 	
-	uint32 currentVersion_;
+	uint32 currentVersion_ = 1;
 	
 	bool valid(const uint32 index) const
 	{
@@ -269,7 +262,7 @@ public:
 	
 private:
 	HandleVector<T, HandleType>& handleManager_;
-	size_t index_;
+	size_t index_ = 0;
 };
 
 template <typename T, typename HandleType>
@@ -331,7 +324,7 @@ public:
 	
 private:
 	const HandleVector<T, HandleType>& handleManager_;
-	size_t index_;
+	size_t index_ = 0;
 };
 
 }

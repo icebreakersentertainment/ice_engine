@@ -114,6 +114,7 @@ dependencies['boost'] = {'name': 'Boost', 'version': '1.63.0', 'extension': exte
 dependencies['glm'] = {'name': 'GLM', 'version': '0.9.8.3', 'extension': extension}
 dependencies['angelscript'] = {'name': 'Angelscript', 'version': '2.31.2', 'extension': extension}
 dependencies['assimp'] = {'name': 'Asset Importer', 'version': 'v3.1', 'extension': extension}
+dependencies['recastnavigation'] = {'name': 'Recast Navigation', 'version': '1.5.1', 'extension': extension}
 #dependencies['bgfx'] = {'name': 'BGFX', 'version': 'master', 'extension': extension}
 #dependencies['bx'] = {'name': 'BX', 'version': 'master', 'extension': extension}
 dependencies['bullet'] = {'name': 'Bullet', 'version': '2.85.1', 'extension': extension}

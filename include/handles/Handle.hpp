@@ -8,14 +8,13 @@
 namespace hercules
 {
 namespace handles
-{
 
+{
+template <typename T>
 class Handle
 {
 public:
-	Handle() : id_(0)
-	{
-	}
+	Handle() = default;
 
 	explicit Handle(uint64 id) : id_(id)
 	{
@@ -25,10 +24,6 @@ public:
 	{
 	}
 
-	virtual ~Handle()
-	{
-	}
-	
 	uint64 id() const
 	{
 		return id_;
@@ -49,46 +44,60 @@ public:
 		id_ = uint64(uint64(index()) | uint64(0) << 32UL);
 	}
 	
-	bool operator==(const Handle& other) const
+	bool valid() const
+	{
+		return (id_ != INVALID);
+	}
+	
+	explicit operator bool() const
+	{
+		return valid();
+	}
+	
+	bool operator==(const T& other) const
 	{
 		return id_ == other.id_;
 	}
 
-	bool operator!=(const Handle& other) const
+	bool operator!=(const T& other) const
 	{
 		return id_ != other.id_;
 	}
 
-	bool operator<(const Handle& other) const
+	bool operator<(const T& other) const
 	{
 		return id_ < other.id_;
 	}
 
-	bool operator>(const Handle& other) const
+	bool operator>(const T& other) const
 	{
 		return other.id_ < id_;
 	}
 
-	bool operator<=(const Handle& other) const
+	bool operator<=(const T& other) const
 	{
 		return !(id_ > other.id_);
 	}
 
-	bool operator>=(const Handle& other) const
+	bool operator>=(const T& other) const
 	{
 		return !(id_ < other.id_);
 	}
 
-	friend std::ostream& operator<<(std::ostream& os, const Handle& other)
+	friend std::ostream& operator<<(std::ostream& os, const T& other)
 	{
 		os << "Id: " << other.id_ << ", Index: " << other.index() << ", Version: " << other.version();
 		return os;
 	}
 
-	static const Handle INVALID;
+	static constexpr uint64 INVALID = 0;
+
+protected:
+	~Handle() = default;
+
 private:
 	// Index stored in the hi 32bits, and version stored in the lo 32bits.
-	uint64 id_;
+	uint64 id_ = INVALID;
 };
 
 }

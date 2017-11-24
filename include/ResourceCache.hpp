@@ -30,6 +30,7 @@ public:
 private:
 	std::map<std::string, std::unique_ptr<graphics::model::Model>> models_;
 	std::map<std::string, std::unique_ptr<image::Image>> images_;
+	std::unique_ptr<image::Image> imagesTest_;
 	
 	mutable std::recursive_mutex imageMutex_;
 	mutable std::recursive_mutex modelMutex_;

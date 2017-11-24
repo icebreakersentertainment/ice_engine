@@ -8,12 +8,10 @@ namespace hercules
 namespace scripting
 {
 
-class ScriptHandle : public handles::Handle
+class ScriptHandle : public handles::Handle<ScriptHandle>
 {
 public:
-	using handles::Handle::Handle;
-	
-	static const ScriptHandle INVALID;
+	using handles::Handle<ScriptHandle>::Handle;
 };
 
 }

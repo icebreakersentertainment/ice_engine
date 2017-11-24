@@ -9,6 +9,7 @@
 #include "IScene.hpp"
 
 #include "physics/IPhysicsEngine.hpp"
+#include "pathfinding/IPathfindingEngine.hpp"
 #include "entities/EntityComponentSystem.hpp"
 
 #include "IGameEngine.hpp"
@@ -30,6 +31,8 @@ public:
 		IGameEngine* gameEngine,
 		graphics::IGraphicsEngine* graphicsEngine,
 		physics::IPhysicsEngine* physicsEngine,
+		pathfinding::IPathfindingEngine* pathfindingEngine,
+		scripting::IScriptingEngine* scriptingEngine,
 		utilities::Properties* properties,
 		fs::IFileSystem* fileSystem,
 		logger::ILogger* logger,
@@ -38,21 +41,24 @@ public:
 	);
 	virtual ~Scene();
 
-	virtual void tick(const float32 elapsedTime) override;
+	virtual void tick(const float32 delta) override;
+	virtual void render() override;
+	
+	virtual void setISceneThingyInstance(scripting::ScriptObjectHandle scriptObjectHandle) override;
 	
 	virtual physics::CollisionShapeHandle createStaticPlaneShape(const glm::vec3& planeNormal, const float32 planeConstant) override;
 	virtual physics::CollisionShapeHandle createStaticBoxShape(const glm::vec3& dimensions) override;
 	virtual void destroyStaticShape(const physics::CollisionShapeHandle& collisionShapeHandle) override;
 	virtual void destroyAllStaticShapes() override;
 	
-	virtual physics::CollisionBodyHandle createDynamicRigidBody(const physics::CollisionShapeHandle& collisionShapeHandle) override;
-	virtual physics::CollisionBodyHandle createDynamicRigidBody(
+	virtual physics::RigidBodyObjectHandle createDynamicRigidBodyObject(const physics::CollisionShapeHandle& collisionShapeHandle) override;
+	virtual physics::RigidBodyObjectHandle createDynamicRigidBodyObject(
 		const physics::CollisionShapeHandle& collisionShapeHandle,
 		const float32 mass,
 		const float32 friction,
 		const float32 restitution
 	) override;
-	virtual physics::CollisionBodyHandle createDynamicRigidBody(
+	virtual physics::RigidBodyObjectHandle createDynamicRigidBodyObject(
 		const physics::CollisionShapeHandle& collisionShapeHandle,
 		const glm::vec3& position,
 		const glm::quat& orientation,
@@ -60,21 +66,30 @@ public:
 		const float32 friction = 1.0f,
 		const float32 restitution = 1.0f
 	) override;
-	virtual physics::CollisionBodyHandle createStaticRigidBody(const physics::CollisionShapeHandle& collisionShapeHandle) override;
-	virtual physics::CollisionBodyHandle createStaticRigidBody(
+	virtual physics::RigidBodyObjectHandle createStaticRigidBodyObject(const physics::CollisionShapeHandle& collisionShapeHandle) override;
+	virtual physics::RigidBodyObjectHandle createStaticRigidBodyObject(
 		const physics::CollisionShapeHandle& collisionShapeHandle,
 		const float32 friction,
 		const float32 restitution
 	) override;
-	virtual physics::CollisionBodyHandle createStaticRigidBody(
+	virtual physics::RigidBodyObjectHandle createStaticRigidBodyObject(
 		const physics::CollisionShapeHandle& collisionShapeHandle,
 		const glm::vec3& position,
 		const glm::quat& orientation,
 		const float32 friction = 1.0f,
 		const float32 restitution = 1.0f
 	) override;
+	virtual physics::GhostObjectHandle createGhostObject(
+		const physics::CollisionShapeHandle& collisionShapeHandle
+	) override;
+	virtual physics::GhostObjectHandle createGhostObject(
+		const physics::CollisionShapeHandle& collisionShapeHandle,
+		const glm::vec3& position,
+		const glm::quat& orientation
+	) override;
 	
 	virtual graphics::RenderableHandle createRenderable(const ModelHandle& modelHandle, const graphics::ShaderProgramHandle& shaderProgramHandle, const std::string& name = std::string()) override;
+	virtual graphics::RenderableHandle createRenderable(const graphics::MeshHandle& meshHandle, const graphics::TextureHandle& textureHandle, const graphics::ShaderProgramHandle& shaderProgramHandle, const std::string& name = std::string()) override;
 	
 	virtual std::string getName() const override;
 	
@@ -84,8 +99,11 @@ public:
 	virtual void destroyEntity(const entities::Entity& entity) override;
 	virtual uint32 getNumEntities() const override;
 	
+	virtual Raycast raycast(const ray::Ray& ray) override;
+	
 	virtual void assign(const entities::Entity& entity, const entities::GraphicsComponent& component) override;
-	virtual void assign(const entities::Entity& entity, const entities::PhysicsComponent& component) override;
+	virtual void assign(const entities::Entity& entity, const entities::RigidBodyObjectComponent& component) override;
+	virtual void assign(const entities::Entity& entity, const entities::GhostObjectComponent& component) override;
 	virtual void assign(const entities::Entity& entity, const entities::PositionOrientationComponent& component) override;
 	
 	virtual void rotate(const entities::Entity& entity, const float32 degrees, const glm::vec3& axis, const graphics::TransformSpace& relativeTo = graphics::TransformSpace::TS_LOCAL) override;
@@ -109,11 +127,20 @@ private:
 	IGameEngine* gameEngine_;
 	graphics::IGraphicsEngine* graphicsEngine_;
 	physics::IPhysicsEngine* physicsEngine_;
+	pathfinding::IPathfindingEngine* pathfindingEngine_;
+	scripting::IScriptingEngine* scriptingEngine_;
 	utilities::Properties* properties_;
 	fs::IFileSystem* fileSystem_;
 	logger::ILogger* logger_;
 	IThreadPool* threadPool_;
 	IOpenGlLoader* openGlLoader_;
+	
+	graphics::RenderSceneHandle renderSceneHandle_;
+	physics::PhysicsSceneHandle physicsSceneHandle_;
+	pathfinding::PathfindingSceneHandle pathfindingSceneHandle_;
+	scripting::ExecutionContextHandle executionContextHandle_;
+	
+	scripting::ScriptObjectHandle scriptObjectHandle_;
 	
 	SceneStatistics sceneStatistics_;
 	
@@ -121,8 +148,16 @@ private:
 	entities::EntityComponentSystem entityComponentSystem_;
 	std::vector<entities::Entity> entities_;
 	
+	void initialize();
+	void destroy();
+	
 	void addMotionChangeListener(const entities::Entity& entity);
 	void removeMotionChangeListener(const entities::Entity& entity);
+	
+	void addUserData(const entities::Entity& entity, const entities::RigidBodyObjectComponent& rigidBodyObjectComponent);
+	void addUserData(const entities::Entity& entity, const entities::GhostObjectComponent& ghostObjectComponent);
+	void removeUserData(const entities::Entity& entity, const entities::RigidBodyObjectComponent& rigidBodyObjectComponent);
+	void removeUserData(const entities::Entity& entity, const entities::GhostObjectComponent& ghostObjectComponent);
 };
 
 }

@@ -1,17 +1,17 @@
 #ifndef SCRIPT_OBJECT_HANDLE_H_
 #define SCRIPT_OBJECT_HANDLE_H_
 
-#include "handles/Handle.hpp"
+#include "handles/PointerHandle.hpp"
 
 namespace hercules
 {
 namespace scripting
 {
 
-class ScriptObjectHandle : public handles::Handle
+class ScriptObjectHandle : public handles::PointerHandle
 {
 public:
-	using handles::Handle::Handle;
+	using handles::PointerHandle::PointerHandle;
 	
 	static const ScriptObjectHandle INVALID;
 };

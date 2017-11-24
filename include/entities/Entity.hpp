@@ -1,16 +1,16 @@
 #ifndef ENTITY_H_
 #define ENTITY_H_
 
-#include "entities/ResourceHandle.hpp"
+#include "handles/Handle.hpp"
 
 namespace hercules
 {
 namespace entities
 {
 
-class Entity : public ResourceHandle
+class Entity : public handles::Handle<Entity>
 {
-	using ResourceHandle::ResourceHandle;
+	using handles::Handle<Entity>::Handle;
 };
 
 }

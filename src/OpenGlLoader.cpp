@@ -1,7 +1,4 @@
 #include "OpenGlLoader.hpp"
-#include <thread>
-
-//#include <GL/glx.h>
 
 namespace hercules
 {
@@ -19,11 +16,28 @@ void OpenGlLoader::initialize()
 {
 }
 
-void OpenGlLoader::postWork(const std::function<void()>& work)
+std::future<void> OpenGlLoader::postWork(const std::function<void()>& work)
 {
-	enqueuedWorkMutex_.lock();
-	enqueuedWork_.emplace_back( std::move(work) );
-	enqueuedWorkMutex_.unlock();
+	auto task = std::make_shared<std::packaged_task<void()>>([work = work]() {
+		work();
+	});
+	
+	std::lock_guard<std::mutex> lockGuard(enqueuedWorkMutex_);
+	enqueuedWork_.push_back(task);
+	
+	return task->get_future();
+}
+
+std::future<void> OpenGlLoader::postWork(std::function<void()>&& work)
+{
+	auto task = std::make_shared<std::packaged_task<void()>>([work = std::move(work)]() {
+		work();
+	});
+	
+	std::lock_guard<std::mutex> lockGuard(enqueuedWorkMutex_);
+	enqueuedWork_.push_back(task);
+	
+	return task->get_future();
 }
 
 void OpenGlLoader::waitAll()
@@ -31,13 +45,12 @@ void OpenGlLoader::waitAll()
 	// TODO: implement
 }
 
-unsigned int OpenGlLoader::getWorkQueueCount() const
+uint32 OpenGlLoader::getWorkQueueCount() const
 {
-	auto size = 0;
+	uint size = 0;
 	
-	enqueuedWorkMutex_.lock();
+	std::lock_guard<std::mutex> lockGuard(enqueuedWorkMutex_);
 	size = enqueuedWork_.size();
-	enqueuedWorkMutex_.unlock();
 	
 	return size;
 }
@@ -54,22 +67,13 @@ void OpenGlLoader::unblock()
 
 void OpenGlLoader::tick()
 {
-	bool doWork = false;
-	
-	enqueuedWorkMutex_.lock();
+	std::lock_guard<std::mutex> lockGuard(enqueuedWorkMutex_);
 	if (enqueuedWork_.size() > 0)
-		doWork = true;
-	enqueuedWorkMutex_.unlock();
-	
-	if (doWork)
 	{
-		std::function<void()> work;
-		enqueuedWorkMutex_.lock();
-		work = std::move(enqueuedWork_.front());
+		auto work = enqueuedWork_.front();
 		enqueuedWork_.pop_front();
-		enqueuedWorkMutex_.unlock();
 		
-		work();
+		(*work)();
 	}
 }
 

@@ -3,6 +3,7 @@
 
 #include <mutex>
 #include <deque>
+#include <memory>
 
 #include "IOpenGlLoader.hpp"
 
@@ -15,10 +16,11 @@ public:
 	OpenGlLoader();
 	virtual ~OpenGlLoader();
 	
-	virtual void postWork(const std::function<void()>& work) override;
+	virtual std::future<void> postWork(const std::function<void()>& work) override;
+	virtual std::future<void> postWork(std::function<void()>&& work) override;
 	virtual void waitAll() override;
 	
-	virtual unsigned int getWorkQueueCount() const override;
+	virtual uint32 getWorkQueueCount() const override;
 	
 	virtual void tick() override;
 	
@@ -27,7 +29,7 @@ public:
 	
 private:
 	mutable std::mutex enqueuedWorkMutex_;
-	std::deque< std::function<void()> > enqueuedWork_;
+	std::deque< std::shared_ptr<std::packaged_task<void()>> > enqueuedWork_;
 
 	void initialize();
 };

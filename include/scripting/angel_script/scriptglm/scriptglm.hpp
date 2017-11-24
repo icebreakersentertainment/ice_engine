@@ -37,6 +37,9 @@ static glm::vec3 operator-(const glm::vec3& a, const glm::vec3& b) { return glm:
 static glm::vec3 operator*(const glm::vec3& a, const glm::vec3& b) { return glm::vec3(a.x * b.x, a.y * b.y, a.z * b.z); }
 static glm::vec3 operator/(const glm::vec3& a, const glm::vec3& b) { return glm::vec3(a.x / b.x, a.y / b.y, a.z / b.z); }
 static bool operator==(const glm::vec3& a, const glm::vec3& b) { return (a.x == b.x && a.y == b.y && a.z == b.z); }
+
+// glm::quat * glm::vec3
+static glm::vec3 TimesQuat(const glm::quat& a, const glm::vec3& b) { return a * b; }
 }
 
 namespace glmvec4
@@ -51,6 +54,9 @@ static glm::vec4 operator-(const glm::vec4& a, const glm::vec4& b) { return glm:
 static glm::vec4 operator*(const glm::vec4& a, const glm::vec4& b) { return glm::vec4(a.x * b.x, a.y * b.y, a.z * b.z, a.w * b.w); }
 static glm::vec4 operator/(const glm::vec4& a, const glm::vec4& b) { return glm::vec4(a.x / b.x, a.y / b.y, a.z / b.z, a.w / b.w); }
 static bool operator==(const glm::vec4& a, const glm::vec4& b) { return (a.x == b.x && a.y == b.y && a.z == b.z && a.w == b.w); }
+
+// glm::mat4 * glm::vec4
+static glm::vec4 TimesMat4(const glm::mat4& a, const glm::vec4& b) { return a * b; }
 }
 
 namespace glmivec2
@@ -95,6 +101,62 @@ static glm::ivec4 operator/(const glm::ivec4& a, const glm::ivec4& b) { return g
 static bool operator==(const glm::ivec4& a, const glm::ivec4& b) { return (a.x == b.x && a.y == b.y && a.z == b.z && a.w == b.w); }
 }
 
+namespace glmuvec2
+{
+void DefaultConstructor(void* memory) { new(memory) glm::uvec2(); }
+void CopyConstructor(const glm::uvec2& other, void* memory) { new(memory) glm::uvec2(other); }
+//void DefaultDestructor(void* memory) { ((glm::uvec2*)memory)->~glm::uvec2(); }
+void InitConstructor(int x, int y, void* memory) { new(memory) glm::uvec2(x,y); }
+
+static glm::uvec2 operator+(const glm::uvec2& a, const glm::uvec2& b) { return glm::uvec2(a.x + b.x, a.y + b.y); }
+static glm::uvec2 operator-(const glm::uvec2& a, const glm::uvec2& b) { return glm::uvec2(a.x - b.x, a.y - b.y); }
+static glm::uvec2 operator*(const glm::uvec2& a, const glm::uvec2& b) { return glm::uvec2(a.x * b.x, a.y * b.y); }
+static glm::uvec2 operator/(const glm::uvec2& a, const glm::uvec2& b) { return glm::uvec2(a.x / b.x, a.y / b.y); }
+static bool operator==(const glm::uvec2& a, const glm::uvec2& b) { return (a.x == b.x && a.y == b.y); }
+}
+
+namespace glmuvec3
+{
+void DefaultConstructor(void* memory) { new(memory) glm::uvec3(); }
+void CopyConstructor(const glm::uvec3& other, void* memory) { new(memory) glm::uvec3(other); }
+//void DefaultDestructor(void* memory) { ((glm::uvec3*)memory)->~glm::uvec3(); }
+void InitConstructor(int x, int y, int z, void* memory) { new(memory) glm::uvec3(x,y,z); }
+
+static glm::uvec3 operator+(const glm::uvec3& a, const glm::uvec3& b) { return glm::uvec3(a.x + b.x, a.y + b.y, a.z + b.z); }
+static glm::uvec3 operator-(const glm::uvec3& a, const glm::uvec3& b) { return glm::uvec3(a.x - b.x, a.y - b.y, a.z - b.z); }
+static glm::uvec3 operator*(const glm::uvec3& a, const glm::uvec3& b) { return glm::uvec3(a.x * b.x, a.y * b.y, a.z * b.z); }
+static glm::uvec3 operator/(const glm::uvec3& a, const glm::uvec3& b) { return glm::uvec3(a.x / b.x, a.y / b.y, a.z / b.z); }
+static bool operator==(const glm::uvec3& a, const glm::uvec3& b) { return (a.x == b.x && a.y == b.y && a.z == b.z); }
+}
+
+namespace glmuvec4
+{
+void DefaultConstructor(void* memory) { new(memory) glm::uvec4(); }
+void CopyConstructor(const glm::uvec4& other, void* memory) { new(memory) glm::uvec4(other); }
+//void DefaultDestructor(void* memory) { ((glm::uvec4*)memory)->~glm::uvec4(); }
+void InitConstructor(int x, int y, int z, int w, void* memory) { new(memory) glm::uvec4(x,y,z,w); }
+
+static glm::uvec4 operator+(const glm::uvec4& a, const glm::uvec4& b) { return glm::uvec4(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w); }
+static glm::uvec4 operator-(const glm::uvec4& a, const glm::uvec4& b) { return glm::uvec4(a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w); }
+static glm::uvec4 operator*(const glm::uvec4& a, const glm::uvec4& b) { return glm::uvec4(a.x * b.x, a.y * b.y, a.z * b.z, a.w * b.w); }
+static glm::uvec4 operator/(const glm::uvec4& a, const glm::uvec4& b) { return glm::uvec4(a.x / b.x, a.y / b.y, a.z / b.z, a.w / b.w); }
+static bool operator==(const glm::uvec4& a, const glm::uvec4& b) { return (a.x == b.x && a.y == b.y && a.z == b.z && a.w == b.w); }
+}
+
+namespace glmmat4
+{
+void DefaultConstructor(void* memory) { new(memory) glm::mat4(); }
+void CopyConstructor(const glm::mat4& other, void* memory) { new(memory) glm::mat4(other); }
+//void DefaultDestructor(void* memory) { ((glm::mat4*)memory)->~glm::mat4(); }
+void InitConstructor(float x, void* memory) { new(memory) glm::mat4(x); }
+
+//static glm::mat4 operator+(const glm::mat4& a, const glm::mat4& b) { return glm::mat4(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w); }
+//static glm::mat4 operator-(const glm::mat4& a, const glm::mat4& b) { return glm::mat4(a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w); }
+//static glm::mat4 operator*(const glm::mat4& a, const glm::mat4& b) { return glm::mat4(a.x * b.x, a.y * b.y, a.z * b.z, a.w * b.w); }
+//static glm::mat4 operator/(const glm::mat4& a, const glm::mat4& b) { return glm::mat4(a.x / b.x, a.y / b.y, a.z / b.z, a.w / b.w); }
+//static bool operator==(const glm::mat4& a, const glm::mat4& b) { return (a.x == b.x && a.y == b.y && a.z == b.z && a.w == b.w); }
+}
+
 namespace glmquat
 {
 void DefaultConstructor(void* memory) { new(memory) glm::quat(); }
@@ -107,6 +169,9 @@ static glm::quat operator-(const glm::quat& a, const glm::quat& b) { return glm:
 static glm::quat operator*(const glm::quat& a, const glm::quat& b) { return glm::quat(a.x * b.x, a.y * b.y, a.z * b.z, a.w * b.w); }
 static glm::quat operator/(const glm::quat& a, const glm::quat& b) { return glm::quat(a.x / b.x, a.y / b.y, a.z / b.z, a.w / b.w); }
 static bool operator==(const glm::quat& a, const glm::quat& b) { return (a.x == b.x && a.y == b.y && a.z == b.z && a.w == b.w); }
+
+// glm::vec3 * glm::quat
+static glm::vec3 TimesVec3(const glm::vec3& a, const glm::quat& b) { return a * b; }
 }
 
 
@@ -249,6 +314,96 @@ void RegisterGlmBindings(asIScriptEngine* engine)
 	r = engine->RegisterObjectMethod("ivec4", "ivec4 &opPreDec()", asMETHODPR(glm::ivec4, operator--, (), glm::ivec4&), asCALL_THISCALL); assert( r >= 0 );
 	r = engine->RegisterObjectMethod("ivec4", "bool opEquals(const ivec4 &in) const", asFUNCTIONPR(glmivec4::operator==, (const glm::ivec4&, const glm::ivec4&), bool), asCALL_CDECL_OBJFIRST); assert( r >= 0 );
 	
+	// glm::uvec2
+	r = engine->RegisterObjectType("uvec2", sizeof(glm::uvec2), asOBJ_VALUE | asOBJ_POD | asOBJ_APP_CLASS_ALLFLOATS | asGetTypeTraits<glm::uvec2>()); assert( r >= 0 );
+	r = engine->RegisterObjectProperty("uvec2", "int x", asOFFSET(glm::uvec2, x)); assert( r >= 0 );
+	r = engine->RegisterObjectProperty("uvec2", "int y", asOFFSET(glm::uvec2, y)); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("uvec2", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(glmuvec2::DefaultConstructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("uvec2", asBEHAVE_CONSTRUCT, "void f(const uvec2 &in)", asFUNCTION(glmuvec2::CopyConstructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("uvec2", asBEHAVE_CONSTRUCT, "void f(int, int)", asFUNCTION(glmuvec2::InitConstructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	//r = engine->RegisterObjectBehaviour("uvec2", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(glmuvec2::DefaultDestructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	
+	r = engine->RegisterObjectMethod("uvec2", "uvec2 opAdd_r(const uvec2& in) const", asFUNCTIONPR(glmuvec2::operator+, (const glm::uvec2&, const glm::uvec2&), glm::uvec2), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("uvec2", "uvec2 &opAddAssign(const uvec2& in)", asMETHODPR(glm::uvec2, operator+=, (const glm::uvec2&), glm::uvec2&), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("uvec2", "uvec2 opSub_r(const uvec2& in) const", asFUNCTIONPR(glmuvec2::operator-, (const glm::uvec2&, const glm::uvec2&), glm::uvec2), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("uvec2", "uvec2 &opSubAssign(const uvec2 &in)", asMETHODPR(glm::uvec2, operator-=, (const glm::uvec2 &), glm::uvec2&), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("uvec2", "uvec2 opMul_r(const uvec2& in) const", asFUNCTIONPR(glmuvec2::operator*, (const glm::uvec2&, const glm::uvec2&), glm::uvec2), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("uvec2", "uvec2 &opMulAssign(int)", asMETHODPR(glm::uvec2, operator*=, (int), glm::uvec2&), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("uvec2", "uvec2 opDiv_r(const uvec2& in) const", asFUNCTIONPR(glmuvec2::operator/, (const glm::uvec2&, const glm::uvec2&), glm::uvec2), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("uvec2", "uvec2 &opDivAssign(int)", asMETHODPR(glm::uvec2, operator/=, (int), glm::uvec2&), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("uvec2", "uvec2 &opPreInc()", asMETHODPR(glm::uvec2, operator++, (), glm::uvec2&), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("uvec2", "uvec2 &opPreDec()", asMETHODPR(glm::uvec2, operator--, (), glm::uvec2&), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("uvec2", "bool opEquals(const uvec2 &in) const", asFUNCTIONPR(glmuvec2::operator==, (const glm::uvec2&, const glm::uvec2&), bool), asCALL_CDECL_OBJFIRST); assert( r >= 0 );
+	
+	// glm::uvec3
+	r = engine->RegisterObjectType("uvec3", sizeof(glm::uvec3), asOBJ_VALUE | asOBJ_POD | asOBJ_APP_CLASS_ALLFLOATS | asGetTypeTraits<glm::uvec3>()); assert( r >= 0 );
+	r = engine->RegisterObjectProperty("uvec3", "int x", asOFFSET(glm::uvec3, x)); assert( r >= 0 );
+	r = engine->RegisterObjectProperty("uvec3", "int y", asOFFSET(glm::uvec3, y)); assert( r >= 0 );
+	r = engine->RegisterObjectProperty("uvec3", "int z", asOFFSET(glm::uvec3, z)); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("uvec3", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(glmuvec3::DefaultConstructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("uvec3", asBEHAVE_CONSTRUCT, "void f(const uvec3 &in)", asFUNCTION(glmuvec3::CopyConstructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("uvec3", asBEHAVE_CONSTRUCT, "void f(int, int, int)", asFUNCTION(glmuvec3::InitConstructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	//r = engine->RegisterObjectBehaviour("uvec3", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(glmuvec3::DefaultDestructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	
+	r = engine->RegisterObjectMethod("uvec3", "uvec3 opAdd_r(const uvec3& in) const", asFUNCTIONPR(glmuvec3::operator+, (const glm::uvec3&, const glm::uvec3&), glm::uvec3), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("uvec3", "uvec3 &opAddAssign(const uvec3& in)", asMETHODPR(glm::uvec3, operator+=, (const glm::uvec3&), glm::uvec3&), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("uvec3", "uvec3 opSub_r(const uvec3& in) const", asFUNCTIONPR(glmuvec3::operator-, (const glm::uvec3&, const glm::uvec3&), glm::uvec3), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("uvec3", "uvec3 &opSubAssign(const uvec3 &in)", asMETHODPR(glm::uvec3, operator-=, (const glm::uvec3 &), glm::uvec3&), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("uvec3", "uvec3 opMul_r(const uvec3& in) const", asFUNCTIONPR(glmuvec3::operator*, (const glm::uvec3&, const glm::uvec3&), glm::uvec3), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("uvec3", "uvec3 &opMulAssign(int)", asMETHODPR(glm::uvec3, operator*=, (int), glm::uvec3&), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("uvec3", "uvec3 opDiv_r(const uvec3& in) const", asFUNCTIONPR(glmuvec3::operator/, (const glm::uvec3&, const glm::uvec3&), glm::uvec3), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("uvec3", "uvec3 &opDivAssign(int)", asMETHODPR(glm::uvec3, operator/=, (int), glm::uvec3&), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("uvec3", "uvec3 &opPreInc()", asMETHODPR(glm::uvec3, operator++, (), glm::uvec3&), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("uvec3", "uvec3 &opPreDec()", asMETHODPR(glm::uvec3, operator--, (), glm::uvec3&), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("uvec3", "bool opEquals(const uvec3 &in) const", asFUNCTIONPR(glmuvec3::operator==, (const glm::uvec3&, const glm::uvec3&), bool), asCALL_CDECL_OBJFIRST); assert( r >= 0 );
+	
+	// glm::uvec4
+	r = engine->RegisterObjectType("uvec4", sizeof(glm::uvec4), asOBJ_VALUE | asOBJ_POD | asOBJ_APP_CLASS_ALLFLOATS | asGetTypeTraits<glm::uvec4>()); assert( r >= 0 );
+	r = engine->RegisterObjectProperty("uvec4", "int x", asOFFSET(glm::uvec4, x)); assert( r >= 0 );
+	r = engine->RegisterObjectProperty("uvec4", "int y", asOFFSET(glm::uvec4, y)); assert( r >= 0 );
+	r = engine->RegisterObjectProperty("uvec4", "int z", asOFFSET(glm::uvec4, z)); assert( r >= 0 );
+	r = engine->RegisterObjectProperty("uvec4", "int w", asOFFSET(glm::uvec4, w)); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("uvec4", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(glmuvec4::DefaultConstructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("uvec4", asBEHAVE_CONSTRUCT, "void f(const uvec4 &in)", asFUNCTION(glmuvec4::CopyConstructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("uvec4", asBEHAVE_CONSTRUCT, "void f(int, int, int, int)", asFUNCTION(glmuvec4::InitConstructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	//r = engine->RegisterObjectBehaviour("uvec4", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(glmuvec4::DefaultDestructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	
+	r = engine->RegisterObjectMethod("uvec4", "uvec4 opAdd_r(const uvec4& in) const", asFUNCTIONPR(glmuvec4::operator+, (const glm::uvec4&, const glm::uvec4&), glm::uvec4), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("uvec4", "uvec4 &opAddAssign(const uvec4& in)", asMETHODPR(glm::uvec4, operator+=, (const glm::uvec4&), glm::uvec4&), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("uvec4", "uvec4 opSub_r(const uvec4& in) const", asFUNCTIONPR(glmuvec4::operator-, (const glm::uvec4&, const glm::uvec4&), glm::uvec4), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("uvec4", "uvec4 &opSubAssign(const uvec4 &in)", asMETHODPR(glm::uvec4, operator-=, (const glm::uvec4 &), glm::uvec4&), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("uvec4", "uvec4 opMul_r(const uvec4& in) const", asFUNCTIONPR(glmuvec4::operator*, (const glm::uvec4&, const glm::uvec4&), glm::uvec4), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("uvec4", "uvec4 &opMulAssign(int)", asMETHODPR(glm::uvec4, operator*=, (int), glm::uvec4&), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("uvec4", "uvec4 opDiv_r(const uvec4& in) const", asFUNCTIONPR(glmuvec4::operator/, (const glm::uvec4&, const glm::uvec4&), glm::uvec4), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("uvec4", "uvec4 &opDivAssign(int)", asMETHODPR(glm::uvec4, operator/=, (int), glm::uvec4&), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("uvec4", "uvec4 &opPreInc()", asMETHODPR(glm::uvec4, operator++, (), glm::uvec4&), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("uvec4", "uvec4 &opPreDec()", asMETHODPR(glm::uvec4, operator--, (), glm::uvec4&), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("uvec4", "bool opEquals(const uvec4 &in) const", asFUNCTIONPR(glmuvec4::operator==, (const glm::uvec4&, const glm::uvec4&), bool), asCALL_CDECL_OBJFIRST); assert( r >= 0 );
+	
+	// glm::mat4
+	r = engine->RegisterObjectType("mat4", sizeof(glm::mat4), asOBJ_VALUE | asOBJ_POD | asOBJ_APP_CLASS_ALLFLOATS | asGetTypeTraits<glm::mat4>()); assert( r >= 0 );
+	//r = engine->RegisterObjectProperty("mat4", "int x", asOFFSET(glm::mat4, x)); assert( r >= 0 );
+	//r = engine->RegisterObjectProperty("mat4", "int y", asOFFSET(glm::mat4, y)); assert( r >= 0 );
+	//r = engine->RegisterObjectProperty("mat4", "int z", asOFFSET(glm::mat4, z)); assert( r >= 0 );
+	//r = engine->RegisterObjectProperty("mat4", "int w", asOFFSET(glm::mat4, w)); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("mat4", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(glmmat4::DefaultConstructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("mat4", asBEHAVE_CONSTRUCT, "void f(const mat4 &in)", asFUNCTION(glmmat4::CopyConstructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("mat4", asBEHAVE_CONSTRUCT, "void f(float)", asFUNCTION(glmmat4::InitConstructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	//r = engine->RegisterObjectBehaviour("mat4", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(glmmat4::DefaultDestructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	
+	/*
+	r = engine->RegisterObjectMethod("mat4", "mat4 opAdd_r(const mat4& in) const", asFUNCTIONPR(glmmat4::operator+, (const glm::mat4&, const glm::mat4&), glm::mat4), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("mat4", "mat4 &opAddAssign(const mat4& in)", asMETHODPR(glm::mat4, operator+=, (const glm::mat4&), glm::mat4&), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("mat4", "mat4 opSub_r(const mat4& in) const", asFUNCTIONPR(glmmat4::operator-, (const glm::mat4&, const glm::mat4&), glm::mat4), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("mat4", "mat4 &opSubAssign(const mat4 &in)", asMETHODPR(glm::mat4, operator-=, (const glm::mat4 &), glm::mat4&), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("mat4", "mat4 opMul_r(const mat4& in) const", asFUNCTIONPR(glmmat4::operator*, (const glm::mat4&, const glm::mat4&), glm::mat4), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("mat4", "mat4 &opMulAssign(float)", asMETHODPR(glm::mat4, operator*=, (int), glm::mat4&), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("mat4", "mat4 opDiv_r(const mat4& in) const", asFUNCTIONPR(glmmat4::operator/, (const glm::mat4&, const glm::mat4&), glm::mat4), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("mat4", "mat4 &opDivAssign(float)", asMETHODPR(glm::mat4, operator/=, (int), glm::mat4&), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("mat4", "mat4 &opPreInc()", asMETHODPR(glm::mat4, operator++, (), glm::mat4&), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("mat4", "mat4 &opPreDec()", asMETHODPR(glm::mat4, operator--, (), glm::mat4&), asCALL_THISCALL); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("mat4", "bool opEquals(const mat4 &in) const", asFUNCTIONPR(glmmat4::operator==, (const glm::mat4&, const glm::mat4&), bool), asCALL_CDECL_OBJFIRST); assert( r >= 0 );
+	*/
 	// glm::quat
 	r = engine->RegisterObjectType("quat", sizeof(glm::quat), asOBJ_VALUE | asOBJ_POD | asOBJ_APP_CLASS_ALLFLOATS | asGetTypeTraits<glm::quat>()); assert( r >= 0 );
 	r = engine->RegisterObjectProperty("quat", "float x", asOFFSET(glm::quat, x)); assert( r >= 0 );
@@ -269,6 +424,19 @@ void RegisterGlmBindings(asIScriptEngine* engine)
 	r = engine->RegisterObjectMethod("quat", "quat opDiv_r(const quat& in) const", asFUNCTIONPR(glmquat::operator/, (const glm::quat&, const glm::quat&), glm::quat), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 	r = engine->RegisterObjectMethod("quat", "quat &opDivAssign(float)", asMETHODPR(glm::quat, operator/=, (float), glm::quat&), asCALL_THISCALL); assert( r >= 0 );
 	r = engine->RegisterObjectMethod("quat", "bool opEquals(const quat &in) const", asFUNCTIONPR(glmquat::operator==, (const glm::quat&, const glm::quat&), bool), asCALL_CDECL_OBJFIRST); assert( r >= 0 );
+	
+	// glm::vec3 * glm::quat
+	r = engine->RegisterObjectMethod("quat", "vec3 opMul_r(const vec3& in) const", asFUNCTIONPR(glmquat::TimesVec3, (const glm::vec3&, const glm::quat&), glm::vec3), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	
+	// glm::quat * glm::vec3
+	r = engine->RegisterObjectMethod("vec3", "vec3 opMul_r(const quat& in) const", asFUNCTIONPR(glmvec3::TimesQuat, (const glm::quat&, const glm::vec3&), glm::vec3), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	
+	// glm::mat4 * glm::vec4
+	r = engine->RegisterObjectMethod("vec4", "vec4 opMul_r(const mat4& in) const", asFUNCTIONPR(glmvec4::TimesMat4, (const glm::mat4&, const glm::vec4&), glm::vec4), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	
+	// glm functions
+	r = engine->RegisterGlobalFunction("mat4 inverse(const mat4& in)", asFUNCTIONPR(glm::inverse, (const glm::mat4&), glm::mat4), asCALL_CDECL); assert( r >= 0 );
+	r = engine->RegisterGlobalFunction("vec3 normalize(const vec3& in)", asFUNCTIONPR(glm::normalize, (const glm::vec3&), glm::vec3), asCALL_CDECL); assert( r >= 0 );
 }
 
 END_AS_NAMESPACE

@@ -1,17 +1,15 @@
 #ifndef MODEL_HANDLE_H_
 #define MODEL_HANDLE_H_
 
-#include "ResourceHandle.hpp"
+#include "handles/Handle.hpp"
 
 namespace hercules
 {
 
-class ModelHandle : public ResourceHandle
+class ModelHandle : public handles::Handle<ModelHandle>
 {
 public:
-	using ResourceHandle::ResourceHandle;
-	
-	static const ModelHandle INVALID;
+	using handles::Handle<ModelHandle>::Handle;
 };
 
 }

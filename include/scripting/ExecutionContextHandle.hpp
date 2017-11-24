@@ -8,12 +8,10 @@ namespace hercules
 namespace scripting
 {
 
-class ExecutionContextHandle : public handles::Handle
+class ExecutionContextHandle : public handles::Handle<ExecutionContextHandle>
 {
 public:
-	using handles::Handle::Handle;
-	
-	static const ExecutionContextHandle INVALID;
+	using handles::Handle<ExecutionContextHandle>::Handle;
 };
 
 }

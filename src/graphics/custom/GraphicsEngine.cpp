@@ -11,6 +11,7 @@
 
 #define GLM_FORCE_RADIANS
 #include <glm/gtc/matrix_transform.hpp>
+#include "glm/gtx/quaternion.hpp"
 #include <glm/gtx/string_cast.hpp>
 
 namespace hercules
@@ -19,7 +20,7 @@ namespace graphics
 {
 namespace custom
 {
-
+ShaderProgram lineShaderProgram_;
 GraphicsEngine::GraphicsEngine(utilities::Properties* properties, fs::IFileSystem* fileSystem, logger::ILogger* logger)
 	:
 	properties_(properties),
@@ -73,9 +74,47 @@ GraphicsEngine::GraphicsEngine(utilities::Properties* properties, fs::IFileSyste
 	}
 	
 	// Set up the model, view, and projection matrices
-	model_ = glm::scale(glm::mat4(1.0f), glm::vec3(0.5f));
+	//model_ = glm::scale(glm::mat4(1.0f), glm::vec3(0.5f));
+	model_ = glm::mat4(1.0f);
 	view_ = glm::mat4(1.0f);
 	setViewport(width_, height_);
+	
+	// Source: http://bulletphysics.org/Bullet/phpBB3/viewtopic.php?t=11517
+	std::string vertexShader = R"(
+#version 330 core
+layout (location = 0) in vec3 position;
+layout (location = 1) in vec3 color;
+
+out vec3 ourColor;
+
+uniform mat4 projectionMatrix;
+uniform mat4 viewMatrix;
+
+void main()
+{
+    gl_Position = projectionMatrix * viewMatrix * vec4(position, 1.0f);
+
+    ourColor = color;
+}
+)";
+
+	std::string fragmentShader = R"(
+#version 330 core
+in vec3 ourColor;
+out vec4 color;
+
+void main()
+{
+    color = vec4(ourColor, 1.0f);
+    //gl_FragColor= vec4(1.0, 1.0, 0.0, 1.0);
+}
+)";
+
+	auto vertexShaderHandle = createVertexShader(vertexShader);
+	auto fragmentShaderHandle = createFragmentShader(fragmentShader);
+	
+	auto lineShaderProgramHandle = createShaderProgram(vertexShaderHandle, fragmentShaderHandle);
+	lineShaderProgram_ = shaderPrograms_[lineShaderProgramHandle];
 }
 
 GraphicsEngine::GraphicsEngine(const GraphicsEngine& other)
@@ -115,6 +154,21 @@ glm::uvec2 GraphicsEngine::getViewport() const
 	return glm::uvec2(width_, height_);
 }
 
+glm::mat4 GraphicsEngine::getModelMatrix() const
+{
+	return model_;
+}
+
+glm::mat4 GraphicsEngine::getViewMatrix() const
+{
+	return view_;
+}
+
+glm::mat4 GraphicsEngine::getProjectionMatrix() const
+{
+	return projection_;
+}
+
 void GraphicsEngine::beginRender()
 {
 	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -130,7 +184,7 @@ void GraphicsEngine::beginRender()
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
-void GraphicsEngine::render()
+void GraphicsEngine::render(const RenderSceneHandle& renderSceneHandle)
 {
 	int modelMatrixLocation = 0;
 	int pvmMatrixLocation = 0;
@@ -141,7 +195,9 @@ void GraphicsEngine::render()
 	//assert( normalMatrixLocation >= 0);
 	
 	ShaderProgram currentShaderProgram;
-	for ( const auto& r : renderables_ )
+	const auto& renderScene = renderSceneHandles_[renderSceneHandle];
+	
+	for (const auto& r : renderScene)
 	{
 		if (currentShaderProgram.id != r.shaderProgram.id)
 		{
@@ -180,9 +236,96 @@ void GraphicsEngine::render()
 	}
 }
 
+GLuint VBO, VAO;
+void GraphicsEngine::renderLine(const glm::vec3& from, const glm::vec3& to, const glm::vec3& color)
+{
+	glDeleteBuffers(1, &VBO);
+	glDeleteVertexArrays(1, &VAO);
+	glGenBuffers(1, &VBO);
+	glGenVertexArrays(1, &VAO);
+	
+	glBindVertexArray(VAO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, 4 * sizeof(glm::vec3), nullptr, GL_STATIC_DRAW);
+	
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(glm::vec3), &from.x);
+	glBufferSubData(GL_ARRAY_BUFFER, sizeof(glm::vec3), sizeof(glm::vec3), &to.x);
+	glBufferSubData(GL_ARRAY_BUFFER, 2 * sizeof(glm::vec3), sizeof(glm::vec3), &color.x);
+	glBufferSubData(GL_ARRAY_BUFFER, 3 * sizeof(glm::vec3), sizeof(glm::vec3), &color.x);
+	
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)(2 * sizeof(glm::vec3)));
+	glEnableVertexAttribArray(1);
+	glBindVertexArray(0);
+	
+	auto projectionMatrixLocation = glGetUniformLocation(lineShaderProgram_.id, "projectionMatrix");
+	auto viewMatrixLocation = glGetUniformLocation(lineShaderProgram_.id, "viewMatrix");
+	glUseProgram(lineShaderProgram_.id);
+	
+	glUniformMatrix4fv(projectionMatrixLocation, 1, GL_FALSE, &projection_[0][0]);
+	glUniformMatrix4fv(viewMatrixLocation, 1, GL_FALSE, &view_[0][0]);
+	
+	glBindVertexArray(VAO);
+	glDrawArrays(GL_LINES, 0, 2);
+	glBindVertexArray(0);
+}
+
+void GraphicsEngine::renderLines(const std::vector<std::tuple<glm::vec3, glm::vec3, glm::vec3>>& lineData)
+{
+	glDeleteBuffers(1, &VBO);
+	glDeleteVertexArrays(1, &VAO);
+	glGenBuffers(1, &VBO);
+	glGenVertexArrays(1, &VAO);
+	
+	glBindVertexArray(VAO);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
+	glBufferData(GL_ARRAY_BUFFER, lineData.size() * (4 * sizeof(glm::vec3)), nullptr, GL_STATIC_DRAW);
+	
+	uint32 offset = 0;
+	uint32 colorOffset = lineData.size() * (2 * sizeof(glm::vec3));
+	for (const auto& line : lineData)
+	{
+		glBufferSubData(GL_ARRAY_BUFFER, offset, sizeof(glm::vec3), &std::get<0>(line).x);
+		glBufferSubData(GL_ARRAY_BUFFER, offset + sizeof(glm::vec3), sizeof(glm::vec3), &std::get<1>(line).x);
+		glBufferSubData(GL_ARRAY_BUFFER, colorOffset, sizeof(glm::vec3), &std::get<2>(line).x);
+		glBufferSubData(GL_ARRAY_BUFFER, colorOffset + sizeof(glm::vec3), sizeof(glm::vec3), &std::get<2>(line).x);
+		
+		offset += 2 * sizeof(glm::vec3);
+		colorOffset += 2 * sizeof(glm::vec3);
+	}
+	
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)(lineData.size() * (2 * sizeof(glm::vec3))));
+	glEnableVertexAttribArray(1);
+	glBindVertexArray(0);
+	
+	auto projectionMatrixLocation = glGetUniformLocation(lineShaderProgram_.id, "projectionMatrix");
+	auto viewMatrixLocation = glGetUniformLocation(lineShaderProgram_.id, "viewMatrix");
+	glUseProgram(lineShaderProgram_.id);
+	
+	glUniformMatrix4fv(projectionMatrixLocation, 1, GL_FALSE, &projection_[0][0]);
+	glUniformMatrix4fv(viewMatrixLocation, 1, GL_FALSE, &view_[0][0]);
+	
+	glBindVertexArray(VAO);
+	glDrawArrays(GL_LINES, 0, 2 * lineData.size());
+	glBindVertexArray(0);
+}
+
 void GraphicsEngine::endRender()
 {
 	SDL_GL_SwapWindow( sdlWindow_ );
+}
+
+RenderSceneHandle GraphicsEngine::createRenderScene()
+{
+	return renderSceneHandles_.create();
+}
+
+void GraphicsEngine::destroyRenderScene(const RenderSceneHandle& renderSceneHandle)
+{
+	renderSceneHandles_.destroy(renderSceneHandle);
 }
 
 CameraHandle GraphicsEngine::createCamera(const glm::vec3& position, const glm::vec3& lookAt)
@@ -475,10 +618,11 @@ void GraphicsEngine::destroyShaderProgram(const ShaderProgramHandle& shaderProgr
 }
 
 
-RenderableHandle GraphicsEngine::createRenderable(const MeshHandle& meshHandle, const TextureHandle& textureHandle, const ShaderProgramHandle& shaderProgramHandle)
+RenderableHandle GraphicsEngine::createRenderable(const RenderSceneHandle& renderSceneHandle, const MeshHandle& meshHandle, const TextureHandle& textureHandle, const ShaderProgramHandle& shaderProgramHandle)
 {
-	auto handle = renderables_.create();
-	auto& renderable = renderables_[handle];
+	auto& renderables = renderSceneHandles_[renderSceneHandle];
+	auto handle = renderables.create();
+	auto& renderable = renderables[handle];
 	
 	renderable.vao = meshes_[meshHandle];
 	renderable.texture = texture2ds_[textureHandle];
@@ -509,9 +653,9 @@ void GraphicsEngine::rotate(const CameraHandle& cameraHandle, const glm::quat& q
 	}
 }
 
-void GraphicsEngine::rotate(const RenderableHandle& renderableHandle, const glm::quat& quaternion, const TransformSpace& relativeTo)
+void GraphicsEngine::rotate(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle, const glm::quat& quaternion, const TransformSpace& relativeTo)
 {
-	auto& renderable = renderables_[renderableHandle];
+	auto& renderable = renderSceneHandles_[renderSceneHandle][renderableHandle];
 	
 	switch( relativeTo )
 	{
@@ -547,9 +691,9 @@ void GraphicsEngine::rotate(const CameraHandle& cameraHandle, const float32 degr
 	}
 }
 
-void GraphicsEngine::rotate(const RenderableHandle& renderableHandle, const float32 degrees, const glm::vec3& axis, const TransformSpace& relativeTo)
+void GraphicsEngine::rotate(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle, const float32 degrees, const glm::vec3& axis, const TransformSpace& relativeTo)
 {
-	auto& renderable = renderables_[renderableHandle];
+	auto& renderable = renderSceneHandles_[renderSceneHandle][renderableHandle];
 	
 	switch( relativeTo )
 	{
@@ -572,9 +716,9 @@ void GraphicsEngine::rotation(const CameraHandle& cameraHandle, const glm::quat&
 	camera_.orientation = glm::normalize( quaternion );
 }
 
-void GraphicsEngine::rotation(const RenderableHandle& renderableHandle, const glm::quat& quaternion)
+void GraphicsEngine::rotation(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle, const glm::quat& quaternion)
 {
-	auto& renderable = renderables_[renderableHandle];
+	auto& renderable = renderSceneHandles_[renderSceneHandle][renderableHandle];
 
 	renderable.graphicsData.orientation = glm::normalize( quaternion );
 }
@@ -584,9 +728,9 @@ void GraphicsEngine::rotation(const CameraHandle& cameraHandle, const float32 de
 	camera_.orientation = glm::normalize( glm::angleAxis(glm::radians(degrees), axis) );
 }
 
-void GraphicsEngine::rotation(const RenderableHandle& renderableHandle, const float32 degrees, const glm::vec3& axis)
+void GraphicsEngine::rotation(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle, const float32 degrees, const glm::vec3& axis)
 {
-	auto& renderable = renderables_[renderableHandle];
+	auto& renderable = renderSceneHandles_[renderSceneHandle][renderableHandle];
 	
 	renderable.graphicsData.orientation = glm::normalize( glm::angleAxis(glm::radians(degrees), axis) );
 }
@@ -596,9 +740,9 @@ glm::quat GraphicsEngine::rotation(const CameraHandle& cameraHandle) const
 	return camera_.orientation;
 }
 
-glm::quat GraphicsEngine::rotation(const RenderableHandle& renderableHandle) const
+glm::quat GraphicsEngine::rotation(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle) const
 {
-	return renderables_[renderableHandle].graphicsData.orientation;
+	return renderSceneHandles_[renderSceneHandle][renderableHandle].graphicsData.orientation;
 }
 
 void GraphicsEngine::translate(const CameraHandle& cameraHandle, const float32 x, const float32 y, const float32 z)
@@ -606,9 +750,9 @@ void GraphicsEngine::translate(const CameraHandle& cameraHandle, const float32 x
 	camera_.position += glm::vec3(x, y, z);
 }
 
-void GraphicsEngine::translate(const RenderableHandle& renderableHandle, const float32 x, const float32 y, const float32 z)
+void GraphicsEngine::translate(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle, const float32 x, const float32 y, const float32 z)
 {
-	auto& renderable = renderables_[renderableHandle];
+	auto& renderable = renderSceneHandles_[renderSceneHandle][renderableHandle];
 	
 	renderable.graphicsData.position += glm::vec3(x, y, z);
 }
@@ -618,42 +762,42 @@ void GraphicsEngine::translate(const CameraHandle& cameraHandle, const glm::vec3
 	camera_.position += trans;
 }
 
-void GraphicsEngine::translate(const RenderableHandle& renderableHandle, const glm::vec3& trans)
+void GraphicsEngine::translate(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle, const glm::vec3& trans)
 {
-	auto& renderable = renderables_[renderableHandle];
+	auto& renderable = renderSceneHandles_[renderSceneHandle][renderableHandle];
 	
 	renderable.graphicsData.position += trans;
 }
 
-void GraphicsEngine::scale(const RenderableHandle& renderableHandle, const float32 x, const float32 y, const float32 z)
+void GraphicsEngine::scale(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle, const float32 x, const float32 y, const float32 z)
 {
-	auto& renderable = renderables_[renderableHandle];
+	auto& renderable = renderSceneHandles_[renderSceneHandle][renderableHandle];
 	
 	renderable.graphicsData.scale = glm::vec3(x, y, z);
 }
 
-void GraphicsEngine::scale(const RenderableHandle& renderableHandle, const glm::vec3& scale)
+void GraphicsEngine::scale(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle, const glm::vec3& scale)
 {
-	auto& renderable = renderables_[renderableHandle];
+	auto& renderable = renderSceneHandles_[renderSceneHandle][renderableHandle];
 	
 	renderable.graphicsData.scale = scale;
 }
 
-void GraphicsEngine::scale(const RenderableHandle& renderableHandle, const float32 scale)
+void GraphicsEngine::scale(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle, const float32 scale)
 {
-	auto& renderable = renderables_[renderableHandle];
+	auto& renderable = renderSceneHandles_[renderSceneHandle][renderableHandle];
 	
 	renderable.graphicsData.scale = glm::vec3(scale, scale, scale);
 }
 
-glm::vec3 GraphicsEngine::scale(const RenderableHandle& renderableHandle) const
+glm::vec3 GraphicsEngine::scale(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle) const
 {
-	return renderables_[renderableHandle].graphicsData.scale;
+	return renderSceneHandles_[renderSceneHandle][renderableHandle].graphicsData.scale;
 }
 
-void GraphicsEngine::position(const RenderableHandle& renderableHandle, const float32 x, const float32 y, const float32 z)
+void GraphicsEngine::position(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle, const float32 x, const float32 y, const float32 z)
 {
-	auto& renderable = renderables_[renderableHandle];
+	auto& renderable = renderSceneHandles_[renderSceneHandle][renderableHandle];
 	renderable.graphicsData.position = glm::vec3(x, y, z);
 }
 
@@ -662,9 +806,9 @@ void GraphicsEngine::position(const CameraHandle& cameraHandle, const float32 x,
 	camera_.position = glm::vec3(x, y, z);
 }
 
-void GraphicsEngine::position(const RenderableHandle& renderableHandle, const glm::vec3& position)
+void GraphicsEngine::position(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle, const glm::vec3& position)
 {
-	auto& renderable = renderables_[renderableHandle];
+	auto& renderable = renderSceneHandles_[renderSceneHandle][renderableHandle];
 	
 	renderable.graphicsData.position = position;
 }
@@ -674,9 +818,9 @@ void GraphicsEngine::position(const CameraHandle& cameraHandle, const glm::vec3&
 	camera_.position = position;
 }
 
-glm::vec3 GraphicsEngine::position(const RenderableHandle& renderableHandle) const
+glm::vec3 GraphicsEngine::position(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle) const
 {
-	return renderables_[renderableHandle].graphicsData.position;
+	return renderSceneHandles_[renderSceneHandle][renderableHandle].graphicsData.position;
 }
 
 glm::vec3 GraphicsEngine::position(const CameraHandle& cameraHandle) const
@@ -684,9 +828,9 @@ glm::vec3 GraphicsEngine::position(const CameraHandle& cameraHandle) const
 	return camera_.position;
 }
 
-void GraphicsEngine::lookAt(const RenderableHandle& renderableHandle, const glm::vec3& lookAt)
+void GraphicsEngine::lookAt(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle, const glm::vec3& lookAt)
 {
-	auto& renderable = renderables_[renderableHandle];
+	auto& renderable = renderSceneHandles_[renderSceneHandle][renderableHandle];
 	
 	assert(lookAt != renderable.graphicsData.position);
 	
@@ -700,11 +844,15 @@ void GraphicsEngine::lookAt(const CameraHandle& cameraHandle, const glm::vec3& l
 	
 	const glm::mat4 lookAtMatrix = glm::lookAt(camera_.position, lookAt, glm::vec3(0.0f, 1.0f, 0.0f));
 	camera_.orientation =  glm::normalize( camera_.orientation * glm::quat_cast( lookAtMatrix ) );
+	
+	// const glm::vec3 currentForward = camera_.orientation * glm::vec3(0.0f, 0.0f, 1.0f);
+	// const glm::vec3 desiredForward = lookAt - camera_.position;
+	// camera_.orientation = glm::normalize( glm::rotation(glm::normalize(currentForward), glm::normalize(desiredForward)) );
 }
 
-void GraphicsEngine::assign(const RenderableHandle& renderableHandle, const SkeletonHandle& skeletonHandle)
+void GraphicsEngine::assign(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle, const SkeletonHandle& skeletonHandle)
 {
-	auto& renderable = renderables_[renderableHandle];
+	auto& renderable = renderSceneHandles_[renderSceneHandle][renderableHandle];
 	
 	renderable.ubo = skeletons_[skeletonHandle];
 }

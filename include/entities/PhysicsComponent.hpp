@@ -1,20 +1,20 @@
 #ifndef PHYSICSCOMPONENT_H_
 #define PHYSICSCOMPONENT_H_
 
-#include "physics/CollisionBodyHandle.hpp"
+#include "physics/RigidBodyObjectHandle.hpp"
 
 namespace hercules
 {
 namespace entities
 {
 
-struct PhysicsComponent
+struct RigidBodyObjectComponent
 {
-	PhysicsComponent(physics::CollisionBodyHandle collisionBodyHandle = physics::CollisionBodyHandle::INVALID) : collisionBodyHandle(collisionBodyHandle)
+	RigidBodyObjectComponent(physics::RigidBodyObjectHandle rigidBodyObjectHandle = physics::RigidBodyObjectHandle::INVALID) : rigidBodyObjectHandle(rigidBodyObjectHandle)
 	{
 	};
 	
-	physics::CollisionBodyHandle collisionBodyHandle;
+	physics::RigidBodyObjectHandle rigidBodyObjectHandle;
 };
 
 }

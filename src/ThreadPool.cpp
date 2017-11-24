@@ -20,12 +20,17 @@ ThreadPool::~ThreadPool()
 
 void ThreadPool::initialize(uint32 numThreads)
 {
-	pool_ = std::unique_ptr<ctpl::thread_pool>( new ctpl::thread_pool((size_t)numThreads) );
+	pool_ = std::make_unique<ctpl::thread_pool>(static_cast<size_t>(numThreads));
 }
 
-void ThreadPool::postWork(const std::function<void()>& work)
+std::future<void> ThreadPool::postWork(const std::function<void()>& work)
 {
-	pool_->push( [&work] (int32 id) { work(); } );
+	return pool_->push( [=] (int32 id) { work(); } );
+}
+
+std::future<void> ThreadPool::postWork(std::function<void()>&& work)
+{
+	return pool_->push( [work = std::move(work)] (int32 id) { work(); } );
 }
 
 void ThreadPool::waitAll()
@@ -38,17 +43,22 @@ void ThreadPool::joinAll()
 	pool_->stop(true);
 }
 
-uint32 ThreadPool::getWorkQueueCount()
+uint32 ThreadPool::getWorkQueueCount() const
+{
+	return 0;//pool_->n_pending();
+}
+
+uint32 ThreadPool::getWorkQueueSize() const
 {
 	return pool_->size();
 }
 
-uint32 ThreadPool::getActiveWorkerCount()
+uint32 ThreadPool::getActiveWorkerCount() const
 {
-	return (this->getWorkQueueCount() - this->getInactiveWorkerCount());
+	return (this->getWorkQueueSize() - this->getInactiveWorkerCount());
 }
 
-uint32 ThreadPool::getInactiveWorkerCount()
+uint32 ThreadPool::getInactiveWorkerCount() const
 {
 	return pool_->n_idle();
 }

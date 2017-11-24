@@ -48,6 +48,10 @@ int main()
 	{
 		std::cerr << "An exception occured: " << e.what() << std::endl;
 	}
-
+	catch (...)
+	{
+		std::cerr << "An unknown exception occured" << std::endl;
+	}
+	
 	return 0;
 }

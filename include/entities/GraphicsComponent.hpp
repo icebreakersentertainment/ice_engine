@@ -13,15 +13,17 @@ namespace entities
 
 struct GraphicsComponent
 {
+	GraphicsComponent() = default;
+	
 	GraphicsComponent(
-		glm::vec3 scale = glm::vec3(1.0f, 1.0f, 1.0f),
-		graphics::RenderableHandle renderableHandle = graphics::RenderableHandle::INVALID
+		glm::vec3 scale,
+		graphics::RenderableHandle renderableHandle
 	)
 		: scale(scale), renderableHandle(renderableHandle)
 	{
 	};
 	
-	glm::vec3 scale;
+	glm::vec3 scale = glm::vec3(1.0f, 1.0f, 1.0f);
 	graphics::RenderableHandle renderableHandle;
 };
 

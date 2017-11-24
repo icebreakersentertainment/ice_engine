@@ -8,12 +8,10 @@ namespace hercules
 namespace graphics
 {
 
-class CameraHandle : public handles::Handle
+class CameraHandle : public handles::Handle<CameraHandle>
 {
 public:
-	using handles::Handle::Handle;
-	
-	static const CameraHandle INVALID;
+	using handles::Handle<CameraHandle>::Handle;
 };
 
 }

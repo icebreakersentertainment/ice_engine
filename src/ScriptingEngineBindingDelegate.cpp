@@ -1,4 +1,5 @@
 #include <string>
+#include <chrono>
 
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
@@ -21,22 +22,244 @@
 
 #include "physics/IPhysicsEngine.hpp"
 
+#include "pathfinding/IPathfindingEngine.hpp"
+
 #include "ScriptingEngineBindingDelegate.hpp"
 
 #include "scripting/IScriptingEngine.hpp"
+
+//#include "scripting/angel_script/scriptvector/scriptvector.hpp"
 
 #include "GameEngine.hpp"
 
 namespace hercules
 {
 
+template<typename T, typename V>
+class VectorRegisterHelper
+{
+public:
+	static void DefaultConstructor(T* memory) { new(memory) T(); }
+	static void CopyConstructor(const T& other, T* memory) { new(memory) T(other); }
+	static void InitConstructor(int size, T* memory) { new(memory) T(size); }
+	static void DefaultDestructor(T* memory) { ((T*)memory)->~T(); }
+	
+	static T& assignmentOperator(const T& other, T* v) { (*v) = other; return *v; }
+	
+	static void assign(int count, const V& value, T* v) { v->assign(count, value); }
+	static int size(T* v) { return v->size(); }
+	static void resize(int size, T* v) { v->resize(size); }
+	static V& at(int i, T* v) { return v->at(i); }
+	static V& index(int i, T* v) { return (*v)[i]; }
+	static V& front(T* v) { return v->front(); }
+	static V& back(T* v) { return v->back(); }
+	static void push_back(const V& value, T* v) { v->push_back(value); }
+	static void pop_back(T* v) { v->pop_back(); }
+	static void erase(int i, T* v) { v->erase(v->begin() + i); }
+	static void insert(int i, const V& value, T* v) { v->insert(v->begin() + i, value); }
+	static void clear(T* v) { v->clear(); }
+	static bool empty(T* v) { return v->empty(); }
+	static int max_size(T* v) { return v->max_size(); }
+	static void reserve(int size, T* v) { v->reserve(size); }
+	static int capacity(T* v) { return v->capacity(); }
+};
 
-ScriptingEngineBindingDelegate::ScriptingEngineBindingDelegate(scripting::IScriptingEngine* scriptingEngine, GameEngine* gameEngine, graphics::IGraphicsEngine* graphicsEngine, physics::IPhysicsEngine* physicsEngine)
+
+/**
+ * Register our vector bindings.
+ */
+template<typename V>
+void registerVectorBindings(scripting::IScriptingEngine* scriptingEngine, const std::string& name, const std::string& type, asEObjTypeFlags objectTypeFlags = asOBJ_APP_CLASS_ALLINTS)
+{
+	
+	typedef VectorRegisterHelper<std::vector<V>, V> VectorBase;
+	
+	scriptingEngine->registerObjectType(name.c_str(), sizeof(std::vector<V>), asOBJ_VALUE | objectTypeFlags | asGetTypeTraits<std::vector<V>>());
+
+	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(VectorBase::DefaultConstructor), asCALL_CDECL_OBJLAST);
+	auto copyConstructorString = std::string("void f(const ") + name + "& in)";
+	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, copyConstructorString.c_str(), asFUNCTION(VectorBase::CopyConstructor), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f(int)", asFUNCTION(VectorBase::InitConstructor), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_DESTRUCT, "void f()", asFUNCTION(VectorBase::DefaultDestructor), asCALL_CDECL_OBJLAST);
+	
+	auto assignFunctionString = std::string("void assign(int, const ") + type + "& in)";
+	scriptingEngine->registerObjectMethod(name.c_str(), assignFunctionString.c_str(), asFUNCTION(VectorBase::assign), asCALL_CDECL_OBJLAST);
+	auto assignmentOperatorFunctionString = name + std::string("& opAssign(const ") + name + "& in)";
+	scriptingEngine->registerObjectMethod(name.c_str(), assignmentOperatorFunctionString.c_str(), asFUNCTION(VectorBase::assignmentOperator), asCALL_CDECL_OBJLAST);
+	auto pushBackFunctionString = "void push_back(" + type + "& in)";
+	scriptingEngine->registerObjectMethod(name.c_str(), pushBackFunctionString.c_str(), asFUNCTION(VectorBase::push_back), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectMethod(name.c_str(), "void erase(int)", asFUNCTION(VectorBase::erase), asCALL_CDECL_OBJLAST);
+	auto insertFunctionString = "void insert(int, const " + type + "& in)";
+	scriptingEngine->registerObjectMethod(name.c_str(), insertFunctionString.c_str(), asFUNCTION(VectorBase::insert), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectMethod(name.c_str(), "void pop_back()", asFUNCTION(VectorBase::pop_back), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectMethod(name.c_str(), "int size() const", asFUNCTION(VectorBase::size), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectMethod(name.c_str(), "void resize(int)", asFUNCTION(VectorBase::resize), asCALL_CDECL_OBJLAST);
+	auto atFunctionString = type + "& at(int)";
+	scriptingEngine->registerObjectMethod(name.c_str(), atFunctionString.c_str(), asFUNCTION(VectorBase::at), asCALL_CDECL_OBJLAST);
+	auto atConstFunctionString = std::string("const ") + type + "& at(int) const";
+	scriptingEngine->registerObjectMethod(name.c_str(), atConstFunctionString.c_str(), asFUNCTION(VectorBase::at), asCALL_CDECL_OBJLAST);
+	auto indexFunctionString = type + "& opIndex(int)";
+	scriptingEngine->registerObjectMethod(name.c_str(), indexFunctionString.c_str(), asFUNCTION(VectorBase::index), asCALL_CDECL_OBJLAST);
+	auto indexConstFunctionString = std::string("const ") + type + "& opIndex(int) const";
+	scriptingEngine->registerObjectMethod(name.c_str(), indexConstFunctionString.c_str(), asFUNCTION(VectorBase::index), asCALL_CDECL_OBJLAST);
+	auto frontFunctionString = type + "& front()";
+	scriptingEngine->registerObjectMethod(name.c_str(), frontFunctionString.c_str(), asFUNCTION(VectorBase::front), asCALL_CDECL_OBJLAST);
+	auto frontConstFunctionString = std::string("const ") + type + "& front() const";
+	scriptingEngine->registerObjectMethod(name.c_str(), frontConstFunctionString.c_str(), asFUNCTION(VectorBase::front), asCALL_CDECL_OBJLAST);
+	auto backFunctionString = type + "& back()";
+	scriptingEngine->registerObjectMethod(name.c_str(), backFunctionString.c_str(), asFUNCTION(VectorBase::back), asCALL_CDECL_OBJLAST);
+	auto backConstFunctionString = std::string("const ") + type + "& back() const";
+	scriptingEngine->registerObjectMethod(name.c_str(), backConstFunctionString.c_str(), asFUNCTION(VectorBase::back), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectMethod(name.c_str(), "void clear()", asFUNCTION(VectorBase::clear), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectMethod(name.c_str(), "bool empty() const", asFUNCTION(VectorBase::empty), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectMethod(name.c_str(), "int max_size() const", asFUNCTION(VectorBase::max_size), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectMethod(name.c_str(), "void reserve(int)", asFUNCTION(VectorBase::reserve), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectMethod(name.c_str(), "int capacity() const", asFUNCTION(VectorBase::capacity), asCALL_CDECL_OBJLAST);
+}
+
+template<typename T, typename V>
+class FutureRegisterHelper
+{
+public:
+	static void DefaultConstructor(T* memory) { new(memory) T(); }
+	//static void CopyConstructor(const T& other, T* memory) { new(memory) T(other); }
+	//static void InitConstructor(int size, T* memory) { new(memory) T(size); }
+	static void DefaultDestructor(T* memory) { ((T*)memory)->~T(); }
+	
+	static T& assignmentOperator(const T& other, T* v) { (*v) = std::move(const_cast<T&>(other)); return *v; }
+	
+	static V get(T* v) { return v->get(); }
+	static bool valid(T* v) { return v->valid(); }
+	static void wait(T* v) { v->wait(); }
+	static std::future_status wait_for(const std::chrono::seconds& s, T* v) { return v->wait_for(s); }
+	//static std::future_status wait_until(const std::chrono::system_clock::time_point& timePoint, T* v) { return v->wait_until(timePoint); }
+};
+
+/**
+ * Register our future bindings.
+ */
+template<typename V>
+void registerFutureBindings(scripting::IScriptingEngine* scriptingEngine, const std::string& name, const std::string& type, asEObjTypeFlags objectTypeFlags = asOBJ_APP_CLASS_ALLINTS)
+{
+	
+	typedef FutureRegisterHelper<std::future<V>, V> FutureBase;
+	
+	scriptingEngine->registerObjectType(name.c_str(), sizeof(std::future<V>), asOBJ_VALUE | objectTypeFlags | asGetTypeTraits<std::future<V>>());
+
+	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(FutureBase::DefaultConstructor), asCALL_CDECL_OBJLAST);
+	//auto copyConstructorString = std::string("void f(const ") + name + "& in)";
+	//scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, copyConstructorString.c_str(), asFUNCTION(FutureBase::CopyConstructor), asCALL_CDECL_OBJLAST);
+	//scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f(int)", asFUNCTION(FutureBase::InitConstructor), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_DESTRUCT, "void f()", asFUNCTION(FutureBase::DefaultDestructor), asCALL_CDECL_OBJLAST);
+	
+	auto assignmentOperatorFunctionString = name + std::string("& opAssign(const ") + name + "& in)";
+	scriptingEngine->registerObjectMethod(name.c_str(), assignmentOperatorFunctionString.c_str(), asFUNCTION(FutureBase::assignmentOperator), asCALL_CDECL_OBJLAST);
+	auto getFunctionString = type + " get()";
+	scriptingEngine->registerObjectMethod(name.c_str(), getFunctionString.c_str(), asFUNCTION(FutureBase::get), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectMethod(name.c_str(), "bool valid() const", asFUNCTION(FutureBase::valid), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectMethod(name.c_str(), "void wait() const", asFUNCTION(FutureBase::wait), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectMethod(name.c_str(), "future_status wait_for(const chrono::seconds& in) const", asFUNCTION(FutureBase::wait_for), asCALL_CDECL_OBJLAST);
+	//scriptingEngine->registerObjectMethod(name.c_str(), "future_status wait_until(chrono::system_clock::time_point) const", asFUNCTION(FutureBase::wait_for), asCALL_CDECL_OBJLAST);
+}
+
+template<typename T, typename V>
+class SharedFutureRegisterHelper
+{
+public:
+	static void DefaultConstructor(T* memory) { new(memory) T(); }
+	static void CopyConstructor(const T& other, T* memory) { new(memory) T(other); }
+	//static void InitConstructor(int size, T* memory) { new(memory) T(size); }
+	static void DefaultDestructor(T* memory) { ((T*)memory)->~T(); }
+	
+	static T& assignmentOperator(const T& other, T* v) { (*v) = other; return *v; }
+	
+	static V get(T* v) { return v->get(); }
+	static bool valid(T* v) { return v->valid(); }
+	static void wait(T* v) { v->wait(); }
+	static std::future_status wait_for(const std::chrono::seconds& s, T* v) { return v->wait_for(s); }
+	//static std::future_status wait_until(const std::chrono::system_clock::time_point& timePoint, T* v) { return v->wait_until(timePoint); }
+};
+
+/**
+ * Register our shared_future bindings.
+ */
+template<typename V>
+void registerSharedFutureBindings(scripting::IScriptingEngine* scriptingEngine, const std::string& name, const std::string& type, asEObjTypeFlags objectTypeFlags = asOBJ_APP_CLASS_ALLINTS)
+{
+	
+	typedef SharedFutureRegisterHelper<std::shared_future<V>, V> SharedFutureBase;
+	
+	scriptingEngine->registerObjectType(name.c_str(), sizeof(std::shared_future<V>), asOBJ_VALUE | objectTypeFlags | asGetTypeTraits<std::shared_future<V>>());
+
+	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(SharedFutureBase::DefaultConstructor), asCALL_CDECL_OBJLAST);
+	auto copyConstructorString = std::string("void f(const ") + name + "& in)";
+	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, copyConstructorString.c_str(), asFUNCTION(SharedFutureBase::CopyConstructor), asCALL_CDECL_OBJLAST);
+	//scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f(int)", asFUNCTION(SharedFutureBase::InitConstructor), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_DESTRUCT, "void f()", asFUNCTION(SharedFutureBase::DefaultDestructor), asCALL_CDECL_OBJLAST);
+	
+	auto assignmentOperatorFunctionString = name + std::string("& opAssign(const ") + name + "& in)";
+	scriptingEngine->registerObjectMethod(name.c_str(), assignmentOperatorFunctionString.c_str(), asFUNCTION(SharedFutureBase::assignmentOperator), asCALL_CDECL_OBJLAST);
+	auto getFunctionString = type + " get()";
+	scriptingEngine->registerObjectMethod(name.c_str(), getFunctionString.c_str(), asFUNCTION(SharedFutureBase::get), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectMethod(name.c_str(), "bool valid() const", asFUNCTION(SharedFutureBase::valid), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectMethod(name.c_str(), "void wait() const", asFUNCTION(SharedFutureBase::wait), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectMethod(name.c_str(), "future_status wait_for(const chrono::seconds& in) const", asFUNCTION(SharedFutureBase::wait_for), asCALL_CDECL_OBJLAST);
+	//scriptingEngine->registerObjectMethod(name.c_str(), "future_status wait_until(chrono::system_clock::time_point) const", asFUNCTION(SharedFutureBase::wait_for), asCALL_CDECL_OBJLAST);
+}
+
+template<typename T>
+class HandleRegisterHelper
+{
+public:
+	static void DefaultConstructor(T* memory) { new(memory) T(); }
+	
+	template<typename T, typename... Args>
+	static void InitConstructor(T* memory, Args&&... args) { new(memory) T(std::forward<Args>(args)...); }
+	
+	static void CopyConstructor(T* memory, const T& other) { new(memory) T(other); }
+	static void DefaultDestructor(T* memory) { ((T*)memory)->~T(); }
+};
+
+/**
+ * Register our Handle bindings.
+ */
+template<typename T>
+void registerHandleBindings(scripting::IScriptingEngine* scriptingEngine, const std::string& name)
+{
+	typedef HandleRegisterHelper<T> HandleBase;
+	
+	scriptingEngine->registerObjectType(name.c_str(), sizeof(T), asOBJ_VALUE | asGetTypeTraits<T>());
+	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(HandleBase::DefaultConstructor), asCALL_CDECL_OBJFIRST);
+	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f(const uint64)", asFUNCTION(HandleBase::InitConstructor<T>), asCALL_CDECL_OBJFIRST);
+	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f(const " + name + "& in)", asFUNCTION(HandleBase::CopyConstructor), asCALL_CDECL_OBJFIRST);
+	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_DESTRUCT, "void f()", asFUNCTION(HandleBase::DefaultDestructor), asCALL_CDECL_OBJFIRST);
+	scriptingEngine->registerClassMethod(name.c_str(), name + "& opAssign(const " + name + "& in)", asMETHODPR(T, operator=, (const T&), T&));
+	scriptingEngine->registerClassMethod(name.c_str(), "uint64 id() const", asMETHODPR(T, id, () const, uint64));
+	scriptingEngine->registerClassMethod(name.c_str(), "bool opImplConv() const", asMETHODPR(T, operator bool, () const, bool )); 
+	scriptingEngine->registerClassMethod(name.c_str(), "bool opEquals(const " + name + "& in) const", asMETHODPR(T, operator==, (const T&) const, bool));
+}
+
+namespace idebugrenderer
+{
+void pushLine(const glm::vec3& from, const glm::vec3& to, const glm::vec3& color, IDebugRenderer* debugRenderer)
+{
+	debugRenderer->pushLine(from, to, color);
+}
+}
+
+namespace raybinding
+{
+void InitConstructor(const glm::vec3& from, const glm::vec3& to, void* memory) { new(memory) ray::Ray(from, to); }
+}
+
+ScriptingEngineBindingDelegate::ScriptingEngineBindingDelegate(logger::ILogger* logger, scripting::IScriptingEngine* scriptingEngine, GameEngine* gameEngine, graphics::IGraphicsEngine* graphicsEngine, physics::IPhysicsEngine* physicsEngine, pathfinding::IPathfindingEngine* pathfindingEngine)
 	:
+	logger_(logger),
 	scriptingEngine_(scriptingEngine),
 	gameEngine_(gameEngine),
 	graphicsEngine_(graphicsEngine),
-	physicsEngine_(physicsEngine)
+	physicsEngine_(physicsEngine),
+	pathfindingEngine_(pathfindingEngine)
 {
 }
 
@@ -50,6 +273,10 @@ void ScriptingEngineBindingDelegate::bind()
 	scriptingEngine_->registerEnum("TransformSpace");
 	scriptingEngine_->registerEnumValue("TransformSpace", "TS_LOCAL", graphics::TransformSpace::TS_LOCAL);
 	scriptingEngine_->registerEnumValue("TransformSpace", "TS_WORLD", graphics::TransformSpace::TS_WORLD);
+	
+	scriptingEngine_->registerEnum("State");
+	scriptingEngine_->registerEnumValue("State", "RELEASED", graphics::RELEASED);
+	scriptingEngine_->registerEnumValue("State", "PRESSED", graphics::PRESSED);
 	
 	scriptingEngine_->registerEnum("EventType");
 	scriptingEngine_->registerEnumValue("EventType", "UNKNOWN", graphics::UNKNOWN);
@@ -580,52 +807,40 @@ void ScriptingEngineBindingDelegate::bind()
 	scriptingEngine_->registerEnumValue("WindowFlags", "HERCULES_CLOSABLE", graphics::gui::HERCULES_CLOSABLE);
 	scriptingEngine_->registerEnumValue("WindowFlags", "HERCULES_MINIMIZABLE", graphics::gui::HERCULES_MINIMIZABLE);
 	scriptingEngine_->registerEnumValue("WindowFlags", "HERCULES_RESIZABLE", graphics::gui::HERCULES_RESIZABLE);
+	scriptingEngine_->registerEnumValue("WindowFlags", "HERCULES_NO_INPUT", graphics::gui::HERCULES_NO_INPUT);
 	
 	// Types available in the scripting engine
-	scriptingEngine_->registerObjectType("Entity", sizeof(entities::Entity), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<entities::Entity>());
-	scriptingEngine_->registerClassMethod("Entity", "uint64 getId() const", asMETHODPR(entities::Entity, getId, () const, uint64));
+	registerHandleBindings<entities::Entity>(scriptingEngine_, "Entity");
 	
-	scriptingEngine_->registerObjectType("ModelHandle", sizeof(ModelHandle), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<ModelHandle>());
-	scriptingEngine_->registerClassMethod("ModelHandle", "int32 getId() const", asMETHODPR(ModelHandle, getId, () const, int32));
+	registerHandleBindings<ModelHandle>(scriptingEngine_, "ModelHandle");
 	
-	scriptingEngine_->registerObjectType("CameraHandle", sizeof(graphics::CameraHandle), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<graphics::CameraHandle>());
-	scriptingEngine_->registerClassMethod("CameraHandle", "uint64 id() const", asMETHODPR(graphics::CameraHandle, id, () const, uint64));
-	scriptingEngine_->registerClassMethod("CameraHandle", "uint32 index() const", asMETHODPR(graphics::CameraHandle, index, () const, uint32));
-	scriptingEngine_->registerClassMethod("CameraHandle", "uint32 version() const", asMETHODPR(graphics::CameraHandle, version, () const, uint32));
-	scriptingEngine_->registerObjectType("MeshHandle", sizeof(graphics::MeshHandle), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<graphics::MeshHandle>());
-	scriptingEngine_->registerClassMethod("MeshHandle", "uint64 id() const", asMETHODPR(graphics::MeshHandle, id, () const, uint64));
-	scriptingEngine_->registerClassMethod("MeshHandle", "uint32 index() const", asMETHODPR(graphics::MeshHandle, index, () const, uint32));
-	scriptingEngine_->registerClassMethod("MeshHandle", "uint32 version() const", asMETHODPR(graphics::MeshHandle, version, () const, uint32));
-	scriptingEngine_->registerObjectType("TextureHandle", sizeof(graphics::TextureHandle), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<graphics::TextureHandle>());
-	scriptingEngine_->registerClassMethod("TextureHandle", "uint64 id() const", asMETHODPR(graphics::TextureHandle, id, () const, uint64));
-	scriptingEngine_->registerClassMethod("TextureHandle", "uint32 index() const", asMETHODPR(graphics::TextureHandle, index, () const, uint32));
-	scriptingEngine_->registerClassMethod("TextureHandle", "uint32 version() const", asMETHODPR(graphics::TextureHandle, version, () const, uint32));
-	scriptingEngine_->registerObjectType("RenderableHandle", sizeof(graphics::RenderableHandle), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<graphics::RenderableHandle>());
-	scriptingEngine_->registerClassMethod("RenderableHandle", "uint64 id() const", asMETHODPR(graphics::RenderableHandle, id, () const, uint64));
-	scriptingEngine_->registerClassMethod("RenderableHandle", "uint32 index() const", asMETHODPR(graphics::RenderableHandle, index, () const, uint32));
-	scriptingEngine_->registerClassMethod("RenderableHandle", "uint32 version() const", asMETHODPR(graphics::RenderableHandle, version, () const, uint32));
-	scriptingEngine_->registerObjectType("ShaderHandle", sizeof(graphics::ShaderHandle), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<graphics::ShaderHandle>());
-	scriptingEngine_->registerClassMethod("ShaderHandle", "uint64 id() const", asMETHODPR(graphics::ShaderHandle, id, () const, uint64));
-	scriptingEngine_->registerClassMethod("ShaderHandle", "uint32 index() const", asMETHODPR(graphics::ShaderHandle, index, () const, uint32));
-	scriptingEngine_->registerClassMethod("ShaderHandle", "uint32 version() const", asMETHODPR(graphics::ShaderHandle, version, () const, uint32));
-	scriptingEngine_->registerObjectType("ShaderProgramHandle", sizeof(graphics::ShaderProgramHandle), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<graphics::ShaderProgramHandle>());
-	scriptingEngine_->registerClassMethod("ShaderProgramHandle", "uint64 id() const", asMETHODPR(graphics::ShaderProgramHandle, id, () const, uint64));
-	scriptingEngine_->registerClassMethod("ShaderProgramHandle", "uint32 index() const", asMETHODPR(graphics::ShaderProgramHandle, index, () const, uint32));
-	scriptingEngine_->registerClassMethod("ShaderProgramHandle", "uint32 version() const", asMETHODPR(graphics::ShaderProgramHandle, version, () const, uint32));
-	scriptingEngine_->registerObjectType("CollisionShapeHandle", sizeof(physics::CollisionShapeHandle), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<physics::CollisionShapeHandle>());
-	scriptingEngine_->registerClassMethod("CollisionShapeHandle", "uint64 id() const", asMETHODPR(physics::CollisionShapeHandle, id, () const, uint64));
-	scriptingEngine_->registerClassMethod("CollisionShapeHandle", "uint32 index() const", asMETHODPR(physics::CollisionShapeHandle, index, () const, uint32));
-	scriptingEngine_->registerClassMethod("CollisionShapeHandle", "uint32 version() const", asMETHODPR(physics::CollisionShapeHandle, version, () const, uint32));
-	scriptingEngine_->registerObjectType("CollisionBodyHandle", sizeof(physics::CollisionBodyHandle), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<physics::CollisionBodyHandle>());
-	scriptingEngine_->registerClassMethod("CollisionBodyHandle", "uint64 id() const", asMETHODPR(physics::CollisionBodyHandle, id, () const, uint64));
-	scriptingEngine_->registerClassMethod("CollisionBodyHandle", "uint32 index() const", asMETHODPR(physics::CollisionBodyHandle, index, () const, uint32));
-	scriptingEngine_->registerClassMethod("CollisionBodyHandle", "uint32 version() const", asMETHODPR(physics::CollisionBodyHandle, version, () const, uint32));
+	registerHandleBindings<graphics::CameraHandle>(scriptingEngine_, "CameraHandle");
+	registerHandleBindings<graphics::RenderSceneHandle>(scriptingEngine_, "RenderSceneHandle");
+	registerHandleBindings<graphics::MeshHandle>(scriptingEngine_, "MeshHandle");
+	registerHandleBindings<graphics::TextureHandle>(scriptingEngine_, "TextureHandle");
+	registerHandleBindings<graphics::RenderableHandle>(scriptingEngine_, "RenderableHandle");
+	registerHandleBindings<graphics::ShaderHandle>(scriptingEngine_, "ShaderHandle");
+	registerHandleBindings<graphics::ShaderProgramHandle>(scriptingEngine_, "ShaderProgramHandle");
+	
+	registerHandleBindings<physics::PhysicsSceneHandle>(scriptingEngine_, "PhysicsSceneHandle");
+	registerHandleBindings<physics::CollisionShapeHandle>(scriptingEngine_, "CollisionShapeHandle");
+	
+	scriptingEngine_->registerObjectType("RigidBodyObjectHandle", sizeof(physics::RigidBodyObjectHandle), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<physics::RigidBodyObjectHandle>());
+	//scriptingEngine_->registerClassMethod("RigidBodyObjectHandle", "uint64 id() const", asMETHODPR(physics::RigidBodyObjectHandle, id, () const, uint64));
+	//scriptingEngine_->registerClassMethod("RigidBodyObjectHandle", "uint32 index() const", asMETHODPR(physics::RigidBodyObjectHandle, index, () const, uint32));
+	//scriptingEngine_->registerClassMethod("RigidBodyObjectHandle", "uint32 version() const", asMETHODPR(physics::RigidBodyObjectHandle, version, () const, uint32));
+	scriptingEngine_->registerObjectType("GhostObjectHandle", sizeof(physics::GhostObjectHandle), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<physics::GhostObjectHandle>());
+	//scriptingEngine_->registerClassMethod("GhostObjectHandle", "uint64 id() const", asMETHODPR(physics::GhostObjectHandle, id, () const, uint64));
+	//scriptingEngine_->registerClassMethod("GhostObjectHandle", "uint32 index() const", asMETHODPR(physics::GhostObjectHandle, index, () const, uint32));
+	//scriptingEngine_->registerClassMethod("GhostObjectHandle", "uint32 version() const", asMETHODPR(physics::GhostObjectHandle, version, () const, uint32));
 	
 	scriptingEngine_->registerObjectType("GraphicsComponent", sizeof(entities::GraphicsComponent), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<entities::GraphicsComponent>());
 	scriptingEngine_->registerObjectProperty("GraphicsComponent", "vec3 scale", asOFFSET(entities::GraphicsComponent, scale));
 	scriptingEngine_->registerObjectProperty("GraphicsComponent", "RenderableHandle renderableHandle", asOFFSET(entities::GraphicsComponent, renderableHandle));
-	scriptingEngine_->registerObjectType("PhysicsComponent", sizeof(entities::PhysicsComponent), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<entities::PhysicsComponent>());
-	scriptingEngine_->registerObjectProperty("PhysicsComponent", "CollisionBodyHandle collisionBodyHandle", asOFFSET(entities::PhysicsComponent, collisionBodyHandle));
+	scriptingEngine_->registerObjectType("RigidBodyObjectComponent", sizeof(entities::RigidBodyObjectComponent), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<entities::RigidBodyObjectComponent>());
+	scriptingEngine_->registerObjectProperty("RigidBodyObjectComponent", "RigidBodyObjectHandle rigidBodyObjectHandle", asOFFSET(entities::RigidBodyObjectComponent, rigidBodyObjectHandle));
+	scriptingEngine_->registerObjectType("GhostObjectComponent", sizeof(entities::GhostObjectComponent), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<entities::GhostObjectComponent>());
+	scriptingEngine_->registerObjectProperty("GhostObjectComponent", "GhostObjectHandle ghostObjectHandle", asOFFSET(entities::GhostObjectComponent, ghostObjectHandle));
 	scriptingEngine_->registerObjectType("PositionOrientationComponent", sizeof(entities::PositionOrientationComponent), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<entities::PositionOrientationComponent>());
 	scriptingEngine_->registerObjectProperty("PositionOrientationComponent", "vec3 position", asOFFSET(entities::PositionOrientationComponent, position));
 	scriptingEngine_->registerObjectProperty("PositionOrientationComponent", "quat orientation", asOFFSET(entities::PositionOrientationComponent, orientation));
@@ -670,8 +885,57 @@ void ScriptingEngineBindingDelegate::bind()
 	scriptingEngine_->registerObjectProperty("MouseWheelEvent", "int32 y", asOFFSET(graphics::MouseWheelEvent, y));
 	scriptingEngine_->registerObjectProperty("MouseWheelEvent", "uint32 direction", asOFFSET(graphics::MouseWheelEvent, direction));
 	
+	scriptingEngine_->registerObjectType("Ray", sizeof(ray::Ray), asOBJ_VALUE | asOBJ_POD | asOBJ_APP_CLASS_ALLFLOATS | asGetTypeTraits<ray::Ray>());
+	scriptingEngine_->registerObjectBehaviour("Ray", asBEHAVE_CONSTRUCT, "void f(const vec3& in, const vec3& in)", asFUNCTION(raybinding::InitConstructor), asCALL_CDECL_OBJLAST);
+	scriptingEngine_->registerObjectProperty("Ray", "vec3 from", asOFFSET(ray::Ray, from));
+	scriptingEngine_->registerObjectProperty("Ray", "vec3 to", asOFFSET(ray::Ray, to));
+	
+	scriptingEngine_->registerObjectType("Raycast", sizeof(Raycast), asOBJ_VALUE | asOBJ_POD | asOBJ_APP_CLASS_ALLFLOATS | asGetTypeTraits<Raycast>());
+	scriptingEngine_->registerClassMethod(
+		"Raycast",
+		"void setRay(const Ray& in)",
+		asMETHODPR(Raycast, setRay, (const ray::Ray&), void)
+	);
+	scriptingEngine_->registerClassMethod(
+		"Raycast",
+		"const Ray& ray() const",
+		asMETHODPR(Raycast, ray, () const, const ray::Ray&)
+	);
+	scriptingEngine_->registerClassMethod(
+		"Raycast",
+		"void setHitPointWorld(const vec3& in)",
+		asMETHODPR(Raycast, setHitPointWorld, (const glm::vec3&), void)
+	);
+	scriptingEngine_->registerClassMethod(
+		"Raycast",
+		"const vec3& hitPointWorld() const",
+		asMETHODPR(Raycast, hitPointWorld, () const, const glm::vec3&)
+	);
+	scriptingEngine_->registerClassMethod(
+		"Raycast",
+		"void setHitNormalWorld(const vec3& in)",
+		asMETHODPR(Raycast, setHitNormalWorld, (const glm::vec3&), void)
+	);
+	scriptingEngine_->registerClassMethod(
+		"Raycast",
+		"const vec3& hitNormalWorld() const",
+		asMETHODPR(Raycast, hitNormalWorld, () const, const glm::vec3&)
+	);
+	scriptingEngine_->registerClassMethod(
+		"Raycast",
+		"void setEntity(const Entity& in)",
+		asMETHODPR(Raycast, setEntity, (const entities::Entity&), void)
+	);
+	scriptingEngine_->registerClassMethod(
+		"Raycast",
+		"const Entity& entity() const",
+		asMETHODPR(Raycast, entity, () const, const entities::Entity&)
+	);
+	//scriptingEngine_->registerObjectProperty("Raycast", "vec3 from", asOFFSET(ray::Ray, from));
+	//scriptingEngine_->registerObjectProperty("Raycast", "vec3 to", asOFFSET(ray::Ray, to));
+	
 	// Register Model/Mesh/etc
-	//RegisterVectorBindings<glm::vec3>(engine_, "vectorVec3", "vec3");
+	//registerVectorBindings<glm::vec3>(engine_, "vectorVec3", "vec3");
 	//scriptingEngine_->registerObjectType("Mesh", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	//scriptingEngine_->registerObjectProperty("Mesh", "vectorMVec3 vertices", asOFFSET(graphics::model::Mesh, vertices));
 	//scriptingEngine_->registerObjectType("Model", 0, asOBJ_REF | asOBJ_NOCOUNT);
@@ -680,6 +944,78 @@ void ScriptingEngineBindingDelegate::bind()
 	scriptingEngine_->registerObjectType("Image", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	//scriptingEngine_->registerObjectProperty("Model", "vectorMesh meshes", asOFFSET(graphics::model::Model, meshes));
 	
+	// ILogger bindings
+	scriptingEngine_->registerObjectType("ILogger", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	scriptingEngine_->registerGlobalProperty("ILogger logger", logger_);
+	scriptingEngine_->registerClassMethod(
+		"ILogger",
+		"void info(const string& in)",
+		asMETHODPR(logger::ILogger, info, (const std::string&), void)
+	);
+	scriptingEngine_->registerClassMethod(
+		"ILogger",
+		"void debug(const string& in)",
+		asMETHODPR(logger::ILogger, debug, (const std::string&), void)
+	);
+	scriptingEngine_->registerClassMethod(
+		"ILogger",
+		"void warn(const string& in)",
+		asMETHODPR(logger::ILogger, warn, (const std::string&), void)
+	);
+	scriptingEngine_->registerClassMethod(
+		"ILogger",
+		"void error(const string& in)",
+		asMETHODPR(logger::ILogger, error, (const std::string&), void)
+	);
+	scriptingEngine_->registerClassMethod(
+		"ILogger",
+		"void fatal(const string& in)",
+		asMETHODPR(logger::ILogger, fatal, (const std::string&), void)
+	);
+	
+	// IThreadPool bindings
+	scriptingEngine_->registerObjectType("IThreadPool", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	scriptingEngine_->registerClassMethod(
+		"IThreadPool",
+		"int getActiveWorkerCount()",
+		asMETHODPR(IThreadPool, getActiveWorkerCount, () const, uint32)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IThreadPool",
+		"int getInactiveWorkerCount()",
+		asMETHODPR(IThreadPool, getInactiveWorkerCount, () const, uint32)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IThreadPool",
+		"int getWorkQueueSize()",
+		asMETHODPR(IThreadPool, getWorkQueueSize, () const, uint32)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IThreadPool",
+		"int getWorkQueueCount()",
+		asMETHODPR(IThreadPool, getWorkQueueCount, () const, uint32)
+	);
+	
+	// IOpenGlLoader bindings
+	scriptingEngine_->registerObjectType("IOpenGlLoader", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	scriptingEngine_->registerClassMethod(
+		"IOpenGlLoader",
+		"int getWorkQueueCount()",
+		asMETHODPR(IOpenGlLoader, getWorkQueueCount, () const, uint32)
+	);
+	
+	// Future bindings
+	scriptingEngine_->registerEnum("future_status");
+	scriptingEngine_->registerEnumValue("future_status", "deferred", static_cast<int64>(std::future_status::deferred));
+	scriptingEngine_->registerEnumValue("future_status", "ready", static_cast<int64>(std::future_status::ready));
+	scriptingEngine_->registerEnumValue("future_status", "timeout", static_cast<int64>(std::future_status::timeout));
+	
+	registerSharedFutureBindings<graphics::model::Model*>(scriptingEngine_, "shared_futureModel", "Model@");
+	registerSharedFutureBindings<image::Image*>(scriptingEngine_, "shared_futureImage", "Image@");
+	registerSharedFutureBindings<ModelHandle>(scriptingEngine_, "shared_futureModelHandle", "ModelHandle");
+	registerSharedFutureBindings<graphics::ShaderHandle>(scriptingEngine_, "shared_futureShaderHandle", "ShaderHandle");
+	registerSharedFutureBindings<graphics::ShaderProgramHandle>(scriptingEngine_, "shared_futureShaderProgramHandle", "ShaderProgramHandle");
+	
 	scriptingEngine_->registerObjectType("EngineStatistics", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	scriptingEngine_->registerObjectProperty("EngineStatistics", "float fps", asOFFSET(EngineStatistics, fps));
 	scriptingEngine_->registerObjectProperty("EngineStatistics", "float renderTime", asOFFSET(EngineStatistics, renderTime));
@@ -687,11 +1023,19 @@ void ScriptingEngineBindingDelegate::bind()
 	scriptingEngine_->registerObjectProperty("SceneStatistics", "float physicsTime", asOFFSET(SceneStatistics, physicsTime));
 	scriptingEngine_->registerObjectProperty("SceneStatistics", "float renderTime", asOFFSET(SceneStatistics, renderTime));
 	
+	// Register function declarations
+	scriptingEngine_->registerFunctionDefinition("void ButtonClickCallback()");
+	
 	// IGame
 	scriptingEngine_->registerInterface("IGame");
 	scriptingEngine_->registerInterfaceMethod("IGame", "void initialize()");
 	scriptingEngine_->registerInterfaceMethod("IGame", "void destroy()");
 	scriptingEngine_->registerInterfaceMethod("IGame", "void tick(const float)");
+	
+	// ISceneThingy
+	scriptingEngine_->registerInterface("ISceneThingy");
+	scriptingEngine_->registerInterfaceMethod("ISceneThingy", "void preTick(const float)");
+	scriptingEngine_->registerInterfaceMethod("ISceneThingy", "void postTick(const float)");
 	
 	// Gui
 	scriptingEngine_->registerObjectType("ILabel", 0, asOBJ_REF | asOBJ_NOCOUNT);
@@ -701,6 +1045,13 @@ void ScriptingEngineBindingDelegate::bind()
 		asMETHODPR(graphics::gui::ILabel, setLabel, (const std::string&), void)
 	);
 	scriptingEngine_->registerObjectType("IButton", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	scriptingEngine_->registerObjectMethod(
+		"IButton",
+		"void setCallback(ButtonClickCallback@ callback)",
+		asMETHODPR(GameEngine, setCallback, (graphics::gui::IButton*, scripting::ScriptFunctionHandle), void),
+		asCALL_THISCALL_OBJFIRST,
+		gameEngine_
+	);
 	scriptingEngine_->registerObjectType("IWindow", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	scriptingEngine_->registerClassMethod(
 		"IWindow",
@@ -764,40 +1115,61 @@ void ScriptingEngineBindingDelegate::bind()
 	);
 	scriptingEngine_->registerClassMethod(
 		"IScene",
-		"CollisionBodyHandle createDynamicRigidBody(const CollisionShapeHandle& in)",
-		asMETHODPR(IScene, createDynamicRigidBody, (const physics::CollisionShapeHandle&), physics::CollisionBodyHandle)
+		"RigidBodyObjectHandle createDynamicRigidBodyObject(const CollisionShapeHandle& in)",
+		asMETHODPR(IScene, createDynamicRigidBodyObject, (const physics::CollisionShapeHandle&), physics::RigidBodyObjectHandle)
 	);
 	scriptingEngine_->registerClassMethod(
 		"IScene",
-		"CollisionBodyHandle createDynamicRigidBody(const CollisionShapeHandle& in, const float, const float, const float)",
-		asMETHODPR(IScene, createDynamicRigidBody, (const physics::CollisionShapeHandle&, const float32, const float32, const float32), physics::CollisionBodyHandle)
+		"RigidBodyObjectHandle createDynamicRigidBodyObject(const CollisionShapeHandle& in, const float, const float, const float)",
+		asMETHODPR(IScene, createDynamicRigidBodyObject, (const physics::CollisionShapeHandle&, const float32, const float32, const float32), physics::RigidBodyObjectHandle)
 	);
 	scriptingEngine_->registerClassMethod(
 		"IScene",
-		"CollisionBodyHandle createDynamicRigidBody(const CollisionShapeHandle& in, const vec3& in, const quat& in, const float, const float, const float)",
-		asMETHODPR(IScene, createDynamicRigidBody, (const physics::CollisionShapeHandle&, const glm::vec3&, const glm::quat&, const float32, const float32, const float32), physics::CollisionBodyHandle)
+		"RigidBodyObjectHandle createDynamicRigidBodyObject(const CollisionShapeHandle& in, const vec3& in, const quat& in, const float, const float, const float)",
+		asMETHODPR(IScene, createDynamicRigidBodyObject, (const physics::CollisionShapeHandle&, const glm::vec3&, const glm::quat&, const float32, const float32, const float32), physics::RigidBodyObjectHandle)
 	);
 	scriptingEngine_->registerClassMethod(
 		"IScene",
-		"CollisionBodyHandle createStaticRigidBody(const CollisionShapeHandle& in)",
-		asMETHODPR(IScene, createStaticRigidBody, (const physics::CollisionShapeHandle&), physics::CollisionBodyHandle)
+		"RigidBodyObjectHandle createStaticRigidBodyObject(const CollisionShapeHandle& in)",
+		asMETHODPR(IScene, createStaticRigidBodyObject, (const physics::CollisionShapeHandle&), physics::RigidBodyObjectHandle)
 	);
 	scriptingEngine_->registerClassMethod(
 		"IScene",
-		"CollisionBodyHandle createStaticRigidBody(const CollisionShapeHandle& in, const float, const float)",
-		asMETHODPR(IScene, createStaticRigidBody, (const physics::CollisionShapeHandle&, const float32, const float32), physics::CollisionBodyHandle)
+		"RigidBodyObjectHandle createStaticRigidBodyObject(const CollisionShapeHandle& in, const float, const float)",
+		asMETHODPR(IScene, createStaticRigidBodyObject, (const physics::CollisionShapeHandle&, const float32, const float32), physics::RigidBodyObjectHandle)
 	);
 	scriptingEngine_->registerClassMethod(
 		"IScene",
-		"CollisionBodyHandle createStaticRigidBody(const CollisionShapeHandle& in, const vec3& in, const quat& in, const float, const float)",
-		asMETHODPR(IScene, createStaticRigidBody, (const physics::CollisionShapeHandle&, const glm::vec3&, const glm::quat&, const float32, const float32), physics::CollisionBodyHandle)
+		"RigidBodyObjectHandle createStaticRigidBodyObject(const CollisionShapeHandle& in, const vec3& in, const quat& in, const float, const float)",
+		asMETHODPR(IScene, createStaticRigidBodyObject, (const physics::CollisionShapeHandle&, const glm::vec3&, const glm::quat&, const float32, const float32), physics::RigidBodyObjectHandle)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IScene",
+		"GhostObjectHandle createGhostObject(const CollisionShapeHandle& in)",
+		asMETHODPR(IScene, createGhostObject, (const physics::CollisionShapeHandle&), physics::GhostObjectHandle)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IScene",
+		"GhostObjectHandle createGhostObject(const CollisionShapeHandle& in, const vec3& in, const quat& in)",
+		asMETHODPR(IScene, createGhostObject, (const physics::CollisionShapeHandle&, const glm::vec3&, const glm::quat&), physics::GhostObjectHandle)
 	);
 	scriptingEngine_->registerClassMethod(
 		"IScene",
 		"RenderableHandle createRenderable(const ModelHandle& in, const ShaderProgramHandle& in, const string& in = string())",
 		asMETHODPR(IScene, createRenderable, (const ModelHandle&, const graphics::ShaderProgramHandle&, const std::string&), graphics::RenderableHandle)
 	);
+	scriptingEngine_->registerClassMethod(
+		"IScene",
+		"RenderableHandle createRenderable(const MeshHandle& in, const TextureHandle& in, const ShaderProgramHandle& in, const string& in = string())",
+		asMETHODPR(IScene, createRenderable, (const graphics::MeshHandle&, const graphics::TextureHandle&, const graphics::ShaderProgramHandle&, const std::string&), graphics::RenderableHandle)
+	);
 	scriptingEngine_->registerClassMethod("IScene", "Entity createEntity()", asMETHODPR(IScene, createEntity, (), entities::Entity));
+	scriptingEngine_->registerClassMethod("IScene", "uint32 getNumEntities()", asMETHODPR(IScene, getNumEntities, () const, uint32));
+	scriptingEngine_->registerClassMethod(
+		"IScene",
+		"Raycast raycast(const Ray& in)",
+		asMETHODPR(IScene, raycast, (const ray::Ray&), Raycast)
+	);
 	scriptingEngine_->registerClassMethod(
 		"IScene",
 		"void assign(const Entity& in, const GraphicsComponent& in)", 
@@ -805,8 +1177,13 @@ void ScriptingEngineBindingDelegate::bind()
 	);
 	scriptingEngine_->registerClassMethod(
 		"IScene",
-		"void assign(const Entity& in, const PhysicsComponent& in)", 
-		asMETHODPR(IScene, assign, (const entities::Entity&, const entities::PhysicsComponent&), void)
+		"void assign(const Entity& in, const RigidBodyObjectComponent& in)", 
+		asMETHODPR(IScene, assign, (const entities::Entity&, const entities::RigidBodyObjectComponent&), void)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IScene",
+		"void assign(const Entity& in, const GhostObjectComponent& in)", 
+		asMETHODPR(IScene, assign, (const entities::Entity&, const entities::GhostObjectComponent&), void)
 	);
 	scriptingEngine_->registerClassMethod(
 		"IScene",
@@ -874,6 +1251,26 @@ void ScriptingEngineBindingDelegate::bind()
 	scriptingEngine_->registerGlobalProperty("IGraphicsEngine graphics", graphicsEngine_);
 	scriptingEngine_->registerClassMethod(
 		"IGraphicsEngine",
+		"uvec2 getViewport() const",
+		asMETHODPR(graphics::IGraphicsEngine, getViewport, () const, glm::uvec2)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IGraphicsEngine",
+		"mat4 getModelMatrix() const",
+		asMETHODPR(graphics::IGraphicsEngine, getModelMatrix, () const, glm::mat4)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IGraphicsEngine",
+		"mat4 getViewMatrix() const",
+		asMETHODPR(graphics::IGraphicsEngine, getViewMatrix, () const, glm::mat4)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IGraphicsEngine",
+		"mat4 getProjectionMatrix() const",
+		asMETHODPR(graphics::IGraphicsEngine, getProjectionMatrix, () const, glm::mat4)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IGraphicsEngine",
 		"CameraHandle createCamera(const vec3& in, const vec3& in)",
 		asMETHODPR(graphics::IGraphicsEngine, createCamera, (const glm::vec3&, const glm::vec3&), graphics::CameraHandle)
 	);
@@ -889,8 +1286,8 @@ void ScriptingEngineBindingDelegate::bind()
 	);
 	scriptingEngine_->registerClassMethod(
 		"IGraphicsEngine",
-		"RenderableHandle createRenderable(const MeshHandle& in, const TextureHandle& in, const ShaderProgramHandle& in)",
-		asMETHODPR(graphics::IGraphicsEngine, createRenderable, (const graphics::MeshHandle&, const graphics::TextureHandle&, const graphics::ShaderProgramHandle&), graphics::RenderableHandle)
+		"RenderableHandle createRenderable(const RenderSceneHandle& in, const MeshHandle& in, const TextureHandle& in, const ShaderProgramHandle& in)",
+		asMETHODPR(graphics::IGraphicsEngine, createRenderable, (const graphics::RenderSceneHandle&, const graphics::MeshHandle&, const graphics::TextureHandle&, const graphics::ShaderProgramHandle&), graphics::RenderableHandle)
 	);
 	scriptingEngine_->registerClassMethod(
 		"IGraphicsEngine",
@@ -932,6 +1329,21 @@ void ScriptingEngineBindingDelegate::bind()
 		"vec3 position(const CameraHandle& in) const",
 		asMETHODPR(graphics::IGraphicsEngine, position, (const graphics::CameraHandle&) const, glm::vec3)
 	);
+	scriptingEngine_->registerClassMethod(
+		"IGraphicsEngine",
+		"void lookAt(const CameraHandle& in, const vec3& in)",
+		asMETHODPR(graphics::IGraphicsEngine, lookAt, (const graphics::CameraHandle&, const glm::vec3&), void)
+	);
+	
+	// IDebugRenderer
+	scriptingEngine_->registerObjectType("IDebugRenderer", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	scriptingEngine_->registerGlobalProperty("IDebugRenderer debugRenderer", gameEngine_->getDebugRenderer());
+	scriptingEngine_->registerObjectMethod(
+		"IDebugRenderer",
+		"void pushLine(const vec3& in, const vec3& in, const vec3& in)",
+		asFUNCTION(idebugrenderer::pushLine),
+		asCALL_CDECL_OBJLAST
+	);
 	
 	// IPhysicsEngine
 	scriptingEngine_->registerObjectType("IPhysicsEngine", 0, asOBJ_REF | asOBJ_NOCOUNT);
@@ -943,8 +1355,27 @@ void ScriptingEngineBindingDelegate::bind()
 	);
 	scriptingEngine_->registerClassMethod(
 		"IPhysicsEngine",
-		"CollisionBodyHandle createStaticRigidBody(const CollisionShapeHandle& in)",
-		asMETHODPR(physics::IPhysicsEngine, createStaticRigidBody, (const physics::CollisionShapeHandle&), physics::CollisionBodyHandle)
+		"RigidBodyObjectHandle createStaticRigidBodyObject(const PhysicsSceneHandle& in, const CollisionShapeHandle& in)",
+		asMETHODPR(physics::IPhysicsEngine, createStaticRigidBodyObject, (const physics::PhysicsSceneHandle&, const physics::CollisionShapeHandle&, const physics::UserData&), physics::RigidBodyObjectHandle)
+	);
+	
+	// IPathfindingEngine
+	scriptingEngine_->registerObjectType("IPathfindingEngine", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	scriptingEngine_->registerGlobalProperty("IPathfindingEngine pathfinding", pathfindingEngine_);
+	scriptingEngine_->registerClassMethod(
+		"IPathfindingEngine",
+		"void test(vectorVec3& in, vectorUInt32& in)",
+		asMETHODPR(pathfinding::IPathfindingEngine, test, (std::vector<glm::vec3>&, std::vector<uint32>&), void )
+	);
+	scriptingEngine_->registerClassMethod(
+		"IPathfindingEngine",
+		"void test2(Entity, IScene@, const vec3& in, const quat& in)",
+		asMETHODPR(pathfinding::IPathfindingEngine, test2, (entities::Entity, IScene*, const glm::vec3&, const glm::quat&), void )
+	);
+	scriptingEngine_->registerClassMethod(
+		"IPathfindingEngine",
+		"void test3(Entity, const vec3& in, const quat& in)",
+		asMETHODPR(pathfinding::IPathfindingEngine, test3, (entities::Entity, const glm::vec3&, const glm::quat&), void )
 	);
 	
 	// IGameEngine functions available in the scripting engine
@@ -956,7 +1387,7 @@ void ScriptingEngineBindingDelegate::bind()
 	);
 	scriptingEngine_->registerGlobalFunction(
 		"void setIGameInstance(IGame@)",
-		asMETHODPR(IGameEngine, setIGameInstance, (asIScriptObject* obj), void),
+		asMETHODPR(GameEngine, setIGameInstance, (scripting::ScriptObjectHandle), void),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
@@ -969,6 +1400,30 @@ void ScriptingEngineBindingDelegate::bind()
 	scriptingEngine_->registerGlobalFunction(
 		"IPhysicsEngine@ getPhysicsEngine()",
 		asMETHODPR(IGameEngine, getPhysicsEngine, () const, physics::IPhysicsEngine*),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"IDebugRenderer@ getDebugRenderer()",
+		asMETHODPR(IGameEngine, getDebugRenderer, () const, IDebugRenderer*),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"IThreadPool@ getBackgroundThreadPool()",
+		asMETHODPR(IGameEngine, getBackgroundThreadPool, () const, IThreadPool*),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"IThreadPool@ getForegroundThreadPool()",
+		asMETHODPR(IGameEngine, getForegroundThreadPool, () const, IThreadPool*),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"IOpenGlLoader@ getOpenGlLoader()",
+		asMETHODPR(IGameEngine, getOpenGlLoader, () const, IOpenGlLoader*),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
@@ -986,49 +1441,49 @@ void ScriptingEngineBindingDelegate::bind()
 	);
 	scriptingEngine_->registerGlobalFunction(
 		"void addKeyboardEventListener(IKeyboardEventListener@)",
-		asMETHODPR(GameEngine, addKeyboardEventListener, (asIScriptObject*), void),
+		asMETHODPR(GameEngine, addKeyboardEventListener, (scripting::ScriptObjectHandle), void),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
 		"void addMouseMotionEventListener(IMouseMotionEventListener@)",
-		asMETHODPR(GameEngine, addMouseMotionEventListener, (asIScriptObject*), void),
+		asMETHODPR(GameEngine, addMouseMotionEventListener, (scripting::ScriptObjectHandle), void),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
 		"void addMouseButtonEventListener(IMouseButtonEventListener@)",
-		asMETHODPR(GameEngine, addMouseButtonEventListener, (asIScriptObject*), void),
+		asMETHODPR(GameEngine, addMouseButtonEventListener, (scripting::ScriptObjectHandle), void),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
 		"void addMouseWheelEventListener(IMouseWheelEventListener@)",
-		asMETHODPR(GameEngine, addMouseWheelEventListener, (asIScriptObject*), void),
+		asMETHODPR(GameEngine, addMouseWheelEventListener, (scripting::ScriptObjectHandle), void),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
 		"void removeKeyboardEventListener(IKeyboardEventListener@)",
-		asMETHODPR(GameEngine, removeKeyboardEventListener, (asIScriptObject*), void),
+		asMETHODPR(GameEngine, removeKeyboardEventListener, (scripting::ScriptObjectHandle), void),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
 		"void removeMouseMotionEventListener(IMouseMotionEventListener@)",
-		asMETHODPR(GameEngine, removeMouseMotionEventListener, (asIScriptObject*), void),
+		asMETHODPR(GameEngine, removeMouseMotionEventListener, (scripting::ScriptObjectHandle), void),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
 		"void removeMouseButtonEventListener(IMouseButtonEventListener@)",
-		asMETHODPR(GameEngine, addMouseButtonEventListener, (asIScriptObject*), void),
+		asMETHODPR(GameEngine, addMouseButtonEventListener, (scripting::ScriptObjectHandle), void),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
 		"void removeMouseWheelEventListener(IMouseWheelEventListener@)",
-		asMETHODPR(GameEngine, addMouseWheelEventListener, (asIScriptObject*), void),
+		asMETHODPR(GameEngine, addMouseWheelEventListener, (scripting::ScriptObjectHandle), void),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
@@ -1039,8 +1494,32 @@ void ScriptingEngineBindingDelegate::bind()
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
+		"shared_futureModel importModelAsync(const string& in, const string& in)",
+		asMETHODPR(IGameEngine, importModelAsync, (const std::string&, const std::string&), std::shared_future<graphics::model::Model*>),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
 		"Image@ loadImage(const string& in, const string& in)",
 		asMETHODPR(IGameEngine, loadImage, (const std::string&, const std::string&), image::Image*),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"shared_futureImage loadImageAsync(const string& in, const string& in)",
+		asMETHODPR(IGameEngine, loadImageAsync, (const std::string&, const std::string&), std::shared_future<image::Image*>),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"Model@ getModel(const string& in)",
+		asMETHODPR(IGameEngine, getModel, (const std::string&) const, graphics::model::Model*),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"Image@ getImage(const string& in)",
+		asMETHODPR(IGameEngine, getImage, (const std::string&) const, image::Image*),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
@@ -1063,8 +1542,20 @@ void ScriptingEngineBindingDelegate::bind()
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
+		"shared_futureModelHandle loadStaticModelAsync(Model@)",
+		asMETHODPR(IGameEngine, loadStaticModelAsync, (const graphics::model::Model*), std::shared_future<ModelHandle>),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
 		"ShaderHandle createVertexShader(const string& in, const string& in)",
 		asMETHODPR(IGameEngine, createVertexShader, (const std::string&, const std::string&), graphics::ShaderHandle),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"shared_futureShaderHandle createVertexShaderAsync(const string& in, const string& in)",
+		asMETHODPR(IGameEngine, createVertexShaderAsync, (const std::string&, const std::string&), std::shared_future<graphics::ShaderHandle>),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
@@ -1075,14 +1566,32 @@ void ScriptingEngineBindingDelegate::bind()
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
+		"shared_futureShaderHandle createVertexShaderFromSourceAsync(const string& in, const string& in)",
+		asMETHODPR(IGameEngine, createVertexShaderFromSourceAsync, (const std::string&, const std::string&), std::shared_future<graphics::ShaderHandle>),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
 		"ShaderHandle createFragmentShader(const string& in, const string& in)",
 		asMETHODPR(IGameEngine, createFragmentShader, (const std::string&, const std::string&), graphics::ShaderHandle),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
+		"shared_futureShaderHandle createFragmentShaderAsync(const string& in, const string& in)",
+		asMETHODPR(IGameEngine, createFragmentShaderAsync, (const std::string&, const std::string&), std::shared_future<graphics::ShaderHandle>),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
 		"ShaderHandle createFragmentShaderFromSource(const string& in, const string& in)",
 		asMETHODPR(IGameEngine, createFragmentShaderFromSource, (const std::string&, const std::string&), graphics::ShaderHandle),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"shared_futureShaderHandle createFragmentShaderFromSourceAsync(const string& in, const string& in)",
+		asMETHODPR(IGameEngine, createFragmentShaderFromSourceAsync, (const std::string&, const std::string&), std::shared_future<graphics::ShaderHandle>),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
@@ -1107,6 +1616,12 @@ void ScriptingEngineBindingDelegate::bind()
 	scriptingEngine_->registerGlobalFunction(
 		"ShaderProgramHandle createShaderProgram(const string& in, const ShaderHandle& in, const ShaderHandle& in)",
 		asMETHODPR(IGameEngine, createShaderProgram, (const std::string&, const graphics::ShaderHandle&, const graphics::ShaderHandle&), graphics::ShaderProgramHandle),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"shared_futureShaderProgramHandle createShaderProgramAsync(const string& in, const ShaderHandle& in, const ShaderHandle& in)",
+		asMETHODPR(IGameEngine, createShaderProgramAsync, (const std::string&, const graphics::ShaderHandle&, const graphics::ShaderHandle&), std::shared_future<graphics::ShaderProgramHandle>),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
@@ -1139,6 +1654,27 @@ void ScriptingEngineBindingDelegate::bind()
 	scriptingEngine_->registerGlobalFunction(
 		"IScene@ getScene(const string& in)",
 		asMETHODPR(IGameEngine, getScene, (const std::string&) const, IScene*),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	
+	scriptingEngine_->registerGlobalFunction(
+		"void destroyScene(const string& in)",
+		asMETHODPR(IGameEngine, destroyScene, (const std::string&), void),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"void destroyScene(IScene@)",
+		asMETHODPR(IGameEngine, destroyScene, (IScene* scene), void),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	
+	registerVectorBindings<IScene*>(scriptingEngine_, "vectorIScene", "IScene@");
+	scriptingEngine_->registerGlobalFunction(
+		"vectorIScene getAllScenes()",
+		asMETHODPR(IGameEngine, getAllScenes, () const, std::vector<IScene*>),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);

@@ -5,7 +5,8 @@
 #include <entityx/deps/Dependencies.h>
 
 #include "entities/GraphicsComponent.hpp"
-#include "entities/PhysicsComponent.hpp"
+#include "entities/RigidBodyObjectComponent.hpp"
+#include "entities/GhostObjectComponent.hpp"
 #include "entities/PositionOrientationComponent.hpp"
 
 namespace hercules
@@ -19,7 +20,8 @@ public:
 	EntityComponentSystem() : entityx::EntityX()
 	{
 		systems.add<entityx::deps::Dependency<GraphicsComponent, PositionOrientationComponent>>();
-		systems.add<entityx::deps::Dependency<PhysicsComponent, PositionOrientationComponent>>();
+		systems.add<entityx::deps::Dependency<RigidBodyObjectComponent, PositionOrientationComponent>>();
+		systems.add<entityx::deps::Dependency<GhostObjectComponent, PositionOrientationComponent>>();
 		systems.configure();
 	}
 	;

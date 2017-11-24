@@ -13,7 +13,9 @@ namespace entities
 
 struct PositionOrientationComponent
 {
-	PositionOrientationComponent(glm::vec3 position = glm::vec3(), glm::quat orientation = glm::quat()) : position(position), orientation(orientation)
+	PositionOrientationComponent() = default;
+	
+	PositionOrientationComponent(glm::vec3 position, glm::quat orientation) : position(position), orientation(orientation)
 	{
 	};
 	

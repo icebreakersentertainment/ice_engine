@@ -15,16 +15,20 @@ public:
 	ThreadPool(uint32 numThreads);
 	virtual ~ThreadPool();
 	
-	virtual void postWork(const std::function<void()>& work) override;
+	virtual std::future<void> postWork(const std::function<void()>& work) override;
+	virtual std::future<void> postWork(std::function<void()>&& work) override;
 	virtual void waitAll() override;
 	virtual void joinAll() override;
 	
-	virtual uint32 getActiveWorkerCount() override;
-	virtual uint32 getInactiveWorkerCount() override;
+	virtual uint32 getActiveWorkerCount() const override;
+	virtual uint32 getInactiveWorkerCount() const override;
 	
-	virtual uint32 getWorkQueueCount() override;
+	virtual uint32 getWorkQueueCount() const override;
+	virtual uint32 getWorkQueueSize() const override;
 	virtual void increaseWorkerCountBy(uint32 n) override;
 	virtual void decreaseWorkerCountBy(uint32 n) override;
+	
+	//void postWork(const std::function<void()>& work) override;
 	
 private:
 	std::unique_ptr<ctpl::thread_pool> pool_;

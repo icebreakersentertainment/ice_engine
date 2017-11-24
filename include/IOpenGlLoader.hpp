@@ -1,6 +1,11 @@
 #ifndef IOPENGLLOADER_H_
 #define IOPENGLLOADER_H_
 
+#include <functional>
+#include <future>
+
+#include "Types.hpp"
+
 namespace hercules
 {
 
@@ -12,10 +17,11 @@ public:
 	}
 	;
 	
-	virtual void postWork(const std::function<void()>& work) = 0;
+	virtual std::future<void> postWork(const std::function<void()>& work) = 0;
+	virtual std::future<void> postWork(std::function<void()>&& work) = 0;
 	virtual void waitAll() = 0;
 	
-	virtual unsigned int getWorkQueueCount() const = 0;
+	virtual uint32 getWorkQueueCount() const = 0;
 	
 	virtual void tick() = 0;
 	

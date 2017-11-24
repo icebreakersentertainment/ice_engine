@@ -17,11 +17,14 @@
 #include "Camera.hpp"
 #include "ThreadPool.hpp"
 #include "OpenGlLoader.hpp"
+#include "DebugRenderer.hpp"
 #include "IPluginManager.hpp"
 
 #include "graphics/IGraphicsEngineFactory.hpp"
 #include "graphics/IGraphicsEngine.hpp"
 #include "graphics/IEventListener.hpp"
+
+#include "pathfinding/IPathfindingEngineFactory.hpp"
 
 #include "scripting/IScriptingEngine.hpp"
 
@@ -45,12 +48,10 @@ public:
 	virtual ~GameEngine();
 
 	virtual void run() override;
-
-	virtual GameState getState() override;
 	
 	virtual const EngineStatistics& getEngineStatistics() const override;
 	
-	virtual void setIGameInstance(asIScriptObject* obj) override;
+	virtual void setIGameInstance(scripting::ScriptObjectHandle scriptObjectHandle) override;
 
 	/**
 	 * 
@@ -59,14 +60,24 @@ public:
 	
 	virtual graphics::IGraphicsEngine* getGraphicsEngine() const override;
 	virtual physics::IPhysicsEngine* getPhysicsEngine() const override;
+	virtual IDebugRenderer* getDebugRenderer() const override;
+	virtual pathfinding::IPathfindingEngine* getPathfindingEngine() const override;
+	virtual IThreadPool* getBackgroundThreadPool() const override;
+	virtual IThreadPool* getForegroundThreadPool() const override;
+	virtual IOpenGlLoader* getOpenGlLoader() const override;
 	
 	virtual graphics::gui::IGui* createGui(const std::string& name) override;
 	virtual void destroyGui(const graphics::gui::IGui* gui) override;
 	
+	virtual void setCallback(graphics::gui::IButton* button, scripting::ScriptFunctionHandle scriptFunctionHandle) override;
+	
 	//virtual AudioSample* loadAudioSample(const std::string& name, const std::string& filename) override;
 	virtual image::Image* loadImage(const std::string& name, const std::string& filename) override;
+	virtual std::shared_future<image::Image*> loadImageAsync(const std::string& name, const std::string& filename) override;
 	virtual graphics::model::Model* loadModel(const std::string& name, const std::string& filename) override;
+	virtual std::shared_future<graphics::model::Model*> loadModelAsync(const std::string& name, const std::string& filename) override;
 	virtual graphics::model::Model* importModel(const std::string& name, const std::string& filename) override;
+	virtual std::shared_future<graphics::model::Model*> importModelAsync(const std::string& name, const std::string& filename) override;
 	
 	//virtual void unloadAudioSample(const std::string& name) override;
 	virtual void unloadImage(const std::string& name) override;
@@ -77,17 +88,24 @@ public:
 	virtual graphics::model::Model* getModel(const std::string& name) const override;
 	
 	virtual ModelHandle loadStaticModel(const graphics::model::Model* model) override;
-	virtual graphics::RenderableHandle createRenderable(const ModelHandle& modelHandle, const graphics::ShaderProgramHandle& shaderProgramHandle, const std::string& name = std::string()) override;
+	virtual std::shared_future<ModelHandle> loadStaticModelAsync(const graphics::model::Model* model) override;
+	virtual graphics::RenderableHandle createRenderable(const graphics::RenderSceneHandle& renderSceneHandle, const ModelHandle& modelHandle, const graphics::ShaderProgramHandle& shaderProgramHandle, const std::string& name = std::string()) override;
+	virtual graphics::RenderableHandle createRenderable(const graphics::RenderSceneHandle& renderSceneHandle, const graphics::MeshHandle& meshHandle, const graphics::TextureHandle& textureHandle, const graphics::ShaderProgramHandle& shaderProgramHandle, const std::string& name = std::string()) override;
 	
 	virtual graphics::ShaderHandle createVertexShader(const std::string& name, const std::string& filename) override;
+	virtual std::shared_future<graphics::ShaderHandle> createVertexShaderAsync(const std::string& name, const std::string& filename) override;
 	virtual graphics::ShaderHandle createVertexShaderFromSource(const std::string& name, const std::string& data) override;
+	virtual std::shared_future<graphics::ShaderHandle> createVertexShaderFromSourceAsync(const std::string& name, const std::string& data) override;
 	virtual graphics::ShaderHandle createFragmentShader(const std::string& name, const std::string& filename) override;
+	virtual std::shared_future<graphics::ShaderHandle> createFragmentShaderAsync(const std::string& name, const std::string& filename) override;
 	virtual graphics::ShaderHandle createFragmentShaderFromSource(const std::string& name, const std::string& data) override;
+	virtual std::shared_future<graphics::ShaderHandle> createFragmentShaderFromSourceAsync(const std::string& name, const std::string& data) override;
 	virtual graphics::ShaderHandle getShader(const std::string& name) const override;
 	virtual void destroyShader(const std::string& name) override;
 	virtual void destroyShader(const graphics::ShaderHandle& shaderHandle) override;
 	
 	virtual graphics::ShaderProgramHandle createShaderProgram(const std::string& name, const graphics::ShaderHandle& vertexShaderHandle, const graphics::ShaderHandle& fragmentShaderHandle) override;
+	virtual std::shared_future<graphics::ShaderProgramHandle> createShaderProgramAsync(const std::string& name, const graphics::ShaderHandle& vertexShaderHandle, const graphics::ShaderHandle& fragmentShaderHandle) override;
 	virtual graphics::ShaderProgramHandle getShaderProgram(const std::string& name) const override;
 	virtual void destroyShaderProgram(const std::string& name) override;
 	virtual void destroyShaderProgram(const graphics::ShaderProgramHandle& shaderProgramHandle) override;
@@ -96,6 +114,7 @@ public:
 	virtual void destroyScene(const std::string& name) override;
 	virtual void destroyScene(IScene* scene) override;
 	virtual IScene* getScene(const std::string& name) const override;
+	virtual std::vector<IScene*> getAllScenes() const override;
 	
 	virtual void addKeyboardEventListener(IKeyboardEventListener* keyboardEventListener) override;
 	virtual void addMouseMotionEventListener(IMouseMotionEventListener* mouseMotionEventListener) override;
@@ -106,36 +125,30 @@ public:
 	virtual void removeMouseButtonEventListener(IMouseButtonEventListener* mouseButtonEventListener) override;
 	virtual void removeMouseWheelEventListener(IMouseWheelEventListener* mouseWheelEventListener) override;
 	
-	void addKeyboardEventListener(asIScriptObject* keyboardEventListener);
-	void addMouseMotionEventListener(asIScriptObject* mouseMotionEventListener);
-	void addMouseButtonEventListener(asIScriptObject* mouseButtonEventListener);
-	void addMouseWheelEventListener(asIScriptObject* mouseWheelEventListener);
-	void removeKeyboardEventListener(asIScriptObject* keyboardEventListener);
-	void removeMouseMotionEventListener(asIScriptObject* mouseMotionEventListener);
-	void removeMouseButtonEventListener(asIScriptObject* mouseButtonEventListener);
-	void removeMouseWheelEventListener(asIScriptObject* mouseWheelEventListener);
+	void addKeyboardEventListener(scripting::ScriptObjectHandle keyboardEventListener);
+	void addMouseMotionEventListener(scripting::ScriptObjectHandle mouseMotionEventListener);
+	void addMouseButtonEventListener(scripting::ScriptObjectHandle mouseButtonEventListener);
+	void addMouseWheelEventListener(scripting::ScriptObjectHandle mouseWheelEventListener);
+	void removeKeyboardEventListener(scripting::ScriptObjectHandle keyboardEventListener);
+	void removeMouseMotionEventListener(scripting::ScriptObjectHandle mouseMotionEventListener);
+	void removeMouseButtonEventListener(scripting::ScriptObjectHandle mouseButtonEventListener);
+	void removeMouseWheelEventListener(scripting::ScriptObjectHandle mouseWheelEventListener);
 	
 	// Implements the IEventListener interface
 	virtual bool processEvent(const graphics::Event& event) override;
 
 private:
-	//std::unique_ptr< glr::GlrProgram > glrProgram_;
-	//glr::IWindow* window_;
-	//sf::Window* sfmlWindow_;
-	//glr::gui::IGui* igui_;
-	//glr::ISceneManager* smgr_;
-	//std::unique_ptr< Camera > camera_;
-	
-	// Gui
-	//glr::gui::IGuiComponent* mainGui_;
-	
 	//Graphics
 	std::unique_ptr<graphics::IGraphicsEngineFactory> graphicsEngineFactory_;
 	std::unique_ptr< graphics::IGraphicsEngine > graphicsEngine_;
 	std::vector<std::unique_ptr< graphics::gui::IGui >> guis_;
 	
+	std::unique_ptr<IDebugRenderer> debugRenderer_;
+	
 	
 	std::unique_ptr< physics::IPhysicsEngine > physicsEngine_;
+	std::unique_ptr<pathfinding::IPathfindingEngineFactory> pathfindingEngineFactory_;
+	std::unique_ptr< pathfinding::IPathfindingEngine > pathfindingEngine_;
 	std::unique_ptr<scripting::IScriptingEngine> scriptingEngine_;
 	
 	std::unique_ptr<hercules::IPluginManager> pluginManager_;
@@ -158,21 +171,18 @@ private:
 	std::map<std::string, graphics::ShaderHandle> shaderHandles_;
 	std::map<std::string, graphics::ShaderProgramHandle> shaderProgramHandles_;
 	
+	scripting::ScriptHandle bootstrapScriptHandle_;
+	scripting::ScriptObjectHandle scriptObjectHandle_;
+	
 	ResourceCache resourceCache_;
 	
-	bool running_;
-	GameState state_;
-	
+	bool running_;	
 	EngineStatistics engineStatistics_;
 
 	void tick(const float32 delta);
 	void initialize();
 	void destroy();
 	void exit();
-
-	void setState(GameState state);
-
-	void startNewGame();
 
 	void handleEvents();
 
@@ -185,37 +195,13 @@ private:
 
 	// Testing
 	void test();
-
-	float32 currentFps_;
-	float32 getFps();
-	uint32 getThreadPoolQueueSize();
-	uint32 getOpenGlThreadPoolQueueSize();
-	uint32 getThreadPoolWorkerCount();
-	uint32 getThreadPoolActiveWorkerCount();
-	uint32 getThreadPoolInactiveWorkerCount();
-	
-	// Keeping track of how long things take
-	int32 timeForPhysics_;
-	int32 timeForTick_;
-	int32 timeForRender_;
-	int32 timeForMisc_;
-	int32 timeForInput_;
-	int32 timeForGuiUpdate_;
-	int32 timeForScripting_;
-	
-	int32 getTimeForPhysics();
-	int32 getTimeForTick();
-	int32 getTimeForRender();
-	int32 getTimeForMisc();
-	int32 getTimeForInput();
-	int32 getTimeForGuiUpdate();
-	int32 getTimeForScripting();
-	
+		
 	// Initialization stuff
 	void initializeLoggingSubSystem();
 	void initializeFileSystemSubSystem();
 	void initializeSoundSubSystem();
 	void initializePhysicsSubSystem();
+	void initializePathfindingSubSystem();
 	void initializeGraphicsSubSystem();
 	void initializeInputSubSystem();
 	void initializeScriptingSubSystem();
@@ -226,18 +212,14 @@ private:
 	void loadEssentialGameData();
 	void loadUserInterface();
 	
-	static uint32 COMPONENT_TYPE_GRAPHICS;
-	
 	std::vector<std::pair<graphics::MeshHandle, graphics::TextureHandle>> staticModels_;
 	
 	// testing
-	std::unique_ptr<ThreadPool> threadPool_;
+	std::unique_ptr<ThreadPool> backgroundThreadPool_;
+	std::unique_ptr<ThreadPool> foregroundThreadPool_;
 	std::unique_ptr<OpenGlLoader> openGlLoader_;
 	
 	//std::unique_ptr<pyliteserializer::SqliteDataStore> dataStore_;
-	
-	// test
-	bool inConsole_;
 };
 
 }

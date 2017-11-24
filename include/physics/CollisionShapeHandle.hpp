@@ -8,12 +8,10 @@ namespace hercules
 namespace physics
 {
 
-class CollisionShapeHandle : public handles::Handle
+class CollisionShapeHandle : public handles::Handle<CollisionShapeHandle>
 {
 public:
-	using handles::Handle::Handle;
-	
-	static const CollisionShapeHandle INVALID;
+	using handles::Handle<CollisionShapeHandle>::Handle;
 };
 
 }

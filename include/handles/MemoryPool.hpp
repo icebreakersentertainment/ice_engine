@@ -18,11 +18,6 @@ class MemoryPool
 public:
 	MemoryPool()
 	{
-		pool_ = std::make_unique<boost::pool<>>(sizeof(T));
-	};
-	
-	virtual ~MemoryPool()
-	{
 	};
 	
 	T* malloc()
@@ -35,7 +30,7 @@ public:
 		pool_->free(chunk);
 	}
 	
-	bool isFrom(T* chunk)
+	bool isFrom(T* chunk) const
 	{
 		return pool_->is_from(chunk);
 	}
@@ -51,7 +46,7 @@ public:
 	}
 	
 private:
-	std::unique_ptr<boost::pool<>> pool_;
+	std::unique_ptr<boost::pool<>> pool_ = std::make_unique<boost::pool<>>(sizeof(T));
 };
 
 }

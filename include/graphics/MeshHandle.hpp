@@ -8,12 +8,10 @@ namespace hercules
 namespace graphics
 {
 
-class MeshHandle : public handles::Handle
+class MeshHandle : public handles::Handle<MeshHandle>
 {
 public:
-	using handles::Handle::Handle;
-	
-	static const MeshHandle INVALID;
+	using handles::Handle<MeshHandle>::Handle;
 };
 
 }

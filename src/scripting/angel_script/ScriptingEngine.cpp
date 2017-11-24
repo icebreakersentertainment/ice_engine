@@ -7,8 +7,10 @@
 #include "scripting/angel_script/scriptarray/scriptarray.h"
 #include "scripting/angel_script/scriptstdstring/scriptstdstring.h"
 //#include "scripting/angel_script/glm_bindings/Vec3.h"
+#include "scripting/angel_script/scriptdictionary/scriptdictionary.h"
 #include "scripting/angel_script/scriptvector/scriptvector.hpp"
 #include "scripting/angel_script/scriptglm/scriptglm.hpp"
+#include "scripting/angel_script/scriptchrono/scriptchrono.hpp"
 
 #include "exceptions/Exception.hpp"
 #include "exceptions/InvalidArgumentException.hpp"
@@ -137,6 +139,8 @@ void ScriptingEngine::initialize()
 	
 	RegisterScriptArray(engine_, true);
 	
+	RegisterScriptDictionary(engine_);
+	
 	RegisterVectorBindings<int8>(engine_, "vectorInt8", "int8");
 	RegisterVectorBindings<uint8>(engine_, "vectorUInt8", "uint8");
 	RegisterVectorBindings<int16>(engine_, "vectorInt16", "int16");
@@ -150,6 +154,8 @@ void ScriptingEngine::initialize()
 	RegisterVectorBindings<float64>(engine_, "vectorDouble", "double");
 	
 	RegisterGlmBindings(engine_);
+	
+	RegisterChronoBindings(engine_);
 	
 	RegisterVectorBindings<glm::vec2>(engine_, "vectorVec2", "vec2");
 	RegisterVectorBindings<glm::vec3>(engine_, "vectorVec3", "vec3");
@@ -287,6 +293,8 @@ void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptFunction*
 {
 	assert(function->GetParamCount() == 0);
 	
+	
+	
 	int32 r = context->Prepare(function);
 	assertNoAngelscriptError(r);
 	
@@ -378,14 +386,14 @@ void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptModule* m
 
 void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptFunctionHandle& scriptFunctionHandle) const
 {
-	auto function = functionData_[scriptFunctionHandle].function;
+	auto function = static_cast<asIScriptFunction*>(scriptFunctionHandle.get());
 	
 	callFunction(context, function);
 }
 
 void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptFunctionHandle& scriptFunctionHandle, ParameterList& arguments) const
 {
-	auto function = functionData_[scriptFunctionHandle].function;
+	auto function = static_cast<asIScriptFunction*>(scriptFunctionHandle.get());
 	
 	callFunction(context, function, arguments);
 }
@@ -404,7 +412,7 @@ void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptHandle
 
 void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptObjectHandle& scriptObjectHandle, const std::string& function) const
 {
-	auto object = scriptObjectData_[scriptObjectHandle].object;
+	auto object = static_cast<asIScriptObject*>(scriptObjectHandle.get());
 	auto objectFunction = getMethod(scriptObjectHandle, function);
 	
 	callFunction(context, objectFunction, object);
@@ -412,7 +420,8 @@ void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptObject
 
 void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptObjectHandle& scriptObjectHandle, const std::string& function, ParameterList& arguments) const
 {
-	auto object = scriptObjectData_[scriptObjectHandle].object;
+	auto object = static_cast<asIScriptObject*>(scriptObjectHandle.get());
+	
 	auto objectFunction = getMethod(scriptObjectHandle, function);
 	
 	callFunction(context, objectFunction, object, arguments);
@@ -420,16 +429,16 @@ void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptObject
 
 void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptObjectHandle& scriptObjectHandle, const ScriptObjectFunctionHandle& scriptObjectFunctionHandle) const
 {
-	auto object = scriptObjectData_[scriptObjectHandle].object;
-	auto objectFunction = objectFunctionData_[scriptObjectFunctionHandle].function;
+	auto object = static_cast<asIScriptObject*>(scriptObjectHandle.get());
+	auto objectFunction = static_cast<asIScriptFunction*>(scriptObjectFunctionHandle.get());
 	
 	callFunction(context, objectFunction, object);
 }
 
 void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptObjectHandle& scriptObjectHandle, const ScriptObjectFunctionHandle& scriptObjectFunctionHandle, ParameterList& arguments) const
 {
-	auto object = scriptObjectData_[scriptObjectHandle].object;
-	auto objectFunction = objectFunctionData_[scriptObjectFunctionHandle].function;
+	auto object = static_cast<asIScriptObject*>(scriptObjectHandle.get());
+	auto objectFunction = static_cast<asIScriptFunction*>(scriptObjectFunctionHandle.get());
 	
 	callFunction(context, objectFunction, object, arguments);
 }
@@ -815,6 +824,12 @@ void ScriptingEngine::execute(const ScriptFunctionHandle& scriptFunctionHandle, 
 	returnValue = context->GetReturnQWord();
 }
 
+void ScriptingEngine::execute(const ScriptFunctionHandle& scriptFunctionHandle, ParameterList& arguments, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptFunctionHandle, arguments);
+}
+
 void ScriptingEngine::execute(const ScriptFunctionHandle& scriptFunctionHandle, ParameterList& arguments, std::function<void(void*)> returnObjectParser, const ExecutionContextHandle& executionContextHandle)
 {
 	auto context = getContext(executionContextHandle);
@@ -976,6 +991,12 @@ void ScriptingEngine::execute(const ScriptHandle& scriptHandle, const std::strin
 	auto context = getContext(executionContextHandle);
 	callFunction(context, scriptHandle, function);
 	returnObjectParser(context->GetReturnObject());
+}
+
+void ScriptingEngine::execute(const ScriptHandle& scriptHandle, const std::string& function, ParameterList& arguments, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptHandle, function, arguments);
 }
 
 void ScriptingEngine::execute(const ScriptHandle& scriptHandle, const std::string& function, ParameterList& arguments, std::function<void(void*)> returnObjectParser, const ExecutionContextHandle& executionContextHandle)
@@ -1141,6 +1162,12 @@ void ScriptingEngine::execute(const ScriptObjectHandle& scriptObjectHandle, cons
 	returnObjectParser(context->GetReturnObject());
 }
 
+void ScriptingEngine::execute(const ScriptObjectHandle& scriptObjectHandle, const std::string& function, ParameterList& arguments, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptObjectHandle, function, arguments);
+}
+
 void ScriptingEngine::execute(const ScriptObjectHandle& scriptObjectHandle, const std::string& function, ParameterList& arguments, std::function<void(void*)> returnObjectParser, const ExecutionContextHandle& executionContextHandle)
 {
 	auto context = getContext(executionContextHandle);
@@ -1304,6 +1331,12 @@ void ScriptingEngine::execute(const ScriptObjectHandle& scriptObjectHandle, cons
 	returnValue = context->GetReturnQWord();
 }
 
+void ScriptingEngine::execute(const ScriptObjectHandle& scriptObjectHandle, const ScriptObjectFunctionHandle& scriptObjectFunctionHandle, ParameterList& arguments, const ExecutionContextHandle& executionContextHandle)
+{
+	auto context = getContext(executionContextHandle);
+	callFunction(context, scriptObjectHandle, scriptObjectFunctionHandle, arguments);
+}
+
 void ScriptingEngine::execute(const ScriptObjectHandle& scriptObjectHandle, const ScriptObjectFunctionHandle& scriptObjectFunctionHandle, ParameterList& arguments, std::function<void(void*)> returnObjectParser, const ExecutionContextHandle& executionContextHandle)
 {
 	auto context = getContext(executionContextHandle);
@@ -1396,24 +1429,31 @@ ExecutionContextHandle ScriptingEngine::createExecutionContext()
 	return handle;
 }
 
-ScriptObjectHandle ScriptingEngine::registerScriptObject(const ScriptHandle& scriptHandle, asIScriptObject* object)
+void ScriptingEngine::destroyExecutionContext(const ExecutionContextHandle& executionContextHandle)
 {
-	auto handle = scriptObjectData_.create();
-	auto& scriptObjectData = scriptObjectData_[handle];
-	
-	scriptObjectData.scriptHandle = scriptHandle;
-	scriptObjectData.className = object->GetObjectType()->GetName();
-	scriptObjectData.object = object;
-	
-	return handle;
+	contextData_.destroy(executionContextHandle);
 }
 
-void ScriptingEngine::unregisterScriptObject(const ScriptObjectHandle& scriptObjectHandle)
+void ScriptingEngine::releaseScriptObject(const ScriptObjectHandle& scriptObjectHandle)
+{
+	auto object = static_cast<asIScriptObject*>(scriptObjectHandle.get());
+	
+	object->Release();
+}
+
+void ScriptingEngine::releaseAllScriptObjects()
 {
 	
 }
 
-void ScriptingEngine::unregisterAllScriptObjects()
+void ScriptingEngine::releaseScriptFunction(const ScriptFunctionHandle& scriptFunctionHandle)
+{
+	auto function = static_cast<asIScriptFunction*>(scriptFunctionHandle.get());
+	
+	function->Release();
+}
+
+void ScriptingEngine::releaseAllScriptFunctions()
 {
 	
 }
@@ -1462,6 +1502,28 @@ void ScriptingEngine::registerClassReleaseRef(const std::string& name, const std
 void ScriptingEngine::registerClassMethod(const std::string& className, const std::string& methodSignature, const asSFuncPtr& funcPointer)
 {
 	registerObjectMethod(className.c_str(), methodSignature.c_str(), funcPointer, asCALL_THISCALL);
+}
+
+void ScriptingEngine::registerFunctionDefinition(const std::string& name)
+{
+	int32 r = engine_->RegisterFuncdef(name.c_str());
+	
+	if (r < 0)
+	{
+		std::string msg = std::string();
+
+		if ( name.length() > 80 )
+		{
+			msg = std::string("Unable to register function definition: (cannot display name; it is too long!)");
+		}
+		else
+		{
+			msg = std::string("Unable to register function definition: ");
+			msg += name;
+		}
+		
+		throw Exception("ScriptEngine: " + msg);
+	}
 }
 
 void ScriptingEngine::registerInterface(const std::string& name)
@@ -1529,7 +1591,7 @@ void ScriptingEngine::registerEnum(const std::string& type)
 	}
 }
 
-void ScriptingEngine::registerEnumValue(const std::string& type, const std::string& name, const int32 value)
+void ScriptingEngine::registerEnumValue(const std::string& type, const std::string& name, const int64 value)
 {
 	int32 r = engine_->RegisterEnumValue(type.c_str(), name.c_str(), value);
 	
@@ -1576,36 +1638,39 @@ void ScriptingEngine::destroyScript(const std::string& name)
 
 void ScriptingEngine::destroyScript(const ScriptHandle& scriptHandle)
 {
+	auto& moduleData = moduleData_[scriptHandle];
 	
+	moduleData.module->Discard();
+	
+	moduleData_.destroy(scriptHandle);
 }
 
 void ScriptingEngine::destroyAllScripts()
 {
+	for ( auto& m : moduleData_ )
+	{
+		m.module->Discard();
+	}
 	
+	moduleData_.clear();
 }
 
 ScriptFunctionHandle ScriptingEngine::getScriptFunction(const ScriptHandle& scriptHandle, const std::string& function)
 {
 	auto& moduleData = moduleData_[scriptHandle];
 	
-	auto handle = functionData_.create();
-	auto& functionData = functionData_[handle];
+	auto scriptFunctionObject = getFunctionByDecl(function, moduleData.module);
 	
-	functionData.function = getFunctionByDecl(function, moduleData.module);
-	
-	return handle;
+	return ScriptFunctionHandle(scriptFunctionObject);
 }
 
 ScriptObjectFunctionHandle ScriptingEngine::getScriptObjectFunction(const ScriptObjectHandle& scriptObjectHandle, const std::string& function)
 {
-	auto& scriptObjectData = scriptObjectData_[scriptObjectHandle];
+	auto object = static_cast<asIScriptObject*>(scriptObjectHandle.get());
 	
-	auto handle = objectFunctionData_.create();
-	auto& objectFunctionData = objectFunctionData_[handle];
+	auto scriptFunctionObject = getFunctionByDecl(function, object);
 	
-	objectFunctionData.function = getFunctionByDecl(function, scriptObjectData.object);
-	
-	return handle;
+	return ScriptObjectFunctionHandle(scriptFunctionObject);
 }
 
 void ScriptingEngine::registerObjectType(const std::string& obj, int32 byteSize, asDWORD flags)
@@ -1653,9 +1718,9 @@ void ScriptingEngine::registerObjectProperty(const std::string& obj, const std::
 }
 
 void ScriptingEngine::registerObjectMethod(const std::string& obj, const std::string& declaration,
-									  const asSFuncPtr& funcPointer, asDWORD callConv)
+									  const asSFuncPtr& funcPointer, asDWORD callConv, void* auxiliary)
 {
-	int32 r = engine_->RegisterObjectMethod(obj.c_str(), declaration.c_str(), funcPointer, callConv);
+	int32 r = engine_->RegisterObjectMethod(obj.c_str(), declaration.c_str(), funcPointer, callConv, auxiliary);
 	
 	if (r < 0)
 	{
@@ -1710,7 +1775,7 @@ void ScriptingEngine::destroy()
 		}
 	}
 	
-	unregisterAllScriptObjects();
+	releaseAllScriptObjects();
 	destroyAllScripts();
 	
 	engine_->ShutDownAndRelease();
@@ -1768,27 +1833,27 @@ asIScriptFunction* ScriptingEngine::getFunctionByDecl(const std::string& functio
 
 asIScriptModule* ScriptingEngine::getModule(const ScriptObjectHandle& scriptObjectHandle) const
 {
+	/*
 	const auto scriptObjectData = scriptObjectData_[scriptObjectHandle];
 	
 	auto module = moduleData_[scriptObjectData.scriptHandle].module;
 	
 	return module;
+	*/
+	
+	return nullptr;
 }
 
 asITypeInfo* ScriptingEngine::getType(const ScriptObjectHandle& scriptObjectHandle) const
 {
-	const auto& scriptObjectData = scriptObjectData_[scriptObjectHandle];
+	auto object = static_cast<asIScriptObject*>(scriptObjectHandle.get());
 	
-	auto module = moduleData_[scriptObjectData.scriptHandle].module;
-	
-	auto type = module->GetTypeInfoByDecl(scriptObjectData.className.c_str());
-	
-	return type;
+	return object->GetObjectType();
 }
 
 asIScriptFunction* ScriptingEngine::getMethod(const ScriptObjectHandle& scriptObjectHandle, const std::string& function) const
 {
-	auto module = getModule(scriptObjectHandle);
+	//auto module = getModule(scriptObjectHandle);
 	auto type = getType(scriptObjectHandle);
 	
 	return type->GetMethodByDecl(function.c_str());

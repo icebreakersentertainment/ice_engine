@@ -12,6 +12,12 @@ namespace hercules
 namespace graphics
 {
 
+enum State
+{
+	RELEASED = 0,
+	PRESSED
+};
+
 enum EventType
 {
 	UNKNOWN = 0,

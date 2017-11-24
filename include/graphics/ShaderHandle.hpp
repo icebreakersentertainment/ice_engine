@@ -20,12 +20,10 @@ enum struct ShaderType
 	COMPUTE
 };
 
-class ShaderHandle : public handles::Handle
+class ShaderHandle : public handles::Handle<ShaderHandle>
 {
 public:
-	using handles::Handle::Handle;
-	
-	static const ShaderHandle INVALID;
+	using handles::Handle<ShaderHandle>::Handle;
 };
 
 }

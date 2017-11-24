@@ -22,7 +22,8 @@ enum WindowFlags : uint32
 	HERCULES_NO_SCROLLBAR	= 1 << 3,
 	HERCULES_CLOSABLE		= 1 << 4,
 	HERCULES_MINIMIZABLE	= 1 << 5,
-	HERCULES_RESIZABLE		= 1 << 6
+	HERCULES_RESIZABLE		= 1 << 6,
+	HERCULES_NO_INPUT		= 1 << 7
 };
 
 class IWindow : public virtual IComponent

@@ -53,6 +53,7 @@ endif()
 # Dependencies
 set(PROJECT_LINK_LIBRARY_DIRECTORIES
   ./deps/angelscript/lib
+  ./deps/recastnavigation/lib
   ./deps/freeimage/lib
   ./deps/sqlite/lib
   ./deps/boost/lib
@@ -120,6 +121,10 @@ find_library(GLEW_LIBRARY NAMES libGLEW.so.2.0 glew32 PATHS ${PROJECT_LINK_LIBRA
 find_library(SDL_LIBRARY NAMES SDL2 PATHS ${PROJECT_LINK_LIBRARY_DIRECTORIES})
 find_library(SDL_MAIN_LIBRARY NAMES SDL2main PATHS ${PROJECT_LINK_LIBRARY_DIRECTORIES})
 find_library(ANGELSCRIPT_LIBRARY NAMES angelscript PATHS ${PROJECT_LINK_LIBRARY_DIRECTORIES})
+find_library(RECASTNAVIGATION_DETOUR_LIBRARY NAMES Detour PATHS ${PROJECT_LINK_LIBRARY_DIRECTORIES})
+find_library(RECASTNAVIGATION_DETOUR_CROWD_LIBRARY NAMES DetourCrowd PATHS ${PROJECT_LINK_LIBRARY_DIRECTORIES})
+find_library(RECASTNAVIGATION_DETOUR_TILE_CACHE_LIBRARY NAMES DetourTileCache PATHS ${PROJECT_LINK_LIBRARY_DIRECTORIES})
+find_library(RECASTNAVIGATION_RECAST_LIBRARY NAMES Recast PATHS ${PROJECT_LINK_LIBRARY_DIRECTORIES})
 find_library(ENTITYX_LIBRARY NAMES libentityx.so.1 entityx PATHS ${PROJECT_LINK_LIBRARY_DIRECTORIES})
 find_library(BULLET_COMMON_LIBRARY NAMES Bullet3Common PATHS ${PROJECT_LINK_LIBRARY_DIRECTORIES})
 find_library(BULLET_DYNAMICS_LIBRARY NAMES BulletDynamics PATHS ${PROJECT_LINK_LIBRARY_DIRECTORIES})
@@ -136,6 +141,8 @@ include_directories(./deps/assimp/include)
 include_directories(./deps/boost/include)
 include_directories(./deps/angelscript/include)
 include_directories(./deps/angelscript/include/angelscript)
+include_directories(./deps/recastnavigation/include)
+include_directories(./deps/recastnavigation/include/Detour)
 include_directories(./deps/bullet/include)
 include_directories(./deps/bullet/include/bullet)
 include_directories(./deps/entityx/include)
@@ -209,6 +216,10 @@ target_link_libraries(hercules ${GLEW_LIBRARY} )
 target_link_libraries(hercules ${SDL_LIBRARY} )
 target_link_libraries(hercules ${SDL_MAIN_LIBRARY} )
 target_link_libraries(hercules ${ANGELSCRIPT_LIBRARY} )
+target_link_libraries(hercules ${RECASTNAVIGATION_DETOUR_LIBRARY} )
+target_link_libraries(hercules ${RECASTNAVIGATION_DETOUR_CROWD_LIBRARY} )
+target_link_libraries(hercules ${RECASTNAVIGATION_DETOUR_TILE_CACHE_LIBRARY} )
+target_link_libraries(hercules ${RECASTNAVIGATION_RECAST_LIBRARY} )
 target_link_libraries(hercules ${ENTITYX_LIBRARY} )
 target_link_libraries(hercules ${BULLET_COMMON_LIBRARY} )
 target_link_libraries(hercules ${BULLET_DYNAMICS_LIBRARY} )
