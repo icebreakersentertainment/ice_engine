@@ -76,7 +76,7 @@ public:
 
 
 protected:
-	~Raycast() = default;
+	//~Raycast() = default;
 
 private:
 	ray::Ray ray_;
