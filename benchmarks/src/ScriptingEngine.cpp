@@ -42,7 +42,7 @@ public:
 		
 		scriptingEngine->registerGlobalFunction(
 			"void setTestInstance(ITest@)",
-			asMETHODPR(FixtureCallback, setTestInstance, (asIScriptObject* obj), void),
+			asMETHODPR(FixtureCallback, setTestInstance, (hercules::scripting::ScriptObjectHandle), void),
 			asCALL_THISCALL_ASGLOBAL,
 			this
 		);
@@ -71,9 +71,9 @@ void main()
 		scriptObjectFunctionHandle = scriptingEngine->getScriptObjectFunction(scriptObjectHandle, std::string("void tick(const float)"));
 	}
 	
-	void setTestInstance(asIScriptObject* obj)
+	void setTestInstance(hercules::scripting::ScriptObjectHandle scriptObjectHandle)
 	{
-		scriptObjectHandle = scriptingEngine->registerScriptObject(scriptHandle, obj);
+		scriptObjectHandle = scriptObjectHandle;
 	}
 	
 	hercules::scripting::ScriptObjectHandle scriptObjectHandle;
@@ -83,12 +83,12 @@ void main()
 
 BASELINE_F(ScriptingEngine, ExecuteScriptData, Fixture, 0, 10000)
 {
-	scriptingEngine->execute("void main() {}");
+	scriptingEngine->execute(std::string("void main() {}"), std::string("void main()"));
 }
 
 BENCHMARK_F(ScriptingEngine, ExecuteScriptData, Fixture, 0, 10000)
 {
-	scriptingEngine->execute("void main() {}");
+	scriptingEngine->execute(std::string("void main() {}"), std::string("void main()"));
 }
 
 BENCHMARK_F(ScriptingEngine, ScriptObjectTick, FixtureCallback, 0, 10000)
