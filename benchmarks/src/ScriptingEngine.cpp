@@ -73,7 +73,7 @@ void main()
 	
 	void setTestInstance(hercules::scripting::ScriptObjectHandle scriptObjectHandle)
 	{
-		scriptObjectHandle = scriptObjectHandle;
+		this->scriptObjectHandle = scriptObjectHandle;
 	}
 	
 	hercules::scripting::ScriptObjectHandle scriptObjectHandle;

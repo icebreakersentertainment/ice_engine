@@ -1,3 +1,5 @@
+#include <cstring>
+
 #include <Detour/DetourNavMeshBuilder.h>
 #include <Detour/DetourCommon.h>
 #include <Detour/DetourMath.h>

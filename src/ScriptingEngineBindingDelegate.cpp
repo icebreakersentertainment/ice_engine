@@ -213,7 +213,7 @@ class HandleRegisterHelper
 public:
 	static void DefaultConstructor(T* memory) { new(memory) T(); }
 	
-	template<typename T, typename... Args>
+	template<typename... Args>
 	static void InitConstructor(T* memory, Args&&... args) { new(memory) T(std::forward<Args>(args)...); }
 	
 	static void CopyConstructor(T* memory, const T& other) { new(memory) T(other); }
@@ -230,7 +230,7 @@ void registerHandleBindings(scripting::IScriptingEngine* scriptingEngine, const 
 	
 	scriptingEngine->registerObjectType(name.c_str(), sizeof(T), asOBJ_VALUE | asGetTypeTraits<T>());
 	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(HandleBase::DefaultConstructor), asCALL_CDECL_OBJFIRST);
-	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f(const uint64)", asFUNCTION(HandleBase::InitConstructor<T>), asCALL_CDECL_OBJFIRST);
+	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f(const uint64)", asFUNCTION(HandleBase::template InitConstructor<T>), asCALL_CDECL_OBJFIRST);
 	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f(const " + name + "& in)", asFUNCTION(HandleBase::CopyConstructor), asCALL_CDECL_OBJFIRST);
 	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_DESTRUCT, "void f()", asFUNCTION(HandleBase::DefaultDestructor), asCALL_CDECL_OBJFIRST);
 	scriptingEngine->registerClassMethod(name.c_str(), name + "& opAssign(const " + name + "& in)", asMETHODPR(T, operator=, (const T&), T&));
