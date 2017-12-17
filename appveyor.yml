@@ -23,5 +23,5 @@ build_script:
   - mkdir build
   - cd build
   - cmake -DCMAKE_BUILD_TYPE=Release -DICEENGINE_BUILD_BENCHMARKS=1 -DICEENGINE_BUILD_TESTS=1 -DICEENGINE_BUILD_AS_LIBRARY=1 ..
-  - msbuild /p:Configuration=Release ice_engine.sln
+  - msbuild ice_engine.sln
   - ctest
