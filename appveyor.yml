@@ -15,7 +15,7 @@ configuration:
   - Release
 
 install:
-  - choco install -y python
+  - choco install -y python2
   - python setup.py
 
 build_script:
