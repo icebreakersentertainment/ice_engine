@@ -6,14 +6,14 @@
 #include "physics/bullet/utilities/Utilities.hpp"
 #include "physics/CollisionShapeHandle.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 namespace physics
 {
 namespace bullet
 {
 
-PhysicsEngine::PhysicsEngine(hercules::utilities::Properties* properties, fs::IFileSystem* fileSystem, logger::ILogger* logger)
+PhysicsEngine::PhysicsEngine(ice_engine::utilities::Properties* properties, fs::IFileSystem* fileSystem, logger::ILogger* logger)
 {
 	properties_ = properties;
 	fileSystem_ = fileSystem;

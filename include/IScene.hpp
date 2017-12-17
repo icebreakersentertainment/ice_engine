@@ -30,7 +30,7 @@
 #include "physics/RigidBodyObjectHandle.hpp"
 #include "physics/GhostObjectHandle.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 
 class IScene

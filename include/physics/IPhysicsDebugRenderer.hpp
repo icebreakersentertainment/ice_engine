@@ -7,7 +7,7 @@
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 
-namespace hercules
+namespace ice_engine
 {
 namespace physics
 {

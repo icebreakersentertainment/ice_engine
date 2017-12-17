@@ -3,7 +3,7 @@
 
 #include "IFileSystem.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 namespace fs
 {

@@ -1,16 +1,16 @@
-Hercules
+Ice Engine
 --------
 
-[![Build Status](https://travis-ci.org/jarrettchisholm/hercules.png)](https://travis-ci.org/jarrettchisholm/hercules)
-[![Build status](https://ci.appveyor.com/api/projects/status/ardx8mj0aa7e9fxu/branch/master)](https://ci.appveyor.com/project/jarrettchisholm/hercules/branch/master)
+[![Build Status](https://travis-ci.org/jarrettchisholm/ice_engine.png)](https://travis-ci.org/jarrettchisholm/ice_engine)
+[![Build status](https://ci.appveyor.com/api/projects/status/ardx8mj0aa7e9fxu/branch/master)](https://ci.appveyor.com/project/jarrettchisholm/ice_engine/branch/master)
 
 **Note**: This project is incredibly young, and isn't in any kind of production ready state. 
 
-Documentation is available at [http://game-engine-hercules.readthedocs.io/en/latest/](http://game-engine-hercules.readthedocs.io/en/latest/).
+Documentation is available at [http://game-engine-ice_engine.readthedocs.io/en/latest/](http://game-engine-ice_engine.readthedocs.io/en/latest/).
 
 To clone:
 
-    git clone https://github.com/jarrettchisholm/hercules.git
+    git clone https://github.com/jarrettchisholm/ice_engine.git
 
 Get/build prerequisites:
 
@@ -27,7 +27,7 @@ To test on Linux:
 
     mkdir build
     cd build
-    cmake -D HERCULES_BUILD_AS_LIBRARY=1 -D HERCULES_GRAPHICS_BACKEND=noop -D HERCULES_BUILD_TESTS=1 ..
+    cmake -D ICEENGINE_BUILD_AS_LIBRARY=1 -D ICEENGINE_GRAPHICS_BACKEND=noop -D ICEENGINE_BUILD_TESTS=1 ..
     make
     ctest
 
@@ -40,7 +40,7 @@ To build on Windows:
     mkdir build/Release
     
     cmake -G "Visual Studio 14" ..
-    msbuild /p:Configuration=Release hercules.sln
+    msbuild /p:Configuration=Release ice_engine.sln
 
 To test on Windows:
 
@@ -51,6 +51,6 @@ To test on Windows:
     mkdir build/tests
     mkdir build/tests/Release
     
-    cmake -G "Visual Studio 14" -D BUILD_AS_LIBRARY=1 -D HERCULES_GRAPHICS_BACKEND=noop -D HERCULES_BUILD_TESTS=1 ..
-    msbuild /p:Configuration=Release hercules.sln
+    cmake -G "Visual Studio 14" -D BUILD_AS_LIBRARY=1 -D ICEENGINE_GRAPHICS_BACKEND=noop -D ICEENGINE_BUILD_TESTS=1 ..
+    msbuild /p:Configuration=Release ice_engine.sln
     ctest

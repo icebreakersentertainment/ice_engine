@@ -10,7 +10,7 @@
 #include "graphics/model/BoneNode.hpp"
 #include "graphics/model/Animation.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 namespace graphics
 {

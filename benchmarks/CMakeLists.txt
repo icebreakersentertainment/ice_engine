@@ -12,9 +12,9 @@ else()
   )
 endif()
 
-project(hercules_benchmarks)
+project(ice_engine_benchmarks)
 
-option(HERCULES_BENCHMARKS_EXPORT_TO_CSV "HERCULES_BENCHMARKS_EXPORT_TO_CSV" FALSE)
+option(ICEENGINE_BENCHMARKS_EXPORT_TO_CSV "ICEENGINE_BENCHMARKS_EXPORT_TO_CSV" FALSE)
 
 list(APPEND PROJECT_LINK_LIBRARY_DIRECTORIES ../deps/celero/lib)
 
@@ -49,12 +49,12 @@ add_definitions(-DCELERO_STATIC)
 
 macro(create_benchmark BENCHMARK_NAME EXECUTABLE_NAME SOURCE)
   add_executable(${EXECUTABLE_NAME} "src/${SOURCE}")
-  add_dependencies(${EXECUTABLE_NAME} hercules)
+  add_dependencies(${EXECUTABLE_NAME} ice_engine)
 
   if(MSVC)
-    target_link_libraries(${EXECUTABLE_NAME} ../${CMAKE_BUILD_TYPE}/hercules)
+    target_link_libraries(${EXECUTABLE_NAME} ../${CMAKE_BUILD_TYPE}/ice_engine)
   else()
-    target_link_libraries(${EXECUTABLE_NAME} hercules)
+    target_link_libraries(${EXECUTABLE_NAME} ice_engine)
   endif()
   
   target_link_libraries(${EXECUTABLE_NAME} ${SQLITE_LIBRARY} )
@@ -94,7 +94,7 @@ macro(create_benchmark BENCHMARK_NAME EXECUTABLE_NAME SOURCE)
     target_link_libraries(${EXECUTABLE_NAME} PowrProf)
   endif()
   
-  if(HERCULES_BENCHMARKS_EXPORT_TO_CSV)
+  if(ICEENGINE_BENCHMARKS_EXPORT_TO_CSV)
     add_test(${BENCHMARK_NAME} ${EXECUTABLE_NAME} -t ${BENCHMARK_NAME}.csv)
   else()
     add_test(${BENCHMARK_NAME} ${EXECUTABLE_NAME})

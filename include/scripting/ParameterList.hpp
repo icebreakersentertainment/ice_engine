@@ -6,7 +6,7 @@
 #include "Types.hpp"
 #include "scripting/Parameter.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 namespace scripting
 {

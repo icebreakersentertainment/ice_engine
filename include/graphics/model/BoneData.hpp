@@ -9,7 +9,7 @@
 
 #include "graphics/model/Bone.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 namespace graphics
 {

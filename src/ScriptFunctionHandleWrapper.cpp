@@ -2,7 +2,7 @@
 
 #include "ScriptFunctionHandleWrapper.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 
 ScriptFunctionHandleWrapper::ScriptFunctionHandleWrapper(scripting::IScriptingEngine* scriptingEngine, scripting::ScriptFunctionHandle scriptFunctionHandle)

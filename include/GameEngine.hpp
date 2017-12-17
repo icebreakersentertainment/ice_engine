@@ -28,7 +28,7 @@
 
 #include "scripting/IScriptingEngine.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 
 class GameEngine : public IGameEngine, public graphics::IEventListener
@@ -36,13 +36,13 @@ class GameEngine : public IGameEngine, public graphics::IEventListener
 public:
 	GameEngine(
 		std::unique_ptr<utilities::Properties> properties,
-		std::unique_ptr<hercules::IPluginManager> pluginManager,
-		std::unique_ptr<hercules::logger::ILogger> logger
+		std::unique_ptr<ice_engine::IPluginManager> pluginManager,
+		std::unique_ptr<ice_engine::logger::ILogger> logger
 	);
 	GameEngine(
 		std::unique_ptr<utilities::Properties> properties,
-		std::unique_ptr<hercules::logger::ILogger> logger,
-		std::unique_ptr<hercules::IPluginManager> pluginManager,
+		std::unique_ptr<ice_engine::logger::ILogger> logger,
+		std::unique_ptr<ice_engine::IPluginManager> pluginManager,
 		std::unique_ptr<graphics::IGraphicsEngineFactory> graphicsEngineFactory
 	);
 	virtual ~GameEngine();
@@ -151,7 +151,7 @@ private:
 	std::unique_ptr< pathfinding::IPathfindingEngine > pathfindingEngine_;
 	std::unique_ptr<scripting::IScriptingEngine> scriptingEngine_;
 	
-	std::unique_ptr<hercules::IPluginManager> pluginManager_;
+	std::unique_ptr<ice_engine::IPluginManager> pluginManager_;
 	
 	std::vector<IKeyboardEventListener*> keyboardEventListeners_;
 	std::vector<IMouseMotionEventListener*> mouseMotionEventListeners_;

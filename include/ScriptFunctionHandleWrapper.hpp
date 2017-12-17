@@ -3,7 +3,7 @@
 
 #include "scripting/IScriptingEngine.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 
 class ScriptFunctionHandleWrapper

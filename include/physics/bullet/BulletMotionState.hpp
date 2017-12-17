@@ -5,7 +5,7 @@
 
 #include "physics/IMotionChangeListener.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 namespace physics
 {

@@ -8,7 +8,7 @@
 
 #include "pathfinding/recastnavigation/PathfindingEngine.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 namespace pathfinding
 {

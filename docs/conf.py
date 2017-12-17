@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Hercules documentation build configuration file, created by
+# Ice Engine documentation build configuration file, created by
 # sphinx-quickstart on Sun Mar 12 22:59:08 2017.
 #
 # This file is execfile()d with the current directory set to its
@@ -45,8 +45,8 @@ extensions = [
 ]
 
 # Breathe extension variables
-breathe_projects = { "Hercules": "dox/doxyxml/" }
-breathe_default_project = "Hercules"
+breathe_projects = { "Ice Engine": "dox/doxyxml/" }
+breathe_default_project = "Ice Engine"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -66,7 +66,7 @@ source_suffix = ['.rst', '.md']
 master_doc = 'index'
 
 # General information about the project.
-project = u'Hercules'
+project = u'Ice Engine'
 copyright = u'2017, Jarrett Chisholm'
 author = u'Jarrett Chisholm'
 
@@ -123,7 +123,7 @@ html_static_path = ['_static']
 # -- Options for HTMLHelp output ------------------------------------------
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'Herculesdoc'
+htmlhelp_basename = 'Ice Enginedoc'
 
 
 # -- Options for LaTeX output ---------------------------------------------
@@ -150,7 +150,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'Hercules.tex', u'Hercules Documentation',
+    (master_doc, 'Ice Engine.tex', u'Ice Engine Documentation',
      u'Jarrett Chisholm', 'manual'),
 ]
 
@@ -160,7 +160,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'hercules', u'Hercules Documentation',
+    (master_doc, 'ice_engine', u'Ice Engine Documentation',
      [author], 1)
 ]
 
@@ -171,8 +171,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'Hercules', u'Hercules Documentation',
-     author, 'Hercules', 'One line description of project.',
+    (master_doc, 'Ice Engine', u'Ice Engine Documentation',
+     author, 'Ice Engine', 'One line description of project.',
      'Miscellaneous'),
 ]
 

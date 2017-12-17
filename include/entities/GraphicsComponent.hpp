@@ -6,7 +6,7 @@
 
 #include "graphics/RenderableHandle.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 namespace entities
 {

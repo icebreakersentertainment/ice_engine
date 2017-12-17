@@ -21,7 +21,7 @@ namespace keywords = boost::log::keywords;
 
 using namespace logger::trivial;
 
-namespace hercules
+namespace ice_engine
 {
 namespace logger
 {
@@ -29,7 +29,7 @@ namespace logger
 class Logger : public ILogger
 {	
 public:
-	Logger(const std::string& fileName = std::string("hercules.log"));
+	Logger(const std::string& fileName = std::string("ice_engine.log"));
 	Logger(const Logger& other);
 	Logger& operator=(const Logger& other);
 	virtual ~Logger();

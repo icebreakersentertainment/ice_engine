@@ -3,7 +3,7 @@
 
 #include "exceptions/Exception.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 
 class InvalidArgumentException : public Exception

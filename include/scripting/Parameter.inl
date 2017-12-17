@@ -1,7 +1,7 @@
 #ifndef SCRIPT_PARAMETER_INLINE_H_
 #define SCRIPT_PARAMETER_INLINE_H_
 
-namespace hercules
+namespace ice_engine
 {
 namespace scripting
 {

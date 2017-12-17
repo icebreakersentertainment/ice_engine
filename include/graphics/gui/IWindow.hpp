@@ -7,7 +7,7 @@
 #include "ILabel.hpp"
 #include "IButton.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 namespace graphics
 {
@@ -16,14 +16,14 @@ namespace gui
 
 enum WindowFlags : uint32
 {
-	HERCULES_TITLE_BAR		= 1 << 0,
-	HERCULES_SHOW_BORDERS	= 1 << 1,
-	HERCULES_MOVABLE		= 1 << 2,
-	HERCULES_NO_SCROLLBAR	= 1 << 3,
-	HERCULES_CLOSABLE		= 1 << 4,
-	HERCULES_MINIMIZABLE	= 1 << 5,
-	HERCULES_RESIZABLE		= 1 << 6,
-	HERCULES_NO_INPUT		= 1 << 7
+	ICEENGINE_TITLE_BAR		= 1 << 0,
+	ICEENGINE_SHOW_BORDERS	= 1 << 1,
+	ICEENGINE_MOVABLE		= 1 << 2,
+	ICEENGINE_NO_SCROLLBAR	= 1 << 3,
+	ICEENGINE_CLOSABLE		= 1 << 4,
+	ICEENGINE_MINIMIZABLE	= 1 << 5,
+	ICEENGINE_RESIZABLE		= 1 << 6,
+	ICEENGINE_NO_INPUT		= 1 << 7
 };
 
 class IWindow : public virtual IComponent

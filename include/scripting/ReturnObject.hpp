@@ -4,7 +4,7 @@
 #include <functional>
 #include <type_traits>
 
-namespace hercules
+namespace ice_engine
 {
 namespace scripting
 {

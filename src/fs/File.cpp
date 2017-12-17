@@ -5,7 +5,7 @@
 
 #include <boost/filesystem.hpp>
 
-namespace hercules
+namespace ice_engine
 {
 namespace fs
 {

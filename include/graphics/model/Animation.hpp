@@ -8,7 +8,7 @@
 
 #include "graphics/model/AnimatedBoneNode.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 namespace graphics
 {

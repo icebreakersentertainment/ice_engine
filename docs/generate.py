@@ -20,7 +20,7 @@ def cp(fromFile, toFile):
 
 
 
-rc = subprocess.call( 'doxygen herculesdox', shell=True )
+rc = subprocess.call( 'doxygen iceenginedox', shell=True )
 if (rc != 0):
 	print("Script halted due to error(s)!")
 	sys.exit(1)

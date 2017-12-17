@@ -1,7 +1,7 @@
 #include "physics/PhysicsFactory.hpp"
 #include "physics/bullet/PhysicsEngine.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 namespace physics
 {

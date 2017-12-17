@@ -3,7 +3,7 @@
 
 #include "graphics/Event.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 
 class IMouseMotionEventListener

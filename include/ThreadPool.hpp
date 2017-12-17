@@ -5,7 +5,7 @@
 
 #include "IThreadPool.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 
 class ThreadPool : public IThreadPool

@@ -15,7 +15,7 @@
 #include "fs/IFileSystem.hpp"
 #include "logger/ILogger.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 namespace pathfinding
 {

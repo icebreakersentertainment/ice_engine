@@ -1,7 +1,7 @@
 #include "pathfinding/PathfindingEngineFactory.hpp"
 #include "pathfinding/recastnavigation/PathfindingEngine.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 namespace pathfinding
 {

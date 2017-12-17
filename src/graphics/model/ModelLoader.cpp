@@ -30,7 +30,7 @@
 #include "utilities/AssImpUtilities.hpp"
 #include "utilities/IoUtilities.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 namespace graphics
 {

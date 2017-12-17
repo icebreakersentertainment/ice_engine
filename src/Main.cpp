@@ -19,8 +19,8 @@ Main::~Main()
 
 int main()
 {
-	auto logger = std::make_unique< hercules::logger::Logger >();
-	auto fileSystem = std::make_unique< hercules::fs::FileSystem >();
+	auto logger = std::make_unique< ice_engine::logger::Logger >();
+	auto fileSystem = std::make_unique< ice_engine::fs::FileSystem >();
 	
 	
 	// Try to load our config data
@@ -34,13 +34,13 @@ int main()
 		std::cerr << "Unable to load settings file: " << e.what() << std::endl;
 	}
 	
-	auto properties = std::make_unique< hercules::utilities::Properties >(configData);
-	auto pluginManager = std::make_unique< hercules::PluginManager >(properties.get(), fileSystem.get(), logger.get());
+	auto properties = std::make_unique< ice_engine::utilities::Properties >(configData);
+	auto pluginManager = std::make_unique< ice_engine::PluginManager >(properties.get(), fileSystem.get(), logger.get());
 	
 	// Start the game engine
 	try
 	{
-		auto gameEngine = hercules::GameFactory::createGameEngine(std::move(properties), std::move(pluginManager), std::move(logger));
+		auto gameEngine = ice_engine::GameFactory::createGameEngine(std::move(properties), std::move(pluginManager), std::move(logger));
 		
 		gameEngine->run();
 	}

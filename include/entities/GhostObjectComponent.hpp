@@ -3,7 +3,7 @@
 
 #include "physics/GhostObjectHandle.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 namespace entities
 {

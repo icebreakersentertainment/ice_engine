@@ -19,7 +19,7 @@
 #include "physics/UserData.hpp"
 #include "physics/Raycast.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 namespace physics
 {

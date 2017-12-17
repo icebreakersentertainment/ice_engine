@@ -16,18 +16,18 @@ class Fixture : public celero::TestFixture
 public:
 	virtual void setUp(int64_t experimentValue) override
 	{
-		fileSystem = hercules::fs::FileSystem();
-		properties = hercules::utilities::Properties();
-		logger = std::make_unique<hercules::logger::Logger>();
+		fileSystem = ice_engine::fs::FileSystem();
+		properties = ice_engine::utilities::Properties();
+		logger = std::make_unique<ice_engine::logger::Logger>();
 		
-		scriptingEngine = std::make_unique<hercules::scripting::angel_script::ScriptingEngine>(&properties, &fileSystem, logger.get());
+		scriptingEngine = std::make_unique<ice_engine::scripting::angel_script::ScriptingEngine>(&properties, &fileSystem, logger.get());
 	}
 	
-	hercules::fs::FileSystem fileSystem;
-	hercules::utilities::Properties properties;
-	std::unique_ptr<hercules::logger::ILogger> logger;
+	ice_engine::fs::FileSystem fileSystem;
+	ice_engine::utilities::Properties properties;
+	std::unique_ptr<ice_engine::logger::ILogger> logger;
 	
-	std::unique_ptr<hercules::scripting::angel_script::ScriptingEngine> scriptingEngine;
+	std::unique_ptr<ice_engine::scripting::angel_script::ScriptingEngine> scriptingEngine;
 };
 
 class FixtureCallback : public Fixture
@@ -42,7 +42,7 @@ public:
 		
 		scriptingEngine->registerGlobalFunction(
 			"void setTestInstance(ITest@)",
-			asMETHODPR(FixtureCallback, setTestInstance, (hercules::scripting::ScriptObjectHandle), void),
+			asMETHODPR(FixtureCallback, setTestInstance, (ice_engine::scripting::ScriptObjectHandle), void),
 			asCALL_THISCALL_ASGLOBAL,
 			this
 		);
@@ -71,14 +71,14 @@ void main()
 		scriptObjectFunctionHandle = scriptingEngine->getScriptObjectFunction(scriptObjectHandle, std::string("void tick(const float)"));
 	}
 	
-	void setTestInstance(hercules::scripting::ScriptObjectHandle scriptObjectHandle)
+	void setTestInstance(ice_engine::scripting::ScriptObjectHandle scriptObjectHandle)
 	{
 		this->scriptObjectHandle = scriptObjectHandle;
 	}
 	
-	hercules::scripting::ScriptObjectHandle scriptObjectHandle;
-	hercules::scripting::ScriptObjectFunctionHandle scriptObjectFunctionHandle;
-	hercules::scripting::ScriptHandle scriptHandle;
+	ice_engine::scripting::ScriptObjectHandle scriptObjectHandle;
+	ice_engine::scripting::ScriptObjectFunctionHandle scriptObjectFunctionHandle;
+	ice_engine::scripting::ScriptHandle scriptHandle;
 };
 
 BASELINE_F(ScriptingEngine, ExecuteScriptData, Fixture, 0, 10000)
@@ -93,7 +93,7 @@ BENCHMARK_F(ScriptingEngine, ExecuteScriptData, Fixture, 0, 10000)
 
 BENCHMARK_F(ScriptingEngine, ScriptObjectTick, FixtureCallback, 0, 10000)
 {
-	hercules::scripting::ParameterList params;
+	ice_engine::scripting::ParameterList params;
 	params.add(0.001f);
 	
 	scriptingEngine->execute(scriptObjectHandle, scriptObjectFunctionHandle, params);

@@ -5,7 +5,7 @@
 
 #include "graphics/IGraphicsEngine.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 
 class DebugRenderer : public IDebugRenderer

@@ -4,7 +4,7 @@
 
 #include "graphics/model/Animate.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 namespace graphics
 {

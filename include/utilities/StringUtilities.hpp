@@ -4,7 +4,7 @@
 #include <string>
 #include <sstream>
 
-namespace hercules
+namespace ice_engine
 {
 namespace utilities
 {

@@ -4,7 +4,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/filesystem/fstream.hpp>
 
-namespace hercules
+namespace ice_engine
 {
 namespace fs
 {

@@ -1,7 +1,7 @@
 #include "GameFactory.hpp"
 #include "GameEngine.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 
 GameFactory::GameFactory()
@@ -18,8 +18,8 @@ GameFactory::~GameFactory()
 
 std::unique_ptr<IGameEngine> GameFactory::createGameEngine(
 	std::unique_ptr<utilities::Properties> properties,
-	std::unique_ptr<hercules::IPluginManager> pluginManager,
-	std::unique_ptr<hercules::logger::ILogger> logger
+	std::unique_ptr<ice_engine::IPluginManager> pluginManager,
+	std::unique_ptr<ice_engine::logger::ILogger> logger
 )
 {
 	auto ptr = std::unique_ptr< IGameEngine >( new GameEngine(std::move(properties), std::move(pluginManager), std::move(logger)) );

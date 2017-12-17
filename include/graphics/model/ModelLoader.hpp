@@ -9,7 +9,7 @@
 #include "logger/ILogger.hpp"
 #include "fs/IFileSystem.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 namespace graphics
 {

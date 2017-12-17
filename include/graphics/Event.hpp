@@ -7,7 +7,7 @@
 #include "graphics/Keyboard.hpp"
 #include "graphics/Mouse.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 namespace graphics
 {

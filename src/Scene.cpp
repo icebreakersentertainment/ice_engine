@@ -4,9 +4,9 @@
 
 #include "Scene.hpp"
 
-#include "HerculesMotionChangeListener.hpp"
+#include "IceEngineMotionChangeListener.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 
 Scene::Scene(
@@ -191,7 +191,7 @@ void Scene::addMotionChangeListener(const entities::Entity& entity)
 {
 	auto rigidBodyObjectComponent = entityComponentSystem_.entities.component<entities::RigidBodyObjectComponent>(static_cast<entityx::Entity::Id>(entity.id()));
 	
-	std::unique_ptr<HerculesMotionChangeListener> motionChangeListener = std::make_unique<HerculesMotionChangeListener>(entity, this);
+	std::unique_ptr<IceEngineMotionChangeListener> motionChangeListener = std::make_unique<IceEngineMotionChangeListener>(entity, this);
 	
 	physicsEngine_->setMotionChangeListener(physicsSceneHandle_, rigidBodyObjectComponent->rigidBodyObjectHandle, std::move(motionChangeListener));
 }

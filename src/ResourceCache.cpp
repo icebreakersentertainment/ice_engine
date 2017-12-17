@@ -1,6 +1,6 @@
 #include "ResourceCache.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 
 ResourceCache::ResourceCache()

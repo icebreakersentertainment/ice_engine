@@ -10,7 +10,7 @@
 
 #include "handles/MemoryPool.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 namespace handles
 {

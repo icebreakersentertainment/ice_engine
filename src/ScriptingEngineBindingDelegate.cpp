@@ -32,7 +32,7 @@
 
 #include "GameEngine.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 
 template<typename T, typename V>
@@ -800,14 +800,14 @@ void ScriptingEngineBindingDelegate::bind()
 	scriptingEngine_->registerEnumValue("MouseButtonCode", "BUTTON_X2", graphics::BUTTON_X2);
 	
 	scriptingEngine_->registerEnum("WindowFlags");
-	scriptingEngine_->registerEnumValue("WindowFlags", "HERCULES_TITLE_BAR", graphics::gui::HERCULES_TITLE_BAR);
-	scriptingEngine_->registerEnumValue("WindowFlags", "HERCULES_SHOW_BORDERS", graphics::gui::HERCULES_SHOW_BORDERS);
-	scriptingEngine_->registerEnumValue("WindowFlags", "HERCULES_MOVABLE", graphics::gui::HERCULES_MOVABLE);
-	scriptingEngine_->registerEnumValue("WindowFlags", "HERCULES_NO_SCROLLBAR", graphics::gui::HERCULES_NO_SCROLLBAR);
-	scriptingEngine_->registerEnumValue("WindowFlags", "HERCULES_CLOSABLE", graphics::gui::HERCULES_CLOSABLE);
-	scriptingEngine_->registerEnumValue("WindowFlags", "HERCULES_MINIMIZABLE", graphics::gui::HERCULES_MINIMIZABLE);
-	scriptingEngine_->registerEnumValue("WindowFlags", "HERCULES_RESIZABLE", graphics::gui::HERCULES_RESIZABLE);
-	scriptingEngine_->registerEnumValue("WindowFlags", "HERCULES_NO_INPUT", graphics::gui::HERCULES_NO_INPUT);
+	scriptingEngine_->registerEnumValue("WindowFlags", "ICEENGINE_TITLE_BAR", graphics::gui::ICEENGINE_TITLE_BAR);
+	scriptingEngine_->registerEnumValue("WindowFlags", "ICEENGINE_SHOW_BORDERS", graphics::gui::ICEENGINE_SHOW_BORDERS);
+	scriptingEngine_->registerEnumValue("WindowFlags", "ICEENGINE_MOVABLE", graphics::gui::ICEENGINE_MOVABLE);
+	scriptingEngine_->registerEnumValue("WindowFlags", "ICEENGINE_NO_SCROLLBAR", graphics::gui::ICEENGINE_NO_SCROLLBAR);
+	scriptingEngine_->registerEnumValue("WindowFlags", "ICEENGINE_CLOSABLE", graphics::gui::ICEENGINE_CLOSABLE);
+	scriptingEngine_->registerEnumValue("WindowFlags", "ICEENGINE_MINIMIZABLE", graphics::gui::ICEENGINE_MINIMIZABLE);
+	scriptingEngine_->registerEnumValue("WindowFlags", "ICEENGINE_RESIZABLE", graphics::gui::ICEENGINE_RESIZABLE);
+	scriptingEngine_->registerEnumValue("WindowFlags", "ICEENGINE_NO_INPUT", graphics::gui::ICEENGINE_NO_INPUT);
 	
 	// Types available in the scripting engine
 	registerHandleBindings<entities::Entity>(scriptingEngine_, "Entity");

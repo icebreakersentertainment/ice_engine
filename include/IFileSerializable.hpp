@@ -4,7 +4,7 @@
 // Required C++ libraries
 #include <fstream>
 
-namespace hercules
+namespace ice_engine
 {
 
 class IFileSerializable

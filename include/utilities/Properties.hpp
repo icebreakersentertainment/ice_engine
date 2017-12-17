@@ -8,7 +8,7 @@
 
 #include <fs/IFile.hpp>
 
-namespace hercules
+namespace ice_engine
 {
 
 namespace utilities

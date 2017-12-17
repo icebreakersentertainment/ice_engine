@@ -8,7 +8,7 @@
 #include "IPluginManager.hpp"
 #include "logger/ILogger.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 
 class GameFactory
@@ -17,8 +17,8 @@ public:
 
 	static std::unique_ptr<IGameEngine> createGameEngine(
 		std::unique_ptr<utilities::Properties> properties,
-		std::unique_ptr<hercules::IPluginManager> pluginManager,
-		std::unique_ptr<hercules::logger::ILogger> logger
+		std::unique_ptr<ice_engine::IPluginManager> pluginManager,
+		std::unique_ptr<ice_engine::logger::ILogger> logger
 	);
 
 private:

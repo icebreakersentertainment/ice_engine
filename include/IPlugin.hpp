@@ -3,7 +3,7 @@
 
 #include <string>
 
-namespace hercules
+namespace ice_engine
 {
 
 class IPlugin

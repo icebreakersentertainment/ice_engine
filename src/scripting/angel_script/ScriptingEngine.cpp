@@ -15,7 +15,7 @@
 #include "exceptions/Exception.hpp"
 #include "exceptions/InvalidArgumentException.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 namespace scripting
 {

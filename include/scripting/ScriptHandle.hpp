@@ -3,7 +3,7 @@
 
 #include "handles/Handle.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 namespace scripting
 {

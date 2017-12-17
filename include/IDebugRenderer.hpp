@@ -9,7 +9,7 @@
 
 #include "physics/IPhysicsDebugRenderer.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 
 class IDebugRenderer : virtual public physics::IPhysicsDebugRenderer

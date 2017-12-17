@@ -5,7 +5,7 @@
 
 #include <GL/glew.h>
 
-namespace hercules
+namespace ice_engine
 {
 namespace image
 {

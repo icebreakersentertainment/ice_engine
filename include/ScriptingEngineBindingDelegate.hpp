@@ -1,7 +1,7 @@
 #ifndef SCRIPTINGENGINEBINDINGDELEGATE_H_
 #define SCRIPTINGENGINEBINDINGDELEGATE_H_
 
-namespace hercules
+namespace ice_engine
 {
 
 namespace scripting

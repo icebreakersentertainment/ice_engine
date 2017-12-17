@@ -6,7 +6,7 @@
 
 #include "Types.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 
 class IThreadPool

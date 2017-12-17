@@ -1,6 +1,6 @@
 #include "ThreadPool.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 
 ThreadPool::ThreadPool()

@@ -3,7 +3,7 @@
 
 //#include "pathfinding/CrowdHandle.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 namespace entities
 {

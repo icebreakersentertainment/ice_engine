@@ -3,7 +3,7 @@
 
 #include "ResourceHandle.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 namespace graphics
 {

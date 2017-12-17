@@ -7,7 +7,7 @@
 
 #include "utilities/StringUtilities.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 
 PluginManager::PluginManager(
@@ -30,10 +30,10 @@ PluginManager::PluginManager(
 	for (const auto& guiPluginName : guiPluginNames)
 	{
 		logger_->info("Loading gui plugin '" + guiPluginName + "'.");
-		auto pluginBoostSharedPtr = boost::dll::import<hercules::IGuiPlugin>("./" + guiPluginName + "_plugin", "plugin", boost::dll::load_mode::append_decorations);
+		auto pluginBoostSharedPtr = boost::dll::import<ice_engine::IGuiPlugin>("./" + guiPluginName + "_plugin", "plugin", boost::dll::load_mode::append_decorations);
 		
 		// Convert from boost::shared_ptr<T> to std::shared_ptr<T>
-		auto pluginStdSharedPtr = std::shared_ptr<hercules::IGuiPlugin>(pluginBoostSharedPtr.get(), [pluginBoostSharedPtr](hercules::IGuiPlugin*){});
+		auto pluginStdSharedPtr = std::shared_ptr<ice_engine::IGuiPlugin>(pluginBoostSharedPtr.get(), [pluginBoostSharedPtr](ice_engine::IGuiPlugin*){});
 		
 		guiPlugins_.push_back( pluginStdSharedPtr );
 	}

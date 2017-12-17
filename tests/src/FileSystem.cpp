@@ -7,10 +7,10 @@ struct Fixture
 {
 	Fixture()
 	{
-		fileSystem = hercules::fs::FileSystem();
+		fileSystem = ice_engine::fs::FileSystem();
 	}
 	
-	hercules::fs::FileSystem fileSystem;
+	ice_engine::fs::FileSystem fileSystem;
 };
 
 BOOST_FIXTURE_TEST_SUITE(FileSystem, Fixture)

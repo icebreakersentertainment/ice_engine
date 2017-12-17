@@ -1,7 +1,7 @@
-#ifndef HERCULESTYPES_H_
-#define HERCULESTYPES_H_
+#ifndef ICEENGINETYPES_H_
+#define ICEENGINETYPES_H_
 
-namespace hercules
+namespace ice_engine
 {
 
 typedef unsigned char byte;
@@ -25,4 +25,4 @@ typedef long long int64;
 
 }
 
-#endif /* HERCULESTYPES_H_ */
+#endif /* ICEENGINETYPES_H_ */

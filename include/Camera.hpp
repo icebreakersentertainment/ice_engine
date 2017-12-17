@@ -10,7 +10,7 @@
 //#include "GlrInclude.hpp"
 #include "extras/FpsCamera.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 
 class Camera

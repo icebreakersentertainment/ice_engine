@@ -2,7 +2,7 @@
 
 #include "scripting/angel_script/ScriptingEngine.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 namespace scripting
 {

@@ -6,7 +6,7 @@
 
 #include "IResourceCache.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 
 class ResourceCache : public IResourceCache

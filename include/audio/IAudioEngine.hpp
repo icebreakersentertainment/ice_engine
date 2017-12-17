@@ -1,7 +1,7 @@
 #ifndef IAUDIOENGINE_H_
 #define IAUDIOENGINE_H_
 
-namespace hercules
+namespace ice_engine
 {
 namespace audio
 {

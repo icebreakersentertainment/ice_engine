@@ -7,7 +7,7 @@
 
 #include "IOpenGlLoader.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 
 class OpenGlLoader : public IOpenGlLoader

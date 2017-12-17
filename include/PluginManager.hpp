@@ -7,7 +7,7 @@
 #include "fs/IFileSystem.hpp"
 #include "logger/ILogger.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 
 class PluginManager : public IPluginManager

@@ -8,7 +8,7 @@ namespace expr = boost::log::expressions;
 namespace attrs = boost::log::attributes;
 namespace keywords = boost::log::keywords;
 
-namespace hercules
+namespace ice_engine
 {
 namespace logger
 {
@@ -52,7 +52,7 @@ void Logger::info(const std::string& message)
 
 void Logger::debug(const std::string& message)
 {
-#if defined(DEBUG) || defined(HERCULES_ENABLE_DEBUG_LOGGING)
+#if defined(DEBUG) || defined(ICEENGINE_ENABLE_DEBUG_LOGGING)
 	BOOST_LOG_SEV(log_, boost::log::trivial::severity_level::debug) << message;
 #endif
 }
@@ -80,7 +80,7 @@ void Logger::info(const std::wstring& message)
 
 void Logger::debug(const std::wstring& message)
 {
-#if defined(DEBUG) || defined(HERCULES_ENABLE_DEBUG_LOGGING)
+#if defined(DEBUG) || defined(ICEENGINE_ENABLE_DEBUG_LOGGING)
 	BOOST_LOG_SEV(log_, boost::log::trivial::severity_level::debug) << message;
 #endif
 }

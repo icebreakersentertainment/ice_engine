@@ -6,7 +6,7 @@
 
 #include "IGuiPlugin.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 
 class IPluginManager

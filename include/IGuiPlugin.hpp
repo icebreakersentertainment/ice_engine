@@ -7,7 +7,7 @@
 
 #include "IPlugin.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 
 class IGuiPlugin : public IPlugin

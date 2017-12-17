@@ -3,7 +3,7 @@
 
 #include "physics/RigidBodyObjectHandle.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 namespace entities
 {

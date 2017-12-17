@@ -34,7 +34,7 @@
 
 #include "image/Image.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 
 class IGameEngine

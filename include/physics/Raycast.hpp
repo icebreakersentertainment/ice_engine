@@ -10,7 +10,7 @@
 
 #include "Types.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 namespace physics
 {

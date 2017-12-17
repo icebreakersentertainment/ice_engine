@@ -4,7 +4,7 @@
 #include <string>
 #include <stdexcept>
 
-namespace hercules
+namespace ice_engine
 {
 
 class Exception : public std::runtime_error

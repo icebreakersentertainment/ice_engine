@@ -18,7 +18,7 @@ namespace pod = boost::program_options::detail;
 
 #include "utilities/Properties.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 namespace utilities
 {

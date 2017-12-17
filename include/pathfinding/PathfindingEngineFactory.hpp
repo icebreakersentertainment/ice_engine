@@ -3,7 +3,7 @@
 
 #include "pathfinding/IPathfindingEngineFactory.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 namespace pathfinding
 {

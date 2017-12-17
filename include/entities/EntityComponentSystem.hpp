@@ -9,7 +9,7 @@
 #include "entities/GhostObjectComponent.hpp"
 #include "entities/PositionOrientationComponent.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 namespace entities
 {

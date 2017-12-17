@@ -7,10 +7,10 @@ struct Fixture
 {
 	Fixture()
 	{
-		parameter = hercules::scripting::Parameter();
+		parameter = ice_engine::scripting::Parameter();
 	}
 	
-	hercules::scripting::Parameter parameter;
+	ice_engine::scripting::Parameter parameter;
 };
 
 class Object
@@ -121,7 +121,7 @@ BOOST_AUTO_TEST_CASE(copyConstructorWithValue)
 	parameter.value(1);
 	
 	{
-		auto p2 = hercules::scripting::Parameter(parameter);
+		auto p2 = ice_engine::scripting::Parameter(parameter);
 	}
 	
 	auto v = parameter.value<int>();
@@ -134,7 +134,7 @@ BOOST_AUTO_TEST_CASE(copyConstructorWithRef)
 	parameter.valueRef(i);
 	
 	{
-		auto p2 = hercules::scripting::Parameter(parameter);
+		auto p2 = ice_engine::scripting::Parameter(parameter);
 	}
 	
 	auto v = parameter.valueRef<int>();
@@ -146,7 +146,7 @@ BOOST_AUTO_TEST_CASE(copyConstructorWithValueObject)
 	parameter.value(Object());
 	
 	{
-		auto p2 = hercules::scripting::Parameter(parameter);
+		auto p2 = ice_engine::scripting::Parameter(parameter);
 	}
 	
 	auto ref = parameter.valueRef<Object>();
@@ -162,7 +162,7 @@ BOOST_AUTO_TEST_CASE(copyConstructorWithRefObject)
 	parameter.valueRef(o);
 	
 	{
-		auto p2 = hercules::scripting::Parameter(parameter);
+		auto p2 = ice_engine::scripting::Parameter(parameter);
 	}
 	
 	auto ref = parameter.valueRef<Object>();

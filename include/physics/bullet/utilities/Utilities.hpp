@@ -8,7 +8,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 
-namespace hercules
+namespace ice_engine
 {
 namespace physics
 {

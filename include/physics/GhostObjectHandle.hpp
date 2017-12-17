@@ -3,7 +3,7 @@
 
 #include "handles/PointerHandle.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 namespace physics
 {

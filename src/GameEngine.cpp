@@ -34,13 +34,13 @@
 
 #include "utilities/IoUtilities.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 
 GameEngine::GameEngine(
 	std::unique_ptr<utilities::Properties> properties,
-	std::unique_ptr<hercules::IPluginManager> pluginManager,
-	std::unique_ptr<hercules::logger::ILogger> logger
+	std::unique_ptr<ice_engine::IPluginManager> pluginManager,
+	std::unique_ptr<ice_engine::logger::ILogger> logger
 )
 	: 
 	properties_(std::move(properties)),
@@ -52,8 +52,8 @@ GameEngine::GameEngine(
 
 GameEngine::GameEngine(
 	std::unique_ptr<utilities::Properties> properties,
-	std::unique_ptr<hercules::logger::ILogger> logger,
-	std::unique_ptr<hercules::IPluginManager> pluginManager,
+	std::unique_ptr<ice_engine::logger::ILogger> logger,
+	std::unique_ptr<ice_engine::IPluginManager> pluginManager,
 	std::unique_ptr<graphics::IGraphicsEngineFactory> graphicsEngineFactory
 )
 	: 
@@ -165,7 +165,7 @@ void GameEngine::initializeLoggingSubSystem()
 	// Initialize the log using the specified log file
 	if (logger_.get() == nullptr)
 	{
-		logger_ = std::make_unique< logger::Logger >( std::string("hercules.log") );
+		logger_ = std::make_unique< logger::Logger >( std::string("ice_engine.log") );
 	}
 }
 

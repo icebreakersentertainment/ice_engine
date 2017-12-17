@@ -7,7 +7,7 @@
 #include "graphics/model/Model.hpp"
 #include "image/Image.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 
 class IResourceCache

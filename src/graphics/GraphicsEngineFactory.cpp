@@ -1,7 +1,7 @@
 #include "graphics/GraphicsEngineFactory.hpp"
 #include "graphics/custom/GraphicsEngine.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 namespace graphics
 {

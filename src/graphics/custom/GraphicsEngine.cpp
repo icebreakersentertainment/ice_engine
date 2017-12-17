@@ -14,7 +14,7 @@
 #include "glm/gtx/quaternion.hpp"
 #include <glm/gtx/string_cast.hpp>
 
-namespace hercules
+namespace ice_engine
 {
 namespace graphics
 {
@@ -45,7 +45,7 @@ GraphicsEngine::GraphicsEngine(utilities::Properties* properties, fs::IFileSyste
 	SDL_GL_SetAttribute( SDL_GL_CONTEXT_MINOR_VERSION, 3 );
 	SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
 	
-	auto windowTitle = properties_->getStringValue("window.title", "Hercules");
+	auto windowTitle = properties_->getStringValue("window.title", "IceEngine");
 	
 	sdlWindow_ = SDL_CreateWindow(windowTitle.c_str(), 50, 50, width_, height_, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL);
 	

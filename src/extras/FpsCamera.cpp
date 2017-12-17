@@ -1,6 +1,6 @@
 #include "extras/FpsCamera.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 namespace extras
 {

@@ -16,18 +16,18 @@ struct Fixture
 {
 	Fixture()
 	{
-		fileSystem = hercules::fs::FileSystem();
-		properties = hercules::utilities::Properties();
-		logger = std::make_unique<hercules::logger::Logger>();
+		fileSystem = ice_engine::fs::FileSystem();
+		properties = ice_engine::utilities::Properties();
+		logger = std::make_unique<ice_engine::logger::Logger>();
 		
-		scriptingEngine = std::make_unique<hercules::scripting::angel_script::ScriptingEngine>(&properties, &fileSystem, logger.get());
+		scriptingEngine = std::make_unique<ice_engine::scripting::angel_script::ScriptingEngine>(&properties, &fileSystem, logger.get());
 	}
 	
-	hercules::fs::FileSystem fileSystem;
-	hercules::utilities::Properties properties;
-	std::unique_ptr<hercules::logger::ILogger> logger;
+	ice_engine::fs::FileSystem fileSystem;
+	ice_engine::utilities::Properties properties;
+	std::unique_ptr<ice_engine::logger::ILogger> logger;
 	
-	std::unique_ptr<hercules::scripting::angel_script::ScriptingEngine> scriptingEngine;
+	std::unique_ptr<ice_engine::scripting::angel_script::ScriptingEngine> scriptingEngine;
 };
 
 BOOST_FIXTURE_TEST_SUITE(ScriptingEngine, Fixture)
@@ -50,101 +50,101 @@ BOOST_AUTO_TEST_CASE(executeScriptDataMultipleTimes)
 
 BOOST_AUTO_TEST_CASE(ParameterFloat32)
 {
-	hercules::scripting::ParameterList params;
+	ice_engine::scripting::ParameterList params;
 	params.add(1.0f);
-	hercules::float32 returnValue = 0;
+	ice_engine::float32 returnValue = 0;
 	BOOST_CHECK_NO_THROW( scriptingEngine->execute(std::string(std::string("float main(float input) { float i = input; return i; }")), std::string("float main(float)"), params, returnValue); );
 	BOOST_CHECK_EQUAL(returnValue, 1.0f);
 }
 
 BOOST_AUTO_TEST_CASE(ParameterFloat64)
 {
-	hercules::scripting::ParameterList params;
-	params.add<hercules::float64>(1.0);
-	hercules::float64 returnValue = 0;
+	ice_engine::scripting::ParameterList params;
+	params.add<ice_engine::float64>(1.0);
+	ice_engine::float64 returnValue = 0;
 	BOOST_CHECK_NO_THROW( scriptingEngine->execute(std::string("double main(double input) { double i = input; return i; }"), std::string("double main(double)"), params, returnValue); );
 	BOOST_CHECK_EQUAL(returnValue, 1.0f);
 }
 
 BOOST_AUTO_TEST_CASE(ParameterInt8)
 {
-	hercules::scripting::ParameterList params;
-	params.add<hercules::int8>(1);
-	hercules::int8 returnValue = 0;
+	ice_engine::scripting::ParameterList params;
+	params.add<ice_engine::int8>(1);
+	ice_engine::int8 returnValue = 0;
 	BOOST_CHECK_NO_THROW( scriptingEngine->execute(std::string("int8 main(int8 input) { int8 i = input; return i; }"), std::string("int8 main(int8)"), params, returnValue); );
 	BOOST_CHECK_EQUAL(returnValue, 1);
 }
 
 BOOST_AUTO_TEST_CASE(ParameterUInt8)
 {
-	hercules::scripting::ParameterList params;
-	params.add<hercules::uint8>(1);
-	hercules::uint8 returnValue = 0;
+	ice_engine::scripting::ParameterList params;
+	params.add<ice_engine::uint8>(1);
+	ice_engine::uint8 returnValue = 0;
 	BOOST_CHECK_NO_THROW( scriptingEngine->execute(std::string("uint8 main(uint8 input) { uint8 i = input; return i; }"), std::string("uint8 main(uint8)"), params, returnValue); );
 	BOOST_CHECK_EQUAL(returnValue, 1);
 }
 
 BOOST_AUTO_TEST_CASE(ParameterInt16)
 {
-	hercules::scripting::ParameterList params;
-	params.add<hercules::int16>(1);
-	hercules::int16 returnValue = 0;
+	ice_engine::scripting::ParameterList params;
+	params.add<ice_engine::int16>(1);
+	ice_engine::int16 returnValue = 0;
 	BOOST_CHECK_NO_THROW( scriptingEngine->execute(std::string("int16 main(int16 input) { int16 i = input; return i; }"), std::string("int16 main(int16)"), params, returnValue); );
 	BOOST_CHECK_EQUAL(returnValue, 1);
 }
 
 BOOST_AUTO_TEST_CASE(ParameterUInt16)
 {
-	hercules::scripting::ParameterList params;
-	params.add<hercules::uint16>(1);
-	hercules::uint16 returnValue = 0;
+	ice_engine::scripting::ParameterList params;
+	params.add<ice_engine::uint16>(1);
+	ice_engine::uint16 returnValue = 0;
 	BOOST_CHECK_NO_THROW( scriptingEngine->execute(std::string("uint16 main(uint16 input) { uint16 i = input; return i; }"), std::string("uint16 main(uint16)"), params, returnValue); );
 	BOOST_CHECK_EQUAL(returnValue, 1);
 }
 
 BOOST_AUTO_TEST_CASE(ParameterInt32)
 {
-	hercules::scripting::ParameterList params;
-	params.add<hercules::int32>(1);
-	hercules::int32 returnValue = 0;
+	ice_engine::scripting::ParameterList params;
+	params.add<ice_engine::int32>(1);
+	ice_engine::int32 returnValue = 0;
 	BOOST_CHECK_NO_THROW( scriptingEngine->execute(std::string("int32 main(int32 input) { int32 i = input; return i; }"), std::string("int32 main(int32)"), params, returnValue); );
 	BOOST_CHECK_EQUAL(returnValue, 1);
 }
 
 BOOST_AUTO_TEST_CASE(ParameterUInt32)
 {
-	hercules::scripting::ParameterList params;
-	params.add<hercules::uint32>(1);
-	hercules::uint32 returnValue = 0;
+	ice_engine::scripting::ParameterList params;
+	params.add<ice_engine::uint32>(1);
+	ice_engine::uint32 returnValue = 0;
 	BOOST_CHECK_NO_THROW( scriptingEngine->execute(std::string("uint32 main(uint32 input) { uint32 i = input; return i; }"), std::string("uint32 main(uint32)"), params, returnValue); );
 	BOOST_CHECK_EQUAL(returnValue, 1);
 }
 
 BOOST_AUTO_TEST_CASE(ParameterInt64)
 {
-	hercules::scripting::ParameterList params;
-	params.add<hercules::int64>(1);
-	hercules::int64 returnValue = 0;
+	ice_engine::scripting::ParameterList params;
+	params.add<ice_engine::int64>(1);
+	ice_engine::int64 returnValue = 0;
 	BOOST_CHECK_NO_THROW( scriptingEngine->execute(std::string("int64 main(int64 input) { int64 i = input; return i; }"), std::string("int64 main(int64)"), params, returnValue); );
 	BOOST_CHECK_EQUAL(returnValue, 1);
 }
 
 BOOST_AUTO_TEST_CASE(ParameterUInt64)
 {
-	hercules::scripting::ParameterList params;
-	params.add<hercules::uint64>(1);
-	hercules::uint64 returnValue = 0;
+	ice_engine::scripting::ParameterList params;
+	params.add<ice_engine::uint64>(1);
+	ice_engine::uint64 returnValue = 0;
 	BOOST_CHECK_NO_THROW( scriptingEngine->execute(std::string("uint64 main(uint64 input) { uint64 i = input; return i; }"), std::string("uint64 main(uint64)"), params, returnValue); );
 	BOOST_CHECK_EQUAL(returnValue, 1);
 }
 
 BOOST_AUTO_TEST_CASE(ParameterByValue)
 {
-	hercules::scripting::ParameterList params;
+	ice_engine::scripting::ParameterList params;
 	
 	params.add(1.0f);
 	
-	auto returnObject = hercules::scripting::ReturnObject<glm::vec3>();
+	auto returnObject = ice_engine::scripting::ReturnObject<glm::vec3>();
 	BOOST_CHECK_NO_THROW( scriptingEngine->execute(std::string("vec3 main(float f) { vec3 v; v.x = f; v.y = f; v.z = f; return v;}"), std::string("vec3 main(float)"), params, returnObject.parser()); );
 	
 	BOOST_CHECK_EQUAL(returnObject.value.x, 1.0f);
@@ -154,12 +154,12 @@ BOOST_AUTO_TEST_CASE(ParameterByValue)
 
 BOOST_AUTO_TEST_CASE(ParameterByValue2)
 {
-	hercules::scripting::ParameterList params;
+	ice_engine::scripting::ParameterList params;
 	
-	hercules::float32 f = 1.0f;
+	ice_engine::float32 f = 1.0f;
 	params.add(f);
 	
-	auto returnObject = hercules::scripting::ReturnObject<glm::vec3>();
+	auto returnObject = ice_engine::scripting::ReturnObject<glm::vec3>();
 	BOOST_CHECK_NO_THROW( scriptingEngine->execute(std::string("vec3 main(float f) { vec3 v; v.x = f; v.y = f; v.z = f; return v;}"), std::string("vec3 main(float)"), params, returnObject.parser()); );
 	
 	BOOST_CHECK_EQUAL(returnObject.value.x, 1.0f);
@@ -169,12 +169,12 @@ BOOST_AUTO_TEST_CASE(ParameterByValue2)
 
 BOOST_AUTO_TEST_CASE(ParameterByReference)
 {
-	hercules::scripting::ParameterList params;
+	ice_engine::scripting::ParameterList params;
 	
-	hercules::float32 f = 1.0f;
+	ice_engine::float32 f = 1.0f;
 	params.addRef(f);
 	
-	auto returnObject = hercules::scripting::ReturnObject<glm::vec3>();
+	auto returnObject = ice_engine::scripting::ReturnObject<glm::vec3>();
 	BOOST_CHECK_NO_THROW( scriptingEngine->execute(std::string("vec3 main(float f) { vec3 v; v.x = f; v.y = f; v.z = f; return v;}"), std::string("vec3 main(float)"), params, returnObject.parser()); );
 	
 	BOOST_CHECK_EQUAL(returnObject.value.x, 1.0f);
@@ -195,7 +195,7 @@ BOOST_AUTO_TEST_CASE(glmVec3Constructors)
 
 BOOST_AUTO_TEST_CASE(glmVec3ReturnFloat)
 {
-	hercules::float32 f = 0.0f;
+	ice_engine::float32 f = 0.0f;
 	BOOST_CHECK_NO_THROW( scriptingEngine->execute(std::string("float main() { vec3 v; v.x = 1.0; v.y = 1.0; v.z = 1.0; return v.x;}"), std::string("float main()"), f); );
 	
 	BOOST_CHECK_EQUAL(f, 1.0f);
@@ -203,7 +203,7 @@ BOOST_AUTO_TEST_CASE(glmVec3ReturnFloat)
 
 BOOST_AUTO_TEST_CASE(glmVec3ReturnGlmVec3)
 {
-	auto returnObject = hercules::scripting::ReturnObject<glm::vec3>();
+	auto returnObject = ice_engine::scripting::ReturnObject<glm::vec3>();
 	BOOST_CHECK_NO_THROW( scriptingEngine->execute(std::string("vec3 main() { vec3 v; v.x = 1.0; v.y = 1.0; v.z = 1.0; return v;}"), std::string("vec3 main()"), returnObject.parser()); );
 	
 	BOOST_CHECK_EQUAL(returnObject.value.x, 1.0f);
@@ -213,12 +213,12 @@ BOOST_AUTO_TEST_CASE(glmVec3ReturnGlmVec3)
 
 BOOST_AUTO_TEST_CASE(glmVec3ParameterByValue)
 {
-	hercules::scripting::ParameterList params;
+	ice_engine::scripting::ParameterList params;
 	
 	glm::vec3 v = glm::vec3(1.0f, 1.0f, 1.0f);
 	params.add(v);
 	
-	auto returnObject = hercules::scripting::ReturnObject<glm::vec3>();
+	auto returnObject = ice_engine::scripting::ReturnObject<glm::vec3>();
 	BOOST_CHECK_NO_THROW( scriptingEngine->execute(std::string("vec3 main(vec3 vectorIn) { vec3 v = vectorIn; return v;}"), std::string("vec3 main(vec3)"), params, returnObject.parser()); );
 	
 	BOOST_CHECK_EQUAL(returnObject.value.x, 1.0f);
@@ -228,12 +228,12 @@ BOOST_AUTO_TEST_CASE(glmVec3ParameterByValue)
 
 BOOST_AUTO_TEST_CASE(glmVec3ParameterByReference)
 {
-	hercules::scripting::ParameterList params;
+	ice_engine::scripting::ParameterList params;
 	
 	glm::vec3 v = glm::vec3(1.0f, 1.0f, 1.0f);
 	params.addRef(v);
 	
-	auto returnObject = hercules::scripting::ReturnObject<glm::vec3>();
+	auto returnObject = ice_engine::scripting::ReturnObject<glm::vec3>();
 	scriptingEngine->execute(std::string("vec3 main(vec3& in vectorIn) { vec3 v = vectorIn; return v;}"), std::string("vec3 main(vec3& in)"), params, returnObject.parser());
 	
 	BOOST_CHECK_EQUAL(returnObject.value.x, 1.0f);
@@ -263,65 +263,65 @@ BOOST_AUTO_TEST_CASE(vectorInt)
 
 BOOST_AUTO_TEST_CASE(vectorIntInitConstructor)
 {
-	hercules::int32 returnValue = 0;
+	ice_engine::int32 returnValue = 0;
 	BOOST_CHECK_NO_THROW( scriptingEngine->execute(std::string("int32 main() { vectorInt v = vectorInt(10); return v.size(); }"), std::string("int32 main()"), returnValue); );
 	BOOST_CHECK_EQUAL(returnValue, 10);
 }
 
 BOOST_AUTO_TEST_CASE(vectorIntSize)
 {
-	hercules::int32 returnValue = 0;
+	ice_engine::int32 returnValue = 0;
 	BOOST_CHECK_NO_THROW( scriptingEngine->execute(std::string("int32 main() { vectorInt v = vectorInt(); v.push_back(1); return v.size(); }"), std::string("int32 main()"), returnValue); );
 	BOOST_CHECK_EQUAL(returnValue, 1);
 }
 
 BOOST_AUTO_TEST_CASE(vectorIntResize)
 {
-	hercules::int32 returnValue = 0;
+	ice_engine::int32 returnValue = 0;
 	BOOST_CHECK_NO_THROW( scriptingEngine->execute(std::string("int32 main() { vectorInt v = vectorInt(); v.resize(1); return v.size(); }"), std::string("int32 main()"), returnValue); );
 	BOOST_CHECK_EQUAL(returnValue, 1);
 }
 
 BOOST_AUTO_TEST_CASE(vectorIntAt)
 {
-	hercules::int32 returnValue = 0;
+	ice_engine::int32 returnValue = 0;
 	BOOST_CHECK_NO_THROW( scriptingEngine->execute(std::string("int32 main() { vectorInt v; v.push_back(1); return v.at(0); }"), std::string("int32 main()"), returnValue); );
 	BOOST_CHECK_EQUAL(returnValue, 1);
 }
 
 BOOST_AUTO_TEST_CASE(vectorInt32PushAndReturn)
 {
-	hercules::scripting::ParameterList params;
-	params.add<hercules::int32>(1);
-	hercules::int32 returnValue = 0;
+	ice_engine::scripting::ParameterList params;
+	params.add<ice_engine::int32>(1);
+	ice_engine::int32 returnValue = 0;
 	BOOST_CHECK_NO_THROW( scriptingEngine->execute(std::string("int32 main(int32 input) { vectorInt32 v = vectorInt32(); v.push_back(input); return v[0]; }"), std::string("int32 main(int32)"), params, returnValue); );
 	BOOST_CHECK_EQUAL(returnValue, 1);
 }
 
 BOOST_AUTO_TEST_CASE(vectorIntEraseAndReturn)
 {
-	hercules::int32 returnValue = 0;
+	ice_engine::int32 returnValue = 0;
 	BOOST_CHECK_NO_THROW( scriptingEngine->execute(std::string("int32 main() { vectorInt v; v.push_back(1); v.erase(0); return v.size(); }"), std::string("int32 main()"), returnValue); );
 	BOOST_CHECK_EQUAL(returnValue, 0);
 }
 
 BOOST_AUTO_TEST_CASE(vectorIntInsertAndReturn)
 {
-	hercules::int32 returnValue = 0;
+	ice_engine::int32 returnValue = 0;
 	BOOST_CHECK_NO_THROW( scriptingEngine->execute(std::string("int32 main() { vectorInt v; v.insert(0, 1); v.erase(0); return v.size(); }"), std::string("int32 main()"), returnValue); );
 	BOOST_CHECK_EQUAL(returnValue, 0);
 }
 
 BOOST_AUTO_TEST_CASE(vectorIntClear)
 {
-	hercules::int32 returnValue = 0;
+	ice_engine::int32 returnValue = 0;
 	BOOST_CHECK_NO_THROW( scriptingEngine->execute(std::string("int32 main() { vectorInt v = vectorInt(); v.push_back(1); v.clear(); return v.size(); }"), std::string("int32 main()"), returnValue); );
 	BOOST_CHECK_EQUAL(returnValue, 0);
 }
 
 BOOST_AUTO_TEST_CASE(vectorIntReturn)
 {
-	auto returnObject = hercules::scripting::ReturnObject<std::vector<int>>();
+	auto returnObject = ice_engine::scripting::ReturnObject<std::vector<int>>();
 	BOOST_CHECK_NO_THROW( scriptingEngine->execute(std::string("vectorInt main() { vectorInt v; v.push_back(1); return v; }"), std::string("vectorInt main()"), returnObject.parser()); );
 	
 	BOOST_CHECK_EQUAL(returnObject.value.size(), 1);
@@ -330,9 +330,9 @@ BOOST_AUTO_TEST_CASE(vectorIntReturn)
 
 BOOST_AUTO_TEST_CASE(vectorIntParameterByValue)
 {
-	hercules::scripting::ParameterList params;
+	ice_engine::scripting::ParameterList params;
 	params.add(std::vector<int>());
-	auto returnObject = hercules::scripting::ReturnObject<std::vector<int>>();
+	auto returnObject = ice_engine::scripting::ReturnObject<std::vector<int>>();
 	BOOST_CHECK_NO_THROW( scriptingEngine->execute(std::string("vectorInt main(vectorInt v) { v.push_back(1); return v; }"), std::string("vectorInt main(vectorInt)"), params, returnObject.parser()); );
 	
 	BOOST_CHECK_EQUAL(returnObject.value.size(), 1);
@@ -342,7 +342,7 @@ BOOST_AUTO_TEST_CASE(vectorIntParameterByValue)
 /*
 BOOST_AUTO_TEST_CASE(vectorIntParameterByReference)
 {
-	hercules::scripting::ParameterList params;
+	ice_engine::scripting::ParameterList params;
 	
 	std::vector<int> v;
 	params.addRef(v);

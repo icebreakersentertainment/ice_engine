@@ -1,7 +1,7 @@
 #ifndef USER_DATA_INLINE_H_
 #define USER_DATA_INLINE_H_
 
-namespace hercules
+namespace ice_engine
 {
 namespace physics
 {

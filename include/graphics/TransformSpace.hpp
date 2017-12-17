@@ -1,7 +1,7 @@
 #ifndef TRANSFORM_SPACE_H_
 #define TRANSFORM_SPACE_H_
 
-namespace hercules
+namespace ice_engine
 {
 namespace graphics
 {

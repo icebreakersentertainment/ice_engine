@@ -1,6 +1,6 @@
 #include "OpenGlLoader.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 
 OpenGlLoader::OpenGlLoader()

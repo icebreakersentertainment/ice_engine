@@ -2,7 +2,7 @@
 
 #include "Constants.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 
 const std::string Constants::GAME_NAME 		= std::string("Dark Horizon");

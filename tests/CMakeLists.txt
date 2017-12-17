@@ -12,7 +12,7 @@ else()
   )
 endif()
 
-project(hercules_tests)
+project(ice_engine_tests)
 
 find_library(BOOST_UNIT_TEST_FRAMEWORK_LIBRARY NAMES
   ${BOOST_FILENAME_PREFIX}boost_unit_test_framework${BOOST_FILENAME_POSTFIX}.so.${BOOST_VERSION}
@@ -49,13 +49,13 @@ endif()
 
 macro(create_test TEST_NAME EXECUTABLE_NAME SOURCE)
   add_executable(${EXECUTABLE_NAME} "src/${SOURCE}")
-  add_dependencies(${EXECUTABLE_NAME} hercules)
+  add_dependencies(${EXECUTABLE_NAME} ice_engine)
 
   if(MSVC)
-    target_link_libraries(${EXECUTABLE_NAME} ../${CMAKE_BUILD_TYPE}/hercules)
+    target_link_libraries(${EXECUTABLE_NAME} ../${CMAKE_BUILD_TYPE}/ice_engine)
   else()
     add_definitions("-DBOOST_TEST_DYN_LINK")
-    target_link_libraries(${EXECUTABLE_NAME} hercules)
+    target_link_libraries(${EXECUTABLE_NAME} ice_engine)
   endif()
   
   target_link_libraries(${EXECUTABLE_NAME} ${SQLITE_LIBRARY} )

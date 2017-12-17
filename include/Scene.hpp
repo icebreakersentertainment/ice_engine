@@ -20,7 +20,7 @@
 #include "IThreadPool.hpp"
 #include "IOpenGlLoader.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 
 class Scene : public IScene
