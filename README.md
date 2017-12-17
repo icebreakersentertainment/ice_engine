@@ -10,7 +10,7 @@ Documentation is available at [http://game-engine-ice_engine.readthedocs.io/en/l
 
 To clone:
 
-    git clone https://github.com/jarrettchisholm/ice_engine.git
+    git clone https://github.com/icebreakersentertainment/ice_engine.git
 
 Get/build prerequisites:
 
