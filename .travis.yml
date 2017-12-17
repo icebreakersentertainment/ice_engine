@@ -32,6 +32,6 @@ script:
   - export CXX=/usr/bin/g++-6
   - mkdir -p build
   - cd build
-  - cmake -DCMAKE_BUILD_TYPE=Release -DHERCULES_BUILD_BENCHMARKS=1 -DHERCULES_BUILD_TESTS=1 -DHERCULES_BUILD_AS_LIBRARY=1 ..
+  - cmake -DCMAKE_BUILD_TYPE=Release -DICEENGINE_BUILD_BENCHMARKS=1 -DICEENGINE_BUILD_TESTS=1 -DICEENGINE_BUILD_AS_LIBRARY=1 ..
   - make
   - ctest
