@@ -20,14 +20,14 @@ To build on Linux:
 
     mkdir build
     cd build
-    cmake ..
+    cmake -DCMAKE_BUILD_TYPE=Release ..
     make
 
 To test on Linux:
 
     mkdir build
     cd build
-    cmake -D ICEENGINE_BUILD_AS_LIBRARY=1 -D ICEENGINE_GRAPHICS_BACKEND=noop -D ICEENGINE_BUILD_TESTS=1 ..
+    cmake -DCMAKE_BUILD_TYPE=Release -DICEENGINE_BUILD_TESTS=1 -DICEENGINE_BUILD_AS_LIBRARY=1 ..
     make
     ctest
 
@@ -36,21 +36,13 @@ To build on Windows:
     mkdir build
     cd build
     
-    # Workaround for `Release` directory being created as a file in Windows
-    mkdir build/Release
-    
-    cmake -G "Visual Studio 14" ..
+    cmake -DCMAKE_BUILD_TYPE=Release ..
     msbuild /p:Configuration=Release ice_engine.sln
 
 To test on Windows:
 
     mkdir build
     
-    # Workaround for `Release` directory being created as a file in Windows
-    mkdir build/Release
-    mkdir build/tests
-    mkdir build/tests/Release
-    
-    cmake -G "Visual Studio 14" -D BUILD_AS_LIBRARY=1 -D ICEENGINE_GRAPHICS_BACKEND=noop -D ICEENGINE_BUILD_TESTS=1 ..
+    cmake -DCMAKE_BUILD_TYPE=Release -DICEENGINE_BUILD_TESTS=1 -DICEENGINE_BUILD_AS_LIBRARY=1 ..
     msbuild /p:Configuration=Release ice_engine.sln
     ctest
