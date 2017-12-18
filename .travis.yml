@@ -4,9 +4,9 @@ services:
   - docker
 
 compiler:
-  - gcc
+  - g++
 
-dist: xenial
+dist: trusty
 sudo: required
 
 before_install:
