@@ -10,25 +10,27 @@ dist: trusty
 sudo: required
 
 before_install:
-  - docker pull ubuntu:16.04
+  - docker run -d --name ubuntu-test -v $(pwd):/travis ubuntu:16.04 tail -f /dev/null
+  - docker ps
 
 install:
-  - sudo add-apt-repository -y ppa:ubuntu-toolchain-r/test
-  - sudo apt-get -qq update
-  - sudo apt-get install -y gcc-6 g++-6 cmake
-  - sudo apt-get install -y libgl1-mesa-dev libglu1-mesa-dev
-  - sudo apt-get install -y python
-  - python setup.py
+  - docker exec -t ubuntu-test bash -c "add-apt-repository -y ppa:ubuntu-toolchain-r/test;
+    apt-get -qq update;
+    apt-get install -y gcc-6 g++-6 cmake;
+    apt-get install -y libgl1-mesa-dev libglu1-mesa-dev;
+    apt-get install -y python"
+  - docker exec -t ubuntu-test bash -c "cd /travis; python setup.py"
 
 script:
-  - sudo ln -s /usr/bin/gcc-6 /usr/local/bin/gcc
-  - sudo ln -s /usr/bin/g++-6 /usr/local/bin/g++
-  - export CC=/usr/bin/gcc-6
-  - export CXX=/usr/bin/g++-6
-  - g++ -v
-  - gcc -v
-  - mkdir -p build
-  - cd build
-  - cmake -DCMAKE_BUILD_TYPE=Release -DICEENGINE_BUILD_BENCHMARKS=1 -DICEENGINE_BUILD_TESTS=1 -DICEENGINE_BUILD_AS_LIBRARY=1 ..
-  - make
-  - ctest
+  - docker exec -t ubuntu-test bash -c "cd /travis;
+    ln -s /usr/bin/gcc-6 /usr/local/bin/gcc &&
+    ln -s /usr/bin/g++-6 /usr/local/bin/g++ &&
+    export CC=/usr/bin/gcc-6 &&
+    export CXX=/usr/bin/g++-6 &&
+    g++ -v &&
+    gcc -v &&
+    mkdir build &&
+    cd build &&
+    cmake -DCMAKE_BUILD_TYPE=Release -DICEENGINE_BUILD_BENCHMARKS=1 -DICEENGINE_BUILD_TESTS=1 -DICEENGINE_BUILD_AS_LIBRARY=1 .. &&
+    make &&
+    ctest"
