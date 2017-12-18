@@ -17,9 +17,17 @@ install:
   - docker exec -t ubuntu-test bash -c "add-apt-repository -y ppa:ubuntu-toolchain-r/test;
     apt-get -qq update;
     apt-get install -y gcc-6 g++-6 cmake;
-    apt-get install -y libgl1-mesa-dev libglu1-mesa-dev;
-    apt-get install -y python3"
-  - docker exec -t ubuntu-test bash -c "cd /travis; python3 setup.py"
+    apt-get install -y libgl1-mesa-dev libglu1-mesa-dev"
+  - docker exec -t ubuntu-test bash -c "apt-get install -y build-essential checkinstall;
+    apt-get install -y libreadline-gplv2-dev libncursesw5-dev libssl-dev libsqlite3-dev tk-dev libgdbm-dev libc6-dev libbz2-dev;
+    cd /usr/src;
+    wget https://www.python.org/ftp/python/2.7.8/Python-2.7.8.tgz;
+    tar xzf Python-2.7.8.tgz;
+    cd Python-2.7.8;
+    ./configure;
+    make altinstall;
+    "
+  - docker exec -t ubuntu-test bash -c "cd /travis; python2.7 setup.py"
 
 script:
   - docker exec -t ubuntu-test bash -c "cd /travis;
