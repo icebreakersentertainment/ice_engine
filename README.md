@@ -6,7 +6,7 @@ Ice Engine
 
 **Note**: This project is incredibly young, and isn't in any kind of production ready state. 
 
-Documentation is available at [http://game-engine-ice_engine.readthedocs.io/en/latest/](http://game-engine-ice_engine.readthedocs.io/en/latest/).
+Documentation is available at [http://ice-engine.readthedocs.io/en/latest/](http://ice-engine.readthedocs.io/en/latest/).
 
 To clone:
 
