@@ -34,7 +34,7 @@ platform = 'linux'
 sharedLibraryExt = 'so'
 staticLibraryExt = 'a'
 extension = 'tar.gz'
-downloadDepsUrl = 'https://artifact-repo.module9games.com/files'
+downloadDepsUrl = 'https://artifact-repo.icebreakersentertainment.com/files'
 dependenciesDirectory = 'deps/'
 librariesDirectory = 'lib/'
 
