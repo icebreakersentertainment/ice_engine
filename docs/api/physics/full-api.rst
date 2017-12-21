@@ -1,6 +1,6 @@
-:mod:`hercules::physics`
+:mod:`ice_engine::physics`
 ===============
-.. doxygennamespace:: hercules::physics
+.. doxygennamespace:: ice_engine::physics
    :members:
    :undoc-members:
 

@@ -1,6 +1,6 @@
-:mod:`hercules`
+:mod:`ice_engine`
 ===============
-.. doxygennamespace:: hercules
+.. doxygennamespace:: ice_engine
    :members:
    :undoc-members:
 

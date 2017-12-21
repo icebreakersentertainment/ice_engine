@@ -1,6 +1,6 @@
-:mod:`hercules::graphics`
+:mod:`ice_engine::graphics`
 ===============
-.. doxygennamespace:: hercules::graphics
+.. doxygennamespace:: ice_engine::graphics
    :members:
    :undoc-members:
 

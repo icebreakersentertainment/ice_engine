@@ -1,6 +1,6 @@
-:mod:`hercules::audio::IAudioEngine`
+:mod:`ice_engine::audio::IAudioEngine`
 ====================================
-.. doxygenclass:: hercules::audio::IAudioEngine
+.. doxygenclass:: ice_engine::audio::IAudioEngine
    :members:
    :undoc-members:
 

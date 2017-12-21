@@ -1,6 +1,6 @@
-:mod:`hercules::graphics::IGraphicsEngine`
+:mod:`ice_engine::graphics::IGraphicsEngine`
 ==========================================
-.. doxygenclass:: hercules::graphics::IGraphicsEngine
+.. doxygenclass:: ice_engine::graphics::IGraphicsEngine
    :members:
    :undoc-members:
 

@@ -1,6 +1,6 @@
-:mod:`hercules::audio`
+:mod:`ice_engine::audio`
 ===============
-.. doxygennamespace:: hercules::audio
+.. doxygennamespace:: ice_engine::audio
    :members:
    :undoc-members:
 

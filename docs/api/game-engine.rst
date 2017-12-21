@@ -1,6 +1,6 @@
-:mod:`hercules::IGameEngine`
+:mod:`ice_engine::IGameEngine`
 ============================
-.. doxygenclass:: hercules::IGameEngine
+.. doxygenclass:: ice_engine::IGameEngine
    :members:
    :undoc-members:
 

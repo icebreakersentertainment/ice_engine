@@ -1,4 +1,4 @@
-Welcome to Hercules's documentation!
+Welcome to Ice Engine's documentation!
 ====================================
 
 .. _user-docs:

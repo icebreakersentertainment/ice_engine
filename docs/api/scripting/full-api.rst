@@ -1,6 +1,6 @@
-:mod:`hercules::scripting`
+:mod:`ice_engine::scripting`
 ===============
-.. doxygennamespace:: hercules::scripting
+.. doxygennamespace:: ice_engine::scripting
    :members:
    :undoc-members:
 
