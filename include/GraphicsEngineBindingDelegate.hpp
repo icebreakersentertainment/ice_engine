@@ -1,7 +1,7 @@
 #ifndef GRAPHICSENGINEBINDINGDELEGATE_H_
 #define GRAPHICSENGINEBINDINGDELEGATE_H_
 
-namespace hercules
+namespace ice_engine
 {
 
 namespace scripting

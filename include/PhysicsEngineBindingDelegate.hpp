@@ -1,7 +1,7 @@
 #ifndef PHYSICSENGINEBINDINGDELEGATE_H_
 #define PHYSICSENGINEBINDINGDELEGATE_H_
 
-namespace hercules
+namespace ice_engine
 {
 
 namespace scripting

@@ -13,7 +13,7 @@
 
 #include "scripting/IScriptingEngine.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 
 template<typename T, typename V>

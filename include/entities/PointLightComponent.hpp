@@ -6,7 +6,7 @@
 
 #include "graphics/PointLightHandle.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 namespace entities
 {

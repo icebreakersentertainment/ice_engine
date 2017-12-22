@@ -12,7 +12,7 @@
 
 #include "GameEngine.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 
 PathfindingEngineBindingDelegate::PathfindingEngineBindingDelegate(logger::ILogger* logger, scripting::IScriptingEngine* scriptingEngine, GameEngine* gameEngine, pathfinding::IPathfindingEngine* pathfindingEngine)

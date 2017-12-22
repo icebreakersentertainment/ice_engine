@@ -8,7 +8,7 @@
 #include "OpenGl.hpp"
 #include "Texture.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 namespace graphics
 {

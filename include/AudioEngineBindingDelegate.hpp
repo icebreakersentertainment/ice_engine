@@ -1,7 +1,7 @@
 #ifndef AUDIOENGINEBINDINGDELEGATE_H_
 #define AUDIOENGINEBINDINGDELEGATE_H_
 
-namespace hercules
+namespace ice_engine
 {
 
 namespace scripting

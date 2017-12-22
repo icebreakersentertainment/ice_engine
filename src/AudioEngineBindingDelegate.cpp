@@ -12,7 +12,7 @@
 
 #include "GameEngine.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 
 AudioEngineBindingDelegate::AudioEngineBindingDelegate(logger::ILogger* logger, scripting::IScriptingEngine* scriptingEngine, GameEngine* gameEngine, audio::IAudioEngine* audioEngine)

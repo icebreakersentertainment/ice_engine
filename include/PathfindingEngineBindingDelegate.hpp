@@ -1,7 +1,7 @@
 #ifndef PATHFINDINGENGINEBINDINGDELEGATE_H_
 #define PATHFINDINGENGINEBINDINGDELEGATE_H_
 
-namespace hercules
+namespace ice_engine
 {
 
 namespace scripting

@@ -12,7 +12,7 @@
 
 #include "GameEngine.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 
 PhysicsEngineBindingDelegate::PhysicsEngineBindingDelegate(logger::ILogger* logger, scripting::IScriptingEngine* scriptingEngine, GameEngine* gameEngine, physics::IPhysicsEngine* physicsEngine)

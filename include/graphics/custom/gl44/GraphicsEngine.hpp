@@ -24,9 +24,9 @@
 #include "fs/IFileSystem.hpp"
 #include "logger/ILogger.hpp"
 
-using namespace hercules::graphics::custom::gl;
+using namespace ice_engine::graphics::custom::gl;
 
-namespace hercules
+namespace ice_engine
 {
 namespace graphics
 {

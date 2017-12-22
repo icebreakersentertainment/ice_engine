@@ -1,7 +1,7 @@
 #ifndef BINDABLE_H_
 #define BINDABLE_H_
 
-namespace hercules
+namespace ice_engine
 {
 namespace graphics
 {

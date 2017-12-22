@@ -4,7 +4,7 @@
 #include "FastNoise.h"
 #include "Types.hpp"
 
-namespace hercules
+namespace ice_engine
 {
 namespace noise
 {
