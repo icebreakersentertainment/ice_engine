@@ -237,6 +237,11 @@ graphics::RenderableHandle Scene::createRenderable(const graphics::MeshHandle& m
 	return gameEngine_->createRenderable(renderSceneHandle_, meshHandle, textureHandle, shaderProgramHandle, name);
 }
 
+graphics::PointLightHandle Scene::createPointLight(const glm::vec3& position)
+{
+	return graphicsEngine_->createPointLight(renderSceneHandle_, position);
+}
+
 std::string Scene::getName() const
 {
 	return name_;
@@ -320,6 +325,11 @@ void Scene::assign(const entities::Entity& entity, const entities::PositionOrien
 	entityComponentSystem_.entities.assign<entities::PositionOrientationComponent>(static_cast<entityx::Entity::Id>(entity.id()), std::forward<const entities::PositionOrientationComponent>(component));
 }
 
+void Scene::assign(const entities::Entity& entity, const entities::PointLightComponent& component)
+{
+	entityComponentSystem_.entities.assign<entities::PointLightComponent>(static_cast<entityx::Entity::Id>(entity.id()), std::forward<const entities::PointLightComponent>(component));
+}
+
 void Scene::rotate(const entities::Entity& entity, const float32 degrees, const glm::vec3& axis, const graphics::TransformSpace& relativeTo)
 {
 	auto component = entityComponentSystem_.entities.component<entities::PositionOrientationComponent>(static_cast<entityx::Entity::Id>(entity.id()));
@@ -341,7 +351,11 @@ void Scene::rotate(const entities::Entity& entity, const float32 degrees, const 
 	}
 	
 	graphicsEngine_->rotation(renderSceneHandle_, graphicsComponent->renderableHandle, component->orientation);
-	physicsEngine_->rotation(physicsSceneHandle_, rigidBodyObjectComponent->rigidBodyObjectHandle, component->orientation);
+	
+	if (rigidBodyObjectComponent)
+	{
+		physicsEngine_->rotation(physicsSceneHandle_, rigidBodyObjectComponent->rigidBodyObjectHandle, component->orientation);
+	}
 }
 
 void Scene::rotate(const entities::Entity& entity, const glm::quat& orientation, const graphics::TransformSpace& relativeTo)
@@ -403,11 +417,28 @@ void Scene::translate(const entities::Entity& entity, const glm::vec3& translate
 	auto component = entityComponentSystem_.entities.component<entities::PositionOrientationComponent>(static_cast<entityx::Entity::Id>(entity.id()));
 	auto graphicsComponent = entityComponentSystem_.entities.component<entities::GraphicsComponent>(static_cast<entityx::Entity::Id>(entity.id()));
 	auto rigidBodyObjectComponent = entityComponentSystem_.entities.component<entities::RigidBodyObjectComponent>(static_cast<entityx::Entity::Id>(entity.id()));
+	auto pointLightComponent = entityComponentSystem_.entities.component<entities::PointLightComponent>(static_cast<entityx::Entity::Id>(entity.id()));
 	
-	component->position += translate;
+	if (component)
+	{
+		component->position += translate;
+	}
 	
-	graphicsEngine_->position(renderSceneHandle_, graphicsComponent->renderableHandle, component->position);
-	physicsEngine_->position(physicsSceneHandle_, rigidBodyObjectComponent->rigidBodyObjectHandle, component->position);
+	if (graphicsComponent)
+	{
+		graphicsEngine_->position(renderSceneHandle_, graphicsComponent->renderableHandle, component->position);
+	}
+	
+	if (rigidBodyObjectComponent)
+	{
+		physicsEngine_->position(physicsSceneHandle_, rigidBodyObjectComponent->rigidBodyObjectHandle, component->position);
+	}
+	
+	if (pointLightComponent)
+	{
+		pointLightComponent->position += translate;
+		graphicsEngine_->position(renderSceneHandle_, pointLightComponent->pointLightHandle, pointLightComponent->position);
+	}
 }
 
 void Scene::scale(const entities::Entity& entity, const float32 scale)

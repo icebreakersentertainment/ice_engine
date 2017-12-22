@@ -1,0 +1,27 @@
+#ifndef SHADERPROGRAM_H_
+#define SHADERPROGRAM_H_
+
+#include "Program.hpp"
+
+namespace hercules
+{
+namespace graphics
+{
+namespace custom
+{
+namespace gl
+{
+
+class ShaderProgram : public Program<ShaderProgram>
+{
+public:
+	using Program<ShaderProgram>::Program;
+};
+
+}
+}
+}
+}
+
+#endif /* SHADERPROGRAM_H_ */
+

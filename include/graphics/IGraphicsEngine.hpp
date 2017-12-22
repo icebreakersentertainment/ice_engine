@@ -15,8 +15,10 @@
 #include "MeshHandle.hpp"
 #include "TextureHandle.hpp"
 #include "SkeletonHandle.hpp"
+#include "PointLightHandle.hpp"
 #include "CameraHandle.hpp"
-#include "ShaderHandle.hpp"
+#include "VertexShaderHandle.hpp"
+#include "FragmentShaderHandle.hpp"
 #include "ShaderProgramHandle.hpp"
 
 #include "model/Model.hpp"
@@ -52,6 +54,8 @@ public:
 	
 	virtual CameraHandle createCamera(const glm::vec3& position, const glm::vec3& lookAt = glm::vec3(0.0f, 0.0f, 0.0f)) = 0;
 	
+	virtual PointLightHandle createPointLight(const RenderSceneHandle& renderSceneHandle, const glm::vec3& position) = 0;
+	
 	virtual MeshHandle createStaticMesh(
 		const std::vector<glm::vec3>& vertices,
 		const std::vector<uint32>& indices,
@@ -80,11 +84,13 @@ public:
 	
 	virtual TextureHandle createTexture2d(const image::Image& image) = 0;
 	
-	virtual ShaderHandle createVertexShader(const std::string& data) = 0;
-	virtual ShaderHandle createFragmentShader(const std::string& data) = 0;
-	virtual bool valid(const ShaderHandle& shaderHandle) const = 0;
-	virtual void destroyShader(const ShaderHandle& shaderHandle) = 0;
-	virtual ShaderProgramHandle createShaderProgram(const ShaderHandle& vertexShaderHandle, const ShaderHandle& fragmentShaderHandle) = 0;
+	virtual VertexShaderHandle createVertexShader(const std::string& data) = 0;
+	virtual FragmentShaderHandle createFragmentShader(const std::string& data) = 0;
+	virtual bool valid(const VertexShaderHandle& shaderHandle) const = 0;
+	virtual bool valid(const FragmentShaderHandle& shaderHandle) const = 0;
+	virtual void destroyShader(const VertexShaderHandle& shaderHandle) = 0;
+	virtual void destroyShader(const FragmentShaderHandle& shaderHandle) = 0;
+	virtual ShaderProgramHandle createShaderProgram(const VertexShaderHandle& vertexShaderHandle, const FragmentShaderHandle& fragmentShaderHandle) = 0;
 	virtual bool valid(const ShaderProgramHandle& shaderProgramHandle) const = 0;
 	virtual void destroyShaderProgram(const ShaderProgramHandle& shaderProgramHandle) = 0;
 	
@@ -104,6 +110,8 @@ public:
 	
 	virtual void translate(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle, const float32 x, const float32 y, const float32 z) = 0;
 	virtual void translate(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle, const glm::vec3& trans) = 0;
+	virtual void translate(const RenderSceneHandle& renderSceneHandle, const PointLightHandle& pointLightHandle, const float32 x, const float32 y, const float32 z) = 0;
+	virtual void translate(const RenderSceneHandle& renderSceneHandle, const PointLightHandle& pointLightHandle, const glm::vec3& trans) = 0;
 	virtual void translate(const CameraHandle& cameraHandle, const float32 x, const float32 y, const float32 z) = 0;
 	virtual void translate(const CameraHandle& cameraHandle, const glm::vec3& trans) = 0;
 	
@@ -115,6 +123,9 @@ public:
 	virtual void position(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle, const float32 x, const float32 y, const float32 z) = 0;
 	virtual void position(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle, const glm::vec3& position) = 0;
 	virtual glm::vec3 position(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle) const = 0;
+	virtual void position(const RenderSceneHandle& renderSceneHandle, const PointLightHandle& pointLightHandle, const float32 x, const float32 y, const float32 z) = 0;
+	virtual void position(const RenderSceneHandle& renderSceneHandle, const PointLightHandle& pointLightHandle, const glm::vec3& position) = 0;
+	virtual glm::vec3 position(const RenderSceneHandle& renderSceneHandle, const PointLightHandle& pointLightHandle) const = 0;
 	virtual void position(const CameraHandle& cameraHandle, const float32 x, const float32 y, const float32 z) = 0;
 	virtual void position(const CameraHandle& cameraHandle, const glm::vec3& position) = 0;
 	virtual glm::vec3 position(const CameraHandle& cameraHandle) const = 0;
@@ -127,6 +138,7 @@ public:
 	virtual void update(const SkeletonHandle& skeletonHandle, const void* data, const uint32 size) = 0;
 	
 	virtual void setMouseRelativeMode(const bool enabled) = 0;
+	virtual void setWindowGrab(const bool enabled) = 0;
 	virtual void setCursorVisible(const bool visible) = 0;
 	
 	virtual void processEvents() = 0;

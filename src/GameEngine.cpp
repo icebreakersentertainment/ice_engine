@@ -85,7 +85,8 @@ void GameEngine::exit()
 
 void GameEngine::tick(const float32 delta)
 {
-	graphicsEngine_->setMouseRelativeMode(false);
+	graphicsEngine_->setMouseRelativeMode(true);
+	graphicsEngine_->setWindowGrab(false);
 	graphicsEngine_->setCursorVisible(true);
 
 	handleEvents();
@@ -635,7 +636,7 @@ std::shared_future<ModelHandle> GameEngine::loadStaticModelAsync(const graphics:
 	return sharedFuture;
 }
 
-graphics::ShaderHandle GameEngine::createVertexShader(const std::string& name, const std::string& filename)
+graphics::VertexShaderHandle GameEngine::createVertexShader(const std::string& name, const std::string& filename)
 {
 	logger_->debug("Loading vertex shader '" + name + "': " + filename);
 	
@@ -644,9 +645,9 @@ graphics::ShaderHandle GameEngine::createVertexShader(const std::string& name, c
 	return createVertexShaderFromSource(name, shaderSource);
 }
 
-std::shared_future<graphics::ShaderHandle> GameEngine::createVertexShaderAsync(const std::string& name, const std::string& filename)
+std::shared_future<graphics::VertexShaderHandle> GameEngine::createVertexShaderAsync(const std::string& name, const std::string& filename)
 {
-	auto promise = std::make_shared<std::promise<graphics::ShaderHandle>>();
+	auto promise = std::make_shared<std::promise<graphics::VertexShaderHandle>>();
 	auto sharedFuture = promise->get_future().share();
 	
 	std::function<void()> func = [=, promise = promise, sharedFuture = sharedFuture, name = name, filename = filename]() {
@@ -659,25 +660,25 @@ std::shared_future<graphics::ShaderHandle> GameEngine::createVertexShaderAsync(c
 	return sharedFuture;
 }
 
-graphics::ShaderHandle GameEngine::createVertexShaderFromSource(const std::string& name, const std::string& data)
+graphics::VertexShaderHandle GameEngine::createVertexShaderFromSource(const std::string& name, const std::string& data)
 {
 	logger_->debug("Creating vertex shader from source: " + data);
 	
-	if (graphicsEngine_->valid(getShader(name)))
+	if (graphicsEngine_->valid(getVertexShader(name)))
 	{
 		throw std::runtime_error("Vertex shader with name '" + name + "' already exists.");
 	}
 	
 	auto handle = graphicsEngine_->createVertexShader(data);
 	
-	shaderHandles_[name] = handle;
+	vertexShaderHandles_[name] = handle;
 	
 	return handle;
 }
 
-std::shared_future<graphics::ShaderHandle> GameEngine::createVertexShaderFromSourceAsync(const std::string& name, const std::string& data)
+std::shared_future<graphics::VertexShaderHandle> GameEngine::createVertexShaderFromSourceAsync(const std::string& name, const std::string& data)
 {
-	auto promise = std::make_shared<std::promise<graphics::ShaderHandle>>();
+	auto promise = std::make_shared<std::promise<graphics::VertexShaderHandle>>();
 	auto sharedFuture = promise->get_future().share();
 	
 	std::function<void()> func = [=, promise = promise, sharedFuture = sharedFuture, name = name, data = data]() {
@@ -690,7 +691,7 @@ std::shared_future<graphics::ShaderHandle> GameEngine::createVertexShaderFromSou
 	return sharedFuture;
 }
 
-graphics::ShaderHandle GameEngine::createFragmentShader(const std::string& name, const std::string& filename)
+graphics::FragmentShaderHandle GameEngine::createFragmentShader(const std::string& name, const std::string& filename)
 {
 	logger_->debug("Loading fragment shader '" + name + "': " + filename);
 	
@@ -699,9 +700,9 @@ graphics::ShaderHandle GameEngine::createFragmentShader(const std::string& name,
 	return createFragmentShaderFromSource(name, shaderSource);
 }
 
-std::shared_future<graphics::ShaderHandle> GameEngine::createFragmentShaderAsync(const std::string& name, const std::string& filename)
+std::shared_future<graphics::FragmentShaderHandle> GameEngine::createFragmentShaderAsync(const std::string& name, const std::string& filename)
 {
-	auto promise = std::make_shared<std::promise<graphics::ShaderHandle>>();
+	auto promise = std::make_shared<std::promise<graphics::FragmentShaderHandle>>();
 	auto sharedFuture = promise->get_future().share();
 	
 	std::function<void()> func = [=, promise = promise, sharedFuture = sharedFuture, name = name, filename = filename]() {
@@ -714,25 +715,25 @@ std::shared_future<graphics::ShaderHandle> GameEngine::createFragmentShaderAsync
 	return sharedFuture;
 }
 
-graphics::ShaderHandle GameEngine::createFragmentShaderFromSource(const std::string& name, const std::string& data)
+graphics::FragmentShaderHandle GameEngine::createFragmentShaderFromSource(const std::string& name, const std::string& data)
 {
 	logger_->debug("Creating fragment shader from source: " + data);
 	
-	if (graphicsEngine_->valid(getShader(name)))
+	if (graphicsEngine_->valid(getFragmentShader(name)))
 	{
 		throw std::runtime_error("Fragment shader with name '" + name + "' already exists.");
 	}
 	
 	auto handle = graphicsEngine_->createFragmentShader(data);
 	
-	shaderHandles_[name] = handle;
+	fragmentShaderHandles_[name] = handle;
 	
 	return handle;
 }
 
-std::shared_future<graphics::ShaderHandle> GameEngine::createFragmentShaderFromSourceAsync(const std::string& name, const std::string& data)
+std::shared_future<graphics::FragmentShaderHandle> GameEngine::createFragmentShaderFromSourceAsync(const std::string& name, const std::string& data)
 {
-	auto promise = std::make_shared<std::promise<graphics::ShaderHandle>>();
+	auto promise = std::make_shared<std::promise<graphics::FragmentShaderHandle>>();
 	auto sharedFuture = promise->get_future().share();
 	
 	std::function<void()> func = [=, promise = promise, sharedFuture = sharedFuture, name = name, data = data]() {
@@ -745,21 +746,32 @@ std::shared_future<graphics::ShaderHandle> GameEngine::createFragmentShaderFromS
 	return sharedFuture;
 }
 
-graphics::ShaderHandle GameEngine::getShader(const std::string& name) const
+graphics::VertexShaderHandle GameEngine::getVertexShader(const std::string& name) const
 {
-	auto it = shaderHandles_.find(name);
-	if (it != shaderHandles_.end())
+	auto it = vertexShaderHandles_.find(name);
+	if (it != vertexShaderHandles_.end())
 	{
 		return it->second;
 	}
 	
-	return graphics::ShaderHandle();
+	return graphics::VertexShaderHandle();
+}
+
+graphics::FragmentShaderHandle GameEngine::getFragmentShader(const std::string& name) const
+{
+	auto it = fragmentShaderHandles_.find(name);
+	if (it != fragmentShaderHandles_.end())
+	{
+		return it->second;
+	}
+	
+	return graphics::FragmentShaderHandle();
 }
 
 void GameEngine::destroyShader(const std::string& name)
 {
 	logger_->debug("Destroying shader '" + name + "'");
-	
+	/*
 	auto it = shaderHandles_.find(name);
 	if (it != shaderHandles_.end())
 	{
@@ -770,31 +782,53 @@ void GameEngine::destroyShader(const std::string& name)
 	{
 		logger_->warn("Cannot destroy shader '" + name + "' - shader was not found.");
 	}
+	*/
 }
 
-void GameEngine::destroyShader(const graphics::ShaderHandle& shaderHandle)
+void GameEngine::destroyShader(const graphics::VertexShaderHandle& shaderHandle)
 {
-	logger_->debug("Destroying shader with id '" + std::to_string(shaderHandle.id()) + "'");
+	logger_->debug("Destroying vertex shader with id '" + std::to_string(shaderHandle.id()) + "'");
 	
 	auto func = [&shaderHandle](const auto& pair) {
 		return pair.second == shaderHandle;
 	};
 	
-	auto it = std::find_if(shaderHandles_.begin(), shaderHandles_.end(), func);
+	auto it = std::find_if(vertexShaderHandles_.begin(), vertexShaderHandles_.end(), func);
 	
-	if (it != shaderHandles_.end())
+	if (it != vertexShaderHandles_.end())
 	{
 		graphicsEngine_->destroyShader(it->second);
-		shaderHandles_.erase(it);
+		vertexShaderHandles_.erase(it);
 	}
 	else
 	{
-		logger_->warn("Cannot destroy shader with id '" + std::to_string(shaderHandle.id()) + "' - shader was not found.");
+		logger_->warn("Cannot destroy vertex shader with id '" + std::to_string(shaderHandle.id()) + "' - shader was not found.");
+	}
+}
+
+void GameEngine::destroyShader(const graphics::FragmentShaderHandle& shaderHandle)
+{
+	logger_->debug("Destroying fragment shader with id '" + std::to_string(shaderHandle.id()) + "'");
+	
+	auto func = [&shaderHandle](const auto& pair) {
+		return pair.second == shaderHandle;
+	};
+	
+	auto it = std::find_if(fragmentShaderHandles_.begin(), fragmentShaderHandles_.end(), func);
+	
+	if (it != fragmentShaderHandles_.end())
+	{
+		graphicsEngine_->destroyShader(it->second);
+		fragmentShaderHandles_.erase(it);
+	}
+	else
+	{
+		logger_->warn("Cannot destroy fragment shader with id '" + std::to_string(shaderHandle.id()) + "' - shader was not found.");
 	}
 }
 
 
-graphics::ShaderProgramHandle GameEngine::createShaderProgram(const std::string& name, const graphics::ShaderHandle& vertexShaderHandle, const graphics::ShaderHandle& fragmentShaderHandle)
+graphics::ShaderProgramHandle GameEngine::createShaderProgram(const std::string& name, const graphics::VertexShaderHandle& vertexShaderHandle, const graphics::FragmentShaderHandle& fragmentShaderHandle)
 {
 	logger_->debug("Creating shader program '" + name + "' from vertex id '" + std::to_string(vertexShaderHandle.id()) + "' and fragment id '" + std::to_string(fragmentShaderHandle.id()) + "'");
 	
@@ -810,7 +844,7 @@ graphics::ShaderProgramHandle GameEngine::createShaderProgram(const std::string&
 	return handle;
 }
 
-std::shared_future<graphics::ShaderProgramHandle> GameEngine::createShaderProgramAsync(const std::string& name, const graphics::ShaderHandle& vertexShaderHandle, const graphics::ShaderHandle& fragmentShaderHandle)
+std::shared_future<graphics::ShaderProgramHandle> GameEngine::createShaderProgramAsync(const std::string& name, const graphics::VertexShaderHandle& vertexShaderHandle, const graphics::FragmentShaderHandle& fragmentShaderHandle)
 {
 	auto promise = std::make_shared<std::promise<graphics::ShaderProgramHandle>>();
 	auto sharedFuture = promise->get_future().share();

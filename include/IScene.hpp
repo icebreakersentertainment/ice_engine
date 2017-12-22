@@ -19,6 +19,7 @@
 #include "entities/RigidBodyObjectComponent.hpp"
 #include "entities/GhostObjectComponent.hpp"
 #include "entities/PositionOrientationComponent.hpp"
+#include "entities/PointLightComponent.hpp"
 
 #include "scripting/ScriptObjectHandle.hpp"
 
@@ -26,6 +27,7 @@
 #include "graphics/MeshHandle.hpp"
 #include "graphics/TextureHandle.hpp"
 #include "graphics/ShaderProgramHandle.hpp"
+#include "graphics/PointLightHandle.hpp"
 #include "physics/CollisionShapeHandle.hpp"
 #include "physics/RigidBodyObjectHandle.hpp"
 #include "physics/GhostObjectHandle.hpp"
@@ -91,6 +93,8 @@ public:
 	virtual graphics::RenderableHandle createRenderable(const ModelHandle& modelHandle, const graphics::ShaderProgramHandle& shaderProgramHandle, const std::string& name = std::string()) = 0;
 	virtual graphics::RenderableHandle createRenderable(const graphics::MeshHandle& meshHandle, const graphics::TextureHandle& textureHandle, const graphics::ShaderProgramHandle& shaderProgramHandle, const std::string& name = std::string()) = 0;
 	
+	virtual graphics::PointLightHandle createPointLight(const glm::vec3& position) = 0;
+	
 	virtual std::string getName() const = 0;
 	
 	virtual const SceneStatistics& getSceneStatistics() const = 0;
@@ -105,6 +109,7 @@ public:
 	virtual void assign(const entities::Entity& entity, const entities::RigidBodyObjectComponent& component) = 0;
 	virtual void assign(const entities::Entity& entity, const entities::GhostObjectComponent& component) = 0;
 	virtual void assign(const entities::Entity& entity, const entities::PositionOrientationComponent& component) = 0;
+	virtual void assign(const entities::Entity& entity, const entities::PointLightComponent& component) = 0;
 	
 	virtual void rotate(const entities::Entity& entity, const float32 degrees, const glm::vec3& axis, const graphics::TransformSpace& relativeTo = graphics::TransformSpace::TS_LOCAL) = 0;
 	virtual void rotate(const entities::Entity& entity, const glm::quat& orientation, const graphics::TransformSpace& relativeTo = graphics::TransformSpace::TS_LOCAL) = 0;

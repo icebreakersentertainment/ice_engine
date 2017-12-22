@@ -86,20 +86,22 @@ public:
 	virtual graphics::RenderableHandle createRenderable(const graphics::RenderSceneHandle& renderSceneHandle, const ModelHandle& modelHandle, const graphics::ShaderProgramHandle& shaderProgramHandle, const std::string& name = std::string()) = 0;
 	virtual graphics::RenderableHandle createRenderable(const graphics::RenderSceneHandle& renderSceneHandle, const graphics::MeshHandle& meshHandle, const graphics::TextureHandle& textureHandle, const graphics::ShaderProgramHandle& shaderProgramHandle, const std::string& name = std::string()) = 0;
 	
-	virtual graphics::ShaderHandle createVertexShader(const std::string& name, const std::string& filename) = 0;
-	virtual std::shared_future<graphics::ShaderHandle> createVertexShaderAsync(const std::string& name, const std::string& filename) = 0;
-	virtual graphics::ShaderHandle createVertexShaderFromSource(const std::string& name, const std::string& data) = 0;
-	virtual std::shared_future<graphics::ShaderHandle> createVertexShaderFromSourceAsync(const std::string& name, const std::string& data) = 0;
-	virtual graphics::ShaderHandle createFragmentShader(const std::string& name, const std::string& filename) = 0;
-	virtual std::shared_future<graphics::ShaderHandle> createFragmentShaderAsync(const std::string& name, const std::string& filename) = 0;
-	virtual graphics::ShaderHandle createFragmentShaderFromSource(const std::string& name, const std::string& data) = 0;
-	virtual std::shared_future<graphics::ShaderHandle> createFragmentShaderFromSourceAsync(const std::string& name, const std::string& data) = 0;
-	virtual graphics::ShaderHandle getShader(const std::string& name) const = 0;
+	virtual graphics::VertexShaderHandle createVertexShader(const std::string& name, const std::string& filename) = 0;
+	virtual std::shared_future<graphics::VertexShaderHandle> createVertexShaderAsync(const std::string& name, const std::string& filename) = 0;
+	virtual graphics::VertexShaderHandle createVertexShaderFromSource(const std::string& name, const std::string& data) = 0;
+	virtual std::shared_future<graphics::VertexShaderHandle> createVertexShaderFromSourceAsync(const std::string& name, const std::string& data) = 0;
+	virtual graphics::FragmentShaderHandle createFragmentShader(const std::string& name, const std::string& filename) = 0;
+	virtual std::shared_future<graphics::FragmentShaderHandle> createFragmentShaderAsync(const std::string& name, const std::string& filename) = 0;
+	virtual graphics::FragmentShaderHandle createFragmentShaderFromSource(const std::string& name, const std::string& data) = 0;
+	virtual std::shared_future<graphics::FragmentShaderHandle> createFragmentShaderFromSourceAsync(const std::string& name, const std::string& data) = 0;
+	virtual graphics::VertexShaderHandle getVertexShader(const std::string& name) const = 0;
+	virtual graphics::FragmentShaderHandle getFragmentShader(const std::string& name) const = 0;
 	virtual void destroyShader(const std::string& name) = 0;
-	virtual void destroyShader(const graphics::ShaderHandle& shaderHandle) = 0;
+	virtual void destroyShader(const graphics::VertexShaderHandle& shaderHandle) = 0;
+	virtual void destroyShader(const graphics::FragmentShaderHandle& shaderHandle) = 0;
 	
-	virtual graphics::ShaderProgramHandle createShaderProgram(const std::string& name, const graphics::ShaderHandle& vertexShaderHandle, const graphics::ShaderHandle& fragmentShaderHandle) = 0;
-	virtual std::shared_future<graphics::ShaderProgramHandle> createShaderProgramAsync(const std::string& name, const graphics::ShaderHandle& vertexShaderHandle, const graphics::ShaderHandle& fragmentShaderHandle) = 0;
+	virtual graphics::ShaderProgramHandle createShaderProgram(const std::string& name, const graphics::VertexShaderHandle& vertexShaderHandle, const graphics::FragmentShaderHandle& fragmentShaderHandle) = 0;
+	virtual std::shared_future<graphics::ShaderProgramHandle> createShaderProgramAsync(const std::string& name, const graphics::VertexShaderHandle& vertexShaderHandle, const graphics::FragmentShaderHandle& fragmentShaderHandle) = 0;
 	virtual graphics::ShaderProgramHandle getShaderProgram(const std::string& name) const = 0;
 	virtual void destroyShaderProgram(const std::string& name) = 0;
 	virtual void destroyShaderProgram(const graphics::ShaderProgramHandle& shaderProgramHandle) = 0;

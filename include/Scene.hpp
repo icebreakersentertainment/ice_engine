@@ -91,6 +91,8 @@ public:
 	virtual graphics::RenderableHandle createRenderable(const ModelHandle& modelHandle, const graphics::ShaderProgramHandle& shaderProgramHandle, const std::string& name = std::string()) override;
 	virtual graphics::RenderableHandle createRenderable(const graphics::MeshHandle& meshHandle, const graphics::TextureHandle& textureHandle, const graphics::ShaderProgramHandle& shaderProgramHandle, const std::string& name = std::string()) override;
 	
+	virtual graphics::PointLightHandle createPointLight(const glm::vec3& position) override;
+	
 	virtual std::string getName() const override;
 	
 	virtual const SceneStatistics& getSceneStatistics() const override;
@@ -105,6 +107,7 @@ public:
 	virtual void assign(const entities::Entity& entity, const entities::RigidBodyObjectComponent& component) override;
 	virtual void assign(const entities::Entity& entity, const entities::GhostObjectComponent& component) override;
 	virtual void assign(const entities::Entity& entity, const entities::PositionOrientationComponent& component) override;
+	virtual void assign(const entities::Entity& entity, const entities::PointLightComponent& component) override;
 	
 	virtual void rotate(const entities::Entity& entity, const float32 degrees, const glm::vec3& axis, const graphics::TransformSpace& relativeTo = graphics::TransformSpace::TS_LOCAL) override;
 	virtual void rotate(const entities::Entity& entity, const glm::quat& orientation, const graphics::TransformSpace& relativeTo = graphics::TransformSpace::TS_LOCAL) override;
