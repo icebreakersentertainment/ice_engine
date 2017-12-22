@@ -19,6 +19,27 @@ namespace custom
 namespace gl
 {
 
+inline std::string getShaderErrorMessage(const GLuint shader)
+{
+	GLint infoLogLength;
+	glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &infoLogLength);
+	
+	if (infoLogLength == 0)
+	{
+		return std::string();
+	}
+	
+	GLchar* strInfoLog = new GLchar[infoLogLength];
+	glGetShaderInfoLog(shader, infoLogLength, nullptr, strInfoLog);
+
+	std::stringstream message;
+	message << strInfoLog;
+
+	delete[] strInfoLog;
+	
+	return message.str();
+}
+
 template <typename T>
 class Shader
 {
@@ -152,27 +173,6 @@ protected:
 private:
 	GLuint id_ = INVALID_ID;
 };
-
-inline std::string getShaderErrorMessage(const GLuint shader)
-{
-	GLint infoLogLength;
-	glGetShaderiv(shader, GL_INFO_LOG_LENGTH, &infoLogLength);
-	
-	if (infoLogLength == 0)
-	{
-		return std::string();
-	}
-	
-	GLchar* strInfoLog = new GLchar[infoLogLength];
-	glGetShaderInfoLog(shader, infoLogLength, nullptr, strInfoLog);
-
-	std::stringstream message;
-	message << strInfoLog;
-
-	delete[] strInfoLog;
-	
-	return message.str();
-}
 
 }
 }
