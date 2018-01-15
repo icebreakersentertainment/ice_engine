@@ -24,6 +24,13 @@
 #include "graphics/IGraphicsEngine.hpp"
 #include "graphics/IEventListener.hpp"
 
+#include "audio/IAudioEngineFactory.hpp"
+#include "audio/IAudioEngine.hpp"
+
+#include "networking/INetworkingEngineFactory.hpp"
+#include "networking/INetworkingEngine.hpp"
+#include "networking/IEventListener.hpp"
+
 #include "pathfinding/IPathfindingEngineFactory.hpp"
 
 #include "scripting/IScriptingEngine.hpp"
@@ -31,7 +38,7 @@
 namespace ice_engine
 {
 
-class GameEngine : public IGameEngine, public graphics::IEventListener
+class GameEngine : public IGameEngine, public graphics::IEventListener, public networking::IEventListener
 {
 public:
 	GameEngine(
@@ -58,6 +65,7 @@ public:
 	 */
 	virtual void setBootstrapScript(const std::string& filename) override;
 	
+	virtual audio::IAudioEngine* getAudioEngine() const override;
 	virtual graphics::IGraphicsEngine* getGraphicsEngine() const override;
 	virtual physics::IPhysicsEngine* getPhysicsEngine() const override;
 	virtual IDebugRenderer* getDebugRenderer() const override;
@@ -71,7 +79,8 @@ public:
 	
 	virtual void setCallback(graphics::gui::IButton* button, scripting::ScriptFunctionHandle scriptFunctionHandle) override;
 	
-	//virtual AudioSample* loadAudioSample(const std::string& name, const std::string& filename) override;
+	virtual Audio* loadAudio(const std::string& name, const std::string& filename) override;
+	virtual std::shared_future<Audio*> loadAudioAsync(const std::string& name, const std::string& filename) override;
 	virtual image::Image* loadImage(const std::string& name, const std::string& filename) override;
 	virtual std::shared_future<image::Image*> loadImageAsync(const std::string& name, const std::string& filename) override;
 	virtual graphics::model::Model* loadModel(const std::string& name, const std::string& filename) override;
@@ -79,11 +88,11 @@ public:
 	virtual graphics::model::Model* importModel(const std::string& name, const std::string& filename) override;
 	virtual std::shared_future<graphics::model::Model*> importModelAsync(const std::string& name, const std::string& filename) override;
 	
-	//virtual void unloadAudioSample(const std::string& name) override;
+	virtual void unloadAudio(const std::string& name) override;
 	virtual void unloadImage(const std::string& name) override;
 	virtual void unloadModel(const std::string& name) override;
 	
-	//virtual AudioSample* getAudioSample(const std::string& name) const
+	virtual Audio* getAudio(const std::string& name) const override;
 	virtual image::Image* getImage(const std::string& name) const override;
 	virtual graphics::model::Model* getModel(const std::string& name) const override;
 	
@@ -136,8 +145,27 @@ public:
 	void removeMouseButtonEventListener(scripting::ScriptObjectHandle mouseButtonEventListener);
 	void removeMouseWheelEventListener(scripting::ScriptObjectHandle mouseWheelEventListener);
 	
-	// Implements the IEventListener interface
+	virtual void addConnectEventListener(IConnectEventListener* connectEventListener) override;
+	virtual void addDisconnectEventListener(IDisconnectEventListener* disconnectEventListener) override;
+	virtual void addMessageEventListener(IMessageEventListener* messageEventListener) override;
+	virtual void removeConnectEventListener(IConnectEventListener* connectEventListener) override;
+	virtual void removeDisconnectEventListener(IDisconnectEventListener* disconnectEventListener) override;
+	virtual void removeMessageEventListener(IMessageEventListener* messageEventListener) override;
+	
+	void addConnectEventListener(scripting::ScriptObjectHandle connectEventListener);
+	void addDisconnectEventListener(scripting::ScriptObjectHandle disconnectEventListener);
+	void addMessageEventListener(scripting::ScriptObjectHandle messageEventListener);
+	void removeConnectEventListener(scripting::ScriptObjectHandle connectEventListener);
+	void removeDisconnectEventListener(scripting::ScriptObjectHandle disconnectEventListener);
+	void removeMessageEventListener(scripting::ScriptObjectHandle messageEventListener);
+	
+	// Implements the graphics::IEventListener interface
 	virtual bool processEvent(const graphics::Event& event) override;
+
+	// Implements the networking::IEventListener interface
+	virtual bool processEvent(const networking::ConnectEvent& event) override;
+	virtual bool processEvent(const networking::DisconnectEvent& event) override;
+	virtual bool processEvent(const networking::MessageEvent& event) override;
 
 private:
 	//Graphics
@@ -147,6 +175,11 @@ private:
 	
 	std::unique_ptr<IDebugRenderer> debugRenderer_;
 	
+	std::unique_ptr<audio::IAudioEngineFactory> audioEngineFactory_;
+	std::unique_ptr< audio::IAudioEngine > audioEngine_;
+		
+	std::unique_ptr<networking::INetworkingEngineFactory> networkingEngineFactory_;
+	std::unique_ptr< networking::INetworkingEngine > networkingEngine_;
 	
 	std::unique_ptr< physics::IPhysicsEngine > physicsEngine_;
 	std::unique_ptr<pathfinding::IPathfindingEngineFactory> pathfindingEngineFactory_;
@@ -163,6 +196,14 @@ private:
 	std::vector<std::pair<scripting::ScriptObjectHandle, scripting::ScriptObjectFunctionHandle>> scriptMouseMotionEventListeners_;
 	std::vector<std::pair<scripting::ScriptObjectHandle, scripting::ScriptObjectFunctionHandle>> scriptMouseButtonEventListeners_;
 	std::vector<std::pair<scripting::ScriptObjectHandle, scripting::ScriptObjectFunctionHandle>> scriptMouseWheelEventListeners_;
+	
+	
+	std::vector<IConnectEventListener*> connectEventListeners_;
+	std::vector<IDisconnectEventListener*> disconnectEventListeners_;
+	std::vector<IMessageEventListener*> messageEventListeners_;
+	std::vector<std::pair<scripting::ScriptObjectHandle, scripting::ScriptObjectFunctionHandle>> scriptConnectEventListeners_;
+	std::vector<std::pair<scripting::ScriptObjectHandle, scripting::ScriptObjectFunctionHandle>> scriptDisconnectEventListeners_;
+	std::vector<std::pair<scripting::ScriptObjectHandle, scripting::ScriptObjectFunctionHandle>> scriptMessageEventListeners_;
 	
 	std::vector<std::unique_ptr<IScene>> scenes_;
 	
@@ -206,6 +247,8 @@ private:
 	void initializePhysicsSubSystem();
 	void initializePathfindingSubSystem();
 	void initializeGraphicsSubSystem();
+	void initializeAudioSubSystem();
+	void initializeNetworkingSubSystem();
 	void initializeInputSubSystem();
 	void initializeScriptingSubSystem();
 	void initializeThreadingSubSystem();

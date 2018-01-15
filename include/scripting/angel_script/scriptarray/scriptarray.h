@@ -3,7 +3,7 @@
 
 #ifndef ANGELSCRIPT_H 
 // Avoid having to inform include path if header is already include before
-#include <angelscript/angelscript.h>
+#include <angelscript.h>
 #endif
 
 // Sometimes it may be desired to use the same method names as used by C++ STL.
@@ -83,6 +83,7 @@ public:
 	void SortAsc(asUINT startAt, asUINT count);
 	void SortDesc(asUINT startAt, asUINT count);
 	void Sort(asUINT startAt, asUINT count, bool asc);
+	void Sort(asIScriptFunction *less, asUINT startAt, asUINT count);
 	void Reverse();
 	int  Find(void *value) const;
 	int  Find(asUINT startAt, void *value) const;

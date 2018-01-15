@@ -62,6 +62,10 @@ set(PROJECT_LINK_LIBRARY_DIRECTORIES
   ./deps/bullet/lib
   ./deps/sdl/lib
   ./deps/glew/lib
+  ./deps/yojimbo/lib
+  ./deps/yojimbo/lib/libsodium
+  ./deps/yojimbo/lib/mbedtls
+  ./deps/openalsoft/lib
 )
 
 find_library(SQLITE_LIBRARY NAMES sqlite3.a sqlite3.so sqlite3.lib sqlite3.dll PATHS ${PROJECT_LINK_LIBRARY_DIRECTORIES})
@@ -118,6 +122,12 @@ find_library(BOOST_REGEX_LIBRARY NAMES
 )
 find_library(ASSIMP_LIBRARY NAMES libassimp.so.3 assimp PATHS ${PROJECT_LINK_LIBRARY_DIRECTORIES})
 find_library(GLEW_LIBRARY NAMES libGLEW.so.2.0 glew32 PATHS ${PROJECT_LINK_LIBRARY_DIRECTORIES})
+find_library(YOJIMBO_LIBRARY NAMES yojimbo PATHS ${PROJECT_LINK_LIBRARY_DIRECTORIES})
+find_library(LIBSODIUM_LIBRARY NAMES sodium PATHS ${PROJECT_LINK_LIBRARY_DIRECTORIES})
+find_library(MBEDTLS_LIBRARY NAMES mbedtls PATHS ${PROJECT_LINK_LIBRARY_DIRECTORIES})
+find_library(MBEDCRYPTO_LIBRARY NAMES mbedcrypto PATHS ${PROJECT_LINK_LIBRARY_DIRECTORIES})
+find_library(MBEDX509_LIBRARY NAMES mbedx509 PATHS ${PROJECT_LINK_LIBRARY_DIRECTORIES})
+find_library(OPENALSOFT_LIBRARY NAMES OpenAL32 PATHS ${PROJECT_LINK_LIBRARY_DIRECTORIES})
 find_library(SDL_LIBRARY NAMES SDL2 PATHS ${PROJECT_LINK_LIBRARY_DIRECTORIES})
 find_library(SDL_MAIN_LIBRARY NAMES SDL2main PATHS ${PROJECT_LINK_LIBRARY_DIRECTORIES})
 find_library(ANGELSCRIPT_LIBRARY NAMES angelscript PATHS ${PROJECT_LINK_LIBRARY_DIRECTORIES})
@@ -137,6 +147,10 @@ find_package(X11 REQUIRED)
 
 include_directories(./deps/glm/include)
 include_directories(./deps/glew/include)
+include_directories(./deps/yojimbo/include)
+include_directories(./deps/yojimbo/include/libsodium)
+include_directories(./deps/yojimbo/include/mbedtls)
+include_directories(./deps/openalsoft/include)
 include_directories(./deps/assimp/include)
 include_directories(./deps/boost/include)
 include_directories(./deps/angelscript/include)
@@ -159,6 +173,7 @@ if(WIN32)
   configure_file(deps/freeimage/lib/FreeImage.dll ./ COPYONLY)
   configure_file(deps/glew/lib/glew32.dll ./ COPYONLY)
   configure_file(deps/assimp/lib/assimp.dll ./ COPYONLY)
+  configure_file(deps/openalsoft/lib/OpenAL32.dll ./ COPYONLY)
 else()
   configure_file(${FREEIMAGE_LIBRARY} ./libfreeimage.so.3 COPYONLY)
   configure_file(${BOOST_SYSTEM_LIBRARY} ./ COPYONLY)
@@ -213,6 +228,12 @@ target_link_libraries(ice_engine ${BOOST_DATE_TIME_LIBRARY} )
 target_link_libraries(ice_engine ${BOOST_REGEX_LIBRARY} )
 target_link_libraries(ice_engine ${ASSIMP_LIBRARY} )
 target_link_libraries(ice_engine ${GLEW_LIBRARY} )
+target_link_libraries(ice_engine ${YOJIMBO_LIBRARY} )
+target_link_libraries(ice_engine ${LIBSODIUM_LIBRARY} )
+target_link_libraries(ice_engine ${MBEDTLS_LIBRARY} )
+target_link_libraries(ice_engine ${MBEDCRYPTO_LIBRARY} )
+target_link_libraries(ice_engine ${MBEDX509_LIBRARY} )
+target_link_libraries(ice_engine ${OPENALSOFT_LIBRARY} )
 target_link_libraries(ice_engine ${SDL_LIBRARY} )
 target_link_libraries(ice_engine ${SDL_MAIN_LIBRARY} )
 target_link_libraries(ice_engine ${ANGELSCRIPT_LIBRARY} )

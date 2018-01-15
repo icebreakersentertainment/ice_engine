@@ -26,6 +26,7 @@
 
 #include "ScriptingEngineBindingDelegate.hpp"
 #include "AudioEngineBindingDelegate.hpp"
+#include "NetworkingEngineBindingDelegate.hpp"
 #include "GraphicsEngineBindingDelegate.hpp"
 #include "PhysicsEngineBindingDelegate.hpp"
 #include "PathfindingEngineBindingDelegate.hpp"
@@ -55,12 +56,14 @@ namespace raybinding
 void InitConstructor(const glm::vec3& from, const glm::vec3& to, void* memory) { new(memory) ray::Ray(from, to); }
 }
 
-ScriptingEngineBindingDelegate::ScriptingEngineBindingDelegate(logger::ILogger* logger, scripting::IScriptingEngine* scriptingEngine, GameEngine* gameEngine, graphics::IGraphicsEngine* graphicsEngine, physics::IPhysicsEngine* physicsEngine, pathfinding::IPathfindingEngine* pathfindingEngine)
+ScriptingEngineBindingDelegate::ScriptingEngineBindingDelegate(logger::ILogger* logger, scripting::IScriptingEngine* scriptingEngine, GameEngine* gameEngine, graphics::IGraphicsEngine* graphicsEngine, audio::IAudioEngine* audioEngine, networking::INetworkingEngine* networkingEngine, physics::IPhysicsEngine* physicsEngine, pathfinding::IPathfindingEngine* pathfindingEngine)
 	:
 	logger_(logger),
 	scriptingEngine_(scriptingEngine),
 	gameEngine_(gameEngine),
 	graphicsEngine_(graphicsEngine),
+	audioEngine_(audioEngine),
+	networkingEngine_(networkingEngine),
 	physicsEngine_(physicsEngine),
 	pathfindingEngine_(pathfindingEngine)
 {
@@ -70,9 +73,27 @@ ScriptingEngineBindingDelegate::~ScriptingEngineBindingDelegate()
 {
 }
 
+template<class A, class B>
+B* refCast(A* a)
+{
+    if (!a) return nullptr;
+    
+    return dynamic_cast<B*>(a);
+    /*
+    B* b = dynamic_cast<B*>(a);
+    if( b != 0 )
+    {
+        // Since the cast was made, we need to increase the ref counter for the returned handle
+        b->addref();
+    }
+    return b;
+    */
+}
+
 void ScriptingEngineBindingDelegate::bind()
 {
 	scriptingEngine_->registerObjectType("Image", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	scriptingEngine_->registerObjectType("Audio", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	
 	// Future bindings
 	scriptingEngine_->registerEnum("future_status");
@@ -80,8 +101,11 @@ void ScriptingEngineBindingDelegate::bind()
 	scriptingEngine_->registerEnumValue("future_status", "ready", static_cast<int64>(std::future_status::ready));
 	scriptingEngine_->registerEnumValue("future_status", "timeout", static_cast<int64>(std::future_status::timeout));
 	
-	//auto audioEngineBindingDelegate = AudioEngineBindingDelegate(logger_, scriptingEngine_, gameEngine_, audioEngine_);
-	//audioEngineBindingDelegate.bind();
+	auto audioEngineBindingDelegate = AudioEngineBindingDelegate(logger_, scriptingEngine_, gameEngine_, audioEngine_);
+	audioEngineBindingDelegate.bind();
+		
+	auto networkingEngineBindingDelegate = NetworkingEngineBindingDelegate(logger_, scriptingEngine_, gameEngine_, networkingEngine_);
+	networkingEngineBindingDelegate.bind();
 	
 	auto graphicsEngineBindingDelegate = GraphicsEngineBindingDelegate(logger_, scriptingEngine_, gameEngine_, graphicsEngine_);
 	graphicsEngineBindingDelegate.bind();
@@ -91,6 +115,11 @@ void ScriptingEngineBindingDelegate::bind()
 	
 	//auto pathfindingEngineBindingDelegate = PathfindingEngineBindingDelegate(logger_, scriptingEngine_, gameEngine_, pathfindingEngine_);
 	//pathfindingEngineBindingDelegate.bind();
+	
+	//scriptingEngine_->registerObjectMethod("IAudio", "Audio@ opCast()", asFUNCTION((refCast<audio::IAudio, Audio>)), asCALL_CDECL_OBJLAST);
+	scriptingEngine_->registerObjectMethod("Audio", "IAudio@ opImplCast()", asFUNCTION((refCast<Audio, audio::IAudio>)), asCALL_CDECL_OBJLAST);
+	//scriptingEngine_->registerObjectMethod("IAudio", "const Audio@ opCast()", asFUNCTION((refCast<audio::IAudio, Audio>)), asCALL_CDECL_OBJLAST);
+	//scriptingEngine_->registerObjectMethod("Audio", "const IAudio@ opImplCast()", asFUNCTION((refCast<Audio, audio::IAudio>)), asCALL_CDECL_OBJLAST);
 	
 	// Types available in the scripting engine
 	registerHandleBindings<entities::Entity>(scriptingEngine_, "Entity");
@@ -228,6 +257,7 @@ void ScriptingEngineBindingDelegate::bind()
 	);
 		
 	registerSharedFutureBindings<image::Image*>(scriptingEngine_, "shared_futureImage", "Image@");
+	registerSharedFutureBindings<Audio*>(scriptingEngine_, "shared_futureAudio", "Audio@");
 	registerSharedFutureBindings<ModelHandle>(scriptingEngine_, "shared_futureModelHandle", "ModelHandle");
 		
 	scriptingEngine_->registerObjectType("EngineStatistics", 0, asOBJ_REF | asOBJ_NOCOUNT);
@@ -257,6 +287,13 @@ void ScriptingEngineBindingDelegate::bind()
 	scriptingEngine_->registerInterfaceMethod("IMouseButtonEventListener", "bool processEvent(const MouseButtonEvent& in)");
 	scriptingEngine_->registerInterface("IMouseWheelEventListener");
 	scriptingEngine_->registerInterfaceMethod("IMouseWheelEventListener", "bool processEvent(const MouseWheelEvent& in)");
+	
+	scriptingEngine_->registerInterface("IConnectEventListener");
+	scriptingEngine_->registerInterfaceMethod("IConnectEventListener", "bool processEvent(const ConnectEvent& in)");
+	scriptingEngine_->registerInterface("IDisconnectEventListener");
+	scriptingEngine_->registerInterfaceMethod("IDisconnectEventListener", "bool processEvent(const DisconnectEvent& in)");
+	scriptingEngine_->registerInterface("IMessageEventListener");
+	scriptingEngine_->registerInterfaceMethod("IMessageEventListener", "bool processEvent(const MessageEvent& in)");
 	
 	// IScene
 	scriptingEngine_->registerObjectType("IScene", 0, asOBJ_REF | asOBJ_NOCOUNT);
@@ -335,6 +372,11 @@ void ScriptingEngineBindingDelegate::bind()
 		"IScene",
 		"RenderableHandle createRenderable(const MeshHandle& in, const TextureHandle& in, const ShaderProgramHandle& in, const string& in = string())",
 		asMETHODPR(IScene, createRenderable, (const graphics::MeshHandle&, const graphics::TextureHandle&, const graphics::ShaderProgramHandle&, const std::string&), graphics::RenderableHandle)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IScene",
+		"SoundSourceHandle play(const SoundHandle& in, const vec3& in)",
+		asMETHODPR(IScene, play, (const audio::SoundHandle&, const glm::vec3&), audio::SoundSourceHandle)
 	);
 	scriptingEngine_->registerClassMethod(
 		"IScene",
@@ -549,6 +591,42 @@ void ScriptingEngineBindingDelegate::bind()
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
+		"void addConnectEventListener(IConnectEventListener@)",
+		asMETHODPR(GameEngine, addConnectEventListener, (scripting::ScriptObjectHandle), void),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"void addDisconnectEventListener(IDisconnectEventListener@)",
+		asMETHODPR(GameEngine, addDisconnectEventListener, (scripting::ScriptObjectHandle), void),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"void addMessageEventListener(IMessageEventListener@)",
+		asMETHODPR(GameEngine, addMessageEventListener, (scripting::ScriptObjectHandle), void),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"void removeConnectEventListener(IConnectEventListener@)",
+		asMETHODPR(GameEngine, removeConnectEventListener, (scripting::ScriptObjectHandle), void),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"void removeDisconnectEventListener(IDisconnectEventListener@)",
+		asMETHODPR(GameEngine, addDisconnectEventListener, (scripting::ScriptObjectHandle), void),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"void removeMessageEventListener(IMessageEventListener@)",
+		asMETHODPR(GameEngine, removeMessageEventListener, (scripting::ScriptObjectHandle), void),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
 		"Model@ importModel(const string& in, const string& in)",
 		asMETHODPR(IGameEngine, importModel, (const std::string&, const std::string&), graphics::model::Model*),
 		asCALL_THISCALL_ASGLOBAL,
@@ -557,6 +635,18 @@ void ScriptingEngineBindingDelegate::bind()
 	scriptingEngine_->registerGlobalFunction(
 		"shared_futureModel importModelAsync(const string& in, const string& in)",
 		asMETHODPR(IGameEngine, importModelAsync, (const std::string&, const std::string&), std::shared_future<graphics::model::Model*>),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"Audio@ loadAudio(const string& in, const string& in)",
+		asMETHODPR(IGameEngine, loadAudio, (const std::string&, const std::string&), Audio*),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"shared_futureAudio loadAudioAsync(const string& in, const string& in)",
+		asMETHODPR(IGameEngine, loadAudioAsync, (const std::string&, const std::string&), std::shared_future<Audio*>),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
@@ -579,6 +669,12 @@ void ScriptingEngineBindingDelegate::bind()
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
+		"Audio@ getAudio(const string& in)",
+		asMETHODPR(IGameEngine, getAudio, (const std::string&) const, Audio*),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
 		"Image@ getImage(const string& in)",
 		asMETHODPR(IGameEngine, getImage, (const std::string&) const, image::Image*),
 		asCALL_THISCALL_ASGLOBAL,
@@ -587,6 +683,12 @@ void ScriptingEngineBindingDelegate::bind()
 	scriptingEngine_->registerGlobalFunction(
 		"void unloadModel(const string& in)",
 		asMETHODPR(IGameEngine, unloadModel, (const std::string&), void),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"void unloadAudio(const string& in)",
+		asMETHODPR(IGameEngine, unloadAudio, (const std::string&), void),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);

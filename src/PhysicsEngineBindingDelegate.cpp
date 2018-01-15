@@ -29,11 +29,11 @@ void PhysicsEngineBindingDelegate::bind()
 	registerHandleBindings<physics::PhysicsSceneHandle>(scriptingEngine_, "PhysicsSceneHandle");
 	registerHandleBindings<physics::CollisionShapeHandle>(scriptingEngine_, "CollisionShapeHandle");
 	
-	scriptingEngine_->registerObjectType("RigidBodyObjectHandle", sizeof(physics::RigidBodyObjectHandle), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<physics::RigidBodyObjectHandle>());
+	scriptingEngine_->registerObjectType("RigidBodyObjectHandle", sizeof(physics::RigidBodyObjectHandle), asOBJ_VALUE | asOBJ_APP_CLASS_ALLINTS | asOBJ_POD | asGetTypeTraits<physics::RigidBodyObjectHandle>());
 	//scriptingEngine_->registerClassMethod("RigidBodyObjectHandle", "uint64 id() const", asMETHODPR(physics::RigidBodyObjectHandle, id, () const, uint64));
 	//scriptingEngine_->registerClassMethod("RigidBodyObjectHandle", "uint32 index() const", asMETHODPR(physics::RigidBodyObjectHandle, index, () const, uint32));
 	//scriptingEngine_->registerClassMethod("RigidBodyObjectHandle", "uint32 version() const", asMETHODPR(physics::RigidBodyObjectHandle, version, () const, uint32));
-	scriptingEngine_->registerObjectType("GhostObjectHandle", sizeof(physics::GhostObjectHandle), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<physics::GhostObjectHandle>());
+	scriptingEngine_->registerObjectType("GhostObjectHandle", sizeof(physics::GhostObjectHandle), asOBJ_VALUE | asOBJ_POD | asOBJ_APP_CLASS_ALLINTS | asGetTypeTraits<physics::GhostObjectHandle>());
 	//scriptingEngine_->registerClassMethod("GhostObjectHandle", "uint64 id() const", asMETHODPR(physics::GhostObjectHandle, id, () const, uint64));
 	//scriptingEngine_->registerClassMethod("GhostObjectHandle", "uint32 index() const", asMETHODPR(physics::GhostObjectHandle, index, () const, uint32));
 	//scriptingEngine_->registerClassMethod("GhostObjectHandle", "uint32 version() const", asMETHODPR(physics::GhostObjectHandle, version, () const, uint32));

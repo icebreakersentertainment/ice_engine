@@ -13,7 +13,7 @@
 
 #ifndef ANGELSCRIPT_H 
 // Avoid having to inform include path if header is already include before
-#include <angelscript/angelscript.h>
+#include <angelscript.h>
 #endif
 
 #include <string>
@@ -21,16 +21,6 @@
 //---------------------------
 // Compilation settings
 //
-
-// The use of the string pool can improve performance quite drastically
-// for scripts that work with a lot of literal string constants. 
-//
-//  1 = on
-//  0 = off
-
-#ifndef AS_USE_STRINGPOOL
-#define AS_USE_STRINGPOOL 1
-#endif
 
 // Sometimes it may be desired to use the same method names as used by C++ STL.
 // This may for example reduce time when converting code from script to C++ or

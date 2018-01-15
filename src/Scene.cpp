@@ -12,6 +12,7 @@ namespace ice_engine
 Scene::Scene(
 		const std::string& name,
 		IGameEngine* gameEngine,
+		audio::IAudioEngine* audioEngine,
 		graphics::IGraphicsEngine* graphicsEngine,
 		physics::IPhysicsEngine* physicsEngine,
 		pathfinding::IPathfindingEngine* pathfindingEngine,
@@ -25,6 +26,7 @@ Scene::Scene(
 	:
 		name_(name),
 		gameEngine_(gameEngine),
+		audioEngine_(audioEngine),
 		graphicsEngine_(graphicsEngine),
 		physicsEngine_(physicsEngine),
 		pathfindingEngine_(pathfindingEngine),
@@ -46,6 +48,7 @@ Scene::~Scene()
 
 void Scene::initialize()
 {
+	audioSceneHandle_ = audioEngine_->createAudioScene();
 	renderSceneHandle_ = graphicsEngine_->createRenderScene();
 	physicsSceneHandle_ = physicsEngine_->createPhysicsScene();
 	pathfindingSceneHandle_ = pathfindingEngine_->createPathfindingScene();
@@ -54,6 +57,7 @@ void Scene::initialize()
 
 void Scene::destroy()
 {
+	audioEngine_->destroyAudioScene(audioSceneHandle_);
 	graphicsEngine_->destroyRenderScene(renderSceneHandle_);
 	physicsEngine_->destroyPhysicsScene(physicsSceneHandle_);
 	pathfindingEngine_->destroyPathfindingScene(pathfindingSceneHandle_);
@@ -74,6 +78,8 @@ void Scene::tick(const float32 delta)
 	{
 		scriptingEngine_->execute(scriptObjectHandle_, std::string("void preTick(const float)"), params, executionContextHandle_);
 	}
+	
+	audioEngine_->render(audioSceneHandle_);
 	
 	auto beginPhysicsTime = std::chrono::high_resolution_clock::now();
 		
@@ -235,6 +241,11 @@ graphics::RenderableHandle Scene::createRenderable(const ModelHandle& modelHandl
 graphics::RenderableHandle Scene::createRenderable(const graphics::MeshHandle& meshHandle, const graphics::TextureHandle& textureHandle, const graphics::ShaderProgramHandle& shaderProgramHandle, const std::string& name)
 {
 	return gameEngine_->createRenderable(renderSceneHandle_, meshHandle, textureHandle, shaderProgramHandle, name);
+}
+
+audio::SoundSourceHandle Scene::play(const audio::SoundHandle& soundHandle, const glm::vec3& position)
+{
+	return audioEngine_->play(audioSceneHandle_, soundHandle, position);
 }
 
 graphics::PointLightHandle Scene::createPointLight(const glm::vec3& position)

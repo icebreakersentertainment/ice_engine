@@ -11,6 +11,18 @@ ResourceCache::~ResourceCache()
 {
 }
 
+void ResourceCache::addAudio(const std::string& name, std::unique_ptr<Audio> audio)
+{
+	std::lock_guard<std::recursive_mutex> lock(audioMutex_);
+	
+	if (getAudio(name) != nullptr)
+	{
+		throw std::runtime_error("Audio with name '" + name + "' already exists.");
+	}
+	
+	audios_[name] = std::move(audio);
+}
+
 void ResourceCache::addImage(const std::string& name, std::unique_ptr<image::Image> image)
 {
 	std::lock_guard<std::recursive_mutex> lock(imageMutex_);
@@ -35,6 +47,17 @@ void ResourceCache::addModel(const std::string& name, std::unique_ptr<graphics::
 	models_[name] = std::move(model);
 }
 
+void ResourceCache::removeAudio(const std::string& name)
+{
+	std::lock_guard<std::recursive_mutex> lock(audioMutex_);
+	
+	auto it = audios_.find(name);
+	if (it != audios_.end())
+	{
+		audios_.erase(it);
+	}
+}
+
 void ResourceCache::removeImage(const std::string& name)
 {
 	std::lock_guard<std::recursive_mutex> lock(imageMutex_);
@@ -55,6 +78,19 @@ void ResourceCache::removeModel(const std::string& name)
 	{
 		models_.erase(it);
 	}
+}
+
+Audio* ResourceCache::getAudio(const std::string& name) const
+{
+	std::lock_guard<std::recursive_mutex> lock(audioMutex_);
+	
+	auto it = audios_.find(name);
+	if (it != audios_.end())
+	{
+		return it->second.get();
+	}
+	
+	return nullptr;
 }
 
 image::Image* ResourceCache::getImage(const std::string& name) const

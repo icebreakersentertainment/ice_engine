@@ -22,6 +22,8 @@
 #include "graphics/model/Animate.hpp"
 
 #include "graphics/GraphicsEngineFactory.hpp"
+#include "audio/AudioEngineFactory.hpp"
+#include "networking/NetworkingEngineFactory.hpp"
 #include "physics/PhysicsFactory.hpp"
 #include "pathfinding/PathfindingEngineFactory.hpp"
 #include "scripting/ScriptingFactory.hpp"
@@ -31,6 +33,7 @@
 #include "logger/Logger.hpp"
 #include "fs/FileSystem.hpp"
 #include "image/ImageLoader.hpp"
+#include "AudioLoader.hpp"
 
 #include "utilities/IoUtilities.hpp"
 
@@ -145,6 +148,10 @@ void GameEngine::initialize()
 
 	initializeGraphicsSubSystem();
 	
+	initializeAudioSubSystem();
+	
+	initializeNetworkingSubSystem();
+	
 	initializePhysicsSubSystem();
 	
 	initializePathfindingSubSystem();
@@ -219,13 +226,39 @@ void GameEngine::initializeGraphicsSubSystem()
 	debugRenderer_ = std::make_unique<DebugRenderer>(graphicsEngine_.get());
 }
 
+void GameEngine::initializeAudioSubSystem()
+{
+	logger_->info( "initializing audio." );
+	
+	if (!audioEngineFactory_)
+	{
+		audioEngineFactory_ = std::make_unique<audio::AudioEngineFactory>();
+	}
+	
+	audioEngine_ = audioEngineFactory_->create( properties_.get(), fileSystem_.get(), logger_.get() );
+}
+
+void GameEngine::initializeNetworkingSubSystem()
+{
+	logger_->info( "initializing networking." );
+	
+	if (!networkingEngineFactory_)
+	{
+		networkingEngineFactory_ = std::make_unique<networking::NetworkingEngineFactory>();
+	}
+	
+	networkingEngine_ = networkingEngineFactory_->create( properties_.get(), fileSystem_.get(), logger_.get() );
+	
+	networkingEngine_->addEventListener(this);
+}
+
 void GameEngine::initializeScriptingSubSystem()
 {
 	logger_->info( "Initializing scripting..." );
 	
 	scriptingEngine_ = scripting::ScriptingFactory::createScriptingEngine( properties_.get(), fileSystem_.get(), logger_.get() );
 	
-	ScriptingEngineBindingDelegate delegate(logger_.get(), scriptingEngine_.get(), this, graphicsEngine_.get(), physicsEngine_.get(), pathfindingEngine_.get());
+	ScriptingEngineBindingDelegate delegate(logger_.get(), scriptingEngine_.get(), this, graphicsEngine_.get(), audioEngine_.get(), networkingEngine_.get(), physicsEngine_.get(), pathfindingEngine_.get());
 	delegate.bind();
 }
 
@@ -362,7 +395,7 @@ IScene* GameEngine::createScene(const std::string& name)
 {
 	logger_->debug( "Create Scene with name: " + name );
 	
-	scenes_.push_back( std::make_unique<Scene>(name, this, graphicsEngine_.get(), physicsEngine_.get(), pathfindingEngine_.get(), scriptingEngine_.get(), properties_.get(), fileSystem_.get(), logger_.get(), backgroundThreadPool_.get(), openGlLoader_.get()) );
+	scenes_.push_back( std::make_unique<Scene>(name, this, audioEngine_.get(), graphicsEngine_.get(), physicsEngine_.get(), pathfindingEngine_.get(), scriptingEngine_.get(), properties_.get(), fileSystem_.get(), logger_.get(), backgroundThreadPool_.get(), openGlLoader_.get()) );
 	
 	return scenes_.back().get();
 }
@@ -443,6 +476,11 @@ void GameEngine::setBootstrapScript(const std::string& filename)
 	*/
 }
 
+audio::IAudioEngine* GameEngine::getAudioEngine() const
+{
+	return audioEngine_.get();
+}
+
 graphics::IGraphicsEngine* GameEngine::getGraphicsEngine() const
 {
 	return graphicsEngine_.get();
@@ -518,6 +556,37 @@ void GameEngine::setCallback(graphics::gui::IButton* button, scripting::ScriptFu
 	button->setCallback(func);
 }
 
+Audio* GameEngine::loadAudio(const std::string& name, const std::string& filename)
+{
+	logger_->debug("Loading audio: " + filename);
+	if (!fileSystem_->exists(filename))
+	{
+		throw std::runtime_error("Audio file '" + filename + "' does not exist.");
+	}
+	
+	auto file = fileSystem_->open(filename, fs::FileFlags::READ | fs::FileFlags::BINARY);
+	resourceCache_.addAudio( name, importAudio(file->getInputStream()) );
+	
+	logger_->debug("Done loading audio: " + filename);
+	
+	return resourceCache_.getAudio(name);
+}
+
+std::shared_future<Audio*> GameEngine::loadAudioAsync(const std::string& name, const std::string& filename)
+{
+	auto promise = std::make_shared<std::promise<Audio*>>();
+	auto sharedFuture = promise->get_future().share();
+	
+	std::function<void()> func = [=, promise = promise, sharedFuture = sharedFuture, name = name, filename = filename]() {
+		auto audio = this->loadAudio(name, filename);
+		promise->set_value(audio);
+	};
+	
+	backgroundThreadPool_->postWork(std::move(func));
+	
+	return sharedFuture;
+}
+
 image::Image* GameEngine::loadImage(const std::string& name, const std::string& filename)
 {
 	logger_->debug("Loading image: " + filename);
@@ -586,6 +655,11 @@ std::shared_future<graphics::model::Model*> GameEngine::importModelAsync(const s
 	return sharedFuture;
 }
 
+void GameEngine::unloadAudio(const std::string& name)
+{
+	return resourceCache_.removeAudio(name);
+}
+
 void GameEngine::unloadImage(const std::string& name)
 {
 	return resourceCache_.removeImage(name);
@@ -594,6 +668,14 @@ void GameEngine::unloadImage(const std::string& name)
 void GameEngine::unloadModel(const std::string& name)
 {
 	return resourceCache_.removeModel(name);
+}
+
+Audio* GameEngine::getAudio(const std::string& name) const
+{
+	auto audio =  resourceCache_.getAudio(name);
+	assert(audio != nullptr);
+	
+	return resourceCache_.getAudio(name);
 }
 
 image::Image* GameEngine::getImage(const std::string& name) const
@@ -923,6 +1005,8 @@ graphics::RenderableHandle GameEngine::createRenderable(const graphics::RenderSc
 void GameEngine::handleEvents()
 {
 	graphicsEngine_->processEvents();
+	
+	networkingEngine_->processEvents();
 }
 
 void GameEngine::addKeyboardEventListener(IKeyboardEventListener* keyboardEventListener)
@@ -1049,6 +1133,98 @@ void GameEngine::removeMouseWheelEventListener(scripting::ScriptObjectHandle lis
 	
 }
 
+void GameEngine::addConnectEventListener(IConnectEventListener* connectEventListener)
+{
+	if (std::find(connectEventListeners_.begin(), connectEventListeners_.end(), connectEventListener) != connectEventListeners_.end())
+	{
+		throw std::runtime_error("Connect event listener already exists.");
+	}
+	
+	connectEventListeners_.push_back(connectEventListener);
+}
+
+void GameEngine::addDisconnectEventListener(IDisconnectEventListener* disconnectEventListener)
+{
+	if (std::find(disconnectEventListeners_.begin(), disconnectEventListeners_.end(), disconnectEventListener) != disconnectEventListeners_.end())
+	{
+		throw std::runtime_error("Mouse button event listener already exists.");
+	}
+	
+	disconnectEventListeners_.push_back(disconnectEventListener);
+}
+
+void GameEngine::addMessageEventListener(IMessageEventListener* messageEventListener)
+{
+	if (std::find(messageEventListeners_.begin(), messageEventListeners_.end(), messageEventListener) != messageEventListeners_.end())
+	{
+		throw std::runtime_error("Mouse motion event listener already exists.");
+	}
+	
+	messageEventListeners_.push_back(messageEventListener);
+}
+
+void GameEngine::removeConnectEventListener(IConnectEventListener* connectEventListener)
+{
+	auto it = std::find(connectEventListeners_.begin(), connectEventListeners_.end(), connectEventListener);
+	if (it != connectEventListeners_.end())
+	{
+		connectEventListeners_.erase(it);
+	}
+}
+
+void GameEngine::removeDisconnectEventListener(IDisconnectEventListener* disconnectEventListener)
+{
+	auto it = std::find(disconnectEventListeners_.begin(), disconnectEventListeners_.end(), disconnectEventListener);
+	if (it != disconnectEventListeners_.end())
+	{
+		disconnectEventListeners_.erase(it);
+	}
+}
+
+void GameEngine::removeMessageEventListener(IMessageEventListener* messageEventListener)
+{
+	auto it = std::find(messageEventListeners_.begin(), messageEventListeners_.end(), messageEventListener);
+	if (it != messageEventListeners_.end())
+	{
+		messageEventListeners_.erase(it);
+	}
+}
+
+void GameEngine::addConnectEventListener(scripting::ScriptObjectHandle listener)
+{
+	auto scriptObjectFunctionHandle = scriptingEngine_->getScriptObjectFunction(listener, "bool processEvent(const ConnectEvent& in)");
+	
+	scriptConnectEventListeners_.push_back( std::make_pair(listener, scriptObjectFunctionHandle) );
+}
+
+void GameEngine::addDisconnectEventListener(scripting::ScriptObjectHandle listener)
+{
+	auto scriptObjectFunctionHandle = scriptingEngine_->getScriptObjectFunction(listener, "bool processEvent(const DisconnectEvent& in)");
+	
+	scriptDisconnectEventListeners_.push_back( std::make_pair(listener, scriptObjectFunctionHandle) );
+}
+
+void GameEngine::addMessageEventListener(scripting::ScriptObjectHandle listener)
+{
+	auto scriptObjectFunctionHandle = scriptingEngine_->getScriptObjectFunction(listener, "bool processEvent(const MessageEvent& in)");
+	
+	scriptMessageEventListeners_.push_back( std::make_pair(listener, scriptObjectFunctionHandle) );
+}
+
+void GameEngine::removeConnectEventListener(scripting::ScriptObjectHandle listener)
+{
+	
+}
+
+void GameEngine::removeDisconnectEventListener(scripting::ScriptObjectHandle listener)
+{
+	
+}
+
+void GameEngine::removeMessageEventListener(scripting::ScriptObjectHandle listener)
+{
+	
+}
 
 bool GameEngine::processEvent(const graphics::Event& event)
 {
@@ -1178,6 +1354,99 @@ bool GameEngine::processEvent(const graphics::Event& event)
 	return false;
 }
 
+bool GameEngine::processEvent(const networking::ConnectEvent& event)
+{
+	switch(event.type)
+	{
+		case networking::SERVERCONNECT:
+		case networking::SERVERCONNECTFAILED:
+		case networking::CLIENTCONNECT:
+			for (auto listener : connectEventListeners_)
+			{
+				bool returnValue = listener->processEvent(event);
+			}
+			for (const auto& data : scriptConnectEventListeners_)
+			{
+				scripting::ParameterList arguments;
+				arguments.addRef(event);
+				uint8 returnValue = false;
+				
+				scriptingEngine_->execute(data.first, data.second, arguments, returnValue);
+			}
+			
+			return true;
+			break;
+		
+		default:
+			break;
+	}
+	
+	return false;
+}
+
+bool GameEngine::processEvent(const networking::DisconnectEvent& event)
+{
+	switch(event.type)
+	{
+		case networking::SERVERDISCONNECT:
+		case networking::CLIENTDISCONNECT:
+			for (auto listener : disconnectEventListeners_)
+			{
+				bool returnValue = listener->processEvent(event);
+			}
+			for (const auto& data : scriptDisconnectEventListeners_)
+			{
+				scripting::ParameterList arguments;
+				arguments.addRef(event);
+				uint8 returnValue = false;
+				
+				scriptingEngine_->execute(data.first, data.second, arguments, returnValue);
+			}
+			
+			return true;
+			break;
+		
+		default:
+			break;
+	}
+	
+	return false;
+}
+
+bool GameEngine::processEvent(const networking::MessageEvent& event)
+{
+	switch(event.type)
+	{
+		case networking::SERVERMESSAGE:
+		case networking::CLIENTMESSAGE:
+			for (auto listener : messageEventListeners_)
+			{
+				bool returnValue = listener->processEvent(event);
+			}
+			for (const auto& data : scriptMessageEventListeners_)
+			{
+				scripting::ParameterList arguments;
+				arguments.addRef(event);
+				uint8 returnValue = false;
+				
+				scriptingEngine_->execute(data.first, data.second, arguments, returnValue);
+			}
+			
+			{
+				std::string msg(event.message.begin(), event.message.end());
+				std::cout << "Message: " << msg << std::endl;
+				
+				return true;
+			}
+			break;
+		
+		default:
+			break;
+	}
+	
+	return false;
+}
+
 void GameEngine::run()
 {
 	test();
@@ -1224,6 +1493,8 @@ void GameEngine::run()
 			currentFps = tempFps;
 			tempFps = 0;
 		}
+		
+		networkingEngine_->tick(delta);
 		
 		tick(delta);
 		

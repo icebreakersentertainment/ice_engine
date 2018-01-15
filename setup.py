@@ -40,7 +40,7 @@ librariesDirectory = 'lib/'
 
 # Set defaults
 if isWindows:
-	architecture = 'x86'
+	architecture = 'x64'
 	compiler = 'msvc'
 	platform = 'windows'
 	sharedLibraryExt = 'dll'
@@ -72,8 +72,8 @@ if (compiler is not None and compiler != 'gcc' and compiler != 'clang' and compi
 if (architecture == 'x86' and isLinux):
 	print('x86 architecture is not yet implemented in setup.py for Linux - sorry!')
 	exit()
-if (architecture == 'x64' and isWindows):
-	print('x64 architecture is not yet implemented in setup.py for Windows - sorry!')
+if (architecture == 'x86' and isWindows):
+	print('x86 architecture is not yet implemented in setup.py for Windows - sorry!')
 	exit()
 if (architecture == 'x86' and isMac):
 	print('x86 architecture is not yet implemented in setup.py for Mac - sorry!')
@@ -112,15 +112,17 @@ print('')
 dependencies = dict()
 dependencies['boost'] = {'name': 'Boost', 'version': '1.63.0', 'extension': extension}
 dependencies['glm'] = {'name': 'GLM', 'version': '0.9.8.3', 'extension': extension}
-dependencies['angelscript'] = {'name': 'Angelscript', 'version': '2.31.2', 'extension': extension}
+dependencies['angelscript'] = {'name': 'Angelscript', 'version': '2.32.0', 'extension': extension}
 dependencies['assimp'] = {'name': 'Asset Importer', 'version': 'v3.1', 'extension': extension}
-dependencies['recastnavigation'] = {'name': 'Recast Navigation', 'version': '1.5.1', 'extension': extension}
+dependencies['yojimbo'] = {'name': 'Yojimbo', 'version': 'v1.1', 'extension': extension}
+dependencies['recastnavigation'] = {'name': 'Recast Navigation', 'version': 'master', 'extension': extension}
 #dependencies['bgfx'] = {'name': 'BGFX', 'version': 'master', 'extension': extension}
 #dependencies['bx'] = {'name': 'BX', 'version': 'master', 'extension': extension}
 dependencies['bullet'] = {'name': 'Bullet', 'version': '2.85.1', 'extension': extension}
 dependencies['entityx'] = {'name': 'Entityx', 'version': 'master', 'extension': extension}
 dependencies['glew'] = {'name': 'GLEW', 'version': '2.0.0', 'extension': extension}
 dependencies['sdl'] = {'name': 'SDL', 'version': '2.0.5', 'extension': extension}
+dependencies['openalsoft'] = {'name': 'OpenAL Soft', 'version': 'openal-soft-1.18.2', 'extension': extension}
 dependencies['sqlite'] = {'name': 'SQLite', 'version': '3.16.2', 'extension': extension}
 dependencies['ctpl'] = {'name': 'CTPL', 'version': 'v.0.0.2', 'extension': extension}
 dependencies['freeimage'] = {'name': 'Free Image', 'version': '3.17.0', 'extension': extension}

@@ -20,6 +20,11 @@
 #include "IMouseMotionEventListener.hpp"
 #include "IMouseButtonEventListener.hpp"
 #include "IMouseWheelEventListener.hpp"
+#include "IConnectEventListener.hpp"
+#include "IDisconnectEventListener.hpp"
+#include "IMessageEventListener.hpp"
+
+#include "audio/IAudioEngine.hpp"
 
 #include "graphics/IGraphicsEngine.hpp"
 #include "graphics/gui/IGui.hpp"
@@ -33,6 +38,7 @@
 #include "scripting/IScriptingEngine.hpp"
 
 #include "image/Image.hpp"
+#include "Audio.hpp"
 
 namespace ice_engine
 {
@@ -52,6 +58,7 @@ public:
 	virtual void setIGameInstance(scripting::ScriptObjectHandle scriptObjectHandle) = 0;
 	virtual void setBootstrapScript(const std::string& filename) = 0;
 	
+	virtual audio::IAudioEngine* getAudioEngine() const = 0;
 	virtual graphics::IGraphicsEngine* getGraphicsEngine() const = 0;
 	virtual physics::IPhysicsEngine* getPhysicsEngine() const = 0;
 	virtual IDebugRenderer* getDebugRenderer() const = 0;
@@ -65,7 +72,8 @@ public:
 	
 	virtual void setCallback(graphics::gui::IButton* button, scripting::ScriptFunctionHandle scriptFunctionHandle) = 0;
 	
-	//virtual AudioSample* loadAudioSample(const std::string& name, const std::string& filename) = 0;
+	virtual Audio* loadAudio(const std::string& name, const std::string& filename) = 0;
+	virtual std::shared_future<Audio*> loadAudioAsync(const std::string& name, const std::string& filename) = 0;
 	virtual image::Image* loadImage(const std::string& name, const std::string& filename) = 0;
 	virtual std::shared_future<image::Image*> loadImageAsync(const std::string& name, const std::string& filename) = 0;
 	virtual graphics::model::Model* loadModel(const std::string& name, const std::string& filename) = 0;
@@ -73,11 +81,11 @@ public:
 	virtual graphics::model::Model* importModel(const std::string& name, const std::string& filename) = 0;
 	virtual std::shared_future<graphics::model::Model*> importModelAsync(const std::string& name, const std::string& filename) = 0;
 	
-	//virtual void unloadAudioSample(const std::string& name) = 0;
+	virtual void unloadAudio(const std::string& name) = 0;
 	virtual void unloadImage(const std::string& name) = 0;
 	virtual void unloadModel(const std::string& name) = 0;
 	
-	//virtual AudioSample* getAudioSample(const std::string& name) const = 0;
+	virtual Audio* getAudio(const std::string& name) const = 0;
 	virtual image::Image* getImage(const std::string& name) const = 0;
 	virtual graphics::model::Model* getModel(const std::string& name) const = 0;
 	
@@ -120,6 +128,13 @@ public:
 	virtual void removeMouseMotionEventListener(IMouseMotionEventListener* mouseMotionEventListener) = 0;
 	virtual void removeMouseButtonEventListener(IMouseButtonEventListener* mouseButtonEventListener) = 0;
 	virtual void removeMouseWheelEventListener(IMouseWheelEventListener* mouseWheelEventListener) = 0;
+	
+	virtual void addConnectEventListener(IConnectEventListener* connectEventListener) = 0;
+	virtual void addDisconnectEventListener(IDisconnectEventListener* disconnectEventListener) = 0;
+	virtual void addMessageEventListener(IMessageEventListener* messageEventListener) = 0;
+	virtual void removeConnectEventListener(IConnectEventListener* connectEventListener) = 0;
+	virtual void removeDisconnectEventListener(IDisconnectEventListener* disconnectEventListener) = 0;
+	virtual void removeMessageEventListener(IMessageEventListener* messageEventListener) = 0;
 };
 
 }

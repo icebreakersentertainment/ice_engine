@@ -134,7 +134,7 @@ void registerFutureBindings(scripting::IScriptingEngine* scriptingEngine, const 
 	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_DESTRUCT, "void f()", asFUNCTION(FutureBase::DefaultDestructor), asCALL_CDECL_OBJLAST);
 	
 	auto assignmentOperatorFunctionString = name + std::string("& opAssign(const ") + name + "& in)";
-	scriptingEngine->registerObjectMethod(name.c_str(), assignmentOperatorFunctionString.c_str(), asFUNCTION(FutureBase::assignmentOperator), asCALL_CDECL_OBJLAST);
+		scriptingEngine->registerObjectMethod(name.c_str(), assignmentOperatorFunctionString.c_str(), asFUNCTION(FutureBase::assignmentOperator), asCALL_CDECL_OBJLAST);
 	auto getFunctionString = type + " get()";
 	scriptingEngine->registerObjectMethod(name.c_str(), getFunctionString.c_str(), asFUNCTION(FutureBase::get), asCALL_CDECL_OBJLAST);
 	scriptingEngine->registerObjectMethod(name.c_str(), "bool valid() const", asFUNCTION(FutureBase::valid), asCALL_CDECL_OBJLAST);
@@ -209,7 +209,7 @@ void registerHandleBindings(scripting::IScriptingEngine* scriptingEngine, const 
 {
 	typedef HandleRegisterHelper<T> HandleBase;
 	
-	scriptingEngine->registerObjectType(name.c_str(), sizeof(T), asOBJ_VALUE | asGetTypeTraits<T>());
+	scriptingEngine->registerObjectType(name.c_str(), sizeof(T), asOBJ_VALUE | asOBJ_APP_CLASS_ALLINTS | asGetTypeTraits<T>());
 	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(HandleBase::DefaultConstructor), asCALL_CDECL_OBJFIRST);
 	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f(const uint64)", asFUNCTION(HandleBase::template InitConstructor<T>), asCALL_CDECL_OBJFIRST);
 	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f(const " + name + "& in)", asFUNCTION(HandleBase::CopyConstructor), asCALL_CDECL_OBJFIRST);

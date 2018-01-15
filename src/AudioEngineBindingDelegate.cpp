@@ -1,5 +1,3 @@
-#include <string>
-
 #include "Platform.hpp"
 #include "Types.hpp"
 
@@ -26,6 +24,23 @@ AudioEngineBindingDelegate::AudioEngineBindingDelegate(logger::ILogger* logger, 
 
 void AudioEngineBindingDelegate::bind()
 {
+	registerHandleBindings<audio::AudioSceneHandle>(scriptingEngine_, "AudioSceneHandle");
+	registerHandleBindings<audio::SoundHandle>(scriptingEngine_, "SoundHandle");
+	registerHandleBindings<audio::SoundSourceHandle>(scriptingEngine_, "SoundSourceHandle");
+	registerHandleBindings<audio::ListenerHandle>(scriptingEngine_, "ListenerHandle");
+
+	scriptingEngine_->registerObjectType("IAudio", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	
+	//registerSharedFutureBindings<audio::IAudio*>(scriptingEngine_, "shared_futureIAudio", "IAudio@");
+	
+	// IAudioEngine
+	scriptingEngine_->registerObjectType("IAudioEngine", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	scriptingEngine_->registerGlobalProperty("IAudioEngine audio", audioEngine_);
+	scriptingEngine_->registerClassMethod(
+		"IAudioEngine",
+		"SoundHandle createSound(const IAudio@)",
+		asMETHODPR(audio::IAudioEngine, createSound, (const audio::IAudio*), audio::SoundHandle)
+	);
 }
 	
 };

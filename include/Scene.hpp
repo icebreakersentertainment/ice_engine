@@ -29,6 +29,7 @@ public:
 	Scene(
 		const std::string& name,
 		IGameEngine* gameEngine,
+		audio::IAudioEngine* audioEngine,
 		graphics::IGraphicsEngine* graphicsEngine,
 		physics::IPhysicsEngine* physicsEngine,
 		pathfinding::IPathfindingEngine* pathfindingEngine,
@@ -91,6 +92,8 @@ public:
 	virtual graphics::RenderableHandle createRenderable(const ModelHandle& modelHandle, const graphics::ShaderProgramHandle& shaderProgramHandle, const std::string& name = std::string()) override;
 	virtual graphics::RenderableHandle createRenderable(const graphics::MeshHandle& meshHandle, const graphics::TextureHandle& textureHandle, const graphics::ShaderProgramHandle& shaderProgramHandle, const std::string& name = std::string()) override;
 	
+	virtual audio::SoundSourceHandle play(const audio::SoundHandle& soundHandle, const glm::vec3& position) override;
+	
 	virtual graphics::PointLightHandle createPointLight(const glm::vec3& position) override;
 	
 	virtual std::string getName() const override;
@@ -128,6 +131,7 @@ public:
 private:
 	std::string name_;
 	IGameEngine* gameEngine_;
+	audio::IAudioEngine* audioEngine_;
 	graphics::IGraphicsEngine* graphicsEngine_;
 	physics::IPhysicsEngine* physicsEngine_;
 	pathfinding::IPathfindingEngine* pathfindingEngine_;
@@ -138,6 +142,7 @@ private:
 	IThreadPool* threadPool_;
 	IOpenGlLoader* openGlLoader_;
 	
+	audio::AudioSceneHandle audioSceneHandle_;
 	graphics::RenderSceneHandle renderSceneHandle_;
 	physics::PhysicsSceneHandle physicsSceneHandle_;
 	pathfinding::PathfindingSceneHandle pathfindingSceneHandle_;

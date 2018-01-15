@@ -23,6 +23,8 @@
 
 #include "scripting/ScriptObjectHandle.hpp"
 
+#include "audio/SoundHandle.hpp"
+#include "audio/SoundSourceHandle.hpp"
 #include "graphics/TransformSpace.hpp"
 #include "graphics/MeshHandle.hpp"
 #include "graphics/TextureHandle.hpp"
@@ -92,6 +94,8 @@ public:
 	
 	virtual graphics::RenderableHandle createRenderable(const ModelHandle& modelHandle, const graphics::ShaderProgramHandle& shaderProgramHandle, const std::string& name = std::string()) = 0;
 	virtual graphics::RenderableHandle createRenderable(const graphics::MeshHandle& meshHandle, const graphics::TextureHandle& textureHandle, const graphics::ShaderProgramHandle& shaderProgramHandle, const std::string& name = std::string()) = 0;
+	
+	virtual audio::SoundSourceHandle play(const audio::SoundHandle& soundHandle, const glm::vec3& position) = 0;
 	
 	virtual graphics::PointLightHandle createPointLight(const glm::vec3& position) = 0;
 	

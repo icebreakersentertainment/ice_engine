@@ -35,7 +35,7 @@ public:
 	HandleVector() = default;
 
 	template <typename ... Args>
-	HandleType create(Args ... args)
+	HandleType create(Args&& ... args)
 	{
 		HandleData<T, HandleType> handleData;
 		
@@ -163,7 +163,7 @@ public:
 	
 	const_iterator begin() const
 	{
-		return const_iterator(*this, 0);
+		return const_iterator(*this, findIndexOfFirstValidHandle());
 	}
  
 	const_iterator end() const
@@ -173,7 +173,7 @@ public:
 	
 	const_iterator cbegin() const
 	{
-		return const_iterator(*this, 0);
+		return const_iterator(*this, findIndexOfFirstValidHandle());
 	}
  
 	const_iterator cend() const
@@ -188,6 +188,19 @@ private:
 	std::vector<uint32> freeList_;
 	
 	uint32 currentVersion_ = 1;
+	
+	uint32 findIndexOfFirstValidHandle() const
+	{
+		for (uint32 i=0; i < handleData_.size(); ++i)
+		{
+			if (valid(i))
+			{
+				return i;
+			}
+		}
+		
+		return handleData_.size();
+	}
 	
 	bool valid(const uint32 index) const
 	{
@@ -209,9 +222,23 @@ template <typename T, typename HandleType>
 class HandleVectorIterator
 {
 public:
-	HandleVectorIterator(HandleVector<T, HandleType>& handleManager, size_t index)
+	HandleVectorIterator(HandleVector<T, HandleType>& handleManager, uint32 index)
 		:
 		handleManager_(handleManager), index_(index)
+	{
+		
+	}
+	
+	HandleVectorIterator(const HandleVectorIterator& other)
+		:
+		handleManager_(other.handleManager_), index_(other.index_)
+	{
+		
+	}
+	
+	HandleVectorIterator(HandleVectorIterator&& other)
+		:
+		handleManager_(other.handleManager_), index_(other.index_)
 	{
 		
 	}
@@ -260,16 +287,21 @@ public:
 		return clone;
 	}
 	
+	HandleType handle() const
+	{
+		return handleManager_.handle(index_);
+	}
+	
 private:
 	HandleVector<T, HandleType>& handleManager_;
-	size_t index_ = 0;
+	uint32 index_ = 0;
 };
 
 template <typename T, typename HandleType>
 class HandleVectorConstIterator
 {
 public:
-	HandleVectorConstIterator(const HandleVector<T, HandleType>& handleManager, size_t index)
+	HandleVectorConstIterator(const HandleVector<T, HandleType>& handleManager, uint32 index)
 		:
 		handleManager_(handleManager), index_(index)
 	{
@@ -322,9 +354,14 @@ public:
 		return clone;
 	}
 	
+	HandleType handle() const
+	{
+		return handleManager_.handle(index_);
+	}
+	
 private:
 	const HandleVector<T, HandleType>& handleManager_;
-	size_t index_ = 0;
+	uint32 index_ = 0;
 };
 
 }
