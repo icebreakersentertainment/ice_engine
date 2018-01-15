@@ -45,7 +45,7 @@ void ThreadPool::joinAll()
 
 uint32 ThreadPool::getWorkQueueCount() const
 {
-	return 0;//pool_->n_pending();
+	return pool_->n_pending();
 }
 
 uint32 ThreadPool::getWorkQueueSize() const
