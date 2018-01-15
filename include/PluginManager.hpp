@@ -13,7 +13,7 @@ namespace ice_engine
 class PluginManager : public IPluginManager
 {
 public:
-	PluginManager(
+		PluginManager(
 		utilities::Properties* properties,
 		fs::IFileSystem* fileSystem,
 		logger::ILogger* logger
@@ -21,6 +21,7 @@ public:
 	virtual ~PluginManager();
 
 	virtual const std::vector<std::shared_ptr<IGuiPlugin>>& getGuiPlugins() const override;
+	virtual std::shared_ptr<IGraphicsPlugin> getGraphicsPlugin() const override;
 
 private:
 	utilities::Properties* properties_;
@@ -28,6 +29,7 @@ private:
 	logger::ILogger* logger_;
 	
 	std::vector<std::shared_ptr<IGuiPlugin>> guiPlugins_;
+	std::shared_ptr<IGraphicsPlugin> graphicsPlugin_;
 };
 
 }

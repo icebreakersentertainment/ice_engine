@@ -216,7 +216,17 @@ void GameEngine::initializeGraphicsSubSystem()
 	
 	if (!graphicsEngineFactory_)
 	{
-		graphicsEngineFactory_ = std::make_unique<graphics::GraphicsEngineFactory>();
+		auto graphicsPlugin = pluginManager_->getGraphicsPlugin();
+		
+		if (graphicsPlugin)
+		{
+			logger_->info( "initializing graphics plugin " + graphicsPlugin->getName() + "." );
+			graphicsEngineFactory_ = graphicsPlugin->createFactory();
+		}
+		else
+		{
+			graphicsEngineFactory_ = std::make_unique<graphics::GraphicsEngineFactory>();
+		}
 	}
 	
 	graphicsEngine_ = graphicsEngineFactory_->create( properties_.get(), fileSystem_.get(), logger_.get() );

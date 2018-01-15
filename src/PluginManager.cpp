@@ -40,6 +40,21 @@ PluginManager::PluginManager(
 	
 	logger_->info("Finished loading gui plugins.");
 	
+	logger_->info("Loading graphics plugins.");
+	
+	std::string graphicsPluginName = properties_->getStringValue("plugins.graphicsplugin");
+	
+	if (!graphicsPluginName.empty())
+	{
+		logger_->info("Loading graphics plugin '" + graphicsPluginName + "'.");
+		auto pluginBoostSharedPtr = boost::dll::import<ice_engine::IGraphicsPlugin>("./" + graphicsPluginName + "_plugin", "plugin", boost::dll::load_mode::append_decorations);
+		
+		// Convert from boost::shared_ptr<T> to std::shared_ptr<T>
+		graphicsPlugin_ = std::shared_ptr<ice_engine::IGraphicsPlugin>(pluginBoostSharedPtr.get(), [pluginBoostSharedPtr](ice_engine::IGraphicsPlugin*){});
+	}
+	
+	logger_->info("Finished loading graphics plugin.");
+	
 	logger_->info("Finished loading plugins.");
 }
 
@@ -50,6 +65,11 @@ PluginManager::~PluginManager()
 const std::vector<std::shared_ptr<IGuiPlugin>>& PluginManager::getGuiPlugins() const
 {
 	return guiPlugins_;
+}
+
+std::shared_ptr<IGraphicsPlugin> PluginManager::getGraphicsPlugin() const
+{
+	return graphicsPlugin_;
 }
 
 }

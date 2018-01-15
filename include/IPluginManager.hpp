@@ -5,6 +5,7 @@
 #include <memory>
 
 #include "IGuiPlugin.hpp"
+#include "IGraphicsPlugin.hpp"
 
 namespace ice_engine
 {
@@ -18,6 +19,7 @@ public:
 	;
 
 	virtual const std::vector<std::shared_ptr<IGuiPlugin>>& getGuiPlugins() const = 0;
+	virtual std::shared_ptr<IGraphicsPlugin> getGraphicsPlugin() const = 0;
 
 };
 
