@@ -124,7 +124,7 @@ dependencies['glew'] = {'name': 'GLEW', 'version': '2.0.0', 'extension': extensi
 dependencies['sdl'] = {'name': 'SDL', 'version': '2.0.5', 'extension': extension}
 dependencies['openalsoft'] = {'name': 'OpenAL Soft', 'version': 'openal-soft-1.18.2', 'extension': extension}
 dependencies['sqlite'] = {'name': 'SQLite', 'version': '3.16.2', 'extension': extension}
-dependencies['ctpl'] = {'name': 'CTPL', 'version': 'v.0.0.2', 'extension': extension}
+dependencies['ctpl'] = {'name': 'CTPL', 'version': 'master', 'extension': extension}
 dependencies['freeimage'] = {'name': 'Free Image', 'version': '3.17.0', 'extension': extension}
 dependencies['celero'] = {'name': 'Celero', 'version': 'v2.1.0', 'extension': extension}
 
