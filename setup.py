@@ -88,7 +88,7 @@ if (compiler == 'msvc' and isMac):
 	exit()
 
 if (compiler == 'msvc'):
-	compilerVersion = '14'
+	compilerVersion = '15'
 if (compiler == 'clang'):
 	compilerVersion = '2'
 
