@@ -16,6 +16,6 @@ build_script:
   - cd %APPVEYOR_BUILD_FOLDER%
   - mkdir build
   - cd build
-  - cmake -DCMAKE_BUILD_TYPE=Release -DICEENGINE_BUILD_BENCHMARKS=1 -DICEENGINE_BUILD_TESTS=1 -DICEENGINE_BUILD_AS_LIBRARY=1 ..
+  - cmake -DCMAKE_BUILD_TYPE=Release -DICEENGINE_BUILD_BENCHMARKS=1 -DICEENGINE_BUILD_TESTS=1 -DICEENGINE_BUILD_AS_LIBRARY=1 -G "Visual Studio 15 Win64" ..
   - msbuild /p:Configuration=Release ice_engine.sln
   - ctest
