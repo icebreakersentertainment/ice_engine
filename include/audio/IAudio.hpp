@@ -21,6 +21,8 @@ public:
 	virtual const std::vector<uint8>& data() const = 0;
 	virtual uint32 length() const = 0;
 	virtual uint32 frequency() const = 0;
+	virtual uint8 channels() const = 0;
+	virtual uint16 bitsPerSample() const = 0;
 };
 
 }

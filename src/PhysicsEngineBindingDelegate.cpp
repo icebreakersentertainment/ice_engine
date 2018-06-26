@@ -48,8 +48,8 @@ void PhysicsEngineBindingDelegate::bind()
 	);
 	scriptingEngine_->registerClassMethod(
 		"IPhysicsEngine",
-		"RigidBodyObjectHandle createStaticRigidBodyObject(const PhysicsSceneHandle& in, const CollisionShapeHandle& in)",
-		asMETHODPR(physics::IPhysicsEngine, createStaticRigidBodyObject, (const physics::PhysicsSceneHandle&, const physics::CollisionShapeHandle&, const physics::UserData&), physics::RigidBodyObjectHandle)
+		"RigidBodyObjectHandle createRigidBodyObject(const PhysicsSceneHandle& in, const CollisionShapeHandle& in)",
+		asMETHODPR(physics::IPhysicsEngine, createRigidBodyObject, (const physics::PhysicsSceneHandle&, const physics::CollisionShapeHandle&, std::unique_ptr<physics::IMotionChangeListener> motionStateListener, const physics::UserData&), physics::RigidBodyObjectHandle)
 	);
 }
 	

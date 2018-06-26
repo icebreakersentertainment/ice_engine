@@ -1,0 +1,28 @@
+#ifndef AGENTSTATE_H_
+#define AGENTSTATE_H_
+
+#define GLM_FORCE_RADIANS
+#include <glm/glm.hpp>
+
+#include "AgentState.hpp"
+
+namespace ice_engine
+{
+namespace pathfinding
+{
+
+enum AgentState
+{
+	DT_CROWDAGENT_TARGET_NONE = 0,
+	DT_CROWDAGENT_TARGET_FAILED,
+	DT_CROWDAGENT_TARGET_VALID,
+	DT_CROWDAGENT_TARGET_REQUESTING,
+	DT_CROWDAGENT_TARGET_WAITING_FOR_QUEUE,
+	DT_CROWDAGENT_TARGET_WAITING_FOR_PATH,
+	DT_CROWDAGENT_TARGET_VELOCITY,
+};
+
+}
+}
+
+#endif /* AGENTSTATE_H_ */

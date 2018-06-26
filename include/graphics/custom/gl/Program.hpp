@@ -52,6 +52,16 @@ public:
 		link(vertexShader, fragmentShader);
 	}
 	
+	Program(
+		const VertexShader& vertexShader,
+		const TessellationControlShader& tessellationControlShader,
+		const TessellationEvaluationShader& tessellationEvaluationShader,
+		const FragmentShader& fragmentShader
+	)
+	{
+		link(vertexShader, tessellationControlShader, tessellationEvaluationShader, fragmentShader);
+	}
+	
 	Program(const Program& other) = delete;
 	
 	Program(Program&& other)
@@ -83,6 +93,53 @@ public:
 		try
 		{
 			glAttachShader(id_, vertexShader);
+			glAttachShader(id_, fragmentShader);
+			glLinkProgram(id_);
+			
+			GLint compiled = GL_FALSE;
+			glGetProgramiv(id_, GL_LINK_STATUS, &compiled);
+			
+			if (!compiled)
+			{
+				std::stringstream message;
+				message << "Could not link program: ";
+				message << "\n" << getShaderProgramErrorMessage(id_);
+				
+				throw std::runtime_error(message.str());
+			}
+			
+			ASSERT_GL_ERROR(__FILE__, __LINE__);
+		}
+		catch (const std::exception& e)
+		{
+			// Cleanup
+			destroy();
+			
+			throw e;
+		}
+	}
+	
+	void link(
+		const VertexShader& vertexShader,
+		const TessellationControlShader& tessellationControlShader,
+		const TessellationEvaluationShader& tessellationEvaluationShader,
+		const FragmentShader& fragmentShader
+	)
+	{
+		if (valid()) throw std::runtime_error("Cannot link program - program must be destroyed first.");
+		
+		id_ = glCreateProgram();
+		
+		if (id_ == INVALID_ID)
+		{
+			throw std::runtime_error("Could not create program.");
+		}
+		
+		try
+		{
+			glAttachShader(id_, vertexShader);
+			glAttachShader(id_, tessellationControlShader);
+			glAttachShader(id_, tessellationEvaluationShader);
 			glAttachShader(id_, fragmentShader);
 			glLinkProgram(id_);
 			

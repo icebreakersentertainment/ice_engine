@@ -19,13 +19,7 @@ enum Format
 
 struct Image
 {
-	Image()
-	{
-		data = std::vector<char>();
-		width = 0;
-		height = 0;
-		format = Format::FORMAT_UNKNOWN;
-	}
+	Image() = default;
 	
 	Image(const Image& image)
 	{
@@ -36,9 +30,9 @@ struct Image
 	}
 	
 	std::vector<char> data;
-	int width;
-	int height;
-	Format format;
+	int width = 0;
+	int height = 0;
+	Format format = Format::FORMAT_UNKNOWN;
 };
 
 /**

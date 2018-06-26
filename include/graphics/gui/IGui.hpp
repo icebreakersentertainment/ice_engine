@@ -32,6 +32,7 @@ public:
 	virtual IWindow* createWindow(const uint32 x, const uint32 y, const uint32 width, const uint32 height, const std::string title = std::string()) = 0;
 	virtual IWindow* createWindow(const uint32 x, const uint32 y, const uint32 width, const uint32 height, const uint32 flags, const std::string title = std::string()) = 0;
 	
+	virtual bool processEvent(const graphics::WindowEvent& event) = 0;
 	virtual bool processEvent(const graphics::KeyboardEvent& event) = 0;
 	virtual bool processEvent(const graphics::MouseButtonEvent& event) = 0;
 	virtual bool processEvent(const graphics::MouseMotionEvent& event) = 0;

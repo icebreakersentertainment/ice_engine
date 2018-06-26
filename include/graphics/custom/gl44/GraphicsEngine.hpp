@@ -15,8 +15,11 @@
 
 #include "../gl/VertexShader.hpp"
 #include "../gl/FragmentShader.hpp"
+#include "../gl/TessellationControlShader.hpp"
+#include "../gl/TessellationEvaluationShader.hpp"
 #include "../gl/ShaderProgram.hpp"
 #include "../gl/Texture2d.hpp"
+#include "../gl/Texture2dArray.hpp"
 #include "../gl/FrameBuffer.hpp"
 
 #include "handles/HandleVector.hpp"
@@ -72,13 +75,33 @@ struct Renderable
 	Vao vao;
 	Ubo ubo;
 	TextureHandle textureHandle;
+	MaterialHandle materialHandle;
 	GraphicsData graphicsData;
+};
+
+struct Terrain
+{
+	Vao vao;
+	Ubo ubo;
+	TextureHandle textureHandle;
+	TextureHandle terrainMapTextureHandle;
+	TextureHandle splatMapTextureHandles[3];
+	Texture2dArray splatMapTexture2dArrays[5];
+	GraphicsData graphicsData;
+};
+
+struct Material
+{
+	Texture2d albedo;
+	Texture2d normal;
+	Texture2d metallicRoughnessAmbientOcclusion;
 };
 
 struct RenderScene
 {
 	handles::HandleVector<Renderable, RenderableHandle> renderables;
 	handles::HandleVector<GraphicsData, PointLightHandle> pointLights;
+	handles::HandleVector<Terrain, TerrainHandle> terrain;
 	ShaderProgramHandle shaderProgramHandle;
 };
 
@@ -121,6 +144,7 @@ public:
 		const std::vector<glm::vec3>& normals,
 		const std::vector<glm::vec2>& textureCoordinates
 	) override;
+	virtual MeshHandle createStaticMesh(const model::Mesh& mesh) override;
 	virtual MeshHandle createAnimatedMesh(
 		const std::vector<glm::vec3>& vertices,
 		const std::vector<uint32>& indices,
@@ -140,19 +164,43 @@ public:
 	
 	virtual SkeletonHandle createSkeleton(const uint32 numberOfBones) override;
 	
-	virtual TextureHandle createTexture2d(const image::Image& image) override;
+	virtual TextureHandle createTexture2d(const IImage* image) override;
+	
+	virtual MaterialHandle createMaterial(const IPbrMaterial* pbrMaterial) override;
 	
 	virtual VertexShaderHandle createVertexShader(const std::string& data) override;
 	virtual FragmentShaderHandle createFragmentShader(const std::string& data) override;
+	virtual TessellationControlShaderHandle createTessellationControlShader(const std::string& data) override;
+	virtual TessellationEvaluationShaderHandle createTessellationEvaluationShader(const std::string& data) override;
 	virtual bool valid(const VertexShaderHandle& shaderHandle) const override;
 	virtual bool valid(const FragmentShaderHandle& shaderHandle) const override;
+	virtual bool valid(const TessellationControlShaderHandle& shaderHandle) const override;
+	virtual bool valid(const TessellationEvaluationShaderHandle& shaderHandle) const override;
 	virtual void destroyShader(const VertexShaderHandle& shaderHandle) override;
 	virtual void destroyShader(const FragmentShaderHandle& shaderHandle) override;
+	virtual void destroyShader(const TessellationControlShaderHandle& shaderHandle) override;
+	virtual void destroyShader(const TessellationEvaluationShaderHandle& shaderHandle) override;
 	virtual ShaderProgramHandle createShaderProgram(const VertexShaderHandle& vertexShaderHandle, const FragmentShaderHandle& fragmentShaderHandle) override;
+	virtual ShaderProgramHandle createShaderProgram(
+		const VertexShaderHandle& vertexShaderHandle,
+		const TessellationControlShaderHandle& tessellationControlShaderHandle,
+		const TessellationEvaluationShaderHandle& tessellationEvaluationShaderHandle,
+		const FragmentShaderHandle& fragmentShaderHandle
+	) override;
 	virtual bool valid(const ShaderProgramHandle& shaderProgramHandle) const override;
 	virtual void destroyShaderProgram(const ShaderProgramHandle& shaderProgramHandle) override;
 	
-	virtual RenderableHandle createRenderable(const RenderSceneHandle& renderSceneHandle, const MeshHandle& meshHandle, const TextureHandle& textureHandle, const ShaderProgramHandle& shaderProgramHandle) override;
+	virtual RenderableHandle createRenderable(const RenderSceneHandle& renderSceneHandle, const MeshHandle& meshHandle, const TextureHandle& textureHandle, const ShaderProgramHandle& shaderProgramHandle = ShaderProgramHandle()) override;
+	virtual RenderableHandle createRenderable(const RenderSceneHandle& renderSceneHandle, const MeshHandle& meshHandle, const MaterialHandle& materialHandle) override;
+	virtual void destroy(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle) override;
+	
+	virtual TerrainHandle createTerrain(
+		const RenderSceneHandle& renderSceneHandle,
+		const IHeightMap* heightMap,
+		const ISplatMap* splatMap,
+		const IDisplacementMap* displacementMap
+	) override;
+	virtual void destroy(const RenderSceneHandle& renderSceneHandle, const TerrainHandle& terrainHandle) override;
 	
 	virtual void rotate(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle, const glm::quat& quaternion, const TransformSpace& relativeTo = TransformSpace::TS_LOCAL) override;
 	virtual void rotate(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle, const float32 degrees, const glm::vec3& axis, const TransformSpace& relativeTo = TransformSpace::TS_LOCAL) override;
@@ -217,11 +265,14 @@ private:
 	std::vector<IEventListener*> eventListeners_;
 	handles::HandleVector<VertexShader, VertexShaderHandle> vertexShaders_;
 	handles::HandleVector<FragmentShader, FragmentShaderHandle> fragmentShaders_;
+	handles::HandleVector<TessellationControlShader, TessellationControlShaderHandle> tessellationControlShaders_;
+	handles::HandleVector<TessellationEvaluationShader, TessellationEvaluationShaderHandle> tessellationEvaluationShaders_;
 	handles::HandleVector<ShaderProgram, ShaderProgramHandle> shaderPrograms_;
 	handles::HandleVector<RenderScene, RenderSceneHandle> renderSceneHandles_;
 	handles::HandleVector<Vao, MeshHandle> meshes_;
 	handles::HandleVector<Ubo, SkeletonHandle> skeletons_;
 	handles::HandleVector<Texture2d, TextureHandle> texture2ds_;
+	handles::HandleVector<Material, MaterialHandle> materials_;
 	Camera camera_;
 	
 	glm::mat4 model_;
@@ -232,6 +283,11 @@ private:
 	fs::IFileSystem* fileSystem_;
 	logger::ILogger* logger_;
 	
+	void initialize();
+	void initializeOpenGlShaderPrograms();
+	void initializeOpenGlBuffers();
+	
+	std::string loadShaderContents(const std::string& filename) const;
 	GLuint createShaderProgram(const GLuint vertexShader, const GLuint fragmentShader);
 	GLuint compileShader(const std::string& source, const GLenum type);
 	

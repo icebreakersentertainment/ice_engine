@@ -6,8 +6,9 @@
 
 #include "graphics/custom/gl44/GraphicsEngine.hpp"
 
-#include <SDL2/SDL_opengl.h>
-#include <SDL2/SDL_syswm.h>
+#include "detail/GenerateVertices.hpp"
+
+#include <SDL2/SDL.h>
 
 #define GLM_FORCE_RADIANS
 #include <glm/gtc/matrix_transform.hpp>
@@ -22,13 +23,42 @@ namespace custom
 {
 namespace gl44
 {
+
+/**
+ * Will return the OpenGL compatible format of the given image Format 'format'.
+ *
+ * If no known compatible OpenGL format is found, FORMAT_UNKNOWN is returned.
+ *
+ * @param format
+ *
+ * @return The OpenGL compatible format of the given image Format 'format', or FORMAT_UNKNOWN if no known compatible OpenGL format is found.
+ */
+inline GLint getOpenGlImageFormat( int32 format )
+{
+	switch (format)
+	{
+		case IImage::Format::FORMAT_RGB:
+			return GL_RGB;
+
+		case IImage::Format::FORMAT_RGBA:
+			return GL_RGBA;
+
+		case IImage::Format::FORMAT_UNKNOWN:
+			return (GLint)IImage::Format::FORMAT_UNKNOWN;
+	}
+
+	return (GLint)IImage::Format::FORMAT_UNKNOWN;
+}
+
 ShaderProgramHandle lineShaderProgramHandle_;
 ShaderProgramHandle lightingShaderProgramHandle_;
 ShaderProgramHandle deferredLightingGeometryPassProgramHandle_;
+ShaderProgramHandle deferredLightingTerrainGeometryPassProgramHandle_;
 FrameBuffer frameBuffer_;
 Texture2d positionTexture_;
 Texture2d normalTexture_;
 Texture2d albedoTexture_;
+Texture2d metallicRoughnessAmbientOcclusionTexture_;
 RenderBuffer renderBuffer_;
 
 ShaderProgramHandle shadowMappingShaderProgramHandle_;
@@ -49,10 +79,37 @@ GraphicsEngine::GraphicsEngine(utilities::Properties* properties, fs::IFileSyste
 	fileSystem_(fileSystem),
 	logger_(logger)
 {
-	width_ = properties->getIntValue(std::string("window.width"), 1024);
-	height_ = properties->getIntValue(std::string("window.height"), 768);
+	initialize();
+}
+
+GraphicsEngine::GraphicsEngine(const GraphicsEngine& other)
+{
+}
+
+GraphicsEngine::~GraphicsEngine()
+{
+	if (openglContext_)
+	{
+		SDL_GL_DeleteContext(openglContext_);
+		openglContext_ = nullptr;
+	}
 	
-	logger_->info(std::string("Width and height set to ") + std::to_string(width_) + " x " + std::to_string(height_));
+	if (sdlWindow_)
+	{
+		SDL_SetWindowFullscreen( sdlWindow_, 0 );
+		SDL_DestroyWindow( sdlWindow_ );
+		sdlWindow_ = nullptr;
+	}
+
+	SDL_Quit();
+}
+
+void GraphicsEngine::initialize()
+{
+	width_ = properties_->getIntValue(std::string("window.width"), 1024);
+	height_ = properties_->getIntValue(std::string("window.height"), 768);
+	
+	LOG_INFO(logger_, std::string("Width and height set to ") + std::to_string(width_) + " x " + std::to_string(height_));
 	
 	auto errorCode = SDL_Init( SDL_INIT_VIDEO );
 	
@@ -69,7 +126,14 @@ GraphicsEngine::GraphicsEngine(utilities::Properties* properties, fs::IFileSyste
 	
 	auto windowTitle = properties_->getStringValue("window.title", "Ice Engine");
 	
-	sdlWindow_ = SDL_CreateWindow(windowTitle.c_str(), 50, 50, width_, height_, SDL_WINDOW_SHOWN | SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL);
+	uint32 flags = SDL_WINDOW_OPENGL;
+	
+	if (properties_->getBoolValue("window.fullscreen", false)) flags |= SDL_WINDOW_FULLSCREEN;
+	if (properties_->getBoolValue("window.resizable", false)) flags |= SDL_WINDOW_RESIZABLE;
+	if (properties_->getBoolValue("window.maximized", false)) flags |= SDL_WINDOW_MAXIMIZED;
+	
+	
+	sdlWindow_ = SDL_CreateWindow(windowTitle.c_str(), 50, 50, width_, height_, flags);
 	
 	if (sdlWindow_ == nullptr)
 	{
@@ -85,6 +149,9 @@ GraphicsEngine::GraphicsEngine(utilities::Properties* properties, fs::IFileSyste
 		throw std::runtime_error(message);
 	}
 	
+	const bool vsync = properties_->getBoolValue("window.vsync", false);
+	SDL_GL_SetSwapInterval( (vsync ? 1 : 0) );
+	
 	glewExperimental = GL_TRUE; // Needed in core profile
 	
 	auto result = glewInit();
@@ -95,328 +162,69 @@ GraphicsEngine::GraphicsEngine(utilities::Properties* properties, fs::IFileSyste
 		throw std::runtime_error(msg);
 	}
 	
+	SDL_GL_GetDrawableSize(sdlWindow_, reinterpret_cast<int*>(&width_), reinterpret_cast<int*>(&height_));
+
+	
 	// Set up the model, view, and projection matrices
 	//model_ = glm::scale(glm::mat4(1.0f), glm::vec3(0.5f));
 	model_ = glm::mat4(1.0f);
 	view_ = glm::mat4(1.0f);
 	setViewport(width_, height_);
 	
-	// Source: http://bulletphysics.org/Bullet/phpBB3/viewtopic.php?t=11517
-	std::string vertexShader = R"(
-#version 440 core
-layout (location = 0) in vec3 position;
-layout (location = 1) in vec3 color;
-
-out vec3 ourColor;
-
-uniform mat4 projectionMatrix;
-uniform mat4 viewMatrix;
-
-void main()
-{
-    gl_Position = projectionMatrix * viewMatrix * vec4(position, 1.0f);
-
-    ourColor = color;
-}
-)";
-
-	std::string fragmentShader = R"(
-#version 440 core
-in vec3 ourColor;
-out vec4 color;
-
-void main()
-{
-    color = vec4(ourColor, 1.0f);
-    //gl_FragColor= vec4(1.0, 1.0, 0.0, 1.0);
-}
-)";
-
-	auto vertexShaderHandle = createVertexShader(vertexShader);
-	auto fragmentShaderHandle = createFragmentShader(fragmentShader);
+	initializeOpenGlShaderPrograms();
 	
-	lineShaderProgramHandle_ = createShaderProgram(vertexShaderHandle, fragmentShaderHandle);
+	// TEST lights
+	// Source: https://github.com/JoeyDeVries/LearnOpenGL/blob/master/src/5.advanced_lighting/8.1.deferred_shading/deferred_shading.cpp
+	srand(13);
+	for (unsigned int i = 0; i < NR_LIGHTS; i++)
+	{
+		// calculate slightly random offsets
+		float xPos = ((rand() % 100) / 100.0) * 6.0 - 3.0;
+		float yPos = ((rand() % 100) / 100.0) * 6.0 - 4.0;
+		float zPos = ((rand() % 100) / 100.0) * 6.0 - 3.0;
+		lightPositions_.push_back(glm::vec3(xPos, yPos, zPos));
+		// also calculate random color
+		float rColor = ((rand() % 100) / 200.0f) + 0.5; // between 0.5 and 1.0
+		float gColor = ((rand() % 100) / 200.0f) + 0.5; // between 0.5 and 1.0
+		float bColor = ((rand() % 100) / 200.0f) + 0.5; // between 0.5 and 1.0
+		lightColors_.push_back(glm::vec3(rColor, gColor, bColor));
+	}
+	
+	initializeOpenGlBuffers();
+}
+
+void GraphicsEngine::initializeOpenGlShaderPrograms()
+{
+	auto lineVertexShaderHandle = createVertexShader(loadShaderContents("line.vert"));
+	auto lineFragmentShaderHandle = createFragmentShader(loadShaderContents("line.frag"));
+	
+	lineShaderProgramHandle_ = createShaderProgram(lineVertexShaderHandle, lineFragmentShaderHandle);
 	
 	// Shadow mapping shader program
-	// Source: https://learnopengl.com/code_viewer_gh.php?code=src/5.advanced_lighting/3.1.2.shadow_mapping_base/3.1.2.shadow_mapping_depth.vs
-	std::string shadowMappingVertexShader = R"(
-#version 440 core
-layout (location = 0) in vec3 aPos;
-
-uniform mat4 lightSpaceMatrix;
-uniform mat4 modelMatrix;
-
-void main()
-{
-    gl_Position = lightSpaceMatrix * modelMatrix * vec4(aPos, 1.0);
-}
-)";
-
-	// Source: https://learnopengl.com/code_viewer_gh.php?code=src/5.advanced_lighting/3.1.2.shadow_mapping_base/3.1.2.shadow_mapping_depth.fs
-	std::string shadowMappingFragmentShader = R"(
-#version 440 core
-
-void main()
-{             
-    // gl_FragDepth = gl_FragCoord.z;
-}
-)";
-	
-	auto shadowMappingVertexShaderHandle = createVertexShader(shadowMappingVertexShader);
-	auto shadowMappingFragmentShaderHandle = createFragmentShader(shadowMappingFragmentShader);
+	auto shadowMappingVertexShaderHandle = createVertexShader(loadShaderContents("shadow_mapping.vert"));
+	auto shadowMappingFragmentShaderHandle = createFragmentShader(loadShaderContents("shadow_mapping.frag"));
 	
 	shadowMappingShaderProgramHandle_ = createShaderProgram(shadowMappingVertexShaderHandle, shadowMappingFragmentShaderHandle);
 	
 	// deferred lighting geometry pass shader program
-	// Adapted from: https://github.com/JoeyDeVries/LearnOpenGL/blob/master/src/5.advanced_lighting/8.1.deferred_shading/8.1.g_buffer.vs
-	std::string deferredLightingGeometryPassVertexShader = R"(
-#version 440 core
-
-uniform mat4 projectionMatrix;
-uniform mat4 viewMatrix;
-uniform mat4 modelMatrix;
-uniform mat4 pvmMatrix;
-uniform mat3 normalMatrix;
-
-layout (location = 0) in vec3 position;
-layout (location = 1) in vec4 color;
-layout (location = 2) in vec3 normal;
-layout (location = 3) in vec2 textureCoordinate;
-
-out vec3 FragPos;
-out vec2 TexCoords;
-out vec3 Normal;
-
-void main()
-{
-    vec4 worldPos = modelMatrix * vec4(position, 1.0);
-    FragPos = worldPos.xyz; 
-    TexCoords = textureCoordinate;
-    
-    mat3 normalMatrix2 = transpose(inverse(mat3(modelMatrix)));
-    Normal = normalMatrix2 * normal;
-    
-    gl_Position = pvmMatrix * vec4(position, 1.0);
-
-    //gl_Position = projection * view * worldPos;
-    
-	//texCoord = textureCoordinate;
-}
-
-)";
-
-	// Adapted from: https://github.com/JoeyDeVries/LearnOpenGL/blob/master/src/5.advanced_lighting/8.1.deferred_shading/8.1.g_buffer.fs
-	std::string deferredLightingGeometryPassFragmentShader = R"(
-#version 440 core
-
-layout (location = 0) out vec3 gPosition;
-layout (location = 1) out vec3 gNormal;
-layout (location = 2) out vec4 gAlbedoSpec;
-
-in vec2 TexCoords;
-in vec3 FragPos;
-in vec3 Normal;
-
-uniform sampler2D texture_diffuse1;
-//uniform sampler2D texture_specular1;
-
-void main()
-{    
-    // store the fragment position vector in the first gbuffer texture
-    gPosition = FragPos;
-    // also store the per-fragment normals into the gbuffer
-    gNormal = normalize(Normal);
-    // and the diffuse per-fragment color
-    gAlbedoSpec.rgb = texture(texture_diffuse1, TexCoords).rgb;
-    // store specular intensity in gAlbedoSpec's alpha component
-    gAlbedoSpec.a = 0.1f; //texture(texture_specular1, TexCoords).r;
-}
-
-)";
-	
-	auto deferredLightingGeometryPassVertexShaderHandle = createVertexShader(deferredLightingGeometryPassVertexShader);
-	auto deferredLightingGeometryPassFragmentShaderHandle = createFragmentShader(deferredLightingGeometryPassFragmentShader);
+	auto deferredLightingGeometryPassVertexShaderHandle = createVertexShader(loadShaderContents("deferred_lighting_geometry_pass.vert"));
+	auto deferredLightingGeometryPassFragmentShaderHandle = createFragmentShader(loadShaderContents("deferred_lighting_geometry_pass.frag"));
 	
 	deferredLightingGeometryPassProgramHandle_ = createShaderProgram(deferredLightingGeometryPassVertexShaderHandle, deferredLightingGeometryPassFragmentShaderHandle);
 	
+	// deferred lighting terrain geometry pass shader program
+	auto deferredLightingTerrainGeometryPassVertexShaderHandle = createVertexShader(loadShaderContents("deferred_lighting_terrain_geometry_pass.vert"));
+	auto deferredLightingTerrainGeometryPassFragmentShaderHandle = createFragmentShader(loadShaderContents("deferred_lighting_terrain_geometry_pass.frag"));
+	
+	deferredLightingTerrainGeometryPassProgramHandle_ = createShaderProgram(deferredLightingTerrainGeometryPassVertexShaderHandle, deferredLightingTerrainGeometryPassFragmentShaderHandle);
+	
 	// Lighting shader program
-	// Source: https://github.com/JoeyDeVries/LearnOpenGL/blob/master/src/5.advanced_lighting/8.1.deferred_shading/8.1.deferred_shading.vs
-	std::string lightingVertexShader = R"(
-#version 440 core
-layout (location = 0) in vec3 aPos;
-layout (location = 1) in vec2 aTexCoords;
-
-out vec2 TexCoords;
-
-void main()
-{
-    TexCoords = aTexCoords;
-    gl_Position = vec4(aPos, 1.0);
-}
-)";
-
-	// Source: https://github.com/JoeyDeVries/LearnOpenGL/blob/master/src/5.advanced_lighting/8.1.deferred_shading/8.1.deferred_shading.fs
-	std::string lightingFragmentShader = R"(
-#version 440 core
-out vec4 FragColor;
-
-in vec2 TexCoords;
-
-uniform sampler2D gPosition;
-uniform sampler2D gNormal;
-uniform sampler2D gAlbedoSpec;
-uniform sampler2D shadowMap;
-
-struct Light
-{
-    vec3 Position;
-    vec3 Color;
-    
-    float Linear;
-    float Quadratic;
-};
-
-struct DirectionalLight
-{
-    vec3 direction;
-  
-    vec3 ambient;
-    vec3 diffuse;
-    vec3 specular;
-};
-
-const int NR_LIGHTS = 6;
-const int NR_DIRECTIONAL_LIGHTS = 1;
-uniform Light lights[NR_LIGHTS];
-uniform DirectionalLight directionalLights[NR_DIRECTIONAL_LIGHTS];
-uniform vec3 lightPos;
-uniform vec3 viewPos;
-uniform mat4 lightSpaceMatrix;
-
-float ShadowCalculation(const vec4 fragPosLightSpace, const vec3 surfaceNormal, const vec3 lightDirection)
-{
-    // perform perspective divide
-    vec3 projCoords = fragPosLightSpace.xyz / fragPosLightSpace.w;
-    // transform to [0,1] range
-    projCoords = projCoords * 0.5 + 0.5;
-    
-    if (projCoords.z > 1.0)
-    {
-        return 0.0;
-	}
-    
-    // get closest depth value from light's perspective (using [0,1] range fragPosLight as coords)
-    float closestDepth = texture(shadowMap, projCoords.xy).r; 
-    // get depth of current fragment from light's perspective
-    float currentDepth = projCoords.z;
-    
-    float bias = max(0.05 * (1.0 - dot(surfaceNormal, lightDirection)), 0.005);
-    
-    // check whether current frag pos is in shadow
-    
-    float shadow = 0.0;
-	vec2 texelSize = 1.0 / textureSize(shadowMap, 0);
-	for(int x = -1; x <= 1; ++x)
-	{
-	    for(int y = -1; y <= 1; ++y)
-	    {
-	        float pcfDepth = texture(shadowMap, projCoords.xy + vec2(x, y) * texelSize).r; 
-	        shadow += currentDepth - bias > pcfDepth ? 1.0 : 0.0;        
-	    }    
-	}
-	shadow /= 9.0;
-    
-    //float shadow = currentDepth - bias > closestDepth  ? 1.0 : 0.0;
-
-    return shadow;
-}
-
-vec3 calculatePointLight(const vec3 FragPos, const vec3 Normal, const vec3 Diffuse, const float Specular)
-{
-	vec3 lighting = vec3(0);
-	vec3 viewDir  = normalize(viewPos - FragPos);
-	
-    for(int i = 0; i < NR_LIGHTS; ++i)
-    {
-        // diffuse
-        vec3 lightDir = normalize(lights[i].Position - FragPos);
-        vec3 diffuse = max(dot(Normal, lightDir), 0.0) * Diffuse * lights[i].Color;
-        
-        // specular
-        vec3 halfwayDir = normalize(lightDir + viewDir);  
-        float spec = pow(max(dot(Normal, halfwayDir), 0.0), 16.0);
-        vec3 specular = lights[i].Color * spec * Specular;
-        
-        // attenuation
-        float distance = length(lights[i].Position - FragPos);
-        float attenuation = 1.0 / (1.0 + lights[i].Linear * distance + lights[i].Quadratic * distance * distance);
-        
-        diffuse *= attenuation;
-        specular *= attenuation;
-        lighting += diffuse + specular;        
-    }
-    
-    return lighting;
-}
-
-vec3 calculateDirectionalLight(const vec3 FragPos, const vec3 Normal, const vec3 Diffuse, const float Specular)
-{
-	vec3 lighting = vec3(0);
-
-	for(int i = 0; i < NR_DIRECTIONAL_LIGHTS; ++i)
-	{
-	    float shininess = 16.0f;
-		
-		vec3 norm = normalize(Normal);
-	    vec3 lightDir = normalize(-directionalLights[i].direction);  
-	    
-		// diffuse 
-	    float diff = max(dot(norm, lightDir), 0.0);
-	    vec3 diffuse = directionalLights[i].diffuse * diff * Diffuse.rgb;  
-	    
-	    // specular
-	    vec3 viewDir = normalize(viewPos - FragPos);
-	    vec3 reflectDir = reflect(-lightDir, norm);  
-	    float spec = pow(max(dot(viewDir, reflectDir), 0.0), shininess);
-	    vec3 specular = directionalLights[i].specular * spec * Specular;//.rgb;  
-		
-		// Shadow mapping
-	    vec4 FragPosLightSpace = lightSpaceMatrix * vec4(FragPos, 1.0);
-	    float shadow = ShadowCalculation(FragPosLightSpace, Normal, lightDir);
-	    //lighting -= (0.2 * vec3(shadow, shadow, shadow));
-    
-        lighting += (1.0 - shadow) * (diffuse + specular);
-        
-		//lighting += diffuse + specular;
-	}
-	
-    return lighting;
-}
-
-void main()
-{             
-    // retrieve data from gbuffer
-    vec3 FragPos = texture(gPosition, TexCoords).rgb;
-    vec3 Normal = texture(gNormal, TexCoords).rgb;
-    vec3 Diffuse = texture(gAlbedoSpec, TexCoords).rgb;
-    float Specular = texture(gAlbedoSpec, TexCoords).a;
-    
-    // then calculate lighting as usual
-    vec3 lighting  = Diffuse * 0.001; // hard-coded ambient component
-    
-    lighting += calculatePointLight(FragPos, Normal, Diffuse, Specular);
-    lighting += calculateDirectionalLight(FragPos, Normal, Diffuse, Specular);
-    
-    FragColor = vec4(lighting, 1.0);
-}
-)";
-
-	auto lightingVertexShaderHandle = createVertexShader(lightingVertexShader);
-	auto lightingFragmentShaderHandle = createFragmentShader(lightingFragmentShader);
+	auto lightingVertexShaderHandle = createVertexShader(loadShaderContents("lighting.vert"));
+	auto lightingFragmentShaderHandle = createFragmentShader(loadShaderContents("lighting.frag"));
 	
 	lightingShaderProgramHandle_ = createShaderProgram(lightingVertexShaderHandle, lightingFragmentShaderHandle);
 	
-		std::string depthDebugVertexShader = R"(
+	std::string depthDebugVertexShader = R"(
 #version 440 core
 layout (location = 0) in vec3 aPos;
 layout (location = 1) in vec2 aTexCoords;
@@ -460,37 +268,32 @@ void main()
 	auto depthDebugFragmentShaderHandle = createFragmentShader(depthDebugFragmentShader);
 	
 	depthDebugShaderProgramHandle_ = createShaderProgram(depthDebugVertexShaderHandle, depthDebugFragmentShaderHandle);
-	
-	// TEST lights
-	// Source: https://github.com/JoeyDeVries/LearnOpenGL/blob/master/src/5.advanced_lighting/8.1.deferred_shading/deferred_shading.cpp
-	srand(13);
-	for (unsigned int i = 0; i < NR_LIGHTS; i++)
-	{
-		// calculate slightly random offsets
-		float xPos = ((rand() % 100) / 100.0) * 6.0 - 3.0;
-		float yPos = ((rand() % 100) / 100.0) * 6.0 - 4.0;
-		float zPos = ((rand() % 100) / 100.0) * 6.0 - 3.0;
-		lightPositions_.push_back(glm::vec3(xPos, yPos, zPos));
-		// also calculate random color
-		float rColor = ((rand() % 100) / 200.0f) + 0.5; // between 0.5 and 1.0
-		float gColor = ((rand() % 100) / 200.0f) + 0.5; // between 0.5 and 1.0
-		float bColor = ((rand() % 100) / 200.0f) + 0.5; // between 0.5 and 1.0
-		lightColors_.push_back(glm::vec3(rColor, gColor, bColor));
-	}
-	
+}
+
+void GraphicsEngine::initializeOpenGlBuffers()
+{
 	// G-buffer
+	positionTexture_ = Texture2d();
 	positionTexture_.generate(GL_RGB16F, width_, height_, GL_RGB, GL_FLOAT, nullptr);
 	positionTexture_.bind();
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     
+    normalTexture_ = Texture2d();
 	normalTexture_.generate(GL_RGB16F, width_, height_, GL_RGB, GL_FLOAT, nullptr);
 	normalTexture_.bind();
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     
+    albedoTexture_ = Texture2d();
 	albedoTexture_.generate(GL_RGBA, width_, height_, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
 	albedoTexture_.bind();
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    
+    metallicRoughnessAmbientOcclusionTexture_ = Texture2d();
+	metallicRoughnessAmbientOcclusionTexture_.generate(GL_RGB, width_, height_, GL_RGB, GL_UNSIGNED_BYTE, nullptr);
+	metallicRoughnessAmbientOcclusionTexture_.bind();
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	
@@ -499,8 +302,10 @@ void main()
 	frameBuffer_.attach(positionTexture_);
 	frameBuffer_.attach(normalTexture_);
 	frameBuffer_.attach(albedoTexture_);
+	frameBuffer_.attach(metallicRoughnessAmbientOcclusionTexture_);
 	
 	// Shadow mapping
+	shadowMappingDepthMapTexture_ = Texture2d();
 	shadowMappingDepthMapTexture_.generate(GL_DEPTH_COMPONENT, depthBufferWidth, depthBufferHeight, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
 	shadowMappingDepthMapTexture_.bind();
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -510,38 +315,18 @@ void main()
 	float borderColor[] = { 1.0f, 1.0f, 1.0f, 1.0f };
 	glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor); 
 	
+	shadowMappingFrameBuffer_ = FrameBuffer();
 	shadowMappingFrameBuffer_.generate();
 	shadowMappingFrameBuffer_.attach(shadowMappingDepthMapTexture_, GL_DEPTH_ATTACHMENT);
 	FrameBuffer::drawBuffer(GL_NONE);
 	FrameBuffer::readBuffer(GL_NONE);
 	FrameBuffer::unbind();
 	
+	renderBuffer_ = RenderBuffer();
 	renderBuffer_.generate();
 	renderBuffer_.setStorage(GL_DEPTH_COMPONENT, width_, height_);
 	
 	frameBuffer_.attach(renderBuffer_, GL_DEPTH_ATTACHMENT);
-}
-
-GraphicsEngine::GraphicsEngine(const GraphicsEngine& other)
-{
-}
-
-GraphicsEngine::~GraphicsEngine()
-{
-	if (openglContext_)
-	{
-		SDL_GL_DeleteContext(openglContext_);
-		openglContext_ = nullptr;
-	}
-	
-	if (sdlWindow_)
-	{
-		SDL_SetWindowFullscreen( sdlWindow_, 0 );
-		SDL_DestroyWindow( sdlWindow_ );
-		sdlWindow_ = nullptr;
-	}
-
-	SDL_Quit();
 }
 	
 void GraphicsEngine::setViewport(const uint32 width, const uint32 height)
@@ -552,6 +337,11 @@ void GraphicsEngine::setViewport(const uint32 width, const uint32 height)
 	projection_ = glm::perspective(glm::radians(60.0f), (float32)width / (float32)height, 0.1f, 500.f);
 	
 	glViewport(0, 0, width_, height_);
+	
+	if (renderBuffer_)
+	{
+		initializeOpenGlBuffers();
+	}
 }
 	
 glm::uvec2 GraphicsEngine::getViewport() const
@@ -633,7 +423,7 @@ void GraphicsEngine::render(const RenderSceneHandle& renderSceneHandle)
 	//assert( pvmMatrixLocation >= 0);
 	//assert( normalMatrixLocation >= 0);
 	
-	const auto& renderScene = renderSceneHandles_[renderSceneHandle];
+	auto& renderScene = renderSceneHandles_[renderSceneHandle];
 	
 	// Rendered depth from lights perspective
 	glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
@@ -656,11 +446,12 @@ void GraphicsEngine::render(const RenderSceneHandle& renderSceneHandle)
 	glViewport(0, 0, depthBufferWidth, depthBufferHeight);
 	
 	shadowMappingFrameBuffer_.bind();
+	Texture2d::activate(0);
 	
 	{
 		modelMatrixLocation = glGetUniformLocation(shadowMappingShaderProgram, "modelMatrix");
 		
-		ASSERT_GL_ERROR(__FILE__, __LINE__);
+		ASSERT_GL_ERROR();
 		
 		glClear(GL_DEPTH_BUFFER_BIT);
 		
@@ -688,7 +479,7 @@ void GraphicsEngine::render(const RenderSceneHandle& renderSceneHandle)
 			glDrawElements(r.vao.ebo.mode, r.vao.ebo.count, r.vao.ebo.type, 0);
 			glBindVertexArray(0);
 			
-			ASSERT_GL_ERROR(__FILE__, __LINE__);
+			ASSERT_GL_ERROR();
 		}
 		//glActiveTexture(GL_TEXTURE0);
 		//glBindTexture(GL_TEXTURE_2D, woodTexture);
@@ -700,22 +491,29 @@ void GraphicsEngine::render(const RenderSceneHandle& renderSceneHandle)
 	glViewport(0, 0, width_, height_);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	
-	ASSERT_GL_ERROR(__FILE__, __LINE__);
+	ASSERT_GL_ERROR();
 	
 	// Geometry pass
 	frameBuffer_.bind();
+	
+	Texture2d::activate(0);
+	
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	
 	//const auto& renderScene = renderSceneHandles_[renderSceneHandle];
 	
 	//auto& shaderProgram = shaderPrograms_[renderScene.shaderProgramHandle];
 	auto& deferredLightingGeometryPassShaderProgram = shaderPrograms_[deferredLightingGeometryPassProgramHandle_];
+	deferredLightingGeometryPassShaderProgram.use();
 	modelMatrixLocation = glGetUniformLocation(deferredLightingGeometryPassShaderProgram, "modelMatrix");
 	pvmMatrixLocation = glGetUniformLocation(deferredLightingGeometryPassShaderProgram, "pvmMatrix");
 	normalMatrixLocation = glGetUniformLocation(deferredLightingGeometryPassShaderProgram, "normalMatrix");
-	deferredLightingGeometryPassShaderProgram.use();
+	glUniform1i(glGetUniformLocation(deferredLightingGeometryPassShaderProgram, "texture_diffuse1"), 0);
+	//glUniform1i(glGetUniformLocation(deferredLightingGeometryPassShaderProgram, "albedoTextures"), 1);
+	glUniform1i(glGetUniformLocation(deferredLightingGeometryPassShaderProgram, "normalTextures"), 1);
+	glUniform1i(glGetUniformLocation(deferredLightingGeometryPassShaderProgram, "metallicRoughnessAmbientOcclusionTextures"), 2);
 	
-	ASSERT_GL_ERROR(__FILE__, __LINE__);
+	ASSERT_GL_ERROR();
 	
 	for (const auto& r : renderScene.renderables)
 	{
@@ -739,20 +537,113 @@ void GraphicsEngine::render(const RenderSceneHandle& renderSceneHandle)
 			//glBindBufferBase(GL_UNIFORM_BUFFER, bonesLocation, r.ubo.id);
 			glBindBufferBase(GL_UNIFORM_BUFFER, 0, r.ubo.id);
 		}
+	
+		if (r.textureHandle)
+		{
+			Texture2d::activate(0);
+			auto& texture = texture2ds_[r.textureHandle];
+			texture.bind();
+		}
+		else if (r.materialHandle)
+		{
+			auto& material = materials_[r.materialHandle];
+			Texture2d::activate(0);
+			material.albedo.bind();
+			Texture2d::activate(1);
+			material.normal.bind();
+			Texture2d::activate(2);
+			material.metallicRoughnessAmbientOcclusion.bind();
+		}
 		
-		auto& texture = texture2ds_[r.textureHandle];
-		texture.bind();
 		
 		glBindVertexArray(r.vao.id);
 		glDrawElements(r.vao.ebo.mode, r.vao.ebo.count, r.vao.ebo.type, 0);
 		glBindVertexArray(0);
 		
-		ASSERT_GL_ERROR(__FILE__, __LINE__);
+		ASSERT_GL_ERROR();
+	}
+	
+	// Terrain
+	auto& deferredLightingTerrainGeometryPassShaderProgram = shaderPrograms_[deferredLightingTerrainGeometryPassProgramHandle_];
+	deferredLightingTerrainGeometryPassShaderProgram.use();
+#define ASSERT(condition) if (!(condition)) { \
+		std::cout << "Assert " << #condition << " failed" << std::endl; \
+		std::cout << "on line " << __LINE__ << std::endl; \
+		std::cout << "in file " << __FILE__ <<  std::endl; \
+		std::abort(); \
+		\
+	}
+	
+	ASSERT(glGetUniformLocation(deferredLightingTerrainGeometryPassShaderProgram, "heightMapTexture") >= 0);
+	ASSERT(glGetUniformLocation(deferredLightingTerrainGeometryPassShaderProgram, "terrainMapTexture") >= 0);
+	ASSERT(glGetUniformLocation(deferredLightingTerrainGeometryPassShaderProgram, "splatMapAlbedoTextures") >= 0);
+	
+	glUniform1i(glGetUniformLocation(deferredLightingTerrainGeometryPassShaderProgram, "heightMapTexture"), 0);
+	glUniform1i(glGetUniformLocation(deferredLightingTerrainGeometryPassShaderProgram, "terrainMapTexture"), 1);
+	glUniform1i(glGetUniformLocation(deferredLightingTerrainGeometryPassShaderProgram, "splatMapAlbedoTextures"), 2);
+	glUniform1i(glGetUniformLocation(deferredLightingTerrainGeometryPassShaderProgram, "splatMapNormalTextures"), 3);
+	glUniform1i(glGetUniformLocation(deferredLightingTerrainGeometryPassShaderProgram, "splatMapMetallicRoughnessAmbientOcclusionTextures"), 4);
+	
+	modelMatrixLocation = glGetUniformLocation(deferredLightingTerrainGeometryPassShaderProgram, "modelMatrix");
+	pvmMatrixLocation = glGetUniformLocation(deferredLightingTerrainGeometryPassShaderProgram, "pvmMatrix");
+	//normalMatrixLocation = glGetUniformLocation(deferredLightingTerrainGeometryPassShaderProgram, "normalMatrix");
+	
+	ASSERT(modelMatrixLocation >= 0);
+	ASSERT(pvmMatrixLocation >= 0);
+	//ASSERT(normalMatrixLocation >= 0);
+	
+	ASSERT_GL_ERROR();
+	
+	for (auto& t : renderScene.terrain)
+	{
+		glm::mat4 newModel = glm::translate(model_, t.graphicsData.position);
+		newModel = newModel * glm::mat4_cast( t.graphicsData.orientation );
+		newModel = glm::scale(newModel, t.graphicsData.scale);
+	
+		// Send uniform variable values to the shader		
+		const glm::mat4 pvmMatrix(projection_ * view_ * newModel);
+		glUniformMatrix4fv(pvmMatrixLocation, 1, GL_FALSE, &pvmMatrix[0][0]);
+	
+		//glm::mat3 normalMatrix = glm::inverse(glm::transpose(glm::mat3(view_ * newModel)));
+		//glUniformMatrix3fv(normalMatrixLocation, 1, GL_FALSE, &normalMatrix[0][0]);
+	
+		glUniformMatrix4fv(modelMatrixLocation, 1, GL_FALSE, &newModel[0][0]);
+		
+		if (t.ubo.id > 0)
+		{
+			//const int bonesLocation = glGetUniformLocation(deferredLightingGeometryPassShaderProgram, "bones");
+			//assert( bonesLocation >= 0);
+			//glBindBufferBase(GL_UNIFORM_BUFFER, bonesLocation, r.ubo.id);
+			glBindBufferBase(GL_UNIFORM_BUFFER, 0, t.ubo.id);
+		}
+		
+		Texture2d::activate(0);
+		auto& texture = texture2ds_[t.textureHandle];
+		texture.bind();
+		
+		Texture2d::activate(1);
+		auto& terrainMapTexture = texture2ds_[t.terrainMapTextureHandle];
+		terrainMapTexture.bind();
+		
+		Texture2dArray::activate(2);
+		t.splatMapTexture2dArrays[0].bind();
+		
+		Texture2dArray::activate(3);
+		t.splatMapTexture2dArrays[1].bind();
+		
+		Texture2dArray::activate(4);
+		t.splatMapTexture2dArrays[2].bind();
+		
+		glBindVertexArray(t.vao.id);
+		glDrawElements(t.vao.ebo.mode, t.vao.ebo.count, t.vao.ebo.type, 0);
+		glBindVertexArray(0);
+		
+		ASSERT_GL_ERROR();
 	}
 	
 	FrameBuffer::unbind();
 	
-	ASSERT_GL_ERROR(__FILE__, __LINE__);
+	ASSERT_GL_ERROR();
 	
 	// Lighting pass
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -763,7 +654,8 @@ void GraphicsEngine::render(const RenderSceneHandle& renderSceneHandle)
 	glUniform1i(glGetUniformLocation(lightingShaderProgram, "gPosition"), 0);
 	glUniform1i(glGetUniformLocation(lightingShaderProgram, "gNormal"), 1);
 	glUniform1i(glGetUniformLocation(lightingShaderProgram, "gAlbedoSpec"), 2);
-	glUniform1i(glGetUniformLocation(lightingShaderProgram, "shadowMap"), 3);
+	glUniform1i(glGetUniformLocation(lightingShaderProgram, "gMetallicRoughnessAmbientOcclusion"), 3);
+	glUniform1i(glGetUniformLocation(lightingShaderProgram, "shadowMap"), 4);
 	glUniform3fv(glGetUniformLocation(lightingShaderProgram, "viewPos"), 1, &camera_.position[0]);
 	glUniform3fv(glGetUniformLocation(lightingShaderProgram, "lightPos"), 1, &lightPos[0]);
 	glUniformMatrix4fv(glGetUniformLocation(lightingShaderProgram, "lightSpaceMatrix"), 1, GL_FALSE, &lightSpaceMatrix[0][0]);
@@ -775,6 +667,8 @@ void GraphicsEngine::render(const RenderSceneHandle& renderSceneHandle)
 	Texture2d::activate(2);
 	albedoTexture_.bind();
 	Texture2d::activate(3);
+	metallicRoughnessAmbientOcclusionTexture_.bind();
+	Texture2d::activate(4);
 	shadowMappingDepthMapTexture_.bind();
 	
 	for (const auto& light : renderScene.pointLights)
@@ -824,7 +718,7 @@ void GraphicsEngine::render(const RenderSceneHandle& renderSceneHandle)
 	*/
 	// Render lights?
 	
-	ASSERT_GL_ERROR(__FILE__, __LINE__);
+	ASSERT_GL_ERROR();
 }
 
 GLuint VBO, VAO;
@@ -866,6 +760,13 @@ void GraphicsEngine::renderLine(const glm::vec3& from, const glm::vec3& to, cons
 
 void GraphicsEngine::renderLines(const std::vector<std::tuple<glm::vec3, glm::vec3, glm::vec3>>& lineData)
 {
+	std::vector<std::tuple<glm::vec3, glm::vec3, glm::vec3, glm::vec3>> lineData2;
+	
+	for (const auto& line : lineData)
+	{
+		lineData2.push_back( {std::get<0>(line), std::get<1>(line), std::get<2>(line), std::get<2>(line)} );
+	}
+	
 	glDeleteBuffers(1, &VBO);
 	glDeleteVertexArrays(1, &VAO);
 	glGenBuffers(1, &VBO);
@@ -873,24 +774,13 @@ void GraphicsEngine::renderLines(const std::vector<std::tuple<glm::vec3, glm::ve
 	
 	glBindVertexArray(VAO);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO);
-	glBufferData(GL_ARRAY_BUFFER, lineData.size() * (4 * sizeof(glm::vec3)), nullptr, GL_STATIC_DRAW);
+	glBufferData(GL_ARRAY_BUFFER, lineData2.size() * (4 * sizeof(glm::vec3)), nullptr, GL_STATIC_DRAW);
 	
-	uint32 offset = 0;
-	uint32 colorOffset = lineData.size() * (2 * sizeof(glm::vec3));
-	for (const auto& line : lineData)
-	{
-		glBufferSubData(GL_ARRAY_BUFFER, offset, sizeof(glm::vec3), &std::get<0>(line).x);
-		glBufferSubData(GL_ARRAY_BUFFER, offset + sizeof(glm::vec3), sizeof(glm::vec3), &std::get<1>(line).x);
-		glBufferSubData(GL_ARRAY_BUFFER, colorOffset, sizeof(glm::vec3), &std::get<2>(line).x);
-		glBufferSubData(GL_ARRAY_BUFFER, colorOffset + sizeof(glm::vec3), sizeof(glm::vec3), &std::get<2>(line).x);
-		
-		offset += 2 * sizeof(glm::vec3);
-		colorOffset += 2 * sizeof(glm::vec3);
-	}
+	glBufferSubData(GL_ARRAY_BUFFER, 0, lineData2.size() * 4 * sizeof(glm::vec3), &lineData2[0]);
 	
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
 	glEnableVertexAttribArray(0);
-	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)(lineData.size() * (2 * sizeof(glm::vec3))));
+	glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (GLvoid*)(2 * sizeof(glm::vec3)));
 	glEnableVertexAttribArray(1);
 	glBindVertexArray(0);
 	
@@ -904,7 +794,7 @@ void GraphicsEngine::renderLines(const std::vector<std::tuple<glm::vec3, glm::ve
 	glUniformMatrix4fv(viewMatrixLocation, 1, GL_FALSE, &view_[0][0]);
 	
 	glBindVertexArray(VAO);
-	glDrawArrays(GL_LINES, 0, 2 * lineData.size());
+	glDrawArrays(GL_LINES, 0, 4 * lineData2.size());
 	glBindVertexArray(0);
 }
 
@@ -1004,6 +894,11 @@ MeshHandle GraphicsEngine::createStaticMesh(
 	vao.ebo.type =  GL_UNSIGNED_INT;
 	
 	return handle;
+}
+
+MeshHandle GraphicsEngine::createStaticMesh(const model::Mesh& mesh)
+{
+	return createStaticMesh(mesh.vertices, mesh.indices, mesh.colors, mesh.normals, mesh.textureCoordinates);
 }
 
 MeshHandle GraphicsEngine::createAnimatedMesh(
@@ -1148,36 +1043,90 @@ SkeletonHandle GraphicsEngine::createSkeleton(const uint32 numberOfBones)
 	return handle;
 }
 
-TextureHandle GraphicsEngine::createTexture2d(const image::Image& image)
+TextureHandle GraphicsEngine::createTexture2d(const IImage* image)
 {
 	auto handle = texture2ds_.create();
 	auto& texture = texture2ds_[handle];
 	
-	uint32 width = 0;
-	uint32 height = 0;
+	auto format = getOpenGlImageFormat(image->format());
 	
-	auto format = image::getOpenGlImageFormat(image.format);
-	
-	texture.generate(format, image.width, image.height, format, GL_UNSIGNED_BYTE, &image.data[0], true);
+	texture.generate(format, image->width(), image->height(), format, GL_UNSIGNED_BYTE, &image->data()[0], true);
 	//glGenTextures(1, &texture.id);
 	//glBindTexture(GL_TEXTURE_2D, texture.id);
-	//glTexImage2D(GL_TEXTURE_2D, 0, format, image.width, image.height, 0, format, GL_UNSIGNED_BYTE, &image.data[0]);
+	//glTexImage2D(GL_TEXTURE_2D, 0, format, image->width(), image->height(), 0, format, GL_UNSIGNED_BYTE, &image->data()[0]);
 	//glGenerateMipmap(GL_TEXTURE_2D);
 	//glBindTexture(GL_TEXTURE_2D, 0);
 	
 	return handle;
 }
 
+MaterialHandle GraphicsEngine::createMaterial(const IPbrMaterial* pbrMaterial)
+{
+	auto handle = materials_.create();
+	auto& material = materials_[handle];
+	
+	material.albedo = Texture2d();
+	material.albedo.generate(GL_RGBA, pbrMaterial->albedo()->width(), pbrMaterial->albedo()->height(), GL_RGBA, GL_UNSIGNED_BYTE, &pbrMaterial->albedo()->data()[0], true);
+	material.normal = Texture2d();
+	material.normal.generate(GL_RGBA, pbrMaterial->normal()->width(), pbrMaterial->normal()->height(), GL_RGBA, GL_UNSIGNED_BYTE, &pbrMaterial->normal()->data()[0], true);
+	
+	std::vector<char> metalnessRoughnessAmbientOcclusionData;
+	metalnessRoughnessAmbientOcclusionData.resize(pbrMaterial->albedo()->width()*pbrMaterial->albedo()->height()*4);
+	
+	const auto metalness = pbrMaterial->metalness();
+	const auto roughness = pbrMaterial->roughness();
+	const auto ambientOcclusion = pbrMaterial->ambientOcclusion();
+	
+	for (int j=0; j < metalnessRoughnessAmbientOcclusionData.size(); j+=4)
+	{
+		metalnessRoughnessAmbientOcclusionData[j] = (metalness ? (metalness->data()[j] + metalness->data()[j+1] + metalness->data()[j+2]) / 3 : 127);
+		metalnessRoughnessAmbientOcclusionData[j+1] = (roughness ? (roughness->data()[j] + roughness->data()[j+1] + roughness->data()[j+2]) / 3 : 127);
+		metalnessRoughnessAmbientOcclusionData[j+2] = (ambientOcclusion ? (ambientOcclusion->data()[j] + ambientOcclusion->data()[j+1] + ambientOcclusion->data()[j+2]) / 3 : 127);
+		metalnessRoughnessAmbientOcclusionData[j+3] = 0;
+	}
+	
+	material.metallicRoughnessAmbientOcclusion = Texture2d();
+	material.metallicRoughnessAmbientOcclusion.generate(GL_RGBA, pbrMaterial->albedo()->width(), pbrMaterial->albedo()->height(), GL_RGBA, GL_UNSIGNED_BYTE, &metalnessRoughnessAmbientOcclusionData[0], true);
+	
+	return handle;
+}
+
+std::string GraphicsEngine::loadShaderContents(const std::string& filename) const
+{
+	const std::string shaderDirectory = properties_->getStringValue("graphics.shaderDirectory", "shaders");
+	
+	auto path = shaderDirectory + fileSystem_->getDirectorySeperator() + filename;
+	
+	LOG_DEBUG(logger_, (std::string("Loading shader: ") + path))
+	
+	if (!fileSystem_->exists(path)) throw std::runtime_error("Shader with filename '" + path + "' does not exist.");
+	
+	auto file = fileSystem_->open(path, fs::FileFlags::READ | fs::FileFlags::BINARY);
+	return file->readAll();
+}
+
 VertexShaderHandle GraphicsEngine::createVertexShader(const std::string& data)
 {
-	logger_->debug("Creating vertex shader from data: " + data);
+	LOG_DEBUG(logger_, "Creating vertex shader from data: " + data);
 	return vertexShaders_.create( VertexShader(data) );
 }
 
 FragmentShaderHandle GraphicsEngine::createFragmentShader(const std::string& data)
 {
-	logger_->debug("Creating fragment shader from data: " + data);
+	LOG_DEBUG(logger_, "Creating fragment shader from data: " + data);
 	return fragmentShaders_.create( FragmentShader(data) );
+}
+
+TessellationControlShaderHandle GraphicsEngine::createTessellationControlShader(const std::string& data)
+{
+	LOG_DEBUG(logger_, "Creating tessellation control shader from data: " + data);
+	return tessellationControlShaders_.create( TessellationControlShader(data) );
+}
+
+TessellationEvaluationShaderHandle GraphicsEngine::createTessellationEvaluationShader(const std::string& data)
+{
+	LOG_DEBUG(logger_, "Creating tessellation evaluation shader from data: " + data);
+	return tessellationEvaluationShaders_.create( TessellationEvaluationShader(data) );
 }
 
 bool GraphicsEngine::valid(const VertexShaderHandle& shaderHandle) const
@@ -1188,6 +1137,16 @@ bool GraphicsEngine::valid(const VertexShaderHandle& shaderHandle) const
 bool GraphicsEngine::valid(const FragmentShaderHandle& shaderHandle) const
 {
 	return fragmentShaders_.valid(shaderHandle);
+}
+
+bool GraphicsEngine::valid(const TessellationControlShaderHandle& shaderHandle) const
+{
+	return tessellationControlShaders_.valid(shaderHandle);
+}
+
+bool GraphicsEngine::valid(const TessellationEvaluationShaderHandle& shaderHandle) const
+{
+	return tessellationEvaluationShaders_.valid(shaderHandle);
 }
 
 void GraphicsEngine::destroyShader(const VertexShaderHandle& shaderHandle)
@@ -1210,12 +1169,47 @@ void GraphicsEngine::destroyShader(const FragmentShaderHandle& shaderHandle)
 	fragmentShaders_.destroy(shaderHandle);
 }
 
+void GraphicsEngine::destroyShader(const TessellationControlShaderHandle& shaderHandle)
+{
+	if (!tessellationControlShaders_.valid(shaderHandle))
+	{
+		throw std::runtime_error("Invalid shader handle");
+	}
+	
+	tessellationControlShaders_.destroy(shaderHandle);
+}
+
+void GraphicsEngine::destroyShader(const TessellationEvaluationShaderHandle& shaderHandle)
+{
+	if (!tessellationEvaluationShaders_.valid(shaderHandle))
+	{
+		throw std::runtime_error("Invalid shader handle");
+	}
+	
+	tessellationEvaluationShaders_.destroy(shaderHandle);
+}
+
 ShaderProgramHandle GraphicsEngine::createShaderProgram(const VertexShaderHandle& vertexShaderHandle, const FragmentShaderHandle& fragmentShaderHandle)
 {
 	const auto& vertexShader = vertexShaders_[vertexShaderHandle];
 	const auto& fragmentShader = fragmentShaders_[fragmentShaderHandle];
 	
 	return shaderPrograms_.create( ShaderProgram(vertexShader, fragmentShader) );
+}
+
+ShaderProgramHandle GraphicsEngine::createShaderProgram(
+	const VertexShaderHandle& vertexShaderHandle,
+	const TessellationControlShaderHandle& tessellationControlShaderHandle,
+	const TessellationEvaluationShaderHandle& tessellationEvaluationShaderHandle,
+	const FragmentShaderHandle& fragmentShaderHandle
+)
+{
+	const auto& vertexShader = vertexShaders_[vertexShaderHandle];
+	const auto& tessellationControlShader = tessellationControlShaders_[tessellationControlShaderHandle];
+	const auto& tessellationEvaluationShader = tessellationEvaluationShaders_[tessellationEvaluationShaderHandle];
+	const auto& fragmentShader = fragmentShaders_[fragmentShaderHandle];
+	
+	return shaderPrograms_.create( ShaderProgram(vertexShader, tessellationControlShader, tessellationEvaluationShader, fragmentShader) );
 }
 
 bool GraphicsEngine::valid(const ShaderProgramHandle& shaderProgramHandle) const
@@ -1250,6 +1244,124 @@ RenderableHandle GraphicsEngine::createRenderable(const RenderSceneHandle& rende
 	renderable.graphicsData.orientation = glm::quat();
 	
 	return handle;
+}
+
+RenderableHandle GraphicsEngine::createRenderable(const RenderSceneHandle& renderSceneHandle, const MeshHandle& meshHandle, const MaterialHandle& materialHandle)
+{
+	auto& renderScene = renderSceneHandles_[renderSceneHandle];
+	auto handle = renderScene.renderables.create();
+	auto& renderable = renderScene.renderables[handle];
+	
+	//renderScene.shaderProgramHandle = shaderProgramHandle;
+	
+	renderable.vao = meshes_[meshHandle];
+	//renderable.textureHandle = textureHandle;
+	renderable.materialHandle = materialHandle;
+	
+	renderable.graphicsData.position = glm::vec3(0.0f, 0.0f, 0.0f);
+	renderable.graphicsData.scale = glm::vec3(1.0f, 1.0f, 1.0f);
+	renderable.graphicsData.orientation = glm::quat();
+	
+	return handle;
+}
+
+void GraphicsEngine::destroy(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle)
+{
+	auto& renderScene = renderSceneHandles_[renderSceneHandle];
+	renderScene.renderables.destroy(renderableHandle);
+}
+
+TerrainHandle GraphicsEngine::createTerrain(
+	const RenderSceneHandle& renderSceneHandle,
+	const IHeightMap* heightMap,
+	const ISplatMap* splatMap,
+	const IDisplacementMap* displacementMap
+)
+{
+	auto& renderScene = renderSceneHandles_[renderSceneHandle];
+	auto handle = renderScene.terrain.create();
+	auto& terrain = renderScene.terrain[handle];
+	
+	//terrain.vao = meshes_[meshHandle];
+	//terrain.textureHandle = textureHandle;
+	
+	terrain.textureHandle = createTexture2d(heightMap->image());
+	
+	//terrain.terrainMapTextureHandle = createTexture2d(*splatMap->terrainMap());
+	terrain.terrainMapTextureHandle = texture2ds_.create();
+	auto& texture = texture2ds_[terrain.terrainMapTextureHandle];
+	
+	texture.generate(GL_RGBA8UI, splatMap->terrainMap()->width(), splatMap->terrainMap()->height(), GL_RGBA_INTEGER, GL_UNSIGNED_BYTE, &splatMap->terrainMap()->data()[0], true);
+	texture.bind();
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	
+	terrain.splatMapTexture2dArrays[0] = Texture2dArray();
+	terrain.splatMapTexture2dArrays[0].generate(GL_RGBA, splatMap->materialMap()[0]->albedo()->width(), splatMap->materialMap()[0]->albedo()->height(), 256, GL_RGBA, GL_UNSIGNED_BYTE);
+	terrain.splatMapTexture2dArrays[0].bind();
+	for (int i=0; i < splatMap->materialMap().size(); ++i)
+	{
+		terrain.splatMapTexture2dArrays[0].texSubImage3D(splatMap->materialMap()[i]->albedo()->width(), splatMap->materialMap()[i]->albedo()->height(), i, GL_RGBA, GL_UNSIGNED_BYTE, &splatMap->materialMap()[i]->albedo()->data()[0]);
+	}
+	glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
+	
+	terrain.splatMapTexture2dArrays[1] = Texture2dArray();
+	terrain.splatMapTexture2dArrays[1].generate(GL_RGBA, splatMap->materialMap()[0]->normal()->width(), splatMap->materialMap()[0]->normal()->height(), 256, GL_RGBA, GL_UNSIGNED_BYTE);
+	terrain.splatMapTexture2dArrays[1].bind();
+	for (int i=0; i < splatMap->materialMap().size(); ++i)
+	{
+		terrain.splatMapTexture2dArrays[1].texSubImage3D(splatMap->materialMap()[i]->normal()->width(), splatMap->materialMap()[i]->normal()->height(), i, GL_RGBA, GL_UNSIGNED_BYTE, &splatMap->materialMap()[i]->normal()->data()[0]);
+	}
+	glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
+	
+	const uint32 width = splatMap->materialMap()[0]->albedo()->width();
+	const uint32 height = splatMap->materialMap()[0]->albedo()->height();
+	
+	std::vector<char> metalnessRoughnessAmbientOcclusionData;
+	metalnessRoughnessAmbientOcclusionData.resize(width*height*4);
+		
+	terrain.splatMapTexture2dArrays[2] = Texture2dArray();
+	terrain.splatMapTexture2dArrays[2].generate(GL_RGBA, width, height, 256, GL_RGBA, GL_UNSIGNED_BYTE);
+	terrain.splatMapTexture2dArrays[2].bind();
+	for (int i=0; i < splatMap->materialMap().size(); ++i)
+	{
+		const auto metalness = splatMap->materialMap()[i]->metalness();
+		const auto roughness = splatMap->materialMap()[i]->roughness();
+		const auto ambientOcclusion = splatMap->materialMap()[i]->ambientOcclusion();
+		
+		for (int j=0; j < metalnessRoughnessAmbientOcclusionData.size(); j+=4)
+		{
+			metalnessRoughnessAmbientOcclusionData[j] = (metalness ? (metalness->data()[j] + metalness->data()[j+1] + metalness->data()[j+2]) / 3 : 127);
+			metalnessRoughnessAmbientOcclusionData[j+1] = (roughness ? (roughness->data()[j] + roughness->data()[j+1] + roughness->data()[j+2]) / 3 : 127);
+			metalnessRoughnessAmbientOcclusionData[j+2] = (ambientOcclusion ? (ambientOcclusion->data()[j] + ambientOcclusion->data()[j+1] + ambientOcclusion->data()[j+2]) / 3 : 127);
+			metalnessRoughnessAmbientOcclusionData[j+3] = 0;
+		}
+		terrain.splatMapTexture2dArrays[2].texSubImage3D(width, height, i, GL_RGBA, GL_UNSIGNED_BYTE, &metalnessRoughnessAmbientOcclusionData[0]);
+	}
+	glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
+	
+	//terrain.splatMapTextureHandles[0] = createTexture2d(*splatMap->materialMap()[0]->albedo());
+	//terrain.splatMapTextureHandles[1] = createTexture2d(*splatMap->materialMap()[1]->albedo());
+	//terrain.splatMapTextureHandles[2] = createTexture2d(*splatMap->materialMap()[2]->albedo());
+	
+	std::vector<glm::vec3> vertices;
+	std::vector<uint32> indices;
+	std::tie(vertices, indices) = detail::generateGrid(256);
+	
+	auto meshHandle = createStaticMesh(vertices, indices, {}, {}, {});
+	terrain.vao = meshes_[meshHandle];
+	
+	terrain.graphicsData.position = glm::vec3(0.0f, 0.0f, 0.0f) + glm::vec3(-(float32)heightMap->image()->width()/2.0f, 0.0f, -(float32)heightMap->image()->height()/2.0f);
+	terrain.graphicsData.scale = glm::vec3(1.0f, 1.0f, 1.0f);
+	terrain.graphicsData.orientation = glm::quat();
+	
+	return handle;
+}
+
+void GraphicsEngine::destroy(const RenderSceneHandle& renderSceneHandle, const TerrainHandle& terrainHandle)
+{
+	auto& renderScene = renderSceneHandles_[renderSceneHandle];
+	renderScene.terrain.destroy(terrainHandle);
 }
 
 void GraphicsEngine::rotate(const CameraHandle& cameraHandle, const glm::quat& quaternion, const TransformSpace& relativeTo)

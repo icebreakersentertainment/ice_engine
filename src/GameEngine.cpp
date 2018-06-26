@@ -13,15 +13,16 @@
 
 #include "GameEngine.hpp"
 #include "Scene.hpp"
-#include "ScriptingEngineBindingDelegate.hpp"
+#include "BindingDelegate.hpp"
 #include "ScriptFunctionHandleWrapper.hpp"
 
 #include "Constants.hpp"
 
-#include "graphics/model/ModelLoader.hpp"
+#include "ModelLoader.hpp"
 #include "graphics/model/Animate.hpp"
 
 #include "graphics/GraphicsEngineFactory.hpp"
+#include "TerrainFactory.hpp"
 #include "audio/AudioEngineFactory.hpp"
 #include "networking/NetworkingEngineFactory.hpp"
 #include "physics/PhysicsFactory.hpp"
@@ -32,8 +33,7 @@
 
 #include "logger/Logger.hpp"
 #include "fs/FileSystem.hpp"
-#include "image/ImageLoader.hpp"
-#include "AudioLoader.hpp"
+#include "Image.hpp"
 
 #include "utilities/IoUtilities.hpp"
 
@@ -57,23 +57,28 @@ GameEngine::GameEngine(
 	std::unique_ptr<utilities::Properties> properties,
 	std::unique_ptr<ice_engine::logger::ILogger> logger,
 	std::unique_ptr<ice_engine::IPluginManager> pluginManager,
-	std::unique_ptr<graphics::IGraphicsEngineFactory> graphicsEngineFactory
+	std::unique_ptr<graphics::IGraphicsEngineFactory> graphicsEngineFactory,
+	std::unique_ptr<ITerrainFactory> terrainFactory
 )
 	: 
 	properties_(std::move(properties)),
 	logger_(std::move(logger)),
 	pluginManager_(std::move(pluginManager)),
-	graphicsEngineFactory_(std::move(graphicsEngineFactory))
+	graphicsEngineFactory_(std::move(graphicsEngineFactory)),
+	terrainFactory_(std::move(terrainFactory))
 {
 	initialize();
 }
 
 GameEngine::~GameEngine()
 {
-	logger_->info("Shutting down.");
+	LOG_INFO(logger_, "Shutting down.");
 	
 	// Make sure the GUIs get deleted before the GUI plugins are deleted
 	guis_.clear();
+	
+	// Make sure the Modules get deleted before the plugin is unloaded
+	modules_.clear();
 }
 
 const EngineStatistics& GameEngine::getEngineStatistics() const
@@ -88,9 +93,9 @@ void GameEngine::exit()
 
 void GameEngine::tick(const float32 delta)
 {
-	graphicsEngine_->setMouseRelativeMode(true);
-	graphicsEngine_->setWindowGrab(false);
-	graphicsEngine_->setCursorVisible(true);
+	//graphicsEngine_->setMouseRelativeMode(true);
+	//graphicsEngine_->setWindowGrab(false);
+	//graphicsEngine_->setCursorVisible(true);
 
 	handleEvents();
 	
@@ -110,6 +115,11 @@ void GameEngine::tick(const float32 delta)
 	while (foregroundThreadPool_->getWorkQueueCount() + foregroundThreadPool_->getActiveWorkerCount() > 0)
 	{
 		// sleep
+	}
+	
+	for (auto& module : modules_)
+	{
+		module->tick(delta);
 	}
 	
 	for (auto& gui : guis_)
@@ -136,7 +146,7 @@ void GameEngine::initialize()
 	
 	initializeLoggingSubSystem();
 	
-	logger_->info( "Initializing..." );
+	LOG_INFO(logger_, "Initializing..." );
 	
 	initializeFileSystemSubSystem();
 	
@@ -147,6 +157,8 @@ void GameEngine::initialize()
 	initializeEntitySubSystem();
 
 	initializeGraphicsSubSystem();
+	
+	initializeTerrainSubSystem();
 	
 	initializeAudioSubSystem();
 	
@@ -159,13 +171,15 @@ void GameEngine::initialize()
 	initializeScriptingSubSystem();
 
 	initializeInputSubSystem();
+	
+	initializeModuleSubSystem();
 
 	// Load data
 	loadEssentialGameData();
 	
 	loadUserInterface();
 
-	logger_->info( "Done initialization." );
+	LOG_INFO(logger_, "Done initialization." );
 }
 
 void GameEngine::initializeLoggingSubSystem()
@@ -179,18 +193,18 @@ void GameEngine::initializeLoggingSubSystem()
 
 void GameEngine::initializeFileSystemSubSystem()
 {
-	logger_->info( "initialize file system." );
+	LOG_INFO(logger_, "initialize file system." );
 	
 	fileSystem_ = std::make_unique<fs::FileSystem>();
 }
 
 void GameEngine::initializeInputSubSystem()
 {
-	logger_->info( "initialize keyboard and mouse." );
+	LOG_INFO(logger_, "initialize keyboard and mouse." );
 }
 void GameEngine::initializeSoundSubSystem()
 {
-	logger_->info( "initialize sound." );
+	LOG_INFO(logger_, "initialize sound." );
 }
 
 void GameEngine::initializePhysicsSubSystem()
@@ -208,11 +222,13 @@ void GameEngine::initializePathfindingSubSystem()
 	}
 	
 	pathfindingEngine_ = pathfindingEngineFactory_->create( properties_.get(), fileSystem_.get(), logger_.get() );
+	
+	pathfindingEngine_->setPathfindingDebugRenderer(debugRenderer_.get());
 }
 
 void GameEngine::initializeGraphicsSubSystem()
 {
-	logger_->info( "initializing graphics." );
+	LOG_INFO(logger_, "initializing graphics." );
 	
 	if (!graphicsEngineFactory_)
 	{
@@ -220,7 +236,7 @@ void GameEngine::initializeGraphicsSubSystem()
 		
 		if (graphicsPlugin)
 		{
-			logger_->info( "initializing graphics plugin " + graphicsPlugin->getName() + "." );
+			LOG_INFO(logger_, "initializing graphics plugin " + graphicsPlugin->getName() + "." );
 			graphicsEngineFactory_ = graphicsPlugin->createFactory();
 		}
 		else
@@ -236,9 +252,34 @@ void GameEngine::initializeGraphicsSubSystem()
 	debugRenderer_ = std::make_unique<DebugRenderer>(graphicsEngine_.get());
 }
 
+void GameEngine::initializeTerrainSubSystem()
+{
+	LOG_INFO(logger_, "initializing terrain." );
+	
+	if (!terrainFactory_)
+	{
+		terrainFactory_ = std::make_unique<TerrainFactory>();
+	}
+	
+	//terrainManager_ = terrainFactory_->create( properties_.get(), fileSystem_.get(), logger_.get(), graphicsEngine_.get(), pathfindingEngine_.get(), scriptingEngine_.get(), audioEngine_.get(), networkingEngine_.get() );
+}
+
+void GameEngine::initializeModuleSubSystem()
+{
+	LOG_INFO(logger_, "initializing modules." );
+	
+	const auto& modulePlugins = pluginManager_->getModulePlugins();
+	
+	for (auto modulePlugin : modulePlugins)
+	{
+		auto module = modulePlugin->createFactory()->create(properties_.get(), fileSystem_.get(), logger_.get(), graphicsEngine_.get(), pathfindingEngine_.get(), scriptingEngine_.get(), audioEngine_.get(), networkingEngine_.get());
+		modules_.push_back(std::move(module));
+	}
+}
+
 void GameEngine::initializeAudioSubSystem()
 {
-	logger_->info( "initializing audio." );
+	LOG_INFO(logger_, "initializing audio." );
 	
 	if (!audioEngineFactory_)
 	{
@@ -250,7 +291,7 @@ void GameEngine::initializeAudioSubSystem()
 
 void GameEngine::initializeNetworkingSubSystem()
 {
-	logger_->info( "initializing networking." );
+	LOG_INFO(logger_, "initializing networking." );
 	
 	if (!networkingEngineFactory_)
 	{
@@ -264,33 +305,33 @@ void GameEngine::initializeNetworkingSubSystem()
 
 void GameEngine::initializeScriptingSubSystem()
 {
-	logger_->info( "Initializing scripting..." );
+	LOG_INFO(logger_, "Initializing scripting..." );
 	
 	scriptingEngine_ = scripting::ScriptingFactory::createScriptingEngine( properties_.get(), fileSystem_.get(), logger_.get() );
 	
-	ScriptingEngineBindingDelegate delegate(logger_.get(), scriptingEngine_.get(), this, graphicsEngine_.get(), audioEngine_.get(), networkingEngine_.get(), physicsEngine_.get(), pathfindingEngine_.get());
+	BindingDelegate delegate(logger_.get(), scriptingEngine_.get(), this, graphicsEngine_.get(), audioEngine_.get(), networkingEngine_.get(), physicsEngine_.get(), pathfindingEngine_.get());
 	delegate.bind();
 }
 
 void GameEngine::initializeThreadingSubSystem()
 {
-	logger_->info( "Load thread pool..." );
+	LOG_INFO(logger_, "Load thread pool..." );
 	backgroundThreadPool_ = std::make_unique<ThreadPool>();
 	foregroundThreadPool_ = std::make_unique<ThreadPool>();
 	
-	logger_->debug( "Load opengl loader..." );
+	LOG_DEBUG(logger_, "Load opengl loader..." );
 	openGlLoader_ = std::make_unique<OpenGlLoader>();
 }
 
 void GameEngine::initializeDataStoreSubSystem()
 {
-	logger_->info( "Load data store..." );
+	LOG_INFO(logger_, "Load data store..." );
 	//dataStore_ = std::unique_ptr<pyliteserializer::SqliteDataStore>( new pyliteserializer::SqliteDataStore(std::string("../data/dark_horizon.db")) );
 }
 
 void GameEngine::initializeEntitySubSystem()
 {
-	logger_->info( "Load entity system..." );
+	LOG_INFO(logger_, "Load entity system..." );
 }
 
 std::vector<graphics::model::BoneData> boneData;
@@ -305,24 +346,24 @@ void GameEngine::test()
 
 void GameEngine::loadEssentialGameData()
 {
-	logger_->info( "load essential game data." );
+	LOG_INFO(logger_, "load essential game data." );
 }
 
 void GameEngine::loadUserInterface()
 {
-	logger_->info( "load user interface." );
+	LOG_INFO(logger_, "load user interface." );
 	
 	/*
 	igui_ = glrProgram_->getHtmlGui();
 	
 	std::string htmlUrlPath = std::string("file://") + fs::current_path().string();
 
-	logger_->debug( "loading main.html" );
+	LOG_DEBUG(logger_, "loading main.html" );
 	mainGui_ = igui_->loadFromFile(htmlUrlPath + std::string("/data/ui/main.html"));
 	
 	auto gameGuiObject = mainGui_->createGuiObject(std::wstring(L"game"));
 	
-	logger_->debug( "creating main.html gui objects." );	
+	LOG_DEBUG(logger_, "creating main.html gui objects." );	
 	{
 		auto guiObject = mainGui_->createGuiObject(std::wstring(L"camera"));
 		std::function<float()> function = [this]() { return camera_->getCamera()->getCamera()->getPosition().x; };
@@ -383,7 +424,7 @@ void GameEngine::loadUserInterface()
 		gameGuiObject->addFunction(std::wstring(L"getState"), intFunction);
 	}
 	
-	logger_->debug( "Finished creating main.html gui objects." );
+	LOG_DEBUG(logger_, "Finished creating main.html gui objects." );
 	
 	try
 	{
@@ -393,7 +434,7 @@ void GameEngine::loadUserInterface()
 	{
 		std::stringstream msg;
 		msg << "Unable to load guis: " << e.what();
-		logger_->error( msg.str() );
+		LOG_ERROR(logger_, msg.str() );
 		assert(0);
 	}
 
@@ -401,11 +442,11 @@ void GameEngine::loadUserInterface()
 	*/
 }
 
-IScene* GameEngine::createScene(const std::string& name)
+Scene* GameEngine::createScene(const std::string& name)
 {
-	logger_->debug( "Create Scene with name: " + name );
+	LOG_DEBUG(logger_, "Create Scene with name: " + name );
 	
-	scenes_.push_back( std::make_unique<Scene>(name, this, audioEngine_.get(), graphicsEngine_.get(), physicsEngine_.get(), pathfindingEngine_.get(), scriptingEngine_.get(), properties_.get(), fileSystem_.get(), logger_.get(), backgroundThreadPool_.get(), openGlLoader_.get()) );
+	scenes_.push_back( std::make_unique<Scene>(name, this, audioEngine_.get(), graphicsEngine_.get(), terrainFactory_.get(), physicsEngine_.get(), pathfindingEngine_.get(), scriptingEngine_.get(), properties_.get(), fileSystem_.get(), logger_.get(), backgroundThreadPool_.get(), openGlLoader_.get()) );
 	
 	return scenes_.back().get();
 }
@@ -420,9 +461,9 @@ void GameEngine::destroyScene(const std::string& name)
 	}
 }
 
-void GameEngine::destroyScene(IScene* scene)
+void GameEngine::destroyScene(Scene* scene)
 {
-	auto func = [scene](const std::unique_ptr<IScene>& s) {
+	auto func = [scene](const std::unique_ptr<Scene>& s) {
 		return s.get() == scene;
 	};
 	
@@ -434,9 +475,9 @@ void GameEngine::destroyScene(IScene* scene)
 	}
 }
 
-IScene* GameEngine::getScene(const std::string& name) const
+Scene* GameEngine::getScene(const std::string& name) const
 {
-	auto func = [&name](const std::unique_ptr<IScene>& s) {
+	auto func = [&name](const std::unique_ptr<Scene>& s) {
 		return s->getName() == name;
 	};
 	
@@ -450,9 +491,9 @@ IScene* GameEngine::getScene(const std::string& name) const
 	return nullptr;
 }
 
-std::vector<IScene*> GameEngine::getAllScenes() const
+std::vector<Scene*> GameEngine::getAllScenes() const
 {
-	std::vector<IScene*> scenes;
+	std::vector<Scene*> scenes;
 	
 	for (auto& scene : scenes_)
 	{
@@ -501,6 +542,11 @@ physics::IPhysicsEngine* GameEngine::getPhysicsEngine() const
 	return physicsEngine_.get();
 }
 
+scripting::IScriptingEngine* GameEngine::getScriptingEngine() const
+{
+	return scriptingEngine_.get();
+}
+
 IDebugRenderer* GameEngine::getDebugRenderer() const
 {
 	return debugRenderer_.get();
@@ -524,6 +570,16 @@ IThreadPool* GameEngine::getForegroundThreadPool() const
 IOpenGlLoader* GameEngine::getOpenGlLoader() const
 {
 	return openGlLoader_.get();
+}
+
+logger::ILogger* GameEngine::getLogger() const
+{
+	return logger_.get();
+}
+
+fs::IFileSystem* GameEngine::getFileSystem() const
+{
+	return fileSystem_.get();
 }
 
 graphics::gui::IGui* GameEngine::createGui(const std::string& name)
@@ -551,7 +607,7 @@ void GameEngine::destroyGui(const graphics::gui::IGui* gui)
 	}
 	else
 	{
-		logger_->warn("Cannot destroy gui - gui was not found.");
+		LOG_WARN(logger_, "Cannot destroy gui - gui was not found.");
 	}
 }
 
@@ -566,18 +622,29 @@ void GameEngine::setCallback(graphics::gui::IButton* button, scripting::ScriptFu
 	button->setCallback(func);
 }
 
+void GameEngine::setCallback(graphics::gui::IMenuItem* menuItem, scripting::ScriptFunctionHandle scriptFunctionHandle)
+{
+	auto scriptFunctionHandleWrapper = std::make_shared<ScriptFunctionHandleWrapper>(scriptingEngine_.get(), scriptFunctionHandle);
+
+	std::function<void (void)> func = [&scriptingEngine_ = scriptingEngine_, scriptFunctionHandleWrapper = scriptFunctionHandleWrapper]() {
+		scriptingEngine_->execute(scriptFunctionHandleWrapper->get());
+	};
+	
+	menuItem->setCallback(func);
+}
+
 Audio* GameEngine::loadAudio(const std::string& name, const std::string& filename)
 {
-	logger_->debug("Loading audio: " + filename);
+	LOG_DEBUG(logger_, "Loading audio: " + filename);
 	if (!fileSystem_->exists(filename))
 	{
 		throw std::runtime_error("Audio file '" + filename + "' does not exist.");
 	}
 	
 	auto file = fileSystem_->open(filename, fs::FileFlags::READ | fs::FileFlags::BINARY);
-	resourceCache_.addAudio( name, importAudio(file->getInputStream()) );
+	resourceCache_.addAudio( name, std::make_unique<Audio>(file->getInputStream()) );
 	
-	logger_->debug("Done loading audio: " + filename);
+	LOG_DEBUG(logger_, "Done loading audio: " + filename);
 	
 	return resourceCache_.getAudio(name);
 }
@@ -597,25 +664,25 @@ std::shared_future<Audio*> GameEngine::loadAudioAsync(const std::string& name, c
 	return sharedFuture;
 }
 
-image::Image* GameEngine::loadImage(const std::string& name, const std::string& filename)
+Image* GameEngine::loadImage(const std::string& name, const std::string& filename)
 {
-	logger_->debug("Loading image: " + filename);
+	LOG_DEBUG(logger_, "Loading image: " + filename);
 	if (!fileSystem_->exists(filename))
 	{
 		throw std::runtime_error("Image file '" + filename + "' does not exist.");
 	}
 	
 	auto file = fileSystem_->open(filename, fs::FileFlags::READ | fs::FileFlags::BINARY);
-	resourceCache_.addImage( name, image::import(utilities::readAllBytes(file->getInputStream())) );
+	resourceCache_.addImage( name, std::make_unique<Image>(file->getInputStream()) );
 	
-	logger_->debug("Done loading image: " + filename);
+	LOG_DEBUG(logger_, "Done loading image: " + filename);
 	
 	return resourceCache_.getImage(name);
 }
 
-std::shared_future<image::Image*> GameEngine::loadImageAsync(const std::string& name, const std::string& filename)
+std::shared_future<Image*> GameEngine::loadImageAsync(const std::string& name, const std::string& filename)
 {
-	auto promise = std::make_shared<std::promise<image::Image*>>();
+	auto promise = std::make_shared<std::promise<Image*>>();
 	auto sharedFuture = promise->get_future().share();
 	
 	std::function<void()> func = [=, promise = promise, sharedFuture = sharedFuture, name = name, filename = filename]() {
@@ -645,7 +712,7 @@ graphics::model::Model* GameEngine::importModel(const std::string& name, const s
 		throw std::runtime_error("Model file '" + filename + "' does not exist.");
 	}
 	
-	resourceCache_.addModel( name, graphics::model::import(filename, logger_.get(), fileSystem_.get()) );
+	resourceCache_.addModel( name, model::import(filename, logger_.get(), fileSystem_.get()) );
 	
 	return resourceCache_.getModel(name);
 }
@@ -688,7 +755,7 @@ Audio* GameEngine::getAudio(const std::string& name) const
 	return resourceCache_.getAudio(name);
 }
 
-image::Image* GameEngine::getImage(const std::string& name) const
+Image* GameEngine::getImage(const std::string& name) const
 {
 	auto image =  resourceCache_.getImage(name);
 	assert(image != nullptr);
@@ -704,7 +771,7 @@ graphics::model::Model* GameEngine::getModel(const std::string& name) const
 ModelHandle GameEngine::loadStaticModel(const graphics::model::Model* model)
 {
 	auto meshHandle = graphicsEngine_->createStaticMesh(model->meshes[0].vertices, model->meshes[0].indices, model->meshes[0].colors, model->meshes[0].normals, model->meshes[0].textureCoordinates);
-	auto textureHandle = graphicsEngine_->createTexture2d(model->textures[0].image);
+	auto textureHandle = graphicsEngine_->createTexture2d( static_cast<const graphics::IImage*>(&model->textures[0].image) );
 	
 	staticModels_.push_back(std::make_pair(meshHandle, textureHandle));
 	
@@ -730,7 +797,7 @@ std::shared_future<ModelHandle> GameEngine::loadStaticModelAsync(const graphics:
 
 graphics::VertexShaderHandle GameEngine::createVertexShader(const std::string& name, const std::string& filename)
 {
-	logger_->debug("Loading vertex shader '" + name + "': " + filename);
+	LOG_DEBUG(logger_, "Loading vertex shader '" + name + "': " + filename);
 	
 	auto shaderSource = fileSystem_->readAll(filename);
 	
@@ -754,7 +821,7 @@ std::shared_future<graphics::VertexShaderHandle> GameEngine::createVertexShaderA
 
 graphics::VertexShaderHandle GameEngine::createVertexShaderFromSource(const std::string& name, const std::string& data)
 {
-	logger_->debug("Creating vertex shader from source: " + data);
+	LOG_DEBUG(logger_, "Creating vertex shader from source: " + data);
 	
 	if (graphicsEngine_->valid(getVertexShader(name)))
 	{
@@ -785,7 +852,7 @@ std::shared_future<graphics::VertexShaderHandle> GameEngine::createVertexShaderF
 
 graphics::FragmentShaderHandle GameEngine::createFragmentShader(const std::string& name, const std::string& filename)
 {
-	logger_->debug("Loading fragment shader '" + name + "': " + filename);
+	LOG_DEBUG(logger_, "Loading fragment shader '" + name + "': " + filename);
 	
 	auto shaderSource = fileSystem_->readAll(filename);
 	
@@ -809,7 +876,7 @@ std::shared_future<graphics::FragmentShaderHandle> GameEngine::createFragmentSha
 
 graphics::FragmentShaderHandle GameEngine::createFragmentShaderFromSource(const std::string& name, const std::string& data)
 {
-	logger_->debug("Creating fragment shader from source: " + data);
+	LOG_DEBUG(logger_, "Creating fragment shader from source: " + data);
 	
 	if (graphicsEngine_->valid(getFragmentShader(name)))
 	{
@@ -862,7 +929,7 @@ graphics::FragmentShaderHandle GameEngine::getFragmentShader(const std::string& 
 
 void GameEngine::destroyShader(const std::string& name)
 {
-	logger_->debug("Destroying shader '" + name + "'");
+	LOG_DEBUG(logger_, "Destroying shader '" + name + "'");
 	/*
 	auto it = shaderHandles_.find(name);
 	if (it != shaderHandles_.end())
@@ -872,14 +939,14 @@ void GameEngine::destroyShader(const std::string& name)
 	}
 	else
 	{
-		logger_->warn("Cannot destroy shader '" + name + "' - shader was not found.");
+		LOG_WARN(logger_, "Cannot destroy shader '" + name + "' - shader was not found.");
 	}
 	*/
 }
 
 void GameEngine::destroyShader(const graphics::VertexShaderHandle& shaderHandle)
 {
-	logger_->debug("Destroying vertex shader with id '" + std::to_string(shaderHandle.id()) + "'");
+	LOG_DEBUG(logger_, "Destroying vertex shader with id '" + std::to_string(shaderHandle.id()) + "'");
 	
 	auto func = [&shaderHandle](const auto& pair) {
 		return pair.second == shaderHandle;
@@ -894,13 +961,13 @@ void GameEngine::destroyShader(const graphics::VertexShaderHandle& shaderHandle)
 	}
 	else
 	{
-		logger_->warn("Cannot destroy vertex shader with id '" + std::to_string(shaderHandle.id()) + "' - shader was not found.");
+		LOG_WARN(logger_, "Cannot destroy vertex shader with id '" + std::to_string(shaderHandle.id()) + "' - shader was not found.");
 	}
 }
 
 void GameEngine::destroyShader(const graphics::FragmentShaderHandle& shaderHandle)
 {
-	logger_->debug("Destroying fragment shader with id '" + std::to_string(shaderHandle.id()) + "'");
+	LOG_DEBUG(logger_, "Destroying fragment shader with id '" + std::to_string(shaderHandle.id()) + "'");
 	
 	auto func = [&shaderHandle](const auto& pair) {
 		return pair.second == shaderHandle;
@@ -915,14 +982,14 @@ void GameEngine::destroyShader(const graphics::FragmentShaderHandle& shaderHandl
 	}
 	else
 	{
-		logger_->warn("Cannot destroy fragment shader with id '" + std::to_string(shaderHandle.id()) + "' - shader was not found.");
+		LOG_WARN(logger_, "Cannot destroy fragment shader with id '" + std::to_string(shaderHandle.id()) + "' - shader was not found.");
 	}
 }
 
 
 graphics::ShaderProgramHandle GameEngine::createShaderProgram(const std::string& name, const graphics::VertexShaderHandle& vertexShaderHandle, const graphics::FragmentShaderHandle& fragmentShaderHandle)
 {
-	logger_->debug("Creating shader program '" + name + "' from vertex id '" + std::to_string(vertexShaderHandle.id()) + "' and fragment id '" + std::to_string(fragmentShaderHandle.id()) + "'");
+	LOG_DEBUG(logger_, "Creating shader program '" + name + "' from vertex id '" + std::to_string(vertexShaderHandle.id()) + "' and fragment id '" + std::to_string(fragmentShaderHandle.id()) + "'");
 	
 	if (graphicsEngine_->valid(getShaderProgram(name)))
 	{
@@ -964,7 +1031,7 @@ graphics::ShaderProgramHandle GameEngine::getShaderProgram(const std::string& na
 
 void GameEngine::destroyShaderProgram(const std::string& name)
 {
-	logger_->debug("Destroying shader program '" + name + "'");
+	LOG_DEBUG(logger_, "Destroying shader program '" + name + "'");
 	
 	auto it = shaderProgramHandles_.find(name);
 	if (it != shaderProgramHandles_.end())
@@ -974,13 +1041,13 @@ void GameEngine::destroyShaderProgram(const std::string& name)
 	}
 	else
 	{
-		logger_->warn("Cannot destroy shader program '" + name + "' - shader program was not found.");
+		LOG_WARN(logger_, "Cannot destroy shader program '" + name + "' - shader program was not found.");
 	}
 }
 
 void GameEngine::destroyShaderProgram(const graphics::ShaderProgramHandle& shaderProgramHandle)
 {
-	logger_->debug("Destroying shader program with id '" + std::to_string(shaderProgramHandle.id()) + "'");
+	LOG_DEBUG(logger_, "Destroying shader program with id '" + std::to_string(shaderProgramHandle.id()) + "'");
 	
 	auto func = [&shaderProgramHandle](const auto& pair) {
 		return pair.second == shaderProgramHandle;
@@ -995,21 +1062,21 @@ void GameEngine::destroyShaderProgram(const graphics::ShaderProgramHandle& shade
 	}
 	else
 	{
-		logger_->warn("Cannot destroy shader program with id '" + std::to_string(shaderProgramHandle.id()) + "' - shader program was not found.");
+		LOG_WARN(logger_, "Cannot destroy shader program with id '" + std::to_string(shaderProgramHandle.id()) + "' - shader program was not found.");
 	}
 }
 
 
-graphics::RenderableHandle GameEngine::createRenderable(const graphics::RenderSceneHandle& renderSceneHandle, const ModelHandle& modelHandle, const graphics::ShaderProgramHandle& shaderProgramHandle, const std::string& name)
+graphics::RenderableHandle GameEngine::createRenderable(const graphics::RenderSceneHandle& renderSceneHandle, const ModelHandle& modelHandle, const std::string& name)
 {
 	auto& data = staticModels_[modelHandle.id()];
 	
-	return createRenderable(renderSceneHandle, data.first, data.second, shaderProgramHandle);
+	return createRenderable(renderSceneHandle, data.first, data.second);
 }
 
-graphics::RenderableHandle GameEngine::createRenderable(const graphics::RenderSceneHandle& renderSceneHandle, const graphics::MeshHandle& meshHandle, const graphics::TextureHandle& textureHandle, const graphics::ShaderProgramHandle& shaderProgramHandle, const std::string& name)
+graphics::RenderableHandle GameEngine::createRenderable(const graphics::RenderSceneHandle& renderSceneHandle, const graphics::MeshHandle& meshHandle, const graphics::TextureHandle& textureHandle, const std::string& name)
 {
-	return graphicsEngine_->createRenderable(renderSceneHandle, meshHandle, textureHandle, shaderProgramHandle);
+	return graphicsEngine_->createRenderable(renderSceneHandle, meshHandle, textureHandle);
 }
 
 void GameEngine::handleEvents()
@@ -1017,6 +1084,16 @@ void GameEngine::handleEvents()
 	graphicsEngine_->processEvents();
 	
 	networkingEngine_->processEvents();
+}
+
+void GameEngine::addWindowEventListener(IWindowEventListener* windowEventListener)
+{
+	if (std::find(windowEventListeners_.begin(), windowEventListeners_.end(), windowEventListener) != windowEventListeners_.end())
+	{
+		throw std::runtime_error("Window event listener already exists.");
+	}
+	
+	windowEventListeners_.push_back(windowEventListener);
 }
 
 void GameEngine::addKeyboardEventListener(IKeyboardEventListener* keyboardEventListener)
@@ -1059,6 +1136,15 @@ void GameEngine::addMouseWheelEventListener(IMouseWheelEventListener* mouseWheel
 	mouseWheelEventListeners_.push_back(mouseWheelEventListener);
 }
 
+void GameEngine::removeWindowEventListener(IWindowEventListener* windowEventListener)
+{
+	auto it = std::find(windowEventListeners_.begin(), windowEventListeners_.end(), windowEventListener);
+	if (it != windowEventListeners_.end())
+	{
+		windowEventListeners_.erase(it);
+	}
+}
+
 void GameEngine::removeKeyboardEventListener(IKeyboardEventListener* keyboardEventListener)
 {
 	auto it = std::find(keyboardEventListeners_.begin(), keyboardEventListeners_.end(), keyboardEventListener);
@@ -1095,6 +1181,13 @@ void GameEngine::removeMouseWheelEventListener(IMouseWheelEventListener* mouseWh
 	}
 }
 
+void GameEngine::addWindowEventListener(scripting::ScriptObjectHandle listener)
+{
+	auto scriptObjectFunctionHandle = scriptingEngine_->getScriptObjectFunction(listener, "bool processEvent(const WindowEvent& in)");
+	
+	scriptWindowEventListeners_.push_back( std::make_pair(listener, scriptObjectFunctionHandle) );
+}
+
 void GameEngine::addKeyboardEventListener(scripting::ScriptObjectHandle listener)
 {
 	auto scriptObjectFunctionHandle = scriptingEngine_->getScriptObjectFunction(listener, "bool processEvent(const KeyboardEvent& in)");
@@ -1121,6 +1214,11 @@ void GameEngine::addMouseWheelEventListener(scripting::ScriptObjectHandle listen
 	auto scriptObjectFunctionHandle = scriptingEngine_->getScriptObjectFunction(listener, "bool processEvent(const MouseWheelEvent& in)");
 	
 	scriptMouseWheelEventListeners_.push_back( std::make_pair(listener, scriptObjectFunctionHandle) );
+}
+
+void GameEngine::removeWindowEventListener(scripting::ScriptObjectHandle listener)
+{
+	
 }
 
 void GameEngine::removeKeyboardEventListener(scripting::ScriptObjectHandle listener)
@@ -1248,6 +1346,24 @@ bool GameEngine::processEvent(const graphics::Event& event)
 		
 		case graphics::WINDOWEVENT:
 			std::cout << "Processing window event." << std::endl;
+			
+			for (auto listener : windowEventListeners_)
+			{
+				bool returnValue = listener->processEvent(event.window);
+			}
+			for (const auto& data : scriptWindowEventListeners_)
+			{
+				scripting::ParameterList arguments;
+				arguments.addRef(event.window);
+				uint8 returnValue = false;
+				
+				scriptingEngine_->execute(data.first, data.second, arguments, returnValue);
+			}
+			
+			for (auto& gui : guis_)
+			{
+				gui->processEvent(event.window);
+			}
 			
 			switch(event.window.eventType)
 			{
@@ -1461,7 +1577,7 @@ void GameEngine::run()
 {
 	test();
 	
-	logger_->info( "We have liftoff..." );
+	LOG_INFO( logger_, "We have liftoff..." );
 	
 	// start our clock
 	auto beginFpsTime = std::chrono::high_resolution_clock::now();

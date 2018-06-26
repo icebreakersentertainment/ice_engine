@@ -3,8 +3,7 @@
 
 #include "physics/IMotionChangeListener.hpp"
 
-#include "entities/Entity.hpp"
-#include "IScene.hpp"
+#include "Scene.hpp"
 
 namespace ice_engine
 {
@@ -12,14 +11,14 @@ namespace ice_engine
 class IceEngineMotionChangeListener : public physics::IMotionChangeListener
 {
 public:
-	IceEngineMotionChangeListener(entities::Entity entity, IScene* scene);
+	IceEngineMotionChangeListener(entityx::Entity entity, Scene* scene);
 	virtual ~IceEngineMotionChangeListener();
 	
 	virtual void update(const glm::vec3& position, const glm::quat& orientation) override;
 
 private:
-	entities::Entity entity_;
-	IScene* scene_;
+	entityx::Entity entity_;
+	Scene* scene_;
 };
 
 }

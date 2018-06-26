@@ -3,7 +3,7 @@
 
 #include <string>
 
-#include "image/Image.hpp"
+#include "Image.hpp"
 
 namespace ice_engine
 {
@@ -14,8 +14,15 @@ namespace model
 
 struct Texture
 {
+	Texture() = default;
+	Texture(const Texture& other)
+	{
+		filename = other.filename;
+		image = other.image;
+	};
+
 	std::string filename;
-	image::Image image;
+	Image image;
 	//glw::TextureSettings settings;
 };
 

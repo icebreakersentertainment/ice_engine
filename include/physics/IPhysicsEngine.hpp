@@ -10,6 +10,8 @@
 
 #include "ray/Ray.hpp"
 
+#include "IImage.hpp"
+
 #include "physics/PhysicsSceneHandle.hpp"
 #include "physics/CollisionShapeHandle.hpp"
 #include "physics/RigidBodyObjectHandle.hpp"
@@ -40,19 +42,21 @@ public:
 	virtual void setGravity(const PhysicsSceneHandle& physicsSceneHandle, const glm::vec3& gravity) = 0;
 	
 	virtual void setPhysicsDebugRenderer(IPhysicsDebugRenderer* physicsDebugRenderer) = 0;
+	virtual void setDebugRendering(const PhysicsSceneHandle& physicsSceneHandle, const bool enabled) = 0;
 	
 	virtual CollisionShapeHandle createStaticPlaneShape(const glm::vec3& planeNormal, const float32 planeConstant) = 0;
 	virtual CollisionShapeHandle createStaticBoxShape(const glm::vec3& dimensions) = 0;
+	virtual CollisionShapeHandle createStaticTerrainShape(std::vector<char>&& heightData, const uint32 width, const uint32 height) = 0;
 	virtual void destroyStaticShape(const CollisionShapeHandle& collisionShapeHandle) = 0;
 	virtual void destroyAllStaticShapes() = 0;
 	
-	virtual RigidBodyObjectHandle createDynamicRigidBodyObject(
+	virtual RigidBodyObjectHandle createRigidBodyObject(
 		const PhysicsSceneHandle& physicsSceneHandle, 
 		const CollisionShapeHandle& collisionShapeHandle,
 		std::unique_ptr<IMotionChangeListener> motionStateListener = nullptr,
 		const UserData& userData = UserData()
 	) = 0;
-	virtual RigidBodyObjectHandle createDynamicRigidBodyObject(
+	virtual RigidBodyObjectHandle createRigidBodyObject(
 		const PhysicsSceneHandle& physicsSceneHandle, 
 		const CollisionShapeHandle& collisionShapeHandle,
 		const float32 mass,
@@ -61,7 +65,7 @@ public:
 		std::unique_ptr<IMotionChangeListener> motionStateListener = nullptr,
 		const UserData& userData = UserData()
 	) = 0;
-	virtual RigidBodyObjectHandle createDynamicRigidBodyObject(
+	virtual RigidBodyObjectHandle createRigidBodyObject(
 		const PhysicsSceneHandle& physicsSceneHandle, 
 		const CollisionShapeHandle& collisionShapeHandle,
 		const glm::vec3& position,
@@ -72,23 +76,6 @@ public:
 		std::unique_ptr<IMotionChangeListener> motionStateListener = nullptr,
 		const UserData& userData = UserData()
 	) = 0;
-	virtual RigidBodyObjectHandle createStaticRigidBodyObject(const PhysicsSceneHandle& physicsSceneHandle, const CollisionShapeHandle& collisionShapeHandle, const UserData& userData = UserData()) = 0;
-	virtual RigidBodyObjectHandle createStaticRigidBodyObject(
-		const PhysicsSceneHandle& physicsSceneHandle, 
-		const CollisionShapeHandle& collisionShapeHandle,
-		const float32 friction,
-		const float32 restitution,
-		const UserData& userData = UserData()
-	) = 0;
-	virtual RigidBodyObjectHandle createStaticRigidBodyObject(
-		const PhysicsSceneHandle& physicsSceneHandle, 
-		const CollisionShapeHandle& collisionShapeHandle,
-		const glm::vec3& position,
-		const glm::quat& orientation,
-		const float32 friction = 1.0f,
-		const float32 restitution = 1.0f,
-		const UserData& userData = UserData()
-	) = 0;
 	virtual GhostObjectHandle createGhostObject(const PhysicsSceneHandle& physicsSceneHandle, const CollisionShapeHandle& collisionShapeHandle, const UserData& userData = UserData()) = 0;
 	virtual GhostObjectHandle createGhostObject(
 		const PhysicsSceneHandle& physicsSceneHandle, 
@@ -97,7 +84,7 @@ public:
 		const glm::quat& orientation,
 		const UserData& userData = UserData()
 	) = 0;
-	virtual void destroyRigidBody(const PhysicsSceneHandle& physicsSceneHandle, const RigidBodyObjectHandle& rigidBodyObjectHandle) = 0;
+	virtual void destroy(const PhysicsSceneHandle& physicsSceneHandle, const RigidBodyObjectHandle& rigidBodyObjectHandle) = 0;
 	virtual void destroyAllRigidBodies() = 0;
 	
 	virtual void setUserData(const PhysicsSceneHandle& physicsSceneHandle, const RigidBodyObjectHandle& rigidBodyObjectHandle, const UserData& userData) = 0;

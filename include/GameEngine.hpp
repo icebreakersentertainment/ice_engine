@@ -5,6 +5,35 @@
 #include <map>
 #include <utility>
 #include <memory>
+#include <future>
+#include <string>
+
+#define GLM_FORCE_RADIANS
+#include <glm/glm.hpp>
+
+#include "Platform.hpp"
+#include "Types.hpp"
+
+#include "EngineStatistics.hpp"
+#include "IThreadPool.hpp"
+#include "IOpenGlLoader.hpp"
+#include "ModelHandle.hpp"
+#include "IDebugRenderer.hpp"
+//#include "Scene.hpp"
+#include "IWindowEventListener.hpp"
+#include "IKeyboardEventListener.hpp"
+#include "IMouseMotionEventListener.hpp"
+#include "IMouseButtonEventListener.hpp"
+#include "IMouseWheelEventListener.hpp"
+#include "IConnectEventListener.hpp"
+#include "IDisconnectEventListener.hpp"
+#include "IMessageEventListener.hpp"
+
+#include "graphics/model/Model.hpp"
+
+#include "physics/IPhysicsEngine.hpp"
+
+#include "image/Image.hpp"
 
 #include "extras/FpsCamera.hpp"
 
@@ -12,7 +41,6 @@
 #include "logger/ILogger.hpp"
 #include "fs/IFileSystem.hpp"
 
-#include "IGameEngine.hpp"
 #include "ResourceCache.hpp"
 #include "Camera.hpp"
 #include "ThreadPool.hpp"
@@ -23,6 +51,9 @@
 #include "graphics/IGraphicsEngineFactory.hpp"
 #include "graphics/IGraphicsEngine.hpp"
 #include "graphics/IEventListener.hpp"
+#include "graphics/gui/IGui.hpp"
+
+#include "ITerrainFactory.hpp"
 
 #include "audio/IAudioEngineFactory.hpp"
 #include "audio/IAudioEngine.hpp"
@@ -32,13 +63,16 @@
 #include "networking/IEventListener.hpp"
 
 #include "pathfinding/IPathfindingEngineFactory.hpp"
+#include "pathfinding/IPathfindingEngine.hpp"
 
 #include "scripting/IScriptingEngine.hpp"
-
+#include "Audio.hpp"
 namespace ice_engine
 {
 
-class GameEngine : public IGameEngine, public graphics::IEventListener, public networking::IEventListener
+class Scene;
+
+class GameEngine : public graphics::IEventListener, public networking::IEventListener
 {
 public:
 	GameEngine(
@@ -50,107 +84,116 @@ public:
 		std::unique_ptr<utilities::Properties> properties,
 		std::unique_ptr<ice_engine::logger::ILogger> logger,
 		std::unique_ptr<ice_engine::IPluginManager> pluginManager,
-		std::unique_ptr<graphics::IGraphicsEngineFactory> graphicsEngineFactory
+		std::unique_ptr<graphics::IGraphicsEngineFactory> graphicsEngineFactory,
+		std::unique_ptr<ITerrainFactory> terrainFactory
 	);
 	virtual ~GameEngine();
 
-	virtual void run() override;
+	void run();
 	
-	virtual const EngineStatistics& getEngineStatistics() const override;
+	const EngineStatistics& getEngineStatistics() const;
 	
-	virtual void setIGameInstance(scripting::ScriptObjectHandle scriptObjectHandle) override;
+	void setIGameInstance(scripting::ScriptObjectHandle scriptObjectHandle);
 
 	/**
 	 * 
 	 */
-	virtual void setBootstrapScript(const std::string& filename) override;
+	void setBootstrapScript(const std::string& filename);
 	
-	virtual audio::IAudioEngine* getAudioEngine() const override;
-	virtual graphics::IGraphicsEngine* getGraphicsEngine() const override;
-	virtual physics::IPhysicsEngine* getPhysicsEngine() const override;
-	virtual IDebugRenderer* getDebugRenderer() const override;
-	virtual pathfinding::IPathfindingEngine* getPathfindingEngine() const override;
-	virtual IThreadPool* getBackgroundThreadPool() const override;
-	virtual IThreadPool* getForegroundThreadPool() const override;
-	virtual IOpenGlLoader* getOpenGlLoader() const override;
+	audio::IAudioEngine* getAudioEngine() const;
+	graphics::IGraphicsEngine* getGraphicsEngine() const;
+	physics::IPhysicsEngine* getPhysicsEngine() const;
+	scripting::IScriptingEngine* getScriptingEngine() const;
+	IDebugRenderer* getDebugRenderer() const;
+	pathfinding::IPathfindingEngine* getPathfindingEngine() const;
+	IThreadPool* getBackgroundThreadPool() const;
+	IThreadPool* getForegroundThreadPool() const;
+	IOpenGlLoader* getOpenGlLoader() const;
+	logger::ILogger* getLogger() const;
+	fs::IFileSystem* getFileSystem() const;
 	
-	virtual graphics::gui::IGui* createGui(const std::string& name) override;
-	virtual void destroyGui(const graphics::gui::IGui* gui) override;
+	graphics::gui::IGui* createGui(const std::string& name);
+	void destroyGui(const graphics::gui::IGui* gui);
 	
-	virtual void setCallback(graphics::gui::IButton* button, scripting::ScriptFunctionHandle scriptFunctionHandle) override;
+	void setCallback(graphics::gui::IButton* button, scripting::ScriptFunctionHandle scriptFunctionHandle);
+	void setCallback(graphics::gui::IMenuItem* menuItem, scripting::ScriptFunctionHandle scriptFunctionHandle);
 	
-	virtual Audio* loadAudio(const std::string& name, const std::string& filename) override;
-	virtual std::shared_future<Audio*> loadAudioAsync(const std::string& name, const std::string& filename) override;
-	virtual image::Image* loadImage(const std::string& name, const std::string& filename) override;
-	virtual std::shared_future<image::Image*> loadImageAsync(const std::string& name, const std::string& filename) override;
-	virtual graphics::model::Model* loadModel(const std::string& name, const std::string& filename) override;
-	virtual std::shared_future<graphics::model::Model*> loadModelAsync(const std::string& name, const std::string& filename) override;
-	virtual graphics::model::Model* importModel(const std::string& name, const std::string& filename) override;
-	virtual std::shared_future<graphics::model::Model*> importModelAsync(const std::string& name, const std::string& filename) override;
+	Audio* loadAudio(const std::string& name, const std::string& filename);
+	std::shared_future<Audio*> loadAudioAsync(const std::string& name, const std::string& filename);
+	Image* loadImage(const std::string& name, const std::string& filename);
+	std::shared_future<Image*> loadImageAsync(const std::string& name, const std::string& filename);
+	graphics::model::Model* loadModel(const std::string& name, const std::string& filename);
+	std::shared_future<graphics::model::Model*> loadModelAsync(const std::string& name, const std::string& filename);
+	graphics::model::Model* importModel(const std::string& name, const std::string& filename);
+	std::shared_future<graphics::model::Model*> importModelAsync(const std::string& name, const std::string& filename);
 	
-	virtual void unloadAudio(const std::string& name) override;
-	virtual void unloadImage(const std::string& name) override;
-	virtual void unloadModel(const std::string& name) override;
+	void unloadAudio(const std::string& name);
+	void unloadImage(const std::string& name);
+	void unloadModel(const std::string& name);
 	
-	virtual Audio* getAudio(const std::string& name) const override;
-	virtual image::Image* getImage(const std::string& name) const override;
-	virtual graphics::model::Model* getModel(const std::string& name) const override;
+	Audio* getAudio(const std::string& name) const;
+	Image* getImage(const std::string& name) const;
+	graphics::model::Model* getModel(const std::string& name) const;
 	
-	virtual ModelHandle loadStaticModel(const graphics::model::Model* model) override;
-	virtual std::shared_future<ModelHandle> loadStaticModelAsync(const graphics::model::Model* model) override;
-	virtual graphics::RenderableHandle createRenderable(const graphics::RenderSceneHandle& renderSceneHandle, const ModelHandle& modelHandle, const graphics::ShaderProgramHandle& shaderProgramHandle, const std::string& name = std::string()) override;
-	virtual graphics::RenderableHandle createRenderable(const graphics::RenderSceneHandle& renderSceneHandle, const graphics::MeshHandle& meshHandle, const graphics::TextureHandle& textureHandle, const graphics::ShaderProgramHandle& shaderProgramHandle, const std::string& name = std::string()) override;
+	ModelHandle loadStaticModel(const graphics::model::Model* model);
+	std::shared_future<ModelHandle> loadStaticModelAsync(const graphics::model::Model* model);
+	graphics::RenderableHandle createRenderable(const graphics::RenderSceneHandle& renderSceneHandle, const ModelHandle& modelHandle, const std::string& name = std::string());
+	graphics::RenderableHandle createRenderable(const graphics::RenderSceneHandle& renderSceneHandle, const graphics::MeshHandle& meshHandle, const graphics::TextureHandle& textureHandle, const std::string& name = std::string());
 	
-	virtual graphics::VertexShaderHandle createVertexShader(const std::string& name, const std::string& filename) override;
-	virtual std::shared_future<graphics::VertexShaderHandle> createVertexShaderAsync(const std::string& name, const std::string& filename) override;
-	virtual graphics::VertexShaderHandle createVertexShaderFromSource(const std::string& name, const std::string& data) override;
-	virtual std::shared_future<graphics::VertexShaderHandle> createVertexShaderFromSourceAsync(const std::string& name, const std::string& data) override;
-	virtual graphics::FragmentShaderHandle createFragmentShader(const std::string& name, const std::string& filename) override;
-	virtual std::shared_future<graphics::FragmentShaderHandle> createFragmentShaderAsync(const std::string& name, const std::string& filename) override;
-	virtual graphics::FragmentShaderHandle createFragmentShaderFromSource(const std::string& name, const std::string& data) override;
-	virtual std::shared_future<graphics::FragmentShaderHandle> createFragmentShaderFromSourceAsync(const std::string& name, const std::string& data) override;
-	virtual graphics::VertexShaderHandle getVertexShader(const std::string& name) const override;
-	virtual graphics::FragmentShaderHandle getFragmentShader(const std::string& name) const override;
-	virtual void destroyShader(const std::string& name) override;
-	virtual void destroyShader(const graphics::VertexShaderHandle& shaderHandle) override;
-	virtual void destroyShader(const graphics::FragmentShaderHandle& shaderHandle) override;
+	graphics::VertexShaderHandle createVertexShader(const std::string& name, const std::string& filename);
+	std::shared_future<graphics::VertexShaderHandle> createVertexShaderAsync(const std::string& name, const std::string& filename);
+	graphics::VertexShaderHandle createVertexShaderFromSource(const std::string& name, const std::string& data);
+	std::shared_future<graphics::VertexShaderHandle> createVertexShaderFromSourceAsync(const std::string& name, const std::string& data);
+	graphics::FragmentShaderHandle createFragmentShader(const std::string& name, const std::string& filename);
+	std::shared_future<graphics::FragmentShaderHandle> createFragmentShaderAsync(const std::string& name, const std::string& filename);
+	graphics::FragmentShaderHandle createFragmentShaderFromSource(const std::string& name, const std::string& data);
+	std::shared_future<graphics::FragmentShaderHandle> createFragmentShaderFromSourceAsync(const std::string& name, const std::string& data);
+	graphics::VertexShaderHandle getVertexShader(const std::string& name) const;
+	graphics::FragmentShaderHandle getFragmentShader(const std::string& name) const;
+	void destroyShader(const std::string& name);
+	void destroyShader(const graphics::VertexShaderHandle& shaderHandle);
+	void destroyShader(const graphics::FragmentShaderHandle& shaderHandle);
 	
-	virtual graphics::ShaderProgramHandle createShaderProgram(const std::string& name, const graphics::VertexShaderHandle& vertexShaderHandle, const graphics::FragmentShaderHandle& fragmentShaderHandle) override;
-	virtual std::shared_future<graphics::ShaderProgramHandle> createShaderProgramAsync(const std::string& name, const graphics::VertexShaderHandle& vertexShaderHandle, const graphics::FragmentShaderHandle& fragmentShaderHandle) override;
-	virtual graphics::ShaderProgramHandle getShaderProgram(const std::string& name) const override;
-	virtual void destroyShaderProgram(const std::string& name) override;
-	virtual void destroyShaderProgram(const graphics::ShaderProgramHandle& shaderProgramHandle) override;
+	graphics::ShaderProgramHandle createShaderProgram(const std::string& name, const graphics::VertexShaderHandle& vertexShaderHandle, const graphics::FragmentShaderHandle& fragmentShaderHandle);
+	std::shared_future<graphics::ShaderProgramHandle> createShaderProgramAsync(const std::string& name, const graphics::VertexShaderHandle& vertexShaderHandle, const graphics::FragmentShaderHandle& fragmentShaderHandle);
+	graphics::ShaderProgramHandle getShaderProgram(const std::string& name) const;
+	void destroyShaderProgram(const std::string& name);
+	void destroyShaderProgram(const graphics::ShaderProgramHandle& shaderProgramHandle);
 	
-	virtual IScene* createScene(const std::string& name) override;
-	virtual void destroyScene(const std::string& name) override;
-	virtual void destroyScene(IScene* scene) override;
-	virtual IScene* getScene(const std::string& name) const override;
-	virtual std::vector<IScene*> getAllScenes() const override;
+	Scene* createScene(const std::string& name);
+	void destroyScene(const std::string& name);
+	void destroyScene(Scene* scene);
+	Scene* getScene(const std::string& name) const;
+	std::vector<Scene*> getAllScenes() const;
 	
-	virtual void addKeyboardEventListener(IKeyboardEventListener* keyboardEventListener) override;
-	virtual void addMouseMotionEventListener(IMouseMotionEventListener* mouseMotionEventListener) override;
-	virtual void addMouseButtonEventListener(IMouseButtonEventListener* mouseButtonEventListener) override;
-	virtual void addMouseWheelEventListener(IMouseWheelEventListener* mouseWheelEventListener) override;
-	virtual void removeKeyboardEventListener(IKeyboardEventListener* keyboardEventListener) override;
-	virtual void removeMouseMotionEventListener(IMouseMotionEventListener* mouseMotionEventListener) override;
-	virtual void removeMouseButtonEventListener(IMouseButtonEventListener* mouseButtonEventListener) override;
-	virtual void removeMouseWheelEventListener(IMouseWheelEventListener* mouseWheelEventListener) override;
+	void addWindowEventListener(IWindowEventListener* windowEventListener);
+	void addKeyboardEventListener(IKeyboardEventListener* keyboardEventListener);
+	void addMouseMotionEventListener(IMouseMotionEventListener* mouseMotionEventListener);
+	void addMouseButtonEventListener(IMouseButtonEventListener* mouseButtonEventListener);
+	void addMouseWheelEventListener(IMouseWheelEventListener* mouseWheelEventListener);
+	void removeWindowEventListener(IWindowEventListener* windowEventListener);
+	void removeKeyboardEventListener(IKeyboardEventListener* keyboardEventListener);
+	void removeMouseMotionEventListener(IMouseMotionEventListener* mouseMotionEventListener);
+	void removeMouseButtonEventListener(IMouseButtonEventListener* mouseButtonEventListener);
+	void removeMouseWheelEventListener(IMouseWheelEventListener* mouseWheelEventListener);
 	
+	void addWindowEventListener(scripting::ScriptObjectHandle windowEventListener);
 	void addKeyboardEventListener(scripting::ScriptObjectHandle keyboardEventListener);
 	void addMouseMotionEventListener(scripting::ScriptObjectHandle mouseMotionEventListener);
 	void addMouseButtonEventListener(scripting::ScriptObjectHandle mouseButtonEventListener);
 	void addMouseWheelEventListener(scripting::ScriptObjectHandle mouseWheelEventListener);
+	void removeWindowEventListener(scripting::ScriptObjectHandle windowEventListener);
 	void removeKeyboardEventListener(scripting::ScriptObjectHandle keyboardEventListener);
 	void removeMouseMotionEventListener(scripting::ScriptObjectHandle mouseMotionEventListener);
 	void removeMouseButtonEventListener(scripting::ScriptObjectHandle mouseButtonEventListener);
 	void removeMouseWheelEventListener(scripting::ScriptObjectHandle mouseWheelEventListener);
 	
-	virtual void addConnectEventListener(IConnectEventListener* connectEventListener) override;
-	virtual void addDisconnectEventListener(IDisconnectEventListener* disconnectEventListener) override;
-	virtual void addMessageEventListener(IMessageEventListener* messageEventListener) override;
-	virtual void removeConnectEventListener(IConnectEventListener* connectEventListener) override;
-	virtual void removeDisconnectEventListener(IDisconnectEventListener* disconnectEventListener) override;
-	virtual void removeMessageEventListener(IMessageEventListener* messageEventListener) override;
+	void addConnectEventListener(IConnectEventListener* connectEventListener);
+	void addDisconnectEventListener(IDisconnectEventListener* disconnectEventListener);
+	void addMessageEventListener(IMessageEventListener* messageEventListener);
+	void removeConnectEventListener(IConnectEventListener* connectEventListener);
+	void removeDisconnectEventListener(IDisconnectEventListener* disconnectEventListener);
+	void removeMessageEventListener(IMessageEventListener* messageEventListener);
 	
 	void addConnectEventListener(scripting::ScriptObjectHandle connectEventListener);
 	void addDisconnectEventListener(scripting::ScriptObjectHandle disconnectEventListener);
@@ -168,10 +211,16 @@ public:
 	virtual bool processEvent(const networking::MessageEvent& event) override;
 
 private:
+	std::unique_ptr< utilities::Properties > properties_;
+	std::unique_ptr< logger::ILogger > logger_;
+	std::unique_ptr<fs::IFileSystem> fileSystem_;
+	
 	//Graphics
 	std::unique_ptr<graphics::IGraphicsEngineFactory> graphicsEngineFactory_;
 	std::unique_ptr< graphics::IGraphicsEngine > graphicsEngine_;
 	std::vector<std::unique_ptr< graphics::gui::IGui >> guis_;
+	
+	std::unique_ptr<ITerrainFactory> terrainFactory_;
 	
 	std::unique_ptr<IDebugRenderer> debugRenderer_;
 	
@@ -186,12 +235,16 @@ private:
 	std::unique_ptr< pathfinding::IPathfindingEngine > pathfindingEngine_;
 	std::unique_ptr<scripting::IScriptingEngine> scriptingEngine_;
 	
+	std::vector<std::unique_ptr< IModule >> modules_;
+	
 	std::unique_ptr<ice_engine::IPluginManager> pluginManager_;
 	
+	std::vector<IWindowEventListener*> windowEventListeners_;
 	std::vector<IKeyboardEventListener*> keyboardEventListeners_;
 	std::vector<IMouseMotionEventListener*> mouseMotionEventListeners_;
 	std::vector<IMouseButtonEventListener*> mouseButtonEventListeners_;
 	std::vector<IMouseWheelEventListener*> mouseWheelEventListeners_;
+	std::vector<std::pair<scripting::ScriptObjectHandle, scripting::ScriptObjectFunctionHandle>> scriptWindowEventListeners_;
 	std::vector<std::pair<scripting::ScriptObjectHandle, scripting::ScriptObjectFunctionHandle>> scriptKeyboardEventListeners_;
 	std::vector<std::pair<scripting::ScriptObjectHandle, scripting::ScriptObjectFunctionHandle>> scriptMouseMotionEventListeners_;
 	std::vector<std::pair<scripting::ScriptObjectHandle, scripting::ScriptObjectFunctionHandle>> scriptMouseButtonEventListeners_;
@@ -205,11 +258,7 @@ private:
 	std::vector<std::pair<scripting::ScriptObjectHandle, scripting::ScriptObjectFunctionHandle>> scriptDisconnectEventListeners_;
 	std::vector<std::pair<scripting::ScriptObjectHandle, scripting::ScriptObjectFunctionHandle>> scriptMessageEventListeners_;
 	
-	std::vector<std::unique_ptr<IScene>> scenes_;
-	
-	std::unique_ptr< utilities::Properties > properties_;
-	std::unique_ptr< logger::ILogger > logger_;
-	std::unique_ptr<fs::IFileSystem> fileSystem_;
+	std::vector<std::unique_ptr<Scene>> scenes_;
 	
 	std::map<std::string, graphics::VertexShaderHandle> vertexShaderHandles_;
 	std::map<std::string, graphics::FragmentShaderHandle> fragmentShaderHandles_;
@@ -252,8 +301,10 @@ private:
 	void initializeInputSubSystem();
 	void initializeScriptingSubSystem();
 	void initializeThreadingSubSystem();
+	void initializeTerrainSubSystem();
 	void initializeDataStoreSubSystem();
 	void initializeEntitySubSystem();
+	void initializeModuleSubSystem();
 	
 	void loadEssentialGameData();
 	void loadUserInterface();

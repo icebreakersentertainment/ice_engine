@@ -74,7 +74,7 @@ ServerHandle NetworkingEngine::createServer()
 
     char addressString[::yojimbo::MaxAddressLength];
     server.server.GetAddress().ToString(addressString, sizeof(addressString));
-	logger_->info("Server address is " + std::string(addressString));
+	LOG_INFO(logger_, "Server address is " + std::string(addressString));
 	
 	return ServerHandle();
 }
@@ -83,7 +83,7 @@ ClientHandle NetworkingEngine::createClient()
 {
 	uint64_t clientId = 0;
     ::yojimbo::random_bytes((uint8*) &clientId, 8);
-    logger_->info("Client id is " + std::to_string(clientId));
+    LOG_INFO(logger_, "Client id is " + std::to_string(clientId));
 
     ::yojimbo::ClientServerConfig config;
     config.maxPacketSize = MaxPacketSize;
@@ -109,7 +109,7 @@ ClientHandle NetworkingEngine::createClient()
 
     char addressString[256];
     client.client.GetAddress().ToString(addressString, sizeof(addressString));
-	logger_->info("Client address is " + std::string(addressString));
+	LOG_INFO(logger_, "Client address is " + std::string(addressString));
 	
 	return handle;
 }

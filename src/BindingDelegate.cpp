@@ -1,0 +1,671 @@
+#include <string>
+#include <chrono>
+
+#define GLM_FORCE_RADIANS
+#include <glm/glm.hpp>
+
+#include "Platform.hpp"
+#include "Types.hpp"
+
+#include "ModelHandle.hpp"
+#include "Scene.hpp"
+#include "IWindowEventListener.hpp"
+#include "IKeyboardEventListener.hpp"
+#include "IMouseMotionEventListener.hpp"
+#include "IMouseButtonEventListener.hpp"
+#include "IMouseWheelEventListener.hpp"
+
+#include "graphics/IGraphicsEngine.hpp"
+
+#include "graphics/gui/IGui.hpp"
+
+#include "graphics/model/Model.hpp"
+
+#include "physics/IPhysicsEngine.hpp"
+
+#include "pathfinding/IPathfindingEngine.hpp"
+
+#include "BindingDelegate.hpp"
+#include "AudioEngineBindingDelegate.hpp"
+#include "ScriptingEngineBindingDelegate.hpp"
+#include "NetworkingEngineBindingDelegate.hpp"
+#include "GraphicsEngineBindingDelegate.hpp"
+#include "PhysicsEngineBindingDelegate.hpp"
+#include "PathfindingEngineBindingDelegate.hpp"
+#include "EntityBindingDelegate.hpp"
+#include "SceneBindingDelegate.hpp"
+#include "BindingDelegateUtilities.hpp"
+
+#include "HeightMap.hpp"
+#include "SplatMap.hpp"
+#include "DisplacementMap.hpp"
+
+#include "scripting/IScriptingEngine.hpp"
+
+//#include "scripting/angel_script/scriptvector/scriptvector.hpp"
+
+#include "GameEngine.hpp"
+
+#include "noise/Noise.hpp"
+
+namespace ice_engine
+{
+
+scripting::ScriptObjectHandle createScriptObjectHandle(scripting::ScriptObjectHandle scriptObjectHandle)
+{
+	return scriptObjectHandle;
+}
+
+namespace idebugrenderer
+{
+void pushLine(const glm::vec3& from, const glm::vec3& to, const glm::vec3& color, IDebugRenderer* debugRenderer)
+{
+	debugRenderer->pushLine(from, to, color);
+}
+}
+
+BindingDelegate::BindingDelegate(logger::ILogger* logger, scripting::IScriptingEngine* scriptingEngine, GameEngine* gameEngine, graphics::IGraphicsEngine* graphicsEngine, audio::IAudioEngine* audioEngine, networking::INetworkingEngine* networkingEngine, physics::IPhysicsEngine* physicsEngine, pathfinding::IPathfindingEngine* pathfindingEngine)
+	:
+	logger_(logger),
+	scriptingEngine_(scriptingEngine),
+	gameEngine_(gameEngine),
+	graphicsEngine_(graphicsEngine),
+	audioEngine_(audioEngine),
+	networkingEngine_(networkingEngine),
+	physicsEngine_(physicsEngine),
+	pathfindingEngine_(pathfindingEngine)
+{
+}
+
+BindingDelegate::~BindingDelegate()
+{
+}
+
+static void InitConstructorPbrMaterial(PbrMaterial* memory, Image* albedo, Image* normal, Image* metalness, Image* roughness, Image* ambientOcclusion) { new(memory) PbrMaterial(albedo, normal, metalness, roughness, ambientOcclusion); }
+static void InitConstructorHeightMap(HeightMap* memory, const Image& image) { new(memory) HeightMap(image); }
+static void InitConstructorSplatMap(HeightMap* memory, const Image& image, std::vector<PbrMaterial> materialMap) { new(memory) SplatMap(image, std::move(materialMap)); }
+
+void BindingDelegate::bind()
+{
+	scriptingEngine_->registerObjectType("Image", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	scriptingEngine_->registerObjectType("Audio", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	
+	auto audioEngineBindingDelegate = AudioEngineBindingDelegate(logger_, scriptingEngine_, gameEngine_, audioEngine_);
+	audioEngineBindingDelegate.bind();
+
+	auto scriptingEngineBindingDelegate = ScriptingEngineBindingDelegate(logger_, scriptingEngine_);
+	scriptingEngineBindingDelegate.bind();
+		
+	auto networkingEngineBindingDelegate = NetworkingEngineBindingDelegate(logger_, scriptingEngine_, gameEngine_, networkingEngine_);
+	networkingEngineBindingDelegate.bind();
+	
+	auto graphicsEngineBindingDelegate = GraphicsEngineBindingDelegate(logger_, scriptingEngine_, gameEngine_, graphicsEngine_);
+	graphicsEngineBindingDelegate.bind();
+	
+	auto physicsEngineBindingDelegate = PhysicsEngineBindingDelegate(logger_, scriptingEngine_, gameEngine_, physicsEngine_);
+	physicsEngineBindingDelegate.bind();
+	
+	auto pathfindingEngineBindingDelegate = PathfindingEngineBindingDelegate(logger_, scriptingEngine_, gameEngine_, pathfindingEngine_);
+	pathfindingEngineBindingDelegate.bind();
+	
+	// Types available in the scripting engine
+	registerHandleBindings<ModelHandle>(scriptingEngine_, "ModelHandle");
+
+	scriptingEngine_->registerObjectType("PbrMaterial", sizeof(PbrMaterial), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<PbrMaterial>());
+	//scriptingEngine_->registerObjectBehaviour("PbrMaterial", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(DefaultConstructor<PbrMaterial>), asCALL_CDECL_OBJFIRST);
+	scriptingEngine_->registerObjectBehaviour("PbrMaterial", asBEHAVE_CONSTRUCT, "void f(Image@, Image@, Image@, Image@, Image@ = null)", asFUNCTION(InitConstructorPbrMaterial), asCALL_CDECL_OBJFIRST);
+	scriptingEngine_->registerObjectBehaviour("PbrMaterial", asBEHAVE_CONSTRUCT, "void f(const PbrMaterial& in)", asFUNCTION(CopyConstructor<PbrMaterial>), asCALL_CDECL_OBJFIRST);
+	scriptingEngine_->registerObjectBehaviour("PbrMaterial", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DefaultDestructor<PbrMaterial>), asCALL_CDECL_OBJFIRST);
+	registerVectorBindings<PbrMaterial>(scriptingEngine_, "vectorPbrMaterial", "PbrMaterial");
+
+	scriptingEngine_->registerObjectType("HeightMap", sizeof(HeightMap), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<HeightMap>());
+	//scriptingEngine_->registerObjectBehaviour("HeightMap", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(DefaultConstructor<HeightMap>), asCALL_CDECL_OBJFIRST);
+	scriptingEngine_->registerObjectBehaviour("HeightMap", asBEHAVE_CONSTRUCT, "void f(const Image& in)", asFUNCTION(InitConstructorHeightMap), asCALL_CDECL_OBJFIRST);
+	scriptingEngine_->registerObjectBehaviour("HeightMap", asBEHAVE_CONSTRUCT, "void f(const HeightMap& in)", asFUNCTION(CopyConstructor<HeightMap>), asCALL_CDECL_OBJFIRST);
+	scriptingEngine_->registerObjectBehaviour("HeightMap", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DefaultDestructor<HeightMap>), asCALL_CDECL_OBJFIRST);
+	scriptingEngine_->registerClassMethod(
+		"HeightMap",
+		"Image@ image()",
+		asMETHODPR(HeightMap, image, (), Image*)
+	);
+
+	scriptingEngine_->registerObjectType("SplatMap", sizeof(SplatMap), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<SplatMap>());
+	//scriptingEngine_->registerObjectBehaviour("SplatMap", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(DefaultConstructor<SplatMap>), asCALL_CDECL_OBJFIRST);
+	scriptingEngine_->registerObjectBehaviour("SplatMap", asBEHAVE_CONSTRUCT, "void f(const Image& in, vectorPbrMaterial)", asFUNCTION(InitConstructorSplatMap), asCALL_CDECL_OBJFIRST);
+	scriptingEngine_->registerObjectBehaviour("SplatMap", asBEHAVE_CONSTRUCT, "void f(const SplatMap& in)", asFUNCTION(CopyConstructor<SplatMap>), asCALL_CDECL_OBJFIRST);
+	scriptingEngine_->registerObjectBehaviour("SplatMap", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DefaultDestructor<SplatMap>), asCALL_CDECL_OBJFIRST);
+
+	scriptingEngine_->registerObjectType("DisplacementMap", sizeof(DisplacementMap), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<DisplacementMap>());
+	scriptingEngine_->registerObjectBehaviour("DisplacementMap", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(DefaultConstructor<DisplacementMap>), asCALL_CDECL_OBJFIRST);
+	//scriptingEngine_->registerObjectBehaviour("DisplacementMap", asBEHAVE_CONSTRUCT, "void f(const Image& in, vectorPbrMaterial in)", asFUNCTION(InitConstructorDisplacementMap), asCALL_CDECL_OBJFIRST);
+	scriptingEngine_->registerObjectBehaviour("DisplacementMap", asBEHAVE_CONSTRUCT, "void f(const DisplacementMap& in)", asFUNCTION(CopyConstructor<DisplacementMap>), asCALL_CDECL_OBJFIRST);
+	scriptingEngine_->registerObjectBehaviour("DisplacementMap", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DefaultDestructor<DisplacementMap>), asCALL_CDECL_OBJFIRST);
+
+	registerSharedFutureBindings<Image*>(scriptingEngine_, "shared_futureImage", "Image@");
+	registerSharedFutureBindings<Audio*>(scriptingEngine_, "shared_futureAudio", "Audio@");
+	registerSharedFutureBindings<ModelHandle>(scriptingEngine_, "shared_futureModelHandle", "ModelHandle");
+
+	auto entityBindingDelegate = EntityBindingDelegate(logger_, scriptingEngine_, gameEngine_);
+	entityBindingDelegate.bind();
+
+	// ITerrain bindings
+	scriptingEngine_->registerObjectType("ITerrain", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	registerVectorBindings<pathfinding::CrowdHandle>(scriptingEngine_, "vectorCrowdHandle", "CrowdHandle");
+	scriptingEngine_->registerClassMethod(
+			"ITerrain",
+			"const vectorCrowdHandle& crowds() const",
+			asMETHODPR(ITerrain, crowds, () const, const std::vector<pathfinding::CrowdHandle>&)
+		);
+	/*
+	scriptingEngine_->registerClassMethod(
+		"IOpenGlLoader",
+		"int getWorkQueueCount()",
+		asMETHODPR(IOpenGlLoader, getWorkQueueCount, () const, uint32)
+	);
+	*/
+
+	auto sceneBindingDelegate = SceneBindingDelegate(logger_, scriptingEngine_, gameEngine_, graphicsEngine_, audioEngine_, networkingEngine_, physicsEngine_, pathfindingEngine_);
+	sceneBindingDelegate.bind();
+
+	//scriptingEngine_->registerObjectMethod("IAudio", "Audio@ opCast()", asFUNCTION((refCast<audio::IAudio, Audio>)), asCALL_CDECL_OBJLAST);
+	scriptingEngine_->registerObjectMethod("Audio", "IAudio@ opImplCast()", asFUNCTION((refCast<Audio, audio::IAudio>)), asCALL_CDECL_OBJLAST);
+	//scriptingEngine_->registerObjectMethod("IAudio", "const Audio@ opCast()", asFUNCTION((refCast<audio::IAudio, Audio>)), asCALL_CDECL_OBJLAST);
+	//scriptingEngine_->registerObjectMethod("Audio", "const IAudio@ opImplCast()", asFUNCTION((refCast<Audio, audio::IAudio>)), asCALL_CDECL_OBJLAST);
+	
+	scriptingEngine_->registerObjectMethod("Image", "IImage@ opImplCast()", asFUNCTION((refCast<Image, graphics::IImage>)), asCALL_CDECL_OBJLAST);
+
+	// Listeners
+	scriptingEngine_->registerInterface("IWindowEventListener");
+	scriptingEngine_->registerInterfaceMethod("IWindowEventListener", "bool processEvent(const WindowEvent& in)");
+	scriptingEngine_->registerInterface("IKeyboardEventListener");
+	scriptingEngine_->registerInterfaceMethod("IKeyboardEventListener", "bool processEvent(const KeyboardEvent& in)");
+	scriptingEngine_->registerInterface("IMouseMotionEventListener");
+	scriptingEngine_->registerInterfaceMethod("IMouseMotionEventListener", "bool processEvent(const MouseMotionEvent& in)");
+	scriptingEngine_->registerInterface("IMouseButtonEventListener");
+	scriptingEngine_->registerInterfaceMethod("IMouseButtonEventListener", "bool processEvent(const MouseButtonEvent& in)");
+	scriptingEngine_->registerInterface("IMouseWheelEventListener");
+	scriptingEngine_->registerInterfaceMethod("IMouseWheelEventListener", "bool processEvent(const MouseWheelEvent& in)");
+
+	scriptingEngine_->registerInterface("IConnectEventListener");
+	scriptingEngine_->registerInterfaceMethod("IConnectEventListener", "bool processEvent(const ConnectEvent& in)");
+	scriptingEngine_->registerInterface("IDisconnectEventListener");
+	scriptingEngine_->registerInterfaceMethod("IDisconnectEventListener", "bool processEvent(const DisconnectEvent& in)");
+	scriptingEngine_->registerInterface("IMessageEventListener");
+	scriptingEngine_->registerInterfaceMethod("IMessageEventListener", "bool processEvent(const MessageEvent& in)");
+
+	scriptingEngine_->registerInterface("IScriptObject");
+	scriptingEngine_->registerInterfaceMethod("IScriptObject", "void tick(const float)");
+	scriptingEngine_->registerInterfaceMethod("IScriptObject", "void update(const MovementRequestState& in)");
+
+	scriptingEngine_->registerGlobalFunction(
+		"ScriptObjectHandle createScriptObjectHandle(IScriptObject@)",
+		asFUNCTIONPR(createScriptObjectHandle, (scripting::ScriptObjectHandle), scripting::ScriptObjectHandle),
+		asCALL_CDECL
+	);
+
+	scriptingEngine_->registerObjectType("Noise", sizeof(noise::Noise), asOBJ_VALUE | asOBJ_POD | asOBJ_APP_CLASS_ALLFLOATS | asGetTypeTraits<noise::Noise>());
+	scriptingEngine_->registerClassMethod(
+		"Noise",
+		"float getValue(const float, const float) const",
+		asMETHODPR(noise::Noise, getValue, (const float32, const float32) const, float32)
+	);
+	
+	// ILogger bindings
+	scriptingEngine_->registerObjectType("ILogger", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	scriptingEngine_->registerGlobalProperty("ILogger logger", logger_);
+	scriptingEngine_->registerClassMethod(
+		"ILogger",
+		"void info(const string& in)",
+		asMETHODPR(logger::ILogger, info, (const std::string&), void)
+	);
+	scriptingEngine_->registerClassMethod(
+		"ILogger",
+		"void debug(const string& in)",
+		asMETHODPR(logger::ILogger, debug, (const std::string&), void)
+	);
+	scriptingEngine_->registerClassMethod(
+		"ILogger",
+		"void warn(const string& in)",
+		asMETHODPR(logger::ILogger, warn, (const std::string&), void)
+	);
+	scriptingEngine_->registerClassMethod(
+		"ILogger",
+		"void error(const string& in)",
+		asMETHODPR(logger::ILogger, error, (const std::string&), void)
+	);
+	scriptingEngine_->registerClassMethod(
+		"ILogger",
+		"void fatal(const string& in)",
+		asMETHODPR(logger::ILogger, fatal, (const std::string&), void)
+	);
+
+	// IThreadPool bindings
+	scriptingEngine_->registerObjectType("IThreadPool", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	scriptingEngine_->registerClassMethod(
+		"IThreadPool",
+		"int getActiveWorkerCount()",
+		asMETHODPR(IThreadPool, getActiveWorkerCount, () const, uint32)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IThreadPool",
+		"int getInactiveWorkerCount()",
+		asMETHODPR(IThreadPool, getInactiveWorkerCount, () const, uint32)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IThreadPool",
+		"int getWorkQueueSize()",
+		asMETHODPR(IThreadPool, getWorkQueueSize, () const, uint32)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IThreadPool",
+		"int getWorkQueueCount()",
+		asMETHODPR(IThreadPool, getWorkQueueCount, () const, uint32)
+	);
+
+	// IOpenGlLoader bindings
+	scriptingEngine_->registerObjectType("IOpenGlLoader", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	scriptingEngine_->registerClassMethod(
+		"IOpenGlLoader",
+		"int getWorkQueueCount()",
+		asMETHODPR(IOpenGlLoader, getWorkQueueCount, () const, uint32)
+	);
+		
+	scriptingEngine_->registerObjectType("EngineStatistics", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	scriptingEngine_->registerObjectProperty("EngineStatistics", "float fps", asOFFSET(EngineStatistics, fps));
+	scriptingEngine_->registerObjectProperty("EngineStatistics", "float renderTime", asOFFSET(EngineStatistics, renderTime));
+	
+	// IDebugRenderer
+	scriptingEngine_->registerObjectType("IDebugRenderer", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	scriptingEngine_->registerGlobalProperty("IDebugRenderer debugRenderer", gameEngine_->getDebugRenderer());
+	scriptingEngine_->registerObjectMethod(
+		"IDebugRenderer",
+		"void pushLine(const vec3& in, const vec3& in, const vec3& in)",
+		asFUNCTION(idebugrenderer::pushLine),
+		asCALL_CDECL_OBJLAST
+	);
+	
+	// GameEngine functions available in the scripting engine
+	scriptingEngine_->registerGlobalFunction(
+		"const EngineStatistics@ getEngineStatistics()",
+		asMETHODPR(GameEngine, getEngineStatistics, () const, const EngineStatistics&),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"void setIGameInstance(IGame@)",
+		asMETHODPR(GameEngine, setIGameInstance, (scripting::ScriptObjectHandle), void),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"IGraphicsEngine@ getGraphicsEngine()",
+		asMETHODPR(GameEngine, getGraphicsEngine, () const, graphics::IGraphicsEngine*),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"IPhysicsEngine@ getPhysicsEngine()",
+		asMETHODPR(GameEngine, getPhysicsEngine, () const, physics::IPhysicsEngine*),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"IDebugRenderer@ getDebugRenderer()",
+		asMETHODPR(GameEngine, getDebugRenderer, () const, IDebugRenderer*),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"IThreadPool@ getBackgroundThreadPool()",
+		asMETHODPR(GameEngine, getBackgroundThreadPool, () const, IThreadPool*),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"IThreadPool@ getForegroundThreadPool()",
+		asMETHODPR(GameEngine, getForegroundThreadPool, () const, IThreadPool*),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"IOpenGlLoader@ getOpenGlLoader()",
+		asMETHODPR(GameEngine, getOpenGlLoader, () const, IOpenGlLoader*),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"IGui@ createGui(const string& in)",
+		asMETHODPR(GameEngine, createGui, (const std::string&), graphics::gui::IGui*),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"void destroyGui(const IGui@)",
+		asMETHODPR(GameEngine, destroyGui, (const graphics::gui::IGui*), void),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"void addWindowEventListener(IWindowEventListener@)",
+		asMETHODPR(GameEngine, addWindowEventListener, (scripting::ScriptObjectHandle), void),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"void addKeyboardEventListener(IKeyboardEventListener@)",
+		asMETHODPR(GameEngine, addKeyboardEventListener, (scripting::ScriptObjectHandle), void),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"void addMouseMotionEventListener(IMouseMotionEventListener@)",
+		asMETHODPR(GameEngine, addMouseMotionEventListener, (scripting::ScriptObjectHandle), void),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"void addMouseButtonEventListener(IMouseButtonEventListener@)",
+		asMETHODPR(GameEngine, addMouseButtonEventListener, (scripting::ScriptObjectHandle), void),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"void addMouseWheelEventListener(IMouseWheelEventListener@)",
+		asMETHODPR(GameEngine, addMouseWheelEventListener, (scripting::ScriptObjectHandle), void),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"void removeWindowEventListener(IWindowEventListener@)",
+		asMETHODPR(GameEngine, removeWindowEventListener, (scripting::ScriptObjectHandle), void),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"void removeKeyboardEventListener(IKeyboardEventListener@)",
+		asMETHODPR(GameEngine, removeKeyboardEventListener, (scripting::ScriptObjectHandle), void),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"void removeMouseMotionEventListener(IMouseMotionEventListener@)",
+		asMETHODPR(GameEngine, removeMouseMotionEventListener, (scripting::ScriptObjectHandle), void),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"void removeMouseButtonEventListener(IMouseButtonEventListener@)",
+		asMETHODPR(GameEngine, addMouseButtonEventListener, (scripting::ScriptObjectHandle), void),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"void removeMouseWheelEventListener(IMouseWheelEventListener@)",
+		asMETHODPR(GameEngine, addMouseWheelEventListener, (scripting::ScriptObjectHandle), void),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"void addConnectEventListener(IConnectEventListener@)",
+		asMETHODPR(GameEngine, addConnectEventListener, (scripting::ScriptObjectHandle), void),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"void addDisconnectEventListener(IDisconnectEventListener@)",
+		asMETHODPR(GameEngine, addDisconnectEventListener, (scripting::ScriptObjectHandle), void),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"void addMessageEventListener(IMessageEventListener@)",
+		asMETHODPR(GameEngine, addMessageEventListener, (scripting::ScriptObjectHandle), void),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"void removeConnectEventListener(IConnectEventListener@)",
+		asMETHODPR(GameEngine, removeConnectEventListener, (scripting::ScriptObjectHandle), void),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"void removeDisconnectEventListener(IDisconnectEventListener@)",
+		asMETHODPR(GameEngine, addDisconnectEventListener, (scripting::ScriptObjectHandle), void),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"void removeMessageEventListener(IMessageEventListener@)",
+		asMETHODPR(GameEngine, removeMessageEventListener, (scripting::ScriptObjectHandle), void),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"Model@ importModel(const string& in, const string& in)",
+		asMETHODPR(GameEngine, importModel, (const std::string&, const std::string&), graphics::model::Model*),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"shared_futureModel importModelAsync(const string& in, const string& in)",
+		asMETHODPR(GameEngine, importModelAsync, (const std::string&, const std::string&), std::shared_future<graphics::model::Model*>),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"Audio@ loadAudio(const string& in, const string& in)",
+		asMETHODPR(GameEngine, loadAudio, (const std::string&, const std::string&), Audio*),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"shared_futureAudio loadAudioAsync(const string& in, const string& in)",
+		asMETHODPR(GameEngine, loadAudioAsync, (const std::string&, const std::string&), std::shared_future<Audio*>),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"Image@ loadImage(const string& in, const string& in)",
+		asMETHODPR(GameEngine, loadImage, (const std::string&, const std::string&), Image*),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"shared_futureImage loadImageAsync(const string& in, const string& in)",
+		asMETHODPR(GameEngine, loadImageAsync, (const std::string&, const std::string&), std::shared_future<Image*>),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"Model@ getModel(const string& in)",
+		asMETHODPR(GameEngine, getModel, (const std::string&) const, graphics::model::Model*),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"Audio@ getAudio(const string& in)",
+		asMETHODPR(GameEngine, getAudio, (const std::string&) const, Audio*),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"Image@ getImage(const string& in)",
+		asMETHODPR(GameEngine, getImage, (const std::string&) const, Image*),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"void unloadModel(const string& in)",
+		asMETHODPR(GameEngine, unloadModel, (const std::string&), void),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"void unloadAudio(const string& in)",
+		asMETHODPR(GameEngine, unloadAudio, (const std::string&), void),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"void unloadImage(const string& in)",
+		asMETHODPR(GameEngine, unloadImage, (const std::string&), void),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"ModelHandle loadStaticModel(Model@)",
+		asMETHODPR(GameEngine, loadStaticModel, (const graphics::model::Model*), ModelHandle),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"shared_futureModelHandle loadStaticModelAsync(Model@)",
+		asMETHODPR(GameEngine, loadStaticModelAsync, (const graphics::model::Model*), std::shared_future<ModelHandle>),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"VertexShaderHandle createVertexShader(const string& in, const string& in)",
+		asMETHODPR(GameEngine, createVertexShader, (const std::string&, const std::string&), graphics::VertexShaderHandle),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"shared_futureVertexShaderHandle createVertexShaderAsync(const string& in, const string& in)",
+		asMETHODPR(GameEngine, createVertexShaderAsync, (const std::string&, const std::string&), std::shared_future<graphics::VertexShaderHandle>),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"VertexShaderHandle createVertexShaderFromSource(const string& in, const string& in)",
+		asMETHODPR(GameEngine, createVertexShaderFromSource, (const std::string&, const std::string&), graphics::VertexShaderHandle),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"shared_futureVertexShaderHandle createVertexShaderFromSourceAsync(const string& in, const string& in)",
+		asMETHODPR(GameEngine, createVertexShaderFromSourceAsync, (const std::string&, const std::string&), std::shared_future<graphics::VertexShaderHandle>),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"FragmentShaderHandle createFragmentShader(const string& in, const string& in)",
+		asMETHODPR(GameEngine, createFragmentShader, (const std::string&, const std::string&), graphics::FragmentShaderHandle),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"shared_futureFragmentShaderHandle createFragmentShaderAsync(const string& in, const string& in)",
+		asMETHODPR(GameEngine, createFragmentShaderAsync, (const std::string&, const std::string&), std::shared_future<graphics::FragmentShaderHandle>),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"FragmentShaderHandle createFragmentShaderFromSource(const string& in, const string& in)",
+		asMETHODPR(GameEngine, createFragmentShaderFromSource, (const std::string&, const std::string&), graphics::FragmentShaderHandle),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"shared_futureFragmentShaderHandle createFragmentShaderFromSourceAsync(const string& in, const string& in)",
+		asMETHODPR(GameEngine, createFragmentShaderFromSourceAsync, (const std::string&, const std::string&), std::shared_future<graphics::FragmentShaderHandle>),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"VertexShaderHandle getVertexShader(const string& in)",
+		asMETHODPR(GameEngine, getVertexShader, (const std::string&) const, graphics::VertexShaderHandle),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"void destroyShader(const string& in)",
+		asMETHODPR(GameEngine, destroyShader, (const std::string&), void),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"void destroyShader(const VertexShaderHandle& in)",
+		asMETHODPR(GameEngine, destroyShader, (const graphics::VertexShaderHandle&), void),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"void destroyShader(const FragmentShaderHandle& in)",
+		asMETHODPR(GameEngine, destroyShader, (const graphics::FragmentShaderHandle&), void),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"ShaderProgramHandle createShaderProgram(const string& in, const VertexShaderHandle& in, const FragmentShaderHandle& in)",
+		asMETHODPR(GameEngine, createShaderProgram, (const std::string&, const graphics::VertexShaderHandle&, const graphics::FragmentShaderHandle&), graphics::ShaderProgramHandle),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"shared_futureShaderProgramHandle createShaderProgramAsync(const string& in, const VertexShaderHandle& in, const FragmentShaderHandle& in)",
+		asMETHODPR(GameEngine, createShaderProgramAsync, (const std::string&, const graphics::VertexShaderHandle&, const graphics::FragmentShaderHandle&), std::shared_future<graphics::ShaderProgramHandle>),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"ShaderProgramHandle getShaderProgram(const string& in)",
+		asMETHODPR(GameEngine, getShaderProgram, (const std::string&) const, graphics::ShaderProgramHandle),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"void destroyShaderProgram(const string& in)",
+		asMETHODPR(GameEngine, destroyShaderProgram, (const std::string&), void),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"void destroyShaderProgram(const ShaderProgramHandle& in)",
+		asMETHODPR(GameEngine, destroyShaderProgram, (const graphics::ShaderProgramHandle&), void),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	
+	scriptingEngine_->registerGlobalFunction(
+		"Scene@ createScene(const string& in)",
+		asMETHODPR(GameEngine, createScene, (const std::string&), Scene*),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	
+	scriptingEngine_->registerGlobalFunction(
+		"Scene@ getScene(const string& in)",
+		asMETHODPR(GameEngine, getScene, (const std::string&) const, Scene*),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	
+	scriptingEngine_->registerGlobalFunction(
+		"void destroyScene(const string& in)",
+		asMETHODPR(GameEngine, destroyScene, (const std::string&), void),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"void destroyScene(Scene@)",
+		asMETHODPR(GameEngine, destroyScene, (Scene* scene), void),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	
+	registerVectorBindings<Scene*>(scriptingEngine_, "vectorScene", "Scene@");
+	scriptingEngine_->registerGlobalFunction(
+		"vectorScene getAllScenes()",
+		asMETHODPR(GameEngine, getAllScenes, () const, std::vector<Scene*>),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	
+	// CHEATING
+	//auto pathfindingEngineBindingDelegate = PathfindingEngineBindingDelegate(logger_, scriptingEngine_, gameEngine_, pathfindingEngine_);
+	//pathfindingEngineBindingDelegate.bind();
+}
+	
+};

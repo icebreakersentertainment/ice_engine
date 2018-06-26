@@ -16,6 +16,18 @@
 namespace ice_engine
 {
 
+template<class T>
+static void DefaultConstructor(T* memory) { new(memory) T(); }
+
+//template<class T, typename... Args>
+//static void InitConstructor(T* memory, Args&&... args) { new(memory) T(std::forward<Args>(args)...); }
+
+template<class T>
+static void CopyConstructor(T* memory, const T& other) { new(memory) T(other); }
+
+template<class T>
+static void DefaultDestructor(T* memory) { ((T*)memory)->~T(); }
+
 template<typename T, typename V>
 class VectorRegisterHelper
 {
@@ -194,8 +206,7 @@ class HandleRegisterHelper
 public:
 	static void DefaultConstructor(T* memory) { new(memory) T(); }
 	
-	template<typename... Args>
-	static void InitConstructor(T* memory, Args&&... args) { new(memory) T(std::forward<Args>(args)...); }
+	static void InitConstructor(T* memory, const uint64 id) { new(memory) T(id); }
 	
 	static void CopyConstructor(T* memory, const T& other) { new(memory) T(other); }
 	static void DefaultDestructor(T* memory) { ((T*)memory)->~T(); }
@@ -211,13 +222,30 @@ void registerHandleBindings(scripting::IScriptingEngine* scriptingEngine, const 
 	
 	scriptingEngine->registerObjectType(name.c_str(), sizeof(T), asOBJ_VALUE | asOBJ_APP_CLASS_ALLINTS | asGetTypeTraits<T>());
 	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(HandleBase::DefaultConstructor), asCALL_CDECL_OBJFIRST);
-	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f(const uint64)", asFUNCTION(HandleBase::template InitConstructor<T>), asCALL_CDECL_OBJFIRST);
+	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f(const uint64)", asFUNCTION(HandleBase::InitConstructor), asCALL_CDECL_OBJFIRST);
 	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f(const " + name + "& in)", asFUNCTION(HandleBase::CopyConstructor), asCALL_CDECL_OBJFIRST);
 	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_DESTRUCT, "void f()", asFUNCTION(HandleBase::DefaultDestructor), asCALL_CDECL_OBJFIRST);
 	scriptingEngine->registerClassMethod(name.c_str(), name + "& opAssign(const " + name + "& in)", asMETHODPR(T, operator=, (const T&), T&));
 	scriptingEngine->registerClassMethod(name.c_str(), "uint64 id() const", asMETHODPR(T, id, () const, uint64));
 	scriptingEngine->registerClassMethod(name.c_str(), "bool opImplConv() const", asMETHODPR(T, operator bool, () const, bool )); 
 	scriptingEngine->registerClassMethod(name.c_str(), "bool opEquals(const " + name + "& in) const", asMETHODPR(T, operator==, (const T&) const, bool));
+}
+
+template<class A, class B>
+B* refCast(A* a)
+{
+    if (!a) return nullptr;
+    
+    return dynamic_cast<B*>(a);
+    /*
+    B* b = dynamic_cast<B*>(a);
+    if( b != 0 )
+    {
+        // Since the cast was made, we need to increase the ref counter for the returned handle
+        b->addref();
+    }
+    return b;
+    */
 }
 
 }

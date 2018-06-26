@@ -8,11 +8,12 @@
 #include <glm/glm.hpp>
 
 #include "physics/IPhysicsDebugRenderer.hpp"
+#include "pathfinding/IPathfindingDebugRenderer.hpp"
 
 namespace ice_engine
 {
 
-class IDebugRenderer : virtual public physics::IPhysicsDebugRenderer
+class IDebugRenderer : virtual public physics::IPhysicsDebugRenderer, virtual public pathfinding::IPathfindingDebugRenderer
 {
 public:
 	virtual ~IDebugRenderer()

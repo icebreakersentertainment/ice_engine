@@ -22,6 +22,7 @@ public:
 
 	virtual const std::vector<std::shared_ptr<IGuiPlugin>>& getGuiPlugins() const override;
 	virtual std::shared_ptr<IGraphicsPlugin> getGraphicsPlugin() const override;
+	virtual const std::vector<std::shared_ptr<IModulePlugin>>& getModulePlugins() const override;
 
 private:
 	utilities::Properties* properties_;
@@ -30,6 +31,7 @@ private:
 	
 	std::vector<std::shared_ptr<IGuiPlugin>> guiPlugins_;
 	std::shared_ptr<IGraphicsPlugin> graphicsPlugin_;
+	std::vector<std::shared_ptr<IModulePlugin>> modulePlugins_;
 };
 
 }

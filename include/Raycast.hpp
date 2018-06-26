@@ -1,10 +1,10 @@
 #ifndef RAYCAST_H_
 #define RAYCAST_H_
 
+#include <entityx/entityx.h>
+
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
-
-#include "entities/Entity.hpp"
 
 #include "ray/Ray.hpp"
 
@@ -52,12 +52,12 @@ public:
 		hitNormalWorld_ = hitNormalWorld;
 	}
 
-	const entities::Entity& entity() const
+	const entityx::Entity& entity() const
 	{
 		return entity_;
 	}
 
-	void setEntity(const entities::Entity& entity)
+	void setEntity(const entityx::Entity& entity)
 	{
 		entity_ = entity;
 	}
@@ -69,7 +69,7 @@ private:
 	ray::Ray ray_;
 	glm::vec3 hitPointWorld_;
 	glm::vec3 hitNormalWorld_;
-	entities::Entity entity_;
+	entityx::Entity entity_;
 };
 
 }

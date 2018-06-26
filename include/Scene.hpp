@@ -4,15 +4,47 @@
 #include <vector>
 #include <string>
 
+#define GLM_FORCE_RADIANS
+#include <glm/glm.hpp>
+
 #include "Types.hpp"
 
-#include "IScene.hpp"
+#include "SceneStatistics.hpp"
 
+#include "ModelHandle.hpp"
+
+#include "Raycast.hpp"
+
+#include "ecs/EntityComponentSystem.hpp"
+#include "ecs/GraphicsComponent.hpp"
+#include "ecs/ScriptObjectComponent.hpp"
+#include "ecs/RigidBodyObjectComponent.hpp"
+#include "ecs/GhostObjectComponent.hpp"
+#include "ecs/PathfindingAgentComponent.hpp"
+#include "ecs/PositionOrientationComponent.hpp"
+#include "ecs/PointLightComponent.hpp"
+
+#include "scripting/ScriptObjectHandle.hpp"
+
+#include "audio/SoundHandle.hpp"
+#include "audio/SoundSourceHandle.hpp"
+#include "graphics/TransformSpace.hpp"
+#include "graphics/MeshHandle.hpp"
+#include "graphics/TextureHandle.hpp"
+#include "graphics/ShaderProgramHandle.hpp"
+#include "graphics/PointLightHandle.hpp"
+#include "physics/CollisionShapeHandle.hpp"
+#include "physics/RigidBodyObjectHandle.hpp"
+#include "physics/GhostObjectHandle.hpp"
+
+#include "graphics/IGraphicsEngine.hpp"
+#include "ITerrain.hpp"
 #include "physics/IPhysicsEngine.hpp"
 #include "pathfinding/IPathfindingEngine.hpp"
-#include "entities/EntityComponentSystem.hpp"
+#include "audio/IAudioEngine.hpp"
+#include "scripting/IScriptingEngine.hpp"
 
-#include "IGameEngine.hpp"
+#include "GameEngine.hpp"
 
 #include "utilities/Properties.hpp"
 #include "fs/IFileSystem.hpp"
@@ -23,14 +55,18 @@
 namespace ice_engine
 {
 
-class Scene : public IScene
+//class GameEngine;
+class EntityComponentSystemEventListener;
+
+class Scene
 {
 public:
 	Scene(
 		const std::string& name,
-		IGameEngine* gameEngine,
+		GameEngine* gameEngine,
 		audio::IAudioEngine* audioEngine,
 		graphics::IGraphicsEngine* graphicsEngine,
+		ITerrainFactory* terrainFactory,
 		physics::IPhysicsEngine* physicsEngine,
 		pathfinding::IPathfindingEngine* pathfindingEngine,
 		scripting::IScriptingEngine* scriptingEngine,
@@ -40,99 +76,119 @@ public:
 		IThreadPool* threadPool,
 		IOpenGlLoader* openGlLoader
 	);
-	virtual ~Scene();
+	~Scene();
 
-	virtual void tick(const float32 delta) override;
-	virtual void render() override;
+	void tick(const float32 delta);
+	void render();
 	
-	virtual void setISceneThingyInstance(scripting::ScriptObjectHandle scriptObjectHandle) override;
+	void setSceneThingyInstance(scripting::ScriptObjectHandle scriptObjectHandle);
 	
-	virtual physics::CollisionShapeHandle createStaticPlaneShape(const glm::vec3& planeNormal, const float32 planeConstant) override;
-	virtual physics::CollisionShapeHandle createStaticBoxShape(const glm::vec3& dimensions) override;
-	virtual void destroyStaticShape(const physics::CollisionShapeHandle& collisionShapeHandle) override;
-	virtual void destroyAllStaticShapes() override;
+	void setDebugRendering(const bool enabled);
 	
-	virtual physics::RigidBodyObjectHandle createDynamicRigidBodyObject(const physics::CollisionShapeHandle& collisionShapeHandle) override;
-	virtual physics::RigidBodyObjectHandle createDynamicRigidBodyObject(
+	void createResources(const entityx::Entity& entity);
+	void destroyResources(const entityx::Entity& entity);
+
+	pathfinding::CrowdHandle createCrowd(const pathfinding::NavigationMeshHandle& navigationMeshHandle);
+	void destroy(const pathfinding::CrowdHandle& crowdHandle);
+	
+	pathfinding::AgentHandle createAgent(const pathfinding::CrowdHandle& crowdHandle, const glm::vec3& position, const pathfinding::AgentParams& agentParams = pathfinding::AgentParams());
+	void destroy(const pathfinding::CrowdHandle& crowdHandle, const pathfinding::AgentHandle& agentHandle);
+	
+	void requestMoveTarget(
+		const pathfinding::CrowdHandle& crowdHandle,
+		const pathfinding::AgentHandle& agentHandle,
+		const glm::vec3& position
+	);
+	
+	void requestMoveVelocity(
+		const pathfinding::CrowdHandle& crowdHandle,
+		const pathfinding::AgentHandle& agentHandle,
+		const glm::vec3& velocity
+	);
+	
+	physics::CollisionShapeHandle createStaticPlaneShape(const glm::vec3& planeNormal, const float32 planeConstant);
+	physics::CollisionShapeHandle createStaticBoxShape(const glm::vec3& dimensions);
+	void destroyStaticShape(const physics::CollisionShapeHandle& collisionShapeHandle);
+	void destroyAllStaticShapes();
+	
+	physics::RigidBodyObjectHandle createRigidBodyObject(const physics::CollisionShapeHandle& collisionShapeHandle);
+	physics::RigidBodyObjectHandle createRigidBodyObject(
 		const physics::CollisionShapeHandle& collisionShapeHandle,
 		const float32 mass,
 		const float32 friction,
 		const float32 restitution
-	) override;
-	virtual physics::RigidBodyObjectHandle createDynamicRigidBodyObject(
+	);
+	physics::RigidBodyObjectHandle createRigidBodyObject(
 		const physics::CollisionShapeHandle& collisionShapeHandle,
 		const glm::vec3& position,
 		const glm::quat& orientation,
 		const float32 mass = 1.0f,
 		const float32 friction = 1.0f,
 		const float32 restitution = 1.0f
-	) override;
-	virtual physics::RigidBodyObjectHandle createStaticRigidBodyObject(const physics::CollisionShapeHandle& collisionShapeHandle) override;
-	virtual physics::RigidBodyObjectHandle createStaticRigidBodyObject(
-		const physics::CollisionShapeHandle& collisionShapeHandle,
-		const float32 friction,
-		const float32 restitution
-	) override;
-	virtual physics::RigidBodyObjectHandle createStaticRigidBodyObject(
-		const physics::CollisionShapeHandle& collisionShapeHandle,
-		const glm::vec3& position,
-		const glm::quat& orientation,
-		const float32 friction = 1.0f,
-		const float32 restitution = 1.0f
-	) override;
-	virtual physics::GhostObjectHandle createGhostObject(
+	);
+	void destroy(const physics::RigidBodyObjectHandle& rigidBodyObjectHandle);
+	physics::GhostObjectHandle createGhostObject(
 		const physics::CollisionShapeHandle& collisionShapeHandle
-	) override;
-	virtual physics::GhostObjectHandle createGhostObject(
+	);
+	physics::GhostObjectHandle createGhostObject(
 		const physics::CollisionShapeHandle& collisionShapeHandle,
 		const glm::vec3& position,
 		const glm::quat& orientation
-	) override;
+	);
 	
-	virtual graphics::RenderableHandle createRenderable(const ModelHandle& modelHandle, const graphics::ShaderProgramHandle& shaderProgramHandle, const std::string& name = std::string()) override;
-	virtual graphics::RenderableHandle createRenderable(const graphics::MeshHandle& meshHandle, const graphics::TextureHandle& textureHandle, const graphics::ShaderProgramHandle& shaderProgramHandle, const std::string& name = std::string()) override;
+	graphics::RenderableHandle createRenderable(const ModelHandle& modelHandle, const std::string& name = std::string());
+	graphics::RenderableHandle createRenderable(const graphics::MeshHandle& meshHandle, const graphics::TextureHandle& textureHandle, const std::string& name = std::string());
+	void destroy(const graphics::RenderableHandle& renderableHandle);
 	
-	virtual audio::SoundSourceHandle play(const audio::SoundHandle& soundHandle, const glm::vec3& position) override;
+	audio::SoundSourceHandle play(const audio::SoundHandle& soundHandle, const glm::vec3& position);
 	
-	virtual graphics::PointLightHandle createPointLight(const glm::vec3& position) override;
+	graphics::PointLightHandle createPointLight(const glm::vec3& position);
 	
-	virtual std::string getName() const override;
+	ITerrain* testCreateTerrain(HeightMap heightMap, SplatMap splatMap, DisplacementMap displacementMap);
 	
-	virtual const SceneStatistics& getSceneStatistics() const override;
+	std::string getName() const;
+	bool visible() const;
 	
-	virtual entities::Entity createEntity() override;
-	virtual void destroyEntity(const entities::Entity& entity) override;
-	virtual uint32 getNumEntities() const override;
+	const SceneStatistics& getSceneStatistics() const;
 	
-	virtual Raycast raycast(const ray::Ray& ray) override;
+	entityx::Entity createEntity();
+	void destroy(const entityx::Entity& entity);
+	uint32 getNumEntities() const;
+
+	Raycast raycast(const ray::Ray& ray);
 	
-	virtual void assign(const entities::Entity& entity, const entities::GraphicsComponent& component) override;
-	virtual void assign(const entities::Entity& entity, const entities::RigidBodyObjectComponent& component) override;
-	virtual void assign(const entities::Entity& entity, const entities::GhostObjectComponent& component) override;
-	virtual void assign(const entities::Entity& entity, const entities::PositionOrientationComponent& component) override;
-	virtual void assign(const entities::Entity& entity, const entities::PointLightComponent& component) override;
+	void assign(const entityx::Entity& entity, const ecs::GraphicsComponent& component);
+	void assign(const entityx::Entity& entity, const ecs::ScriptObjectComponent& component);
+	void assign(const entityx::Entity& entity, const ecs::RigidBodyObjectComponent& component);
+	void assign(const entityx::Entity& entity, const ecs::GhostObjectComponent& component);
+	void assign(const entityx::Entity& entity, const ecs::PathfindingAgentComponent& component);
+	void assign(const entityx::Entity& entity, const ecs::PositionOrientationComponent& component);
+	void assign(const entityx::Entity& entity, const ecs::PointLightComponent& component);
 	
-	virtual void rotate(const entities::Entity& entity, const float32 degrees, const glm::vec3& axis, const graphics::TransformSpace& relativeTo = graphics::TransformSpace::TS_LOCAL) override;
-	virtual void rotate(const entities::Entity& entity, const glm::quat& orientation, const graphics::TransformSpace& relativeTo = graphics::TransformSpace::TS_LOCAL) override;
-	virtual void rotation(const entities::Entity& entity, const float32 degrees, const glm::vec3& axis) override;
-	virtual void rotation(const entities::Entity& entity, const glm::quat& orientation) override;
-	virtual glm::quat rotation(const entities::Entity& entity) const override;
-	virtual void translate(const entities::Entity& entity, const glm::vec3& translate) override;
-	virtual void scale(const entities::Entity& entity, const float32 scale) override;
-	virtual void scale(const entities::Entity& entity, const glm::vec3& scale) override;
-	virtual void scale(const entities::Entity& entity, const float32 x, const float32 y, const float32 z) override;
-	virtual glm::vec3 scale(const entities::Entity& entity) const override;
-	virtual void lookAt(const entities::Entity& entity, const glm::vec3& lookAt) override;
+	void rotate(const entityx::Entity& entity, const float32 degrees, const glm::vec3& axis, const graphics::TransformSpace& relativeTo = graphics::TransformSpace::TS_LOCAL);
+	void rotate(const entityx::Entity& entity, const glm::quat& orientation, const graphics::TransformSpace& relativeTo = graphics::TransformSpace::TS_LOCAL);
+	void rotation(const entityx::Entity& entity, const float32 degrees, const glm::vec3& axis);
+	void rotation(const entityx::Entity& entity, const glm::quat& orientation);
+	glm::quat rotation(const entityx::Entity& entity) const;
+	void translate(const entityx::Entity& entity, const glm::vec3& translate);
+	void scale(const entityx::Entity& entity, const float32 scale);
+	void scale(const entityx::Entity& entity, const glm::vec3& scale);
+	void scale(const entityx::Entity& entity, const float32 x, const float32 y, const float32 z);
+	glm::vec3 scale(const entityx::Entity& entity) const;
+	void lookAt(const entityx::Entity& entity, const glm::vec3& lookAt);
 	
-	virtual void position(const entities::Entity& entity, const glm::vec3& position) override;
-	virtual void position(const entities::Entity& entity, const float32 x, const float32 y, const float32 z) override;
-	virtual glm::vec3 position(const entities::Entity& entity) const override;
+	void position(const entityx::Entity& entity, const glm::vec3& position);
+	void position(const entityx::Entity& entity, const float32 x, const float32 y, const float32 z);
+	glm::vec3 position(const entityx::Entity& entity) const;
 	
 private:
 	std::string name_;
-	IGameEngine* gameEngine_;
+	bool visible_ = true;
+
+	GameEngine* gameEngine_;
 	audio::IAudioEngine* audioEngine_;
 	graphics::IGraphicsEngine* graphicsEngine_;
+	ITerrainFactory* terrainFactory_;
 	physics::IPhysicsEngine* physicsEngine_;
 	pathfinding::IPathfindingEngine* pathfindingEngine_;
 	scripting::IScriptingEngine* scriptingEngine_;
@@ -141,6 +197,8 @@ private:
 	logger::ILogger* logger_;
 	IThreadPool* threadPool_;
 	IOpenGlLoader* openGlLoader_;
+	
+	bool debugRendering_ = false;
 	
 	audio::AudioSceneHandle audioSceneHandle_;
 	graphics::RenderSceneHandle renderSceneHandle_;
@@ -153,19 +211,28 @@ private:
 	SceneStatistics sceneStatistics_;
 	
 	// Entity system
-	entities::EntityComponentSystem entityComponentSystem_;
-	std::vector<entities::Entity> entities_;
+	ecs::EntityComponentSystem entityComponentSystem_;
+	std::unique_ptr<EntityComponentSystemEventListener> entityComponentSystemEventListener_;
+	std::vector<entityx::Entity> entities_;
+	
+	std::vector<std::unique_ptr<ITerrain>> terrain_;
 	
 	void initialize();
 	void destroy();
 	
-	void addMotionChangeListener(const entities::Entity& entity);
-	void removeMotionChangeListener(const entities::Entity& entity);
+	void addMotionChangeListener(const entityx::Entity& entity);
+	void addPathfindingAgentMotionChangeListener(const entityx::Entity& entity);
+	void addPathfindingMovementRequestStateChangeListener(const entityx::Entity& entity);
+	void removeMotionChangeListener(const entityx::Entity& entity);
+	void removePathfindingAgentMotionChangeListener(const entityx::Entity& entity);
+	void removePathfindingMovementRequestStateChangeListener(const entityx::Entity& entity);
 	
-	void addUserData(const entities::Entity& entity, const entities::RigidBodyObjectComponent& rigidBodyObjectComponent);
-	void addUserData(const entities::Entity& entity, const entities::GhostObjectComponent& ghostObjectComponent);
-	void removeUserData(const entities::Entity& entity, const entities::RigidBodyObjectComponent& rigidBodyObjectComponent);
-	void removeUserData(const entities::Entity& entity, const entities::GhostObjectComponent& ghostObjectComponent);
+	void addUserData(const entityx::Entity& entity, const ecs::RigidBodyObjectComponent& rigidBodyObjectComponent);
+	void addUserData(const entityx::Entity& entity, const ecs::GhostObjectComponent& ghostObjectComponent);
+	void addUserData(const entityx::Entity& entity, const ecs::PathfindingAgentComponent& pathfindingAgentComponent);
+	void removeUserData(const entityx::Entity& entity, const ecs::RigidBodyObjectComponent& rigidBodyObjectComponent);
+	void removeUserData(const entityx::Entity& entity, const ecs::GhostObjectComponent& ghostObjectComponent);
+	void removeUserData(const entityx::Entity& entity, const ecs::PathfindingAgentComponent& pathfindingAgentComponent);
 };
 
 }

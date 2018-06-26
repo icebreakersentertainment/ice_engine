@@ -20,16 +20,16 @@ PluginManager::PluginManager(
 		fileSystem_(fileSystem),
 		logger_(logger)
 {
-	logger_->info("Loading plugins.");
+	LOG_INFO(logger_, "Loading plugins.");
 	
-	logger_->info("Loading gui plugins.");
+	LOG_INFO(logger_, "Loading gui plugins.");
 	
 	std::vector<std::string> guiPluginNames;
 	utilities::explode(properties_->getStringValue("plugins.guiplugins"), ',', std::back_inserter(guiPluginNames));
 	
 	for (const auto& guiPluginName : guiPluginNames)
 	{
-		logger_->info("Loading gui plugin '" + guiPluginName + "'.");
+		LOG_INFO(logger_, "Loading gui plugin '" + guiPluginName + "'.");
 		auto pluginBoostSharedPtr = boost::dll::import<ice_engine::IGuiPlugin>("./" + guiPluginName + "_plugin", "plugin", boost::dll::load_mode::append_decorations);
 		
 		// Convert from boost::shared_ptr<T> to std::shared_ptr<T>
@@ -38,24 +38,42 @@ PluginManager::PluginManager(
 		guiPlugins_.push_back( pluginStdSharedPtr );
 	}
 	
-	logger_->info("Finished loading gui plugins.");
+	LOG_INFO(logger_, "Finished loading gui plugins.");
 	
-	logger_->info("Loading graphics plugins.");
+	LOG_INFO(logger_, "Loading graphics plugins.");
 	
 	std::string graphicsPluginName = properties_->getStringValue("plugins.graphicsplugin");
 	
 	if (!graphicsPluginName.empty())
 	{
-		logger_->info("Loading graphics plugin '" + graphicsPluginName + "'.");
+		LOG_INFO(logger_, "Loading graphics plugin '" + graphicsPluginName + "'.");
 		auto pluginBoostSharedPtr = boost::dll::import<ice_engine::IGraphicsPlugin>("./" + graphicsPluginName + "_plugin", "plugin", boost::dll::load_mode::append_decorations);
 		
 		// Convert from boost::shared_ptr<T> to std::shared_ptr<T>
 		graphicsPlugin_ = std::shared_ptr<ice_engine::IGraphicsPlugin>(pluginBoostSharedPtr.get(), [pluginBoostSharedPtr](ice_engine::IGraphicsPlugin*){});
 	}
 	
-	logger_->info("Finished loading graphics plugin.");
+	LOG_INFO(logger_, "Finished loading graphics plugin.");
 	
-	logger_->info("Finished loading plugins.");
+	LOG_INFO(logger_, "Loading module plugins.");
+	
+	std::vector<std::string> modulePluginNames;
+	utilities::explode(properties_->getStringValue("plugins.moduleplugins"), ',', std::back_inserter(modulePluginNames));
+	
+	for (const auto& modulePluginName : modulePluginNames)
+	{
+		LOG_INFO(logger_, "Loading module plugin '" + modulePluginName + "'.");
+		auto pluginBoostSharedPtr = boost::dll::import<ice_engine::IModulePlugin>("./" + modulePluginName + "_plugin", "plugin", boost::dll::load_mode::append_decorations);
+		
+		// Convert from boost::shared_ptr<T> to std::shared_ptr<T>
+		auto pluginStdSharedPtr = std::shared_ptr<ice_engine::IModulePlugin>(pluginBoostSharedPtr.get(), [pluginBoostSharedPtr](ice_engine::IModulePlugin*){});
+		
+		modulePlugins_.push_back( pluginStdSharedPtr );
+	}
+	
+	LOG_INFO(logger_, "Finished loading module plugins.");
+	
+	LOG_INFO(logger_, "Finished loading plugins.");
 }
 
 PluginManager::~PluginManager()
@@ -70,6 +88,11 @@ const std::vector<std::shared_ptr<IGuiPlugin>>& PluginManager::getGuiPlugins() c
 std::shared_ptr<IGraphicsPlugin> PluginManager::getGraphicsPlugin() const
 {
 	return graphicsPlugin_;
+}
+
+const std::vector<std::shared_ptr<IModulePlugin>>& PluginManager::getModulePlugins() const
+{
+	return modulePlugins_;
 }
 
 }

@@ -16,6 +16,16 @@ class Handle
 public:
 	Handle() = default;
 
+	Handle(const Handle& other)
+	{
+		id_ = other.id_;
+	}
+
+	Handle(Handle&& other) noexcept
+	{
+		id_ = std::exchange(other.id_, 0);
+	}
+
 	explicit Handle(uint64 id) : id_(id)
 	{
 	}
@@ -53,7 +63,10 @@ public:
 	{
 		return valid();
 	}
-	
+
+	Handle& operator=(const Handle& other) = default;
+	Handle& operator=(Handle&& other) noexcept = default;
+
 	bool operator==(const T& other) const
 	{
 		return id_ == other.id_;

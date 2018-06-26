@@ -3,7 +3,7 @@
 namespace ice_engine
 {
 
-IceEngineMotionChangeListener::IceEngineMotionChangeListener(entities::Entity entity, IScene* scene) : entity_(entity), scene_(scene)
+IceEngineMotionChangeListener::IceEngineMotionChangeListener(entityx::Entity entity, Scene* scene) : entity_(entity), scene_(scene)
 {
 	
 }

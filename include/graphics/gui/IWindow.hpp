@@ -6,6 +6,7 @@
 #include "IComponent.hpp"
 #include "ILabel.hpp"
 #include "IButton.hpp"
+#include "IMenuBar.hpp"
 
 namespace ice_engine
 {
@@ -23,7 +24,8 @@ enum WindowFlags : uint32
 	ICEENGINE_CLOSABLE		= 1 << 4,
 	ICEENGINE_MINIMIZABLE	= 1 << 5,
 	ICEENGINE_RESIZABLE		= 1 << 6,
-	ICEENGINE_NO_INPUT		= 1 << 7
+	ICEENGINE_MENUBAR		= 1 << 7,
+	ICEENGINE_NO_INPUT		= 1 << 8
 };
 
 class IWindow : public virtual IComponent
@@ -36,6 +38,7 @@ public:
 	
 	virtual ILabel* createLabel(const uint32 x, const uint32 y, const uint32 width, const uint32 height, const std::string label = std::string()) = 0;
 	virtual IButton* createButton(const uint32 x, const uint32 y, const uint32 width, const uint32 height, const std::string label = std::string()) = 0;
+	virtual IMenuBar* createMenuBar() = 0;
 	
 	virtual void setTitle(const std::string& title) = 0;
 	virtual const std::string& getTitle() const  = 0;

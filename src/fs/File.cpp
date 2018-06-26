@@ -14,7 +14,7 @@ File::File(const std::string& file, int32 flags) : file_(file), flags_(flags)
 {
 	auto path = boost::filesystem::path(file_);
 	
-	if (!boost::filesystem::exists(path))
+	if (flags_ & FileFlags::READ && !boost::filesystem::exists(path))
 	{
 		throw std::runtime_error( std::string("Unable to open file - file does not exist: ") + file);
 	}

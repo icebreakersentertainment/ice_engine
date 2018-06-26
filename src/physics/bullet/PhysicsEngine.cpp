@@ -1,4 +1,5 @@
-#include "BulletCollision/CollisionDispatch/btGhostObject.h"
+#include <BulletCollision/CollisionShapes/btHeightfieldTerrainShape.h>
+#include <BulletCollision/CollisionDispatch/btGhostObject.h>
 
 #include "logger/ILogger.hpp"
 
@@ -34,7 +35,10 @@ void PhysicsEngine::tick(const PhysicsSceneHandle& physicsSceneHandle, const flo
 	
 	physicsScene.dynamicsWorld->stepSimulation(delta, 10);
 	
-	physicsScene.dynamicsWorld->debugDrawWorld();
+	if (physicsScene.debugRendering)
+	{
+		physicsScene.dynamicsWorld->debugDrawWorld();
+	}
 }
 
 PhysicsSceneHandle PhysicsEngine::createPhysicsScene()
@@ -76,6 +80,12 @@ void PhysicsEngine::setPhysicsDebugRenderer(IPhysicsDebugRenderer* physicsDebugR
 	}
 }
 
+void PhysicsEngine::setDebugRendering(const PhysicsSceneHandle& physicsSceneHandle, const bool enabled)
+{
+	auto& physicsScene = physicsScenes_[physicsSceneHandle];
+	physicsScene.debugRendering = enabled;
+}
+
 CollisionShapeHandle PhysicsEngine::createStaticPlaneShape(const glm::vec3& planeNormal, const float32 planeConstant)
 {
 	auto shape = std::make_unique<btStaticPlaneShape>(btVector3(planeNormal.x, planeNormal.y, planeNormal.z), btScalar(planeConstant));
@@ -96,6 +106,23 @@ CollisionShapeHandle PhysicsEngine::createStaticBoxShape(const glm::vec3& dimens
 	return CollisionShapeHandle(index, 1);
 }
 
+std::vector<char> heightMapData;
+CollisionShapeHandle PhysicsEngine::createStaticTerrainShape(std::vector<char>&& heightData, const uint32 width, const uint32 height)
+{
+	//(128, 128, data, 1, -1024, 1016, 2, PHY_UCHAR, true);
+	heightMapData = std::vector<char>(std::forward<std::vector<char>>(heightData));
+	auto shape = std::make_unique<btHeightfieldTerrainShape>(width, height, &heightMapData[0], 1.0f/255.0f, -1.0f, 1.0f, 1, PHY_UCHAR, true);
+	
+	float32 scale = 1.0f;
+	btVector3 localScaling = btVector3(scale, 15.0f, scale);
+	shape->setLocalScaling(localScaling);
+	
+	shapes_.push_back(std::move(shape));
+	auto index = shapes_.size() - 1;
+	
+	return CollisionShapeHandle(index, 1);
+}
+
 void PhysicsEngine::destroyStaticShape(const CollisionShapeHandle& collisionShapeHandle)
 {
 	throw std::logic_error("Method not implemented");
@@ -106,17 +133,17 @@ void PhysicsEngine::destroyAllStaticShapes()
 	shapes_.clear();
 }
 
-RigidBodyObjectHandle PhysicsEngine::createDynamicRigidBodyObject(
+RigidBodyObjectHandle PhysicsEngine::createRigidBodyObject(
 	const PhysicsSceneHandle& physicsSceneHandle,
 	const CollisionShapeHandle& collisionShapeHandle,
 	std::unique_ptr<IMotionChangeListener> motionStateListener,
 	const UserData& userData
 )
 {
-	return createDynamicRigidBodyObject(physicsSceneHandle, collisionShapeHandle, glm::vec3(), glm::quat(), 1.0f, 1.0f, 1.0f, std::move(motionStateListener), userData);
+	return createRigidBodyObject(physicsSceneHandle, collisionShapeHandle, glm::vec3(), glm::quat(), 1.0f, 1.0f, 1.0f, std::move(motionStateListener), userData);
 }
 
-RigidBodyObjectHandle PhysicsEngine::createDynamicRigidBodyObject(
+RigidBodyObjectHandle PhysicsEngine::createRigidBodyObject(
 	const PhysicsSceneHandle& physicsSceneHandle,
 	const CollisionShapeHandle& collisionShapeHandle,
 	const float32 mass,
@@ -126,10 +153,10 @@ RigidBodyObjectHandle PhysicsEngine::createDynamicRigidBodyObject(
 	const UserData& userData
 )
 {
-	return createDynamicRigidBodyObject(physicsSceneHandle, collisionShapeHandle, glm::vec3(), glm::quat(), mass, friction, restitution, std::move(motionStateListener), userData);
+	return createRigidBodyObject(physicsSceneHandle, collisionShapeHandle, glm::vec3(), glm::quat(), mass, friction, restitution, std::move(motionStateListener), userData);
 }
 
-RigidBodyObjectHandle PhysicsEngine::createDynamicRigidBodyObject(
+RigidBodyObjectHandle PhysicsEngine::createRigidBodyObject(
 	const PhysicsSceneHandle& physicsSceneHandle,
 	const CollisionShapeHandle& collisionShapeHandle,
 	const glm::vec3& position,
@@ -154,49 +181,34 @@ RigidBodyObjectHandle PhysicsEngine::createDynamicRigidBodyObject(
 		shape->calculateLocalInertia(bulletMass, localInertia);
 	}
 	
-	auto rigidBodyData = std::make_unique<BulletRigidBodyData>();
+	auto& physicsScene = physicsScenes_[physicsSceneHandle];
 	
-	rigidBodyData->motionState = std::make_unique<BulletMotionState>(transform, std::move(motionStateListener));
-	btRigidBody::btRigidBodyConstructionInfo constructionInfo(bulletMass, rigidBodyData->motionState.get(), shape.get(), localInertia);
+	auto rigidBodyObjectHandle = physicsScene.rigidBodyData.create();//std::make_unique<BulletRigidBodyData>();
+	auto& rigidBodyData = physicsScene.rigidBodyData[rigidBodyObjectHandle];
+	
+	rigidBodyData.motionState = std::make_unique<BulletMotionState>(transform, std::move(motionStateListener));
+	btRigidBody::btRigidBodyConstructionInfo constructionInfo(bulletMass, rigidBodyData.motionState.get(), shape.get(), localInertia);
 	constructionInfo.m_friction = friction;
 	constructionInfo.m_restitution = restitution;
-	rigidBodyData->rigidBody = std::make_unique<btRigidBody>(constructionInfo);
+	rigidBodyData.rigidBody = std::make_unique<btRigidBody>(constructionInfo);
 	
-	rigidBodyData->userData = std::make_unique<BulletUserData>();
+	rigidBodyData.userData = std::make_unique<BulletUserData>();
 	
-	rigidBodyData->userData->rigidBodyObjectHandle = RigidBodyObjectHandle(rigidBodyData.get());
-	rigidBodyData->userData->type = BulletCollisionObjectType::RIGID_BODY;
-	rigidBodyData->userData->userData = userData;
+	rigidBodyData.userData->rigidBodyObjectHandle = rigidBodyObjectHandle;
+	rigidBodyData.userData->type = BulletCollisionObjectType::RIGID_BODY;
+	rigidBodyData.userData->userData = userData;
+	rigidBodyData.rigidBody->setUserPointer(rigidBodyData.userData.get());
 	
-	auto rigidBodyDataPointer = rigidBodyData.get();
-	auto rigidBodyPointer = rigidBodyData->rigidBody.get();
+	//auto rigidBodyDataPointer = &rigidBodyData;
+	auto rigidBodyPointer = rigidBodyData.rigidBody.get();
+	//rigidBodyPointer->setUserPointer(rigidBodyDataPointer);
 	
-	rigidBodyData_.push_back(std::move(rigidBodyData));
+	physicsScene.dynamicsWorld->addRigidBody(rigidBodyPointer);
 	
-	rigidBodyPointer->setUserPointer(rigidBodyDataPointer);
-	
-	physicsScenes_[physicsSceneHandle].dynamicsWorld->addRigidBody(rigidBodyPointer);
-	
-	return RigidBodyObjectHandle(rigidBodyDataPointer);
+	return rigidBodyObjectHandle;
 }
-
-RigidBodyObjectHandle PhysicsEngine::createStaticRigidBodyObject(const PhysicsSceneHandle& physicsSceneHandle, const CollisionShapeHandle& collisionShapeHandle, const UserData& userData)
-{
-	return createStaticRigidBodyObject(physicsSceneHandle, collisionShapeHandle, glm::vec3(), glm::quat(), 1.0f, 1.0f, userData);
-}
-
-RigidBodyObjectHandle PhysicsEngine::createStaticRigidBodyObject(
-	const PhysicsSceneHandle& physicsSceneHandle,
-	const CollisionShapeHandle& collisionShapeHandle,
-	const float32 friction,
-	const float32 restitution,
-	const UserData& userData
-)
-{
-	return createStaticRigidBodyObject(physicsSceneHandle, collisionShapeHandle, glm::vec3(), glm::quat(), friction, restitution, userData);
-}
-
-RigidBodyObjectHandle PhysicsEngine::createStaticRigidBodyObject(
+/*
+RigidBodyObjectHandle PhysicsEngine::createRigidBodyObject(
 	const PhysicsSceneHandle& physicsSceneHandle,
 	const CollisionShapeHandle& collisionShapeHandle,
 	const glm::vec3& position,
@@ -239,7 +251,7 @@ RigidBodyObjectHandle PhysicsEngine::createStaticRigidBodyObject(
 	
 	return RigidBodyObjectHandle(rigidBodyDataPointer);
 }
-
+*/
 GhostObjectHandle PhysicsEngine::createGhostObject(const PhysicsSceneHandle& physicsSceneHandle, const CollisionShapeHandle& collisionShapeHandle, const UserData& userData)
 {
 	return createGhostObject(physicsSceneHandle, collisionShapeHandle, glm::vec3(), glm::quat(), userData);
@@ -260,41 +272,50 @@ GhostObjectHandle PhysicsEngine::createGhostObject(
 	transform.setOrigin( btVector3(position.x, position.y, position.z) );
 	
 	//btVector3 localInertia(0.0f, 0.0f, 0.0f);
+	auto& physicsScene = physicsScenes_[physicsSceneHandle];
 	
-	auto ghostObjectData = std::make_unique<BulletGhostObjectData>();
+	auto ghostObjectHandle = physicsScene.ghostObjectData.create();//std::make_unique<BulletGhostObjectData>();
+	auto& ghostObjectData = physicsScene.ghostObjectData[ghostObjectHandle];
 	
 	//ghostObjectData->motionState = std::make_unique<BulletMotionState>(transform, nullptr);
 	//btRigidBody::btRigidBodyConstructionInfo constructionInfo(btScalar(0.0f), ghostObjectData->motionState.get(), shape.get(), localInertia);
 	//constructionInfo.m_friction = friction;
 	//constructionInfo.m_restitution = restitution;
-	ghostObjectData->ghostObject = std::make_unique<btGhostObject>();
-	ghostObjectData->ghostObject->setCollisionShape(shape.get());
-	ghostObjectData->ghostObject->setWorldTransform(transform);
-	ghostObjectData->ghostObject->setCollisionFlags(ghostObjectData->ghostObject->getCollisionFlags() | btCollisionObject::CF_NO_CONTACT_RESPONSE);
+	ghostObjectData.ghostObject = std::make_unique<btGhostObject>();
+	ghostObjectData.ghostObject->setCollisionShape(shape.get());
+	ghostObjectData.ghostObject->setWorldTransform(transform);
+	ghostObjectData.ghostObject->setCollisionFlags(ghostObjectData.ghostObject->getCollisionFlags() | btCollisionObject::CF_NO_CONTACT_RESPONSE);
 	
-	ghostObjectData->userData = std::make_unique<BulletUserData>();
+	ghostObjectData.userData = std::make_unique<BulletUserData>();
 	
-	ghostObjectData->userData->ghostObjectHandle = GhostObjectHandle(ghostObjectData.get());
-	ghostObjectData->userData->type = BulletCollisionObjectType::GHOST;
-	ghostObjectData->userData->userData = userData;
-	ghostObjectData->ghostObject->setUserPointer(ghostObjectData->userData.get());
+	ghostObjectData.userData->ghostObjectHandle = ghostObjectHandle;
+	ghostObjectData.userData->type = BulletCollisionObjectType::GHOST;
+	ghostObjectData.userData->userData = userData;
+	ghostObjectData.ghostObject->setUserPointer(ghostObjectData.userData.get());
 	
-	auto ghostDataPointer = ghostObjectData.get();
-	auto ghostPointer = ghostObjectData->ghostObject.get();
+	//auto ghostDataPointer = &ghostObjectData;
+	auto ghostPointer = ghostObjectData.ghostObject.get();
+	//ghostPointer->setUserPointer(ghostDataPointer);
 	
-	ghostObjectData_.push_back(std::move(ghostObjectData));
+	physicsScene.dynamicsWorld->addCollisionObject(ghostPointer);
 	
-	ghostPointer->setUserPointer(ghostDataPointer);
-	
-	physicsScenes_[physicsSceneHandle].dynamicsWorld->addCollisionObject(ghostPointer);
 	//physicsScenes_[physicsSceneHandle].dynamicsWorld->getBroadphase()->getOverlappingPairCache()->setInternalGhostPairCallback(new btGhostPairCallback());
 	
-	return GhostObjectHandle(ghostDataPointer);
+	return ghostObjectHandle;
 }
 
-void PhysicsEngine::destroyRigidBody(const PhysicsSceneHandle& physicsSceneHandle, const RigidBodyObjectHandle& rigidBodyObjectHandle)
+void PhysicsEngine::destroy(const PhysicsSceneHandle& physicsSceneHandle, const RigidBodyObjectHandle& rigidBodyObjectHandle)
 {
 	//rigidBodyData_.destroy(rigidBodyObjectHandle);
+	
+	BulletRigidBodyData* rigidBodyData = static_cast<BulletRigidBodyData*>(rigidBodyObjectHandle.get());
+	
+	auto rigidBodyPointer = rigidBodyData->rigidBody.get();
+	
+	auto& physicsScene = physicsScenes_[physicsSceneHandle];
+	
+	physicsScene.dynamicsWorld->removeRigidBody(rigidBodyPointer);
+	physicsScene.rigidBodyData.destroy(rigidBodyObjectHandle);
 }
 
 void PhysicsEngine::destroyAllRigidBodies()
@@ -360,8 +381,14 @@ Raycast PhysicsEngine::raycast(const PhysicsSceneHandle& physicsSceneHandle, con
 	    
 	    if (rayCallback.m_collisionObject != nullptr)
 	    {
-			auto bulletUserData = static_cast<BulletUserData*>(rayCallback.m_collisionObject->getUserPointer());
+			if (rayCallback.m_collisionObject->getUserPointer() == nullptr)
+			{
+				LOG_WARN(logger_, "Bullet collision object has a null user pointer.");
+			}
 			
+			auto bulletUserData = static_cast<BulletUserData*>(rayCallback.m_collisionObject->getUserPointer());
+			std::cout << bulletUserData->type << std::endl;
+			std::cout << rayCallback.m_collisionObject->getInternalType() << std::endl;
 			switch (bulletUserData->type)
 			{
 				case BulletCollisionObjectType::RIGID_BODY:
@@ -373,8 +400,11 @@ Raycast PhysicsEngine::raycast(const PhysicsSceneHandle& physicsSceneHandle, con
 					break;
 				
 				case BulletCollisionObjectType::UNKNOWN:
+					LOG_WARN(logger_, "BulletCollisionObjectType set to Unknown");
+					break;
+					
 				default:
-					logger_->warn("Unknown BulletCollisionObjectType");
+					LOG_WARN(logger_, "Unknown BulletCollisionObjectType");
 					break;
 			}
 		}

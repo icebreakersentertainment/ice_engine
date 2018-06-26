@@ -153,7 +153,7 @@ public:
 	
 	iterator begin()
 	{
-		return iterator(*this, 0);
+		return iterator(*this, findIndexOfFirstValidHandle());
 	}
  
 	iterator end()

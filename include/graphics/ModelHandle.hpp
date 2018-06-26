@@ -1,5 +1,5 @@
-#ifndef MODEL_HANDLE_H_
-#define MODEL_HANDLE_H_
+#ifndef GRAPHICS_MODEL_HANDLE_H_
+#define GRAPHICS_MODEL_HANDLE_H_
 
 #include "handles/Handle.hpp"
 
@@ -17,4 +17,4 @@ public:
 }
 }
 
-#endif /* MODEL_HANDLE_H_ */
+#endif /* GRAPHICS_MODEL_HANDLE_H_ */

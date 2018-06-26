@@ -31,11 +31,11 @@ AudioEngine::AudioEngine(utilities::Properties* properties, fs::IFileSystem* fil
 	enumeration = alcIsExtensionPresent(nullptr, "ALC_ENUMERATION_EXT");
 	if (enumeration == AL_FALSE)
 	{
-        logger_->warn("OpenAL enumeration not supported");
+        LOG_WARN(logger_, "OpenAL enumeration not supported");
 	}
 	else
 	{
-        logger_->info("OpenAL enumeration supported");
+        LOG_INFO(logger_, "OpenAL enumeration supported");
 	}
 	
 	context_ = alcCreateContext(device_, nullptr);

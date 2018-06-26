@@ -23,7 +23,7 @@ void ResourceCache::addAudio(const std::string& name, std::unique_ptr<Audio> aud
 	audios_[name] = std::move(audio);
 }
 
-void ResourceCache::addImage(const std::string& name, std::unique_ptr<image::Image> image)
+void ResourceCache::addImage(const std::string& name, std::unique_ptr<Image> image)
 {
 	std::lock_guard<std::recursive_mutex> lock(imageMutex_);
 	
@@ -93,7 +93,7 @@ Audio* ResourceCache::getAudio(const std::string& name) const
 	return nullptr;
 }
 
-image::Image* ResourceCache::getImage(const std::string& name) const
+Image* ResourceCache::getImage(const std::string& name) const
 {
 	std::lock_guard<std::recursive_mutex> lock(imageMutex_);
 	

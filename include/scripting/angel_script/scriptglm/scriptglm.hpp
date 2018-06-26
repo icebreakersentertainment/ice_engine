@@ -391,6 +391,8 @@ void RegisterGlmBindings(asIScriptEngine* engine)
 	r = engine->RegisterObjectBehaviour("mat4", asBEHAVE_CONSTRUCT, "void f(float)", asFUNCTION(glmmat4::InitConstructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 	//r = engine->RegisterObjectBehaviour("mat4", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(glmmat4::DefaultDestructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 	
+	r = engine->RegisterObjectMethod("mat4", "mat4 opMul_r(const mat4& in) const", asFUNCTIONPR(glm::operator*, (const glm::mat4&, const glm::mat4&), glm::mat4), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	
 	/*
 	r = engine->RegisterObjectMethod("mat4", "mat4 opAdd_r(const mat4& in) const", asFUNCTIONPR(glmmat4::operator+, (const glm::mat4&, const glm::mat4&), glm::mat4), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 	r = engine->RegisterObjectMethod("mat4", "mat4 &opAddAssign(const mat4& in)", asMETHODPR(glm::mat4, operator+=, (const glm::mat4&), glm::mat4&), asCALL_THISCALL); assert( r >= 0 );

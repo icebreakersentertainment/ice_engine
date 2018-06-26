@@ -12,14 +12,22 @@
 #include "TransformSpace.hpp"
 #include "RenderSceneHandle.hpp"
 #include "RenderableHandle.hpp"
+#include "TerrainHandle.hpp"
 #include "MeshHandle.hpp"
+#include "MaterialHandle.hpp"
 #include "TextureHandle.hpp"
 #include "SkeletonHandle.hpp"
 #include "PointLightHandle.hpp"
 #include "CameraHandle.hpp"
 #include "VertexShaderHandle.hpp"
 #include "FragmentShaderHandle.hpp"
+#include "TessellationControlShaderHandle.hpp"
+#include "TessellationEvaluationShaderHandle.hpp"
 #include "ShaderProgramHandle.hpp"
+#include "IHeightMap.hpp"
+#include "ISplatMap.hpp"
+#include "IDisplacementMap.hpp"
+#include "IImage.hpp"
 
 #include "model/Model.hpp"
 
@@ -27,6 +35,14 @@ namespace ice_engine
 {
 namespace graphics
 {
+
+struct DisplacementMap
+{
+	DisplacementMap() = default;
+	DisplacementMap(IImage* displacementMap) : displacementMap(displacementMap) {}
+	
+	IImage* displacementMap = nullptr;
+};
 
 class IGraphicsEngine
 {
@@ -63,6 +79,7 @@ public:
 		const std::vector<glm::vec3>& normals,
 		const std::vector<glm::vec2>& textureCoordinates
 	) = 0;
+	virtual MeshHandle createStaticMesh(const model::Mesh& mesh) = 0;
 	virtual MeshHandle createAnimatedMesh(
 		const std::vector<glm::vec3>& vertices,
 		const std::vector<uint32>& indices,
@@ -82,19 +99,43 @@ public:
 	
 	virtual SkeletonHandle createSkeleton(const uint32 numberOfBones) = 0;
 	
-	virtual TextureHandle createTexture2d(const image::Image& image) = 0;
+	virtual TextureHandle createTexture2d(const IImage* image) = 0;
+	
+	virtual MaterialHandle createMaterial(const IPbrMaterial* pbrMaterial) = 0;
 	
 	virtual VertexShaderHandle createVertexShader(const std::string& data) = 0;
 	virtual FragmentShaderHandle createFragmentShader(const std::string& data) = 0;
+	virtual TessellationControlShaderHandle createTessellationControlShader(const std::string& data) = 0;
+	virtual TessellationEvaluationShaderHandle createTessellationEvaluationShader(const std::string& data) = 0;
 	virtual bool valid(const VertexShaderHandle& shaderHandle) const = 0;
 	virtual bool valid(const FragmentShaderHandle& shaderHandle) const = 0;
+	virtual bool valid(const TessellationControlShaderHandle& shaderHandle) const = 0;
+	virtual bool valid(const TessellationEvaluationShaderHandle& shaderHandle) const = 0;
 	virtual void destroyShader(const VertexShaderHandle& shaderHandle) = 0;
 	virtual void destroyShader(const FragmentShaderHandle& shaderHandle) = 0;
+	virtual void destroyShader(const TessellationControlShaderHandle& shaderHandle) = 0;
+	virtual void destroyShader(const TessellationEvaluationShaderHandle& shaderHandle) = 0;
 	virtual ShaderProgramHandle createShaderProgram(const VertexShaderHandle& vertexShaderHandle, const FragmentShaderHandle& fragmentShaderHandle) = 0;
+	virtual ShaderProgramHandle createShaderProgram(
+		const VertexShaderHandle& vertexShaderHandle,
+		const TessellationControlShaderHandle& tessellationControlShaderHandle,
+		const TessellationEvaluationShaderHandle& tessellationEvaluationShaderHandle,
+		const FragmentShaderHandle& fragmentShaderHandle
+	) = 0;
 	virtual bool valid(const ShaderProgramHandle& shaderProgramHandle) const = 0;
 	virtual void destroyShaderProgram(const ShaderProgramHandle& shaderProgramHandle) = 0;
 	
-	virtual RenderableHandle createRenderable(const RenderSceneHandle& renderSceneHandle, const MeshHandle& meshHandle, const TextureHandle& textureHandle, const ShaderProgramHandle& shaderProgramHandle) = 0;
+	virtual RenderableHandle createRenderable(const RenderSceneHandle& renderSceneHandle, const MeshHandle& meshHandle, const TextureHandle& textureHandle, const ShaderProgramHandle& shaderProgramHandle = ShaderProgramHandle()) = 0;
+	virtual RenderableHandle createRenderable(const RenderSceneHandle& renderSceneHandle, const MeshHandle& meshHandle, const MaterialHandle& materialHandle) = 0;
+	virtual void destroy(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle) = 0;
+	
+	virtual TerrainHandle createTerrain(
+		const RenderSceneHandle& renderSceneHandle,
+		const IHeightMap* heightMap,
+		const ISplatMap* splatMap,
+		const IDisplacementMap* displacementMap
+	) = 0;
+	virtual void destroy(const RenderSceneHandle& renderSceneHandle, const TerrainHandle& terrainHandle) = 0;
 	
 	virtual void rotate(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle, const glm::quat& quaternion, const TransformSpace& relativeTo = TransformSpace::TS_LOCAL) = 0;
 	virtual void rotate(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle, const float32 degrees, const glm::vec3& axis, const TransformSpace& relativeTo = TransformSpace::TS_LOCAL) = 0;

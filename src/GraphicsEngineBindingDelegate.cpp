@@ -7,7 +7,8 @@
 #include "Types.hpp"
 
 #include "ModelHandle.hpp"
-#include "IScene.hpp"
+#include "Scene.hpp"
+#include "IWindowEventListener.hpp"
 #include "IKeyboardEventListener.hpp"
 #include "IMouseMotionEventListener.hpp"
 #include "IMouseButtonEventListener.hpp"
@@ -27,7 +28,18 @@
 #include "GameEngine.hpp"
 
 namespace ice_engine
+{	
+
+template<class T>
+void proxyFunctionSetPosition(const uint32 x, const uint32 y, T* t)
 {
+	t->setPosition(x, y);
+}
+template<class T>
+glm::ivec2 proxyFunctionGetPosition(T* t)
+{
+	return t->getPosition();
+}
 
 GraphicsEngineBindingDelegate::GraphicsEngineBindingDelegate(logger::ILogger* logger, scripting::IScriptingEngine* scriptingEngine, GameEngine* gameEngine, graphics::IGraphicsEngine* graphicsEngine)
 	:
@@ -40,6 +52,11 @@ GraphicsEngineBindingDelegate::GraphicsEngineBindingDelegate(logger::ILogger* lo
 
 void GraphicsEngineBindingDelegate::bind()
 {
+	scriptingEngine_->registerObjectType("IImage", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	scriptingEngine_->registerObjectType("IHeightMap", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	scriptingEngine_->registerObjectType("ISplatMap", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	scriptingEngine_->registerObjectType("IDisplacementMap", 0, asOBJ_REF | asOBJ_NOCOUNT);
+
 	// Enums available
 	scriptingEngine_->registerEnum("TransformSpace");
 	scriptingEngine_->registerEnumValue("TransformSpace", "TS_LOCAL", graphics::TransformSpace::TS_LOCAL);
@@ -52,13 +69,35 @@ void GraphicsEngineBindingDelegate::bind()
 	scriptingEngine_->registerEnum("EventType");
 	scriptingEngine_->registerEnumValue("EventType", "UNKNOWN", graphics::UNKNOWN);
 	scriptingEngine_->registerEnumValue("EventType", "QUIT", graphics::QUIT);
+	scriptingEngine_->registerEnumValue("EventType", "WINDOWEVENT", graphics::WINDOWEVENT);
 	scriptingEngine_->registerEnumValue("EventType", "KEYDOWN", graphics::KEYDOWN);
 	scriptingEngine_->registerEnumValue("EventType", "KEYUP", graphics::KEYUP);
 	scriptingEngine_->registerEnumValue("EventType", "MOUSEMOTION", graphics::MOUSEMOTION);
 	scriptingEngine_->registerEnumValue("EventType", "MOUSEBUTTONDOWN", graphics::MOUSEBUTTONDOWN);
 	scriptingEngine_->registerEnumValue("EventType", "MOUSEBUTTONUP", graphics::MOUSEBUTTONUP);
 	scriptingEngine_->registerEnumValue("EventType", "MOUSEWHEEL", graphics::MOUSEWHEEL);
-		
+	
+	scriptingEngine_->registerEnum("WindowEventType");
+	scriptingEngine_->registerEnumValue("WindowEventType", "WINDOWEVENT_UNKNOWN", graphics::WINDOWEVENT_UNKNOWN);
+	scriptingEngine_->registerEnumValue("WindowEventType", "WINDOWEVENT_NONE", graphics::WINDOWEVENT_NONE);
+	scriptingEngine_->registerEnumValue("WindowEventType", "WINDOWEVENT_SHOWN", graphics::WINDOWEVENT_SHOWN);
+	scriptingEngine_->registerEnumValue("WindowEventType", "WINDOWEVENT_HIDDEN", graphics::WINDOWEVENT_HIDDEN);
+	scriptingEngine_->registerEnumValue("WindowEventType", "WINDOWEVENT_EXPOSED", graphics::WINDOWEVENT_EXPOSED);
+	scriptingEngine_->registerEnumValue("WindowEventType", "WINDOWEVENT_MOVED", graphics::WINDOWEVENT_MOVED);
+	scriptingEngine_->registerEnumValue("WindowEventType", "WINDOWEVENT_RESIZED", graphics::WINDOWEVENT_RESIZED);
+	scriptingEngine_->registerEnumValue("WindowEventType", "WINDOWEVENT_SIZE_CHANGED", graphics::WINDOWEVENT_SIZE_CHANGED);
+	scriptingEngine_->registerEnumValue("WindowEventType", "WINDOWEVENT_MINIMIZED", graphics::WINDOWEVENT_MINIMIZED);
+	scriptingEngine_->registerEnumValue("WindowEventType", "WINDOWEVENT_MAXIMIZED", graphics::WINDOWEVENT_MAXIMIZED);
+	scriptingEngine_->registerEnumValue("WindowEventType", "WINDOWEVENT_RESTORED", graphics::WINDOWEVENT_RESTORED);
+	scriptingEngine_->registerEnumValue("WindowEventType", "WINDOWEVENT_ENTER", graphics::WINDOWEVENT_ENTER);
+	scriptingEngine_->registerEnumValue("WindowEventType", "WINDOWEVENT_LEAVE", graphics::WINDOWEVENT_LEAVE);
+	scriptingEngine_->registerEnumValue("WindowEventType", "WINDOWEVENT_FOCUS_GAINED", graphics::WINDOWEVENT_FOCUS_GAINED);
+	scriptingEngine_->registerEnumValue("WindowEventType", "WINDOWEVENT_FOCUS_LOST", graphics::WINDOWEVENT_FOCUS_LOST);
+	scriptingEngine_->registerEnumValue("WindowEventType", "WINDOWEVENT_CLOSE", graphics::WINDOWEVENT_CLOSE);
+	scriptingEngine_->registerEnumValue("WindowEventType", "WINDOWEVENT_TAKE_FOCUS", graphics::WINDOWEVENT_TAKE_FOCUS);
+	scriptingEngine_->registerEnumValue("WindowEventType", "WINDOWEVENT_HIT_TEST", graphics::WINDOWEVENT_HIT_TEST);
+    
+	
 	scriptingEngine_->registerEnum("ScanCode");
 	scriptingEngine_->registerEnumValue("ScanCode", "SCANCODE_UNKNOWN", graphics::SCANCODE_UNKNOWN);
 	scriptingEngine_->registerEnumValue("ScanCode", "SCANCODE_A", graphics::SCANCODE_A);
@@ -578,6 +617,7 @@ void GraphicsEngineBindingDelegate::bind()
 	scriptingEngine_->registerEnumValue("WindowFlags", "ICEENGINE_CLOSABLE", graphics::gui::ICEENGINE_CLOSABLE);
 	scriptingEngine_->registerEnumValue("WindowFlags", "ICEENGINE_MINIMIZABLE", graphics::gui::ICEENGINE_MINIMIZABLE);
 	scriptingEngine_->registerEnumValue("WindowFlags", "ICEENGINE_RESIZABLE", graphics::gui::ICEENGINE_RESIZABLE);
+	scriptingEngine_->registerEnumValue("WindowFlags", "ICEENGINE_MENUBAR", graphics::gui::ICEENGINE_MENUBAR);
 	scriptingEngine_->registerEnumValue("WindowFlags", "ICEENGINE_NO_INPUT", graphics::gui::ICEENGINE_NO_INPUT);
 	
 	registerHandleBindings<graphics::CameraHandle>(scriptingEngine_, "CameraHandle");
@@ -599,6 +639,16 @@ void GraphicsEngineBindingDelegate::bind()
 	//scriptingEngine_->registerObjectBehaviour("KeySym", asBEHAVE_CONSTRUCT, "void f(const KeySym &in)", asFUNCTION(glmKeySym::CopyConstructor), asCALL_CDECL_OBJLAST);
 	//scriptingEngine_->registerObjectBehaviour("KeySym", asBEHAVE_CONSTRUCT, "void f(float, float, float, float)", asFUNCTION(glmKeySym::InitConstructor), asCALL_CDECL_OBJLAST);
 	
+	scriptingEngine_->registerObjectType("WindowEvent", sizeof(graphics::WindowEvent), asOBJ_VALUE | asOBJ_POD | asOBJ_APP_CLASS_ALLINTS | asGetTypeTraits<graphics::WindowEvent>());
+	scriptingEngine_->registerObjectProperty("WindowEvent", "uint32 type", asOFFSET(graphics::WindowEvent, type));
+	scriptingEngine_->registerObjectProperty("WindowEvent", "uint32 timestamp", asOFFSET(graphics::WindowEvent, timestamp));
+	scriptingEngine_->registerObjectProperty("WindowEvent", "uint32 windowId", asOFFSET(graphics::WindowEvent, windowId));
+	scriptingEngine_->registerObjectProperty("WindowEvent", "WindowEventType eventType", asOFFSET(graphics::WindowEvent, eventType));
+	scriptingEngine_->registerObjectProperty("WindowEvent", "uint8 padding1", asOFFSET(graphics::WindowEvent, padding1));
+	scriptingEngine_->registerObjectProperty("WindowEvent", "uint8 padding2", asOFFSET(graphics::WindowEvent, padding2));
+	scriptingEngine_->registerObjectProperty("WindowEvent", "uint8 padding3", asOFFSET(graphics::WindowEvent, padding3));
+	scriptingEngine_->registerObjectProperty("WindowEvent", "int32 data1", asOFFSET(graphics::WindowEvent, data1));
+	scriptingEngine_->registerObjectProperty("WindowEvent", "int32 data2", asOFFSET(graphics::WindowEvent, data2));
 	scriptingEngine_->registerObjectType("KeyboardEvent", sizeof(graphics::KeyboardEvent), asOBJ_VALUE | asOBJ_POD | asOBJ_APP_CLASS_ALLINTS | asGetTypeTraits<graphics::KeyboardEvent>());
 	scriptingEngine_->registerObjectProperty("KeyboardEvent", "uint32 type", asOFFSET(graphics::KeyboardEvent, type));
 	scriptingEngine_->registerObjectProperty("KeyboardEvent", "uint8 state", asOFFSET(graphics::KeyboardEvent, state));
@@ -646,15 +696,37 @@ void GraphicsEngineBindingDelegate::bind()
 	
 	// Register function declarations
 	scriptingEngine_->registerFunctionDefinition("void ButtonClickCallback()");
+	scriptingEngine_->registerFunctionDefinition("void MenuItemClickCallback()");
 	
 	// Gui
+#define COMPONENT_CLASS_METHODS(name, class) \
+	scriptingEngine_->registerObjectMethod( \
+		name, \
+		"void setPosition(const uint32, const uint32)", \
+		asFUNCTION(proxyFunctionSetPosition<class>), \
+		asCALL_CDECL_OBJLAST \
+	); \
+	scriptingEngine_->registerObjectMethod( \
+		name, \
+		"ivec2 getPosition() const", \
+		asFUNCTION(proxyFunctionGetPosition<class>), \
+		asCALL_CDECL_OBJLAST \
+	); \
+
+	scriptingEngine_->registerObjectType("IComponent", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	COMPONENT_CLASS_METHODS("IComponent", graphics::gui::IComponent)
+	
 	scriptingEngine_->registerObjectType("ILabel", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	scriptingEngine_->registerObjectMethod("ILabel", "IComponent@ opImplCast()", asFUNCTION((refCast<graphics::gui::ILabel, graphics::gui::IComponent>)), asCALL_CDECL_OBJLAST);
+	COMPONENT_CLASS_METHODS("ILabel", graphics::gui::ILabel)
 	scriptingEngine_->registerClassMethod(
 		"ILabel",
 		"void setLabel(const string& in)",
 		asMETHODPR(graphics::gui::ILabel, setLabel, (const std::string&), void)
 	);
 	scriptingEngine_->registerObjectType("IButton", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	scriptingEngine_->registerObjectMethod("IButton", "IComponent@ opImplCast()", asFUNCTION((refCast<graphics::gui::IButton, graphics::gui::IComponent>)), asCALL_CDECL_OBJLAST);
+	COMPONENT_CLASS_METHODS("IButton", graphics::gui::IButton)
 	scriptingEngine_->registerObjectMethod(
 		"IButton",
 		"void setCallback(ButtonClickCallback@ callback)",
@@ -662,11 +734,54 @@ void GraphicsEngineBindingDelegate::bind()
 		asCALL_THISCALL_OBJFIRST,
 		gameEngine_
 	);
+	scriptingEngine_->registerObjectType("IMenuItem", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	scriptingEngine_->registerObjectMethod("IMenuItem", "IComponent@ opImplCast()", asFUNCTION((refCast<graphics::gui::IMenuItem, graphics::gui::IComponent>)), asCALL_CDECL_OBJLAST);
+	COMPONENT_CLASS_METHODS("IMenuItem", graphics::gui::IMenuItem)
+	scriptingEngine_->registerObjectMethod(
+		"IMenuItem",
+		"void setCallback(MenuItemClickCallback@ callback)",
+		asMETHODPR(GameEngine, setCallback, (graphics::gui::IMenuItem*, scripting::ScriptFunctionHandle), void),
+		asCALL_THISCALL_OBJFIRST,
+		gameEngine_
+	);
+	scriptingEngine_->registerObjectType("IMenu", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	scriptingEngine_->registerObjectMethod("IMenu", "IComponent@ opImplCast()", asFUNCTION((refCast<graphics::gui::IMenu, graphics::gui::IComponent>)), asCALL_CDECL_OBJLAST);
+	COMPONENT_CLASS_METHODS("IMenu", graphics::gui::IMenu)
+	scriptingEngine_->registerClassMethod(
+		"IMenu",
+		"IMenu@ createMenu(const string& in)",
+		asMETHODPR(graphics::gui::IMenu, createMenu, (const std::string&), graphics::gui::IMenu*)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IMenu",
+		"void createSeparator()",
+		asMETHODPR(graphics::gui::IMenu, createSeparator, (), void)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IMenu",
+		"IMenuItem@ createMenuItem(const string& in)",
+		asMETHODPR(graphics::gui::IMenu, createMenuItem, (const std::string&), graphics::gui::IMenuItem*)
+	);
+	scriptingEngine_->registerObjectType("IMenuBar", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	scriptingEngine_->registerObjectMethod("IMenuBar", "IComponent@ opImplCast()", asFUNCTION((refCast<graphics::gui::IMenuBar, graphics::gui::IComponent>)), asCALL_CDECL_OBJLAST);
+	COMPONENT_CLASS_METHODS("IMenuBar", graphics::gui::IMenuBar)
+	scriptingEngine_->registerClassMethod(
+		"IMenuBar",
+		"IMenu@ createMenu(const string& in)",
+		asMETHODPR(graphics::gui::IMenuBar, createMenu, (const std::string&), graphics::gui::IMenu*)
+	);
 	scriptingEngine_->registerObjectType("IWindow", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	scriptingEngine_->registerObjectMethod("IWindow", "IComponent@ opImplCast()", asFUNCTION((refCast<graphics::gui::IWindow, graphics::gui::IComponent>)), asCALL_CDECL_OBJLAST);
+	COMPONENT_CLASS_METHODS("IWindow", graphics::gui::IWindow)
 	scriptingEngine_->registerClassMethod(
 		"IWindow",
 		"ILabel@ createLabel(const uint32, const uint32, const uint32, const uint32, const string = string())",
 		asMETHODPR(graphics::gui::IWindow, createLabel, (const uint32, const uint32, const uint32, const uint32, const std::string), graphics::gui::ILabel*)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IWindow",
+		"IMenuBar@ createMenuBar()",
+		asMETHODPR(graphics::gui::IWindow, createMenuBar, (), graphics::gui::IMenuBar*)
 	);
 	scriptingEngine_->registerClassMethod(
 		"IWindow",
@@ -725,8 +840,8 @@ void GraphicsEngineBindingDelegate::bind()
 	);
 	scriptingEngine_->registerClassMethod(
 		"IGraphicsEngine",
-		"TextureHandle createTexture2d(Image@)",
-		asMETHODPR(graphics::IGraphicsEngine, createTexture2d, (const image::Image&), graphics::TextureHandle)
+		"TextureHandle createTexture2d(IImage@)",
+		asMETHODPR(graphics::IGraphicsEngine, createTexture2d, (const graphics::IImage*), graphics::TextureHandle)
 	);
 	scriptingEngine_->registerClassMethod(
 		"IGraphicsEngine",
@@ -787,6 +902,21 @@ void GraphicsEngineBindingDelegate::bind()
 		"IGraphicsEngine",
 		"void lookAt(const CameraHandle& in, const vec3& in)",
 		asMETHODPR(graphics::IGraphicsEngine, lookAt, (const graphics::CameraHandle&, const glm::vec3&), void)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IGraphicsEngine",
+		"void setMouseRelativeMode(const bool)",
+		asMETHODPR(graphics::IGraphicsEngine, setMouseRelativeMode, (const bool), void)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IGraphicsEngine",
+		"void setWindowGrab(const bool)",
+		asMETHODPR(graphics::IGraphicsEngine, setWindowGrab, (const bool), void)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IGraphicsEngine",
+		"void setCursorVisible(const bool)",
+		asMETHODPR(graphics::IGraphicsEngine, setCursorVisible, (const bool), void)
 	);
 }
 	

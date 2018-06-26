@@ -13,6 +13,7 @@
 #include "DebugRenderer.hpp"
 
 #include "handles/HandleVector.hpp"
+#include "handles/PointerHandleVector.hpp"
 #include "utilities/Properties.hpp"
 #include "fs/IFileSystem.hpp"
 #include "logger/ILogger.hpp"
@@ -23,15 +24,6 @@ namespace physics
 {
 namespace bullet
 {
-
-struct BulletPhysicsScene
-{
-	std::unique_ptr<btBroadphaseInterface> broadphase;
-	std::unique_ptr<btDefaultCollisionConfiguration> collisionConfiguration;
-	std::unique_ptr<btCollisionDispatcher> dispatcher;
-	std::unique_ptr<btSequentialImpulseConstraintSolver> solver;
-	std::unique_ptr<btDiscreteDynamicsWorld> dynamicsWorld;
-};
 
 enum BulletCollisionObjectType
 {
@@ -57,7 +49,7 @@ struct BulletUserData
 		RigidBodyObjectHandle rigidBodyObjectHandle;
 		GhostObjectHandle ghostObjectHandle;
 	};
-	BulletCollisionObjectType type;
+	BulletCollisionObjectType type = BulletCollisionObjectType::UNKNOWN;
 	UserData userData;
 };
 
@@ -74,6 +66,22 @@ struct BulletGhostObjectData
 	std::unique_ptr<BulletUserData> userData;
 };
 
+struct BulletPhysicsScene
+{
+	std::unique_ptr<btBroadphaseInterface> broadphase;
+	std::unique_ptr<btDefaultCollisionConfiguration> collisionConfiguration;
+	std::unique_ptr<btCollisionDispatcher> dispatcher;
+	std::unique_ptr<btSequentialImpulseConstraintSolver> solver;
+	std::unique_ptr<btDiscreteDynamicsWorld> dynamicsWorld;
+	
+	bool debugRendering = false;
+	
+	//std::vector<std::unique_ptr<BulletRigidBodyData>> rigidBodyData;
+	//std::vector<std::unique_ptr<BulletGhostObjectData>> ghostObjectData;
+	handles::PointerHandleVector<BulletRigidBodyData, RigidBodyObjectHandle> rigidBodyData;
+	handles::PointerHandleVector<BulletGhostObjectData, GhostObjectHandle> ghostObjectData;
+};
+
 class PhysicsEngine : public IPhysicsEngine
 {
 public:
@@ -88,19 +96,21 @@ public:
 	virtual void setGravity(const PhysicsSceneHandle& physicsSceneHandle, const glm::vec3& gravity) override;
 	
 	virtual void setPhysicsDebugRenderer(IPhysicsDebugRenderer* physicsDebugRenderer) override;
+	virtual void setDebugRendering(const PhysicsSceneHandle& physicsSceneHandle, const bool enabled) override;
 	
 	virtual CollisionShapeHandle createStaticPlaneShape(const glm::vec3& planeNormal, const float32 planeConstant) override;
 	virtual CollisionShapeHandle createStaticBoxShape(const glm::vec3& dimensions) override;
+	virtual CollisionShapeHandle createStaticTerrainShape(std::vector<char>&& heightData, const uint32 width, const uint32 height) override;
 	virtual void destroyStaticShape(const CollisionShapeHandle& collisionShapeHandle) override;
 	virtual void destroyAllStaticShapes() override;
 	
-	virtual RigidBodyObjectHandle createDynamicRigidBodyObject(
+	virtual RigidBodyObjectHandle createRigidBodyObject(
 		const PhysicsSceneHandle& physicsSceneHandle, 
 		const CollisionShapeHandle& collisionShapeHandle,
 		std::unique_ptr<IMotionChangeListener> motionStateListener = nullptr,
 		const UserData& userData = UserData()
 	) override;
-	virtual RigidBodyObjectHandle createDynamicRigidBodyObject(
+	virtual RigidBodyObjectHandle createRigidBodyObject(
 		const PhysicsSceneHandle& physicsSceneHandle, 
 		const CollisionShapeHandle& collisionShapeHandle,
 		const float32 mass,
@@ -109,7 +119,7 @@ public:
 		std::unique_ptr<IMotionChangeListener> motionStateListener = nullptr,
 		const UserData& userData = UserData()
 	) override;
-	virtual RigidBodyObjectHandle createDynamicRigidBodyObject(
+	virtual RigidBodyObjectHandle createRigidBodyObject(
 		const PhysicsSceneHandle& physicsSceneHandle, 
 		const CollisionShapeHandle& collisionShapeHandle,
 		const glm::vec3& position,
@@ -120,23 +130,6 @@ public:
 		std::unique_ptr<IMotionChangeListener> motionStateListener = nullptr,
 		const UserData& userData = UserData()
 	) override;
-	virtual RigidBodyObjectHandle createStaticRigidBodyObject(const PhysicsSceneHandle& physicsSceneHandle, const CollisionShapeHandle& collisionShapeHandle, const UserData& userData = UserData()) override;
-	virtual RigidBodyObjectHandle createStaticRigidBodyObject(
-		const PhysicsSceneHandle& physicsSceneHandle, 
-		const CollisionShapeHandle& collisionShapeHandle,
-		const float32 friction,
-		const float32 restitution,
-		const UserData& userData = UserData()
-	) override;
-	virtual RigidBodyObjectHandle createStaticRigidBodyObject(
-		const PhysicsSceneHandle& physicsSceneHandle, 
-		const CollisionShapeHandle& collisionShapeHandle,
-		const glm::vec3& position,
-		const glm::quat& orientation,
-		const float32 friction = 1.0f,
-		const float32 restitution = 1.0f,
-		const UserData& userData = UserData()
-	) override;
 	virtual GhostObjectHandle createGhostObject(const PhysicsSceneHandle& physicsSceneHandle, const CollisionShapeHandle& collisionShapeHandle, const UserData& userData = UserData()) override;
 	virtual GhostObjectHandle createGhostObject(
 		const PhysicsSceneHandle& physicsSceneHandle, 
@@ -145,7 +138,7 @@ public:
 		const glm::quat& orientation,
 		const UserData& userData = UserData()
 	) override;
-	virtual void destroyRigidBody(const PhysicsSceneHandle& physicsSceneHandle, const RigidBodyObjectHandle& rigidBodyObjectHandle) override;
+	virtual void destroy(const PhysicsSceneHandle& physicsSceneHandle, const RigidBodyObjectHandle& rigidBodyObjectHandle) override;
 	virtual void destroyAllRigidBodies() override;
 	
 	virtual void setUserData(const PhysicsSceneHandle& physicsSceneHandle, const RigidBodyObjectHandle& rigidBodyObjectHandle, const UserData& userData) override;
@@ -187,8 +180,6 @@ private:
 	
 	
 	std::vector<std::unique_ptr<btCollisionShape>> shapes_;
-	std::vector<std::unique_ptr<BulletRigidBodyData>> rigidBodyData_;
-	std::vector<std::unique_ptr<BulletGhostObjectData>> ghostObjectData_;
 	//handles::HandleVector<BulletRigidBodyData, RigidBodyObjectHandle> rigidBodyData_;
 	//handles::HandleVector<BulletGhostObjectData, GhostObjectHandle> ghostObjectData_;
 	handles::HandleVector<BulletPhysicsScene, PhysicsSceneHandle> physicsScenes_;

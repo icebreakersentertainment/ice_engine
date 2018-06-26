@@ -14,7 +14,7 @@ namespace custom
 namespace gl
 {
 
-#define ASSERT_GL_ERROR(filename, line) checkGlError(filename, line);
+#define ASSERT_GL_ERROR() checkGlError(__FILE__, __LINE__);
 
 inline void checkGlError(const std::string& filename, const int line)
 {

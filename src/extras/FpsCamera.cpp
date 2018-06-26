@@ -53,9 +53,9 @@ void FpsCamera::rotate(const float32& degrees, const glm::vec3& axis)
 {
 	/*
 	if ( axis == glm::vec3(0.0f, 1.0f, 0.0f) )
-		camera_->rotate(degrees, axis, ISceneNode::TransformSpace::TS_LOCAL);
+		camera_->rotate(degrees, axis, SceneNode::TransformSpace::TS_LOCAL);
 	else
-		camera_->rotate(degrees, axis, ISceneNode::TransformSpace::TS_WORLD);
+		camera_->rotate(degrees, axis, SceneNode::TransformSpace::TS_WORLD);
 	*/
 }
 
