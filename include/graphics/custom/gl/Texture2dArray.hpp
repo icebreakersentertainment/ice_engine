@@ -44,7 +44,7 @@ public:
 		
 		glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
 		
-		ASSERT_GL_ERROR(__FILE__, __LINE__);
+		ASSERT_GL_ERROR();
 	}
 	
 	void bind()

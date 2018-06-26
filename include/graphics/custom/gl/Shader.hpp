@@ -102,7 +102,7 @@ public:
 				throw std::runtime_error(message.str());
 			}
 			
-			ASSERT_GL_ERROR(__FILE__, __LINE__);
+			ASSERT_GL_ERROR();
 		}
 		catch (const std::exception& e)
 		{

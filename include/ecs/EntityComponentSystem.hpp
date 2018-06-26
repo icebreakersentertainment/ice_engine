@@ -73,7 +73,7 @@ public:
 	template <typename C>
 	bool hasComponent(entityx::Entity::Id id) const
 	{
-		return entities_.has_component(id);
+		return entities_.has_component<C>(id);
 	}
 	
 	template <typename C, typename ... Args>
@@ -91,7 +91,7 @@ public:
 	template <typename C>
 	void remove(entityx::Entity::Id id)
 	{
-		entities_.remove(id);
+		entities_.remove<C>(id);
 	}
 	
 	uint32 numEntities() const

@@ -1,7 +1,7 @@
 #ifndef AUDIO_H_
 #define AUDIO_H_
 
-#include <SDL2/SDL_Audio.h>
+#include <SDL2/SDL_audio.h>
 
 #include "audio/IAudio.hpp"
 

@@ -3,13 +3,13 @@
 
 #include <string>
 
-#define LOG_INFO(logger, message) logger->info(__FUNCTION__ " line " + std::to_string(__LINE__) + ": " + std::string(message));
-#define LOG_WARN(logger, message) logger->warn(__FUNCTION__ " line " + std::to_string(__LINE__) + ": " + std::string(message));
-#define LOG_ERROR(logger, message) logger->error(__FUNCTION__ " line " + std::to_string(__LINE__) + ": " + std::string(message));
-#define LOG_FATAL(logger, message) logger->fatal(__FUNCTION__ " line " + std::to_string(__LINE__) + ": " + std::string(message));
+#define LOG_INFO(logger, message) logger->info(std::string(__FUNCTION__) + " line " + std::to_string(__LINE__) + ": " + std::string(message));
+#define LOG_WARN(logger, message) logger->warn(std::string(__FUNCTION__) + " line " + std::to_string(__LINE__) + ": " + std::string(message));
+#define LOG_ERROR(logger, message) logger->error(std::string(__FUNCTION__) + " line " + std::to_string(__LINE__) + ": " + std::string(message));
+#define LOG_FATAL(logger, message) logger->fatal(std::string(__FUNCTION__) + " line " + std::to_string(__LINE__) + ": " + std::string(message));
 
 #if defined(DEBUG) || defined(ICEENGINE_ENABLE_DEBUG_LOGGING)
-	#define LOG_DEBUG(logger, message) logger->debug(__FUNCTION__ " line " + std::to_string(__LINE__) + ": " + std::string(message));
+	#define LOG_DEBUG(logger, message) logger->debug(std::string(__FUNCTION__) + " line " + std::to_string(__LINE__) + ": " + std::string(message));
 #else
 	#define LOG_DEBUG(logger, message)
 #endif

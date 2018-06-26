@@ -72,7 +72,7 @@ public:
 		
 		glBindFramebuffer(GL_FRAMEBUFFER, id_);
 		
-		ASSERT_GL_ERROR(__FILE__, __LINE__);
+		ASSERT_GL_ERROR();
 	}
 	
 	void attach(const Texture2d& texture)
@@ -95,7 +95,7 @@ public:
 		
 		glDrawBuffers(numAttachments_, &attachments[0]);
 		
-		ASSERT_GL_ERROR(__FILE__, __LINE__);
+		ASSERT_GL_ERROR();
 	}
 	
 	void attach(const Texture2d& texture, const GLenum attachment)
@@ -106,7 +106,7 @@ public:
 		
 		glFramebufferTexture2D(GL_FRAMEBUFFER, attachment, GL_TEXTURE_2D, texture, 0);
 		
-		ASSERT_GL_ERROR(__FILE__, __LINE__);
+		ASSERT_GL_ERROR();
 	}
 	
 	void attach(const RenderBuffer& renderBuffer, const GLenum attachment)
@@ -117,7 +117,7 @@ public:
 		
 		glFramebufferRenderbuffer(GL_FRAMEBUFFER, attachment, GL_RENDERBUFFER, renderBuffer);
 		
-		ASSERT_GL_ERROR(__FILE__, __LINE__);
+		ASSERT_GL_ERROR();
 	}
 	
 	GLenum status()
@@ -183,21 +183,21 @@ public:
 	{
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		
-		ASSERT_GL_ERROR(__FILE__, __LINE__);
+		ASSERT_GL_ERROR();
 	}
 	
 	static void drawBuffer(const GLenum buf)
 	{
 		glDrawBuffer(buf);
 		
-		ASSERT_GL_ERROR(__FILE__, __LINE__);
+		ASSERT_GL_ERROR();
 	}
 	
 	static void readBuffer(const GLenum mode)
 	{
 		glReadBuffer(mode);
 		
-		ASSERT_GL_ERROR(__FILE__, __LINE__);
+		ASSERT_GL_ERROR();
 	}
 	
 	static constexpr GLuint INVALID_ID = 0;

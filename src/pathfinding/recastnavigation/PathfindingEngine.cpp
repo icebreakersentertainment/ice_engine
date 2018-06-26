@@ -71,7 +71,7 @@ MovementRequestState moveRequestStateToMovementRequestState(const unsigned char 
 			return MovementRequestState::VELOCITY;
 
 		default:
-			assert(false, "We should never get here");
+			assert(false && "We should never get here");
 			break;
 	}
 

@@ -24,7 +24,7 @@ inline void FreeImageErrorHandler(FREE_IMAGE_FORMAT fif, const char *message)
 class Image : public graphics::IImage, public physics::IImage
 {
 public:
-	static enum Format
+	enum Format
 	{
 		FORMAT_UNKNOWN = -1,
 		FORMAT_RGB,
