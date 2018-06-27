@@ -5,6 +5,9 @@
 
 #include "pathfinding/IPathfindingDebugRenderer.hpp"
 
+#include "Platform.hpp"
+
+#if defined(PLATFORM_LINUX)
 inline unsigned int duDebugDraw::areaToCol(unsigned int area)
 {
 	if (area == 0)
@@ -17,6 +20,7 @@ inline unsigned int duDebugDraw::areaToCol(unsigned int area)
 		return duIntToCol(area, 255);
 	}
 }
+#endif
 
 namespace ice_engine
 {
