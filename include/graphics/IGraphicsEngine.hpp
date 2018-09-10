@@ -12,6 +12,7 @@
 #include "TransformSpace.hpp"
 #include "RenderSceneHandle.hpp"
 #include "RenderableHandle.hpp"
+#include "TerrainRenderableHandle.hpp"
 #include "TerrainHandle.hpp"
 #include "MeshHandle.hpp"
 #include "MaterialHandle.hpp"
@@ -71,6 +72,7 @@ public:
 	virtual CameraHandle createCamera(const glm::vec3& position, const glm::vec3& lookAt = glm::vec3(0.0f, 0.0f, 0.0f)) = 0;
 	
 	virtual PointLightHandle createPointLight(const RenderSceneHandle& renderSceneHandle, const glm::vec3& position) = 0;
+	virtual void destroy(const RenderSceneHandle& renderSceneHandle, const PointLightHandle& pointLightHandle) = 0;
 	
 	virtual MeshHandle createStaticMesh(
 		const std::vector<glm::vec3>& vertices,
@@ -103,6 +105,13 @@ public:
 	
 	virtual MaterialHandle createMaterial(const IPbrMaterial* pbrMaterial) = 0;
 	
+	virtual TerrainHandle createStaticTerrain(
+			const IHeightMap* heightMap,
+			const ISplatMap* splatMap,
+			const IDisplacementMap* displacementMap
+		) = 0;
+		virtual void destroy(const TerrainHandle& terrainHandle) = 0;
+
 	virtual VertexShaderHandle createVertexShader(const std::string& data) = 0;
 	virtual FragmentShaderHandle createFragmentShader(const std::string& data) = 0;
 	virtual TessellationControlShaderHandle createTessellationControlShader(const std::string& data) = 0;
@@ -125,17 +134,30 @@ public:
 	virtual bool valid(const ShaderProgramHandle& shaderProgramHandle) const = 0;
 	virtual void destroyShaderProgram(const ShaderProgramHandle& shaderProgramHandle) = 0;
 	
-	virtual RenderableHandle createRenderable(const RenderSceneHandle& renderSceneHandle, const MeshHandle& meshHandle, const TextureHandle& textureHandle, const ShaderProgramHandle& shaderProgramHandle = ShaderProgramHandle()) = 0;
-	virtual RenderableHandle createRenderable(const RenderSceneHandle& renderSceneHandle, const MeshHandle& meshHandle, const MaterialHandle& materialHandle) = 0;
+	virtual RenderableHandle createRenderable(
+		const RenderSceneHandle& renderSceneHandle,
+		const MeshHandle& meshHandle,
+		const TextureHandle& textureHandle,
+		const glm::vec3& position,
+		const glm::quat& orientation,
+		const glm::vec3& scale = glm::vec3(1.0f),
+		const ShaderProgramHandle& shaderProgramHandle = ShaderProgramHandle()
+	) = 0;
+	virtual RenderableHandle createRenderable(
+		const RenderSceneHandle& renderSceneHandle,
+		const MeshHandle& meshHandle,
+		const MaterialHandle& materialHandle,
+		const glm::vec3& position,
+		const glm::quat& orientation,
+		const glm::vec3& scale = glm::vec3(1.0f)
+	) = 0;
 	virtual void destroy(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle) = 0;
 	
-	virtual TerrainHandle createTerrain(
+	virtual TerrainRenderableHandle createTerrainRenderable(
 		const RenderSceneHandle& renderSceneHandle,
-		const IHeightMap* heightMap,
-		const ISplatMap* splatMap,
-		const IDisplacementMap* displacementMap
+		const TerrainHandle& terrainHandle
 	) = 0;
-	virtual void destroy(const RenderSceneHandle& renderSceneHandle, const TerrainHandle& terrainHandle) = 0;
+	virtual void destroy(const RenderSceneHandle& renderSceneHandle, const TerrainRenderableHandle& terrainRenderableHandle) = 0;
 	
 	virtual void rotate(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle, const glm::quat& quaternion, const TransformSpace& relativeTo = TransformSpace::TS_LOCAL) = 0;
 	virtual void rotate(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle, const float32 degrees, const glm::vec3& axis, const TransformSpace& relativeTo = TransformSpace::TS_LOCAL) = 0;

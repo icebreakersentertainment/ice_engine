@@ -55,6 +55,11 @@ bool File::isOpen() const
 	}
 }
 
+uint64 File::size() const
+{
+	return static_cast<uint64>(boost::filesystem::file_size(file_));
+}
+
 bool File::eof() const
 {
 	if (flags_ & FileFlags::READ)

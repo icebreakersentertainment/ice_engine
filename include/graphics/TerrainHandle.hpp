@@ -17,4 +17,16 @@ public:
 }
 }
 
+namespace std
+{
+	template <>
+	struct hash<ice_engine::graphics::TerrainHandle>
+	{
+		std::size_t operator()(const ice_engine::graphics::TerrainHandle& k) const noexcept
+		{
+			return hash<ice_engine::uint64>{}(k.id());
+		}
+	};
+}
+
 #endif /* TERRAIN_HANDLE_H_ */

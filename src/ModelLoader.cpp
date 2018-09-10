@@ -9,6 +9,9 @@
 #include <assimp/scene.h>
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
+#include <assimp/DefaultLogger.hpp>
+#include <assimp/IOStream.hpp>
+#include <assimp/IOSystem.hpp>
 
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
@@ -37,6 +40,153 @@ namespace model
 
 namespace
 {
+
+class IoStream : public Assimp::IOStream
+{
+public:
+	~IoStream() = default;
+
+	size_t Read( void* pvBuffer, size_t pSize, size_t pCount) override
+	{
+		file_->getInputStream().read(static_cast<char*>(pvBuffer), pSize*pCount);
+
+		return file_->getInputStream().gcount();
+	}
+
+	size_t Write( const void* pvBuffer, size_t pSize, size_t pCount) override
+	{
+		return 0;
+	}
+
+	aiReturn Seek( size_t pOffset, aiOrigin pOrigin) override
+	{
+		file_->getInputStream().seekg(pOffset, pOrigin);
+
+		if ( (file_->getInputStream().rdstate() & std::ifstream::failbit ) != 0 )
+		{
+			return aiReturn_FAILURE;
+		}
+
+		return aiReturn_SUCCESS;
+	}
+
+	size_t Tell() const override
+	{
+		return file_->getInputStream().tellg();
+	}
+
+	size_t FileSize() const override
+	{
+		return file_->size();
+	}
+
+	void Flush () override
+	{}
+
+protected:
+	friend class IoSystem;
+
+	IoStream(std::unique_ptr<fs::IFile> file) : file_(std::move(file))
+	{
+	}
+
+private:
+	std::unique_ptr<fs::IFile> file_;
+};
+
+class IoSystem : public Assimp::IOSystem
+{
+public:
+	IoSystem(fs::IFileSystem* fileSystem) : fileSystem_(fileSystem)
+	{
+	}
+
+	~IoSystem() = default;
+
+	bool ComparePaths(const char *one, const char *second) const override
+	{
+		return Assimp::IOSystem::ComparePaths(one, second);
+	}
+
+	bool Exists(const char *pFile) const override
+	{
+		return fileSystem_->exists(pFile);
+	}
+
+	char getOsSeparator() const override
+	{
+		return fileSystem_->getDirectorySeperator()[0];
+	}
+
+	IoStream* Open(const char *pFile, const char *pMode="rb") override
+	{
+		uint32 flags;
+
+		if (pMode[0] == 'r')
+		{
+			flags |= fs::FileFlags::READ;
+		}
+		else if (pMode[0] == 'w')
+		{
+			flags |= fs::FileFlags::WRITE;
+		}
+
+		if (strlen(pMode) > 1 && pMode[1] == 'b') flags |= fs::FileFlags::BINARY;
+
+		return new IoStream( fileSystem_->open(pFile, flags) );
+	}
+
+	void Close(Assimp::IOStream* pFile) override
+	{
+		delete pFile;
+	}
+
+private:
+	fs::IFileSystem* fileSystem_ = nullptr;
+};
+
+class Logger: public Assimp::Logger
+{
+public:
+	Logger(logger::ILogger* logger) : logger_(logger)
+	{
+	}
+
+	virtual ~Logger() = default;
+
+	bool attachStream(Assimp::LogStream *pStream, unsigned int severity=Debugging|Err|Warn|Info) override
+	{
+		return false;
+	}
+
+	bool detatchStream(Assimp::LogStream *pStream, unsigned int severity=Debugging|Err|Warn|Info) override
+	{
+		return false;
+	}
+
+	void OnInfo (const char *message) override
+	{
+		LOG_INFO(logger_, message);
+	}
+
+	void OnDebug (const char *message) override
+	{
+		LOG_DEBUG(logger_, message);
+	}
+
+	void OnWarn (const char *message) override
+	{
+		LOG_WARN(logger_, message);
+	}
+
+	void OnError (const char *message) override
+	{
+		LOG_ERROR(logger_, message);
+	}
+
+private:
+	logger::ILogger* logger_ = nullptr;
+};
 
 graphics::model::Mesh importMesh(const std::string& name, const std::string& filename, uint32 index, const aiMesh* mesh, std::map< std::string, uint32 >& boneIndexMap, logger::ILogger* logger, fs::IFileSystem* fileSystem)
 {
@@ -416,41 +566,44 @@ std::unique_ptr<graphics::model::Model> importModelData(const std::string& name,
 
 	auto model = std::make_unique<graphics::model::Model>();
 
-	// We don't currently support aiProcess_JoinIdenticalVertices or aiProcess_FindInvalidData
-	// aiProcess_FindInvalidData - I think it's due to the reduction of animation tracks containing redundant keys..
-	const aiScene* scene = aiImportFile(filename.c_str(), aiProcessPreset_TargetRealtime_MaxQuality ^ aiProcess_FindInvalidData);
+//	Assimp::DefaultLogger::create("", Assimp::Logger::VERBOSE);
+//	Assimp::DefaultLogger::set(new Logger(logger));
 
-	// Error checking
-	if ( scene == nullptr )
-	{		
-		std::stringstream ss;
-		ss << "Unable to import model data from file '" << filename << "'.";
-		throw std::runtime_error(ss.str());
-	}
-	else if ( scene->HasTextures() )
-	{
-		// Cleanup
-		aiReleaseImport(scene);
-		
-		std::string msg = std::string("Support for meshes with embedded textures is not implemented.");
-		throw std::runtime_error(msg);
-	}
-	
 	try
 	{
+		Assimp::Importer importer;
+		importer.SetIOHandler(new IoSystem(fileSystem));
+
+		// We don't currently support aiProcess_JoinIdenticalVertices or aiProcess_FindInvalidData
+		// aiProcess_FindInvalidData - I think it's due to the reduction of animation tracks containing redundant keys..
+		const aiScene* scene = importer.ReadFile(filename, aiProcessPreset_TargetRealtime_MaxQuality ^ aiProcess_FindInvalidData);
+	
+		// Error checking
+		if ( scene == nullptr )
+		{
+			std::stringstream ss;
+			ss << "Unable to import model data from file '" << filename << "': " << importer.GetErrorString();
+			throw std::runtime_error(ss.str());
+		}
+		else if ( scene->HasTextures() )
+		{
+			std::string msg = std::string("Support for meshes with embedded textures is not implemented.");
+			throw std::runtime_error(msg);
+		}
+
 		model->meshes.resize( scene->mNumMeshes );
 		model->materials.resize( scene->mNumMeshes );
 		model->textures.resize( scene->mNumMeshes );
 		model->boneData.resize( scene->mNumMeshes );
-		
+
 		auto animationSet = importAnimations(name, filename, scene, logger, fileSystem);
-		
+
 		// Create bone structure (tree structure)
 		model->rootBoneNode = animationSet.rootBoneNode;
 		
 		// Set the global inverse transformation
 		model->globalInverseTransformation = animationSet.globalInverseTransformation;
-		
+
 		// Load the animation information
 		for ( auto& kv : animationSet.animations)
 		{
@@ -461,45 +614,45 @@ std::unique_ptr<graphics::model::Model> importModelData(const std::string& name,
 			for ( auto& kvAnimatedBoneNode : kv.second.animatedBoneNodes )
 			{
 				animatedBoneNodes[ kvAnimatedBoneNode.first ] = graphics::model::AnimatedBoneNode(
-					kvAnimatedBoneNode.second.name, 
-					kvAnimatedBoneNode.second.positionTimes, 
-					kvAnimatedBoneNode.second.rotationTimes, 
-					kvAnimatedBoneNode.second.scalingTimes, 
-					kvAnimatedBoneNode.second.positions, 
-					kvAnimatedBoneNode.second.rotations, 
+					kvAnimatedBoneNode.second.name,
+					kvAnimatedBoneNode.second.positionTimes,
+					kvAnimatedBoneNode.second.rotationTimes,
+					kvAnimatedBoneNode.second.scalingTimes,
+					kvAnimatedBoneNode.second.positions,
+					kvAnimatedBoneNode.second.rotations,
 					kvAnimatedBoneNode.second.scalings
 				);
 			}
-			
+
 			// Actually create the animation
 			auto animation = graphics::model::Animation( kv.second.name, kv.second.duration, kv.second.ticksPerSecond, animatedBoneNodes );
-			
+
 			assert(animation != nullptr);
-			
+
 			model->animations.push_back(animation);
-			
+
 			// TODO: add animations properly (i.e. with names specifying the animation i guess?)
 			//std::cout << "anim: " << animation->getName() << std::endl;
 			*/
 		}
-		
+
 		std::stringstream msg;
 		msg << "graphics::model::Model has " << model->meshes.size() << " meshes.";
 		logger->debug( msg.str() );
-		
+
 		for ( uint32 i=0; i < model->meshes.size(); i++ )
 		{
 			model->meshes[i] = graphics::model::Mesh();
 			model->materials[i] = graphics::model::Material();
 			model->textures[i] = graphics::model::Texture();
 			model->boneData[i] = graphics::model::BoneData();
-			
+
 			model->boneData[i] = importBones( name, filename, i, scene->mMeshes[i], logger, fileSystem );
 			model->meshes[i] = importMesh( name, filename, i, scene->mMeshes[i], model->boneData[i].boneIndexMap, logger, fileSystem );
 			model->materials[i] = importMaterial( name, filename, i, scene->mMaterials[ scene->mMeshes[i]->mMaterialIndex ], logger, fileSystem );
 			model->textures[i] = importTexture( name, filename, i, scene->mMaterials[ scene->mMeshes[i]->mMaterialIndex ], logger, fileSystem );
 		}
-		
+
 		bool hasTextures = false;
 		for ( uint32 i=0; i < model->meshes.size(); i++ )
 		{
@@ -509,24 +662,23 @@ std::unique_ptr<graphics::model::Model> importModelData(const std::string& name,
 				break;
 			}
 		}
-		
+
 		if (!hasTextures)
 		{
 			logger->warn( "graphics::model::Model does not have any texture - either assign it a texture, or use a shader that doesn't need textures." );
 		}
+
+		logger->debug( "Done importing model data for file '" + filename + "'." );
 	}
 	catch (const std::exception& e)
 	{
-		// cleanup - calling 'aiReleaseImport' is important, as the library
-		// keeps internal resources until the scene is freed again. Not
-		// doing so can cause severe resource leaking.
-		aiReleaseImport(scene);
-		
+		Assimp::DefaultLogger::kill();
+
 		throw e;
 	}
-
-	logger->debug( "Done importing model data for file '" + filename + "'." );
 	
+	Assimp::DefaultLogger::kill();
+
 	return std::move(model);
 }
 

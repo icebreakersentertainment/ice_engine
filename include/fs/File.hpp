@@ -17,6 +17,7 @@ public:
 	virtual ~File();
 	
 	virtual bool isOpen() const override;
+	virtual uint64 size() const override;
 	virtual bool eof() const override;
 	virtual void close() override;
 	

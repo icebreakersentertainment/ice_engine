@@ -7,7 +7,7 @@
 
 namespace ice_engine
 {
-namespace physics
+namespace pathfinding
 {
 
 class IImage

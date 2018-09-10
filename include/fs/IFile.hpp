@@ -28,6 +28,7 @@ public:
 	;
 	
 	virtual bool isOpen() const = 0;
+	virtual uint64 size() const = 0;
 	virtual bool eof() const = 0;
 	virtual void close() = 0;
 	

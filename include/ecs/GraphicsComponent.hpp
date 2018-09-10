@@ -7,6 +7,10 @@
 #include "ModelHandle.hpp"
 #include "graphics/RenderableHandle.hpp"
 
+#include "serialization/glm/Vec3.hpp"
+
+#include "ecs/Serialization.hpp"
+
 namespace ice_engine
 {
 namespace ecs
@@ -18,6 +22,15 @@ struct GraphicsComponent
 	
 	GraphicsComponent(ModelHandle&& modelHandle)
 		: modelHandle(std::forward<ModelHandle>(modelHandle))
+	{
+	};
+
+	GraphicsComponent(
+		ModelHandle&& modelHandle,
+		glm::vec3&& scale
+	)
+		: modelHandle(std::forward<ModelHandle>(modelHandle)),
+		  scale(std::forward<glm::vec3>(scale))
 	{
 	};
 
@@ -36,6 +49,20 @@ struct GraphicsComponent
 	glm::vec3 scale = glm::vec3(1.0f, 1.0f, 1.0f);
 	graphics::RenderableHandle renderableHandle;
 };
+
+}
+}
+
+namespace boost
+{
+namespace serialization
+{
+
+template<class Archive>
+void serialize(Archive& ar, ice_engine::ecs::GraphicsComponent& c, const unsigned int version)
+{
+	ar & c.modelHandle & c.scale & c.renderableHandle;
+}
 
 }
 }

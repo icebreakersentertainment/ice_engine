@@ -17,4 +17,16 @@ public:
 }
 }
 
+namespace std
+{
+	template <>
+	struct hash<ice_engine::pathfinding::NavigationMeshHandle>
+	{
+		std::size_t operator()(const ice_engine::pathfinding::NavigationMeshHandle& k) const noexcept
+		{
+			return hash<ice_engine::uint64>{}(k.id());
+		}
+	};
+}
+
 #endif /* NAVIGATION_MESH_HANDLE_H_ */

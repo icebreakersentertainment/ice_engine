@@ -6,6 +6,9 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
 
+#include "serialization/glm/Vec3.hpp"
+#include "serialization/glm/Quat.hpp"
+
 namespace ice_engine
 {
 namespace ecs
@@ -14,7 +17,7 @@ namespace ecs
 struct PositionOrientationComponent
 {
 	PositionOrientationComponent() = default;
-	
+
 	PositionOrientationComponent(glm::vec3 position, glm::quat orientation) : position(position), orientation(orientation)
 	{
 	};
@@ -28,6 +31,20 @@ struct PositionOrientationComponent
 	glm::vec3 position;
 	glm::quat orientation;
 };
+
+}
+}
+
+namespace boost
+{
+namespace serialization
+{
+
+template<class Archive>
+void serialize(Archive& ar, ice_engine::ecs::PositionOrientationComponent& c, const unsigned int version)
+{
+	ar & c.position & c.orientation;
+}
 
 }
 }

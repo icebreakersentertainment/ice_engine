@@ -8,15 +8,27 @@ namespace ice_engine
 namespace physics
 {
 
-class RigidBodyObjectHandle : public handles::PointerHandle
+class RigidBodyObjectHandle : public handles::PointerHandle<RigidBodyObjectHandle>
 {
 public:
-	using handles::PointerHandle::PointerHandle;
+	using handles::PointerHandle<RigidBodyObjectHandle>::PointerHandle;
 	
 	static const RigidBodyObjectHandle INVALID;
 };
 
 }
+}
+
+namespace std
+{
+	template <>
+	struct hash<ice_engine::physics::RigidBodyObjectHandle>
+	{
+		std::size_t operator()(const ice_engine::physics::RigidBodyObjectHandle& k) const noexcept
+		{
+			return hash<const void*>{}(k.get());
+		}
+	};
 }
 
 #endif /* RIGID_BODY_OBJECT_HANDLE_H_ */

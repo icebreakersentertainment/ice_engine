@@ -1,12 +1,14 @@
 #ifndef MOVEMENTREQUESTSTATE_H_
 #define MOVEMENTREQUESTSTATE_H_
 
+#include "Types.hpp"
+
 namespace ice_engine
 {
 namespace pathfinding
 {
 
-enum MovementRequestState
+enum MovementRequestState : uint32
 {
 	NONE = 0,
 	FAILED,

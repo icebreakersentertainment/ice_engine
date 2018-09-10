@@ -1,7 +1,7 @@
 #ifndef POINTER_HANDLE_H_
 #define POINTER_HANDLE_H_
 
-#include <ostream>
+#include <iostream>
 
 #include "Types.hpp"
 
@@ -10,14 +10,35 @@ namespace ice_engine
 namespace handles
 {
 
+template <typename T>
 class PointerHandle
 {
 public:
 	PointerHandle() = default;
 
-	PointerHandle(void* object) : object_(object)
+	explicit PointerHandle(void* object) : object_(object)
 	{
 	}
+
+	PointerHandle(const PointerHandle& other)
+	{
+		object_ = other.object_;
+	}
+
+	PointerHandle(PointerHandle&& other) noexcept
+	{
+		object_ = std::exchange(other.object_, nullptr);
+	}
+
+	void* get()
+	{
+		return object_;
+	}
+
+//	const void* get() const
+//	{
+//		return object_;
+//	}
 
 	void* get() const
 	{
@@ -39,12 +60,15 @@ public:
 		return valid();
 	}
 	
-	bool operator==(const PointerHandle& other) const
+	PointerHandle& operator=(const PointerHandle& other) = default;
+	PointerHandle& operator=(PointerHandle&& other) noexcept = default;
+
+	bool operator==(const T& other) const
 	{
 		return object_ == other.object_;
 	}
 
-	bool operator!=(const PointerHandle& other) const
+	bool operator!=(const T& other) const
 	{
 		return object_ != other.object_;
 	}
@@ -58,6 +82,18 @@ private:
 
 }
 }
+
+//namespace std
+//{
+//	template <>
+//	struct hash<ice_engine::handles::PointerHandle>
+//	{
+//		std::size_t operator()(const ice_engine::handles::PointerHandle& k) const noexcept
+//		{
+//			return hash<const void*>{}(k.get());
+//		}
+//	};
+//}
 
 #endif /* POINTER_HANDLE_H_ */
 

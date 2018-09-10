@@ -8,6 +8,7 @@
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
+#include <glm/common.hpp>
 
 BEGIN_AS_NAMESPACE
 
@@ -16,6 +17,7 @@ namespace glmvec2
 void DefaultConstructor(void* memory) { new(memory) glm::vec2(); }
 void CopyConstructor(const glm::vec2& other, void* memory) { new(memory) glm::vec2(other); }
 //void DefaultDestructor(void* memory) { ((glm::vec2*)memory)->~glm::vec2(); }
+void InitConstructor(float xy, void* memory) { new(memory) glm::vec2(xy); }
 void InitConstructor(float x, float y, void* memory) { new(memory) glm::vec2(x,y); }
 
 static glm::vec2 operator+(const glm::vec2& a, const glm::vec2& b) { return glm::vec2(a.x + b.x, a.y + b.y); }
@@ -30,6 +32,7 @@ namespace glmvec3
 void DefaultConstructor(void* memory) { new(memory) glm::vec3(); }
 void CopyConstructor(const glm::vec3& other, void* memory) { new(memory) glm::vec3(other); }
 //void DefaultDestructor(void* memory) { ((glm::vec3*)memory)->~glm::vec3(); }
+void InitConstructor(float xyz, void* memory) { new(memory) glm::vec3(xyz); }
 void InitConstructor(float x, float y, float z, void* memory) { new(memory) glm::vec3(x,y,z); }
 
 static glm::vec3 operator+(const glm::vec3& a, const glm::vec3& b) { return glm::vec3(a.x + b.x, a.y + b.y, a.z + b.z); }
@@ -47,6 +50,7 @@ namespace glmvec4
 void DefaultConstructor(void* memory) { new(memory) glm::vec4(); }
 void CopyConstructor(const glm::vec4& other, void* memory) { new(memory) glm::vec4(other); }
 //void DefaultDestructor(void* memory) { ((glm::vec4*)memory)->~glm::vec4(); }
+void InitConstructor(float xyzw, void* memory) { new(memory) glm::vec4(xyzw); }
 void InitConstructor(float x, float y, float z, float w, void* memory) { new(memory) glm::vec4(x,y,z,w); }
 
 static glm::vec4 operator+(const glm::vec4& a, const glm::vec4& b) { return glm::vec4(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w); }
@@ -188,7 +192,8 @@ void RegisterGlmBindings(asIScriptEngine* engine)
 	r = engine->RegisterObjectProperty("vec2", "float y", asOFFSET(glm::vec2, y)); assert( r >= 0 );
 	r = engine->RegisterObjectBehaviour("vec2", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(glmvec2::DefaultConstructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 	r = engine->RegisterObjectBehaviour("vec2", asBEHAVE_CONSTRUCT, "void f(const vec2 &in)", asFUNCTION(glmvec2::CopyConstructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
-	r = engine->RegisterObjectBehaviour("vec2", asBEHAVE_CONSTRUCT, "void f(float, float)", asFUNCTION(glmvec2::InitConstructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("vec2", asBEHAVE_CONSTRUCT, "void f(float)", asFUNCTIONPR(glmvec2::InitConstructor, (float, void*), void), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("vec2", asBEHAVE_CONSTRUCT, "void f(float, float)", asFUNCTIONPR(glmvec2::InitConstructor, (float, float, void*), void), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 	//r = engine->RegisterObjectBehaviour("vec2", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(glmvec2::DefaultDestructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 	
 	r = engine->RegisterObjectMethod("vec2", "vec2 opAdd_r(const vec2& in) const", asFUNCTIONPR(glmvec2::operator+, (const glm::vec2&, const glm::vec2&), glm::vec2), asCALL_CDECL_OBJLAST); assert( r >= 0 );
@@ -210,7 +215,8 @@ void RegisterGlmBindings(asIScriptEngine* engine)
 	r = engine->RegisterObjectProperty("vec3", "float z", asOFFSET(glm::vec3, z)); assert( r >= 0 );
 	r = engine->RegisterObjectBehaviour("vec3", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(glmvec3::DefaultConstructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 	r = engine->RegisterObjectBehaviour("vec3", asBEHAVE_CONSTRUCT, "void f(const vec3 &in)", asFUNCTION(glmvec3::CopyConstructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
-	r = engine->RegisterObjectBehaviour("vec3", asBEHAVE_CONSTRUCT, "void f(float, float, float)", asFUNCTION(glmvec3::InitConstructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("vec3", asBEHAVE_CONSTRUCT, "void f(float)", asFUNCTIONPR(glmvec3::InitConstructor, (float, void*), void), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("vec3", asBEHAVE_CONSTRUCT, "void f(float, float, float)", asFUNCTIONPR(glmvec3::InitConstructor, (float, float, float, void*), void), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 	//r = engine->RegisterObjectBehaviour("vec3", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(glmvec3::DefaultDestructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 	
 	r = engine->RegisterObjectMethod("vec3", "vec3 opAdd_r(const vec3& in) const", asFUNCTIONPR(glmvec3::operator+, (const glm::vec3&, const glm::vec3&), glm::vec3), asCALL_CDECL_OBJLAST); assert( r >= 0 );
@@ -233,7 +239,8 @@ void RegisterGlmBindings(asIScriptEngine* engine)
 	r = engine->RegisterObjectProperty("vec4", "float w", asOFFSET(glm::vec4, w)); assert( r >= 0 );
 	r = engine->RegisterObjectBehaviour("vec4", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(glmvec4::DefaultConstructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 	r = engine->RegisterObjectBehaviour("vec4", asBEHAVE_CONSTRUCT, "void f(const vec4 &in)", asFUNCTION(glmvec4::CopyConstructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
-	r = engine->RegisterObjectBehaviour("vec4", asBEHAVE_CONSTRUCT, "void f(float, float, float, float)", asFUNCTION(glmvec4::InitConstructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("vec4", asBEHAVE_CONSTRUCT, "void f(float)", asFUNCTIONPR(glmvec4::InitConstructor, (float, void*), void), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("vec4", asBEHAVE_CONSTRUCT, "void f(float, float, float, float)", asFUNCTIONPR(glmvec4::InitConstructor, (float, float, float, float, void*), void), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 	//r = engine->RegisterObjectBehaviour("vec4", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(glmvec4::DefaultDestructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 	
 	r = engine->RegisterObjectMethod("vec4", "vec4 opAdd_r(const vec4& in) const", asFUNCTIONPR(glmvec4::operator+, (const glm::vec4&, const glm::vec4&), glm::vec4), asCALL_CDECL_OBJLAST); assert( r >= 0 );
@@ -439,6 +446,13 @@ void RegisterGlmBindings(asIScriptEngine* engine)
 	// glm functions
 	r = engine->RegisterGlobalFunction("mat4 inverse(const mat4& in)", asFUNCTIONPR(glm::inverse, (const glm::mat4&), glm::mat4), asCALL_CDECL); assert( r >= 0 );
 	r = engine->RegisterGlobalFunction("vec3 normalize(const vec3& in)", asFUNCTIONPR(glm::normalize, (const glm::vec3&), glm::vec3), asCALL_CDECL); assert( r >= 0 );
+
+	// glm math functions
+	r = engine->RegisterGlobalFunction("float ceil(const float)", asFUNCTIONPR(glm::ceil, (const float), float), asCALL_CDECL); assert( r >= 0 );
+	r = engine->RegisterGlobalFunction("float floor(const float)", asFUNCTIONPR(glm::floor, (const float), float), asCALL_CDECL); assert( r >= 0 );
+
+	// glm exponential functions
+	r = engine->RegisterGlobalFunction("float sqrt(const float)", asFUNCTIONPR(glm::sqrt, (const float), float), asCALL_CDECL); assert( r >= 0 );
 }
 
 END_AS_NAMESPACE

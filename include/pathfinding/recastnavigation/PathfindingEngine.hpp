@@ -49,8 +49,10 @@ struct RecastNavigationNavigationMesh
 struct RecastNavigationAgent
 {
 	int32 index = -1;
+	unsigned char state = DT_CROWDAGENT_STATE_INVALID;
 	unsigned char moveRequestState = DT_CROWDAGENT_TARGET_NONE;
 	std::unique_ptr<IAgentMotionChangeListener> agentMotionChangeListener = nullptr;
+	std::unique_ptr<IAgentStateChangeListener> agentStateChangeListener = nullptr;
 	std::unique_ptr<IMovementRequestStateChangeListener> movementRequestStateChangeListener = nullptr;
 };
 
@@ -83,8 +85,11 @@ public:
 	virtual void setPathfindingDebugRenderer(IPathfindingDebugRenderer* pathfindingDebugRenderer) override;
 	virtual void setDebugRendering(const PathfindingSceneHandle& pathfindingSceneHandle, const bool enabled) override;
 	
-	virtual PolygonMeshHandle createPolygonMesh(const std::vector<glm::vec3>& vertices, const std::vector<uint32>& indices, const PolygonMeshConfig& polygonMeshConfig = PolygonMeshConfig()) override;
+	virtual PolygonMeshHandle createPolygonMesh(const ITerrain* terrain, const PolygonMeshConfig& polygonMeshConfig = PolygonMeshConfig()) override;
+	virtual void destroy(const PolygonMeshHandle& polygonMeshHandle) override;
+
 	virtual NavigationMeshHandle createNavigationMesh(const PolygonMeshHandle& polygonMeshHandle, const NavigationMeshConfig& navigationMeshConfig = NavigationMeshConfig()) override;
+	virtual void destroy(const NavigationMeshHandle& navigationMeshHandle) override;
 	
 	virtual CrowdHandle createCrowd(const PathfindingSceneHandle& pathfindingSceneHandle, const NavigationMeshHandle& navigationMeshHandle) override;
 	virtual void destroy(const PathfindingSceneHandle& pathfindingSceneHandle, const CrowdHandle& crowdHandle) override;
@@ -95,6 +100,7 @@ public:
 		const glm::vec3& position,
 		const AgentParams& agentParams = AgentParams(),
 		std::unique_ptr<IAgentMotionChangeListener> agentMotionChangeListener = nullptr,
+		std::unique_ptr<IAgentStateChangeListener> agentStateChangeListener = nullptr,
 		std::unique_ptr<IMovementRequestStateChangeListener> movementRequestStateChangeListener = nullptr,
 		const UserData& userData = UserData()
 	) override;
@@ -124,6 +130,12 @@ public:
 		std::unique_ptr<IAgentMotionChangeListener> agentMotionChangeListener
 	) override;
 	virtual void setStateChangeListener(
+		const PathfindingSceneHandle& pathfindingSceneHandle,
+		const CrowdHandle& crowdHandle,
+		const AgentHandle& agentHandle,
+		std::unique_ptr<IAgentStateChangeListener> agentStateChangeListener
+	) override;
+	virtual void setMovementRequestChangeListener(
 		const PathfindingSceneHandle& pathfindingSceneHandle,
 		const CrowdHandle& crowdHandle,
 		const AgentHandle& agentHandle,

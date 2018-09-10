@@ -2,17 +2,20 @@
 
 #include <FreeImage.h>
 
+#include "ecs/PositionComponent.hpp"
+#include "ecs/RigidBodyObjectComponent.hpp"
+#include "ecs/GraphicsTerrainComponent.hpp"
+
 #include "ModelLoader.hpp"
 
 #include "Terrain.hpp"
 
 #include "Scene.hpp"
 
+#include "Heightfield.hpp"
 #include "Image.hpp"
 
 #include "utilities/IoUtilities.hpp"
-
-#include "detail/GenerateVertices.hpp"
 
 namespace ice_engine
 {
@@ -136,6 +139,9 @@ Terrain::Terrain(
 	HeightMap heightMap,
 	SplatMap splatMap,
 	DisplacementMap displacementMap,
+	physics::CollisionShapeHandle collisionShapeHandle,
+	pathfinding::PolygonMeshHandle polygonMeshHandle,
+	pathfinding::NavigationMeshHandle navigationMeshHandle,
 	graphics::IGraphicsEngine* graphicsEngine,
 	pathfinding::IPathfindingEngine* pathfindingEngine,
 	physics::IPhysicsEngine* physicsEngine,
@@ -165,22 +171,33 @@ Terrain::Terrain(
 	//flipVertical(*image);
 	//auto collisionShapeHandle = physicsEngine_->createStaticTerrainShape(image.get());
 
-	int32 dataSize = (heightMap.image()->format() == Image::Format::FORMAT_RGBA ? 4 : 3);
+	terrainEntity_ = scene_->createEntity();
 
-	std::vector<char> heightMapData;
-	heightMapData.resize(heightMap.image()->width() * heightMap.image()->height());
+	//ecs::RigidBodyObjectComponent pc;
+	//pc.rigidBodyObjectHandle = rigidBodyObjectHandle;
+	//scene_.assign(groundEntity_, gc);
+	//scene_->assign(terrainEntity_, pc);
+//
+//	int32 dataSize = (heightMap.image()->format() == Image::Format::FORMAT_RGBA ? 4 : 3);
+//
+//	std::vector<char> heightMapData;
+//	heightMapData.resize(heightMap.image()->width() * heightMap.image()->height());
+//
+//	int j=0;
+//	for (int i=0; i < heightMapData.size(); ++i)
+//	{
+//		//heightMapData[i] = (heightMap.image()->data()[j] + heightMap.image()->data()[j+1] + heightMap.image()->data()[j+2]) / 3;
+//		heightMapData[i] = heightMap.image()->data()[j+3];
+//
+//		j+=dataSize;
+//	}
 
-	int j=0;
-	for (int i=0; i < heightMapData.size(); ++i)
-	{
-		//heightMapData[i] = (heightMap.image()->data()[j] + heightMap.image()->data()[j+1] + heightMap.image()->data()[j+2]) / 3;
-		heightMapData[i] = heightMap.image()->data()[j+3];
+//	auto heightfield = Heightfield(*heightMap.image());
+//	auto collisionShapeHandle = physicsEngine_->createStaticTerrainShape(&heightfield);
 
-		j+=dataSize;
-	}
-
-	auto collisionShapeHandle = physicsEngine_->createStaticTerrainShape(std::move(heightMapData), heightMap.image()->width(), heightMap.image()->height());
-	auto rigidBodyObjectHandle = physicsEngine_->createRigidBodyObject(physicsSceneHandle_, collisionShapeHandle, glm::vec3(-0.5f, -7.5f, -0.5f), glm::quat(), 0.0f, 1.0f, 1.0f);
+	terrainEntity_.assign<ecs::PositionComponent>(glm::vec3(-0.5f, -7.5f, -0.5f));
+	terrainEntity_.assign<ecs::RigidBodyObjectComponent>(collisionShapeHandle, 0.0f, 1.0f, 1.0f);
+	//auto rigidBodyObjectHandle = physicsEngine_->createRigidBodyObject(physicsSceneHandle_, collisionShapeHandle, glm::vec3(-0.5f, -7.5f, -0.5f), glm::quat(), 0.0f, 1.0f, 1.0f);
 	
 	//flipVertical(*image);
 	//if (image->format == Image::Format::FORMAT_RGB)
@@ -210,27 +227,28 @@ Terrain::Terrain(
 	//graphics::DisplacementMap displacementMap;
 	
 	//flipVertical(*image);
-	terrainHandle_ = graphicsEngine->createTerrain(renderSceneHandle_, &heightMap, &splatMap, &displacementMap);
+	//terrainHandle_ = graphicsEngine->createTerrain(renderSceneHandle_, &heightMap, &splatMap, &displacementMap);
+	//terrainEntity_.assign<ecs::GraphicsTerrainComponent>(heightMap, splatMap, displacementMap);
 	
 	try
 	{
-		std::vector<glm::vec3> vertices;
-		std::vector<uint32> indices;
-		std::tie(vertices, indices) = detail::generateGrid(256);
-	    
-	    for (auto& v : vertices )
-		{
-			v.y = (((float32)(heightMap.height((uint32)v.x, (uint32)v.z)) / 255.0f) * 15.0f) - 7.5f;
-			v.x = v.x - 128.0f;
-			v.z = v.z - 128.0f;
-		}
-		
-        for (int i=1; i < indices.size()-1; i+=3)
-        {
-			uint32 temp = indices[i-1];
-			indices[i-1] = indices[i+1];
-			indices[i+1] = temp;
-        }
+//		std::vector<glm::vec3> vertices;
+//		std::vector<uint32> indices;
+//		std::tie(vertices, indices) = detail::generateGrid(256);
+//
+//	    for (auto& v : vertices )
+//		{
+//			v.y = (((float32)(heightMap.height((uint32)v.x, (uint32)v.z)) / 255.0f) * 15.0f) - 7.5f;
+//			v.x = v.x - 128.0f;
+//			v.z = v.z - 128.0f;
+//		}
+//
+//        for (int i=1; i < indices.size()-1; i+=3)
+//        {
+//			uint32 temp = indices[i-1];
+//			indices[i-1] = indices[i+1];
+//			indices[i+1] = temp;
+//        }
 	    
 	    /*
 	    vertices.clear();
@@ -314,28 +332,37 @@ Terrain::Terrain(
 		indices.push_back(3);
 		*/
 		
-        pathfinding::PolygonMeshConfig polygonMeshConfig;
-        polygonMeshConfig.cellSize = 0.30;
-		polygonMeshConfig.cellHeight = 0.20;
-		polygonMeshConfig.walkableSlopeAngle = 45;
-		polygonMeshConfig.walkableHeight = (int)ceilf(2.0 / polygonMeshConfig.cellHeight); //(int)ceilf(m_agentHeight / polygonMeshConfig.cellHeight);
-		polygonMeshConfig.walkableClimb = (int)floorf(0.9 / polygonMeshConfig.cellHeight); //(int)floorf(m_agentMaxClimb / polygonMeshConfig.cellHeight);
-		polygonMeshConfig.walkableRadius = (int)ceilf(0.6 / polygonMeshConfig.cellSize); //(int)ceilf(m_agentRadius / polygonMeshConfig.cellSize);
-		polygonMeshConfig.maxEdgeLength = (int)(12 / polygonMeshConfig.cellSize); //(int)(m_edgeMaxLen / m_cellSize);
-		polygonMeshConfig.maxSimplificationError = 1.3f;
-		polygonMeshConfig.minRegionArea = (int)std::sqrt(8);
-		polygonMeshConfig.mergeRegionArea = (int)std::sqrt(20);
-		polygonMeshConfig.maxVertsPerPoly = (int)6;
-		polygonMeshConfig.detailSampleDist = 6 < 0.9f ? 0 : polygonMeshConfig.cellSize * 6; //m_detailSampleDist < 0.9f ? 0 : m_cellSize * m_detailSampleDist;
-		polygonMeshConfig.detailSampleMaxError = polygonMeshConfig.cellHeight * 1; //m_cellHeight * m_detailSampleMaxError;
+        //Mesh mesh;
+        //mesh.vertices = std::move(vertices);
+        //mesh.indices = std::move(indices);
 
-        polygonMeshHandle_ = pathfindingEngine->createPolygonMesh(vertices, indices, polygonMeshConfig);
+//        pathfinding::PolygonMeshConfig polygonMeshConfig;
+//        polygonMeshConfig.cellSize = 0.30;
+//		polygonMeshConfig.cellHeight = 0.20;
+//		polygonMeshConfig.walkableSlopeAngle = 45;
+//		polygonMeshConfig.walkableHeight = (int)ceilf(2.0 / polygonMeshConfig.cellHeight); //(int)ceilf(m_agentHeight / polygonMeshConfig.cellHeight);
+//		polygonMeshConfig.walkableClimb = (int)floorf(0.9 / polygonMeshConfig.cellHeight); //(int)floorf(m_agentMaxClimb / polygonMeshConfig.cellHeight);
+//		polygonMeshConfig.walkableRadius = (int)ceilf(0.6 / polygonMeshConfig.cellSize); //(int)ceilf(m_agentRadius / polygonMeshConfig.cellSize);
+//		polygonMeshConfig.maxEdgeLength = (int)(12 / polygonMeshConfig.cellSize); //(int)(m_edgeMaxLen / m_cellSize);
+//		polygonMeshConfig.maxSimplificationError = 1.3f;
+//		polygonMeshConfig.minRegionArea = (int)std::sqrt(8);
+//		polygonMeshConfig.mergeRegionArea = (int)std::sqrt(20);
+//		polygonMeshConfig.maxVertsPerPoly = (int)6;
+//		polygonMeshConfig.detailSampleDist = 6 < 0.9f ? 0 : polygonMeshConfig.cellSize * 6; //m_detailSampleDist < 0.9f ? 0 : m_cellSize * m_detailSampleDist;
+//		polygonMeshConfig.detailSampleMaxError = polygonMeshConfig.cellHeight * 1; //m_cellHeight * m_detailSampleMaxError;
+		//polygonMeshHandle_ = gameEngine_->createPolygonMesh("test_terrain", vertices, indices, polygonMeshConfig);
 
-        pathfinding::NavigationMeshConfig navigationMeshConfig;
-        navigationMeshConfig.walkableHeight = 2.0f;
-        navigationMeshConfig.walkableClimb = 0.9f;
-        navigationMeshConfig.walkableRadius = 0.6f;
-        navigationMeshHandle_ = pathfindingEngine->createNavigationMesh(polygonMeshHandle_, navigationMeshConfig);
+        //polygonMeshHandle_ = pathfindingEngine->createPolygonMesh(vertices, indices, polygonMeshConfig);
+
+//        pathfinding::NavigationMeshConfig navigationMeshConfig;
+//        navigationMeshConfig.walkableHeight = 2.0f;
+//        navigationMeshConfig.walkableClimb = 0.9f;
+//        navigationMeshConfig.walkableRadius = 0.6f;
+        //navigationMeshHandle_ = gameEngine_->createNavigationMesh(polygonMeshHandle_, navigationMeshConfig);
+
+        //navigationMeshHandle_ = pathfindingEngine->createNavigationMesh(polygonMeshHandle_, navigationMeshConfig);
+
+        //terrainEntity_.assign<ecs::GraphicsTerrainComponent>(std::move(heightMap), std::move(splatMap), std::move(displacementMap));
 	}
 	catch(const std::exception& e)
 	{
@@ -343,17 +370,18 @@ Terrain::Terrain(
 		throw e;
 	}
 	
-	terrainEntity_ = scene_->createEntity();
+	//terrainEntity_ = scene_->createEntity();
 	
 	//GraphicsComponent gc;
 	//gc.renderableHandle = renderableHandle;
-	ecs::RigidBodyObjectComponent pc;
-	pc.rigidBodyObjectHandle = rigidBodyObjectHandle;
+	//ecs::RigidBodyObjectComponent pc;
+	//pc.rigidBodyObjectHandle = rigidBodyObjectHandle;
 	//scene_.assign(groundEntity_, gc);
-	scene_->assign(terrainEntity_, pc);
+	//scene_->assign(terrainEntity_, pc);
 	
-	auto crowdHandle = pathfindingEngine->createCrowd(pathfindingSceneHandle_, navigationMeshHandle_);
-	crowdHandles_.push_back(crowdHandle);
+	auto crowdComponent = terrainEntity_.assign<ecs::PathfindingCrowdComponent>(pathfinding::NavigationMeshHandle(navigationMeshHandle));
+	//auto crowdHandle = pathfindingEngine->createCrowd(pathfindingSceneHandle_, navigationMeshHandle_);
+	crowdHandles_.push_back(crowdComponent->crowdHandle);
 
 	/*
 	graphics::PbrMaterial material;

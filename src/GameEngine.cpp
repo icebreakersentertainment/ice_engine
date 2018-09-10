@@ -4,6 +4,9 @@
 #include <functional>
 #include <algorithm>
 #include <chrono>
+#include <sstream>
+
+#include <boost/archive/text_oarchive.hpp>
 
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
@@ -79,6 +82,9 @@ GameEngine::~GameEngine()
 	
 	// Make sure the Modules get deleted before the plugin is unloaded
 	modules_.clear();
+
+	// Make sure the Bindings get deleted before the plugin is unloaded
+	scriptingEngineBindings_.clear();
 }
 
 const EngineStatistics& GameEngine::getEngineStatistics() const
@@ -89,6 +95,61 @@ const EngineStatistics& GameEngine::getEngineStatistics() const
 void GameEngine::exit()
 {
 	running_ = false;
+}
+
+scripting::ExecutionContextHandle GameEngine::acquireTemporaryExecutionContext()
+{
+	scripting::ExecutionContextHandle context;
+
+	std::lock_guard<std::mutex> lockGuard(temporaryExecutionContextMutex_);
+
+	if (temporaryExecutionContexts_.empty())
+	{
+		throw std::runtime_error("No more temporary execution contexts available.");
+	}
+
+	context = scripting::ExecutionContextHandle( temporaryExecutionContexts_.front() );
+
+	temporaryExecutionContexts_.pop();
+
+	return context;
+}
+
+void GameEngine::releaseTemporaryExecutionContext(const scripting::ExecutionContextHandle& executionContextHandle)
+{
+	std::lock_guard<std::mutex> lockGuard(temporaryExecutionContextMutex_);
+
+	temporaryExecutionContexts_.push(executionContextHandle);
+}
+
+std::shared_future<void> GameEngine::postWorkToBackgroundThreadPool(void* object)
+{
+	scripting::ScriptFunctionHandle scriptFunctionHandle(object);
+
+	auto scriptFunctionHandleWrapper = ScriptFunctionHandleWrapper(scriptingEngine_.get(), scriptFunctionHandle);
+
+	auto promise = std::make_shared<std::promise<void>>();
+	auto sharedFuture = promise->get_future().share();
+
+	std::function<void()> work = [=, &logger_ = logger_, &scriptingEngine_ = scriptingEngine_, promise = promise, sharedFuture = sharedFuture, scriptFunctionHandleWrapper = scriptFunctionHandleWrapper]() {
+		auto context = this->acquireTemporaryExecutionContext();
+		try
+		{
+			scriptingEngine_->execute(scriptFunctionHandleWrapper.get(), context);
+			promise->set_value();
+		}
+		catch (const std::exception& e)
+		{
+			promise->set_exception(std::current_exception());
+			logger_->error("Error while executing script function: " + std::string(e.what()));
+		}
+
+		this->releaseTemporaryExecutionContext(context);
+	};
+
+	backgroundThreadPool_->postWork(std::move(work));
+
+	return sharedFuture;
 }
 
 void GameEngine::tick(const float32 delta)
@@ -104,18 +165,25 @@ void GameEngine::tick(const float32 delta)
 	
 	scriptingEngine_->execute(scriptObjectHandle_, std::string("void tick(const float)"), params);
 	
+	std::vector<std::future<void>> futures;
 	for (auto& scene : scenes_)
 	{
 		std::function<void()> work = [&scene, delta = delta]() {
 			scene->tick(delta);
 		};
-		foregroundThreadPool_->postWork(std::move(work));
+		futures.push_back(foregroundThreadPool_->postWork(std::move(work)));
 	}
 	
-	while (foregroundThreadPool_->getWorkQueueCount() + foregroundThreadPool_->getActiveWorkerCount() > 0)
+	for (auto& f : futures)
 	{
-		// sleep
+		f.wait();
+		f.get();
 	}
+
+//	while (foregroundThreadPool_->getWorkQueueCount() + foregroundThreadPool_->getActiveWorkerCount() > 0)
+//	{
+//		// sleep
+//	}
 	
 	for (auto& module : modules_)
 	{
@@ -311,6 +379,24 @@ void GameEngine::initializeScriptingSubSystem()
 	
 	BindingDelegate delegate(logger_.get(), scriptingEngine_.get(), this, graphicsEngine_.get(), audioEngine_.get(), networkingEngine_.get(), physicsEngine_.get(), pathfindingEngine_.get());
 	delegate.bind();
+
+	auto scriptingEngineBindingPlugins = pluginManager_->getScriptingEngineBindingPlugins();
+
+	for (auto scriptingEngineBindingPlugin : scriptingEngineBindingPlugins)
+	{
+		LOG_INFO(logger_, "initializing scripting engine binding plugin " + scriptingEngineBindingPlugin->getName() + "." );
+		auto scriptingEngineBindingFactory = scriptingEngineBindingPlugin->createFactory();
+
+		auto scriptingEngineBinding = scriptingEngineBindingFactory->create(properties_.get(), fileSystem_.get(), logger_.get(), graphicsEngine_.get(), pathfindingEngine_.get(), physicsEngine_.get(), scriptingEngine_.get(), audioEngine_.get(), networkingEngine_.get(), this);
+		scriptingEngineBinding->bind();
+		scriptingEngineBindings_.push_back(std::move(scriptingEngineBinding));
+	}
+
+	for (int i=0; i < 2; ++i)
+	{
+		auto context = scriptingEngine_->createExecutionContext();
+		temporaryExecutionContexts_.push(context);
+	}
 }
 
 void GameEngine::initializeThreadingSubSystem()
@@ -446,7 +532,29 @@ Scene* GameEngine::createScene(const std::string& name)
 {
 	LOG_DEBUG(logger_, "Create Scene with name: " + name );
 	
-	scenes_.push_back( std::make_unique<Scene>(name, this, audioEngine_.get(), graphicsEngine_.get(), terrainFactory_.get(), physicsEngine_.get(), pathfindingEngine_.get(), scriptingEngine_.get(), properties_.get(), fileSystem_.get(), logger_.get(), backgroundThreadPool_.get(), openGlLoader_.get()) );
+	auto scene = std::make_unique<Scene>(name, this, audioEngine_.get(), graphicsEngine_.get(), terrainFactory_.get(), physicsEngine_.get(), pathfindingEngine_.get(), scriptingEngine_.get(), properties_.get(), fileSystem_.get(), logger_.get(), backgroundThreadPool_.get(), openGlLoader_.get());
+
+	for (auto callback : preSerializeCallbacks_)
+	{
+		scene->addPreSerializeCallback(callback);
+	}
+
+	for (auto callback : postSerializeCallbacks_)
+	{
+		scene->addPostSerializeCallback(callback);
+	}
+
+	for (auto callback : preDeserializeCallbacks_)
+	{
+		scene->addPreDeserializeCallback(callback);
+	}
+
+	for (auto callback : postDeserializeCallbacks_)
+	{
+		scene->addPostDeserializeCallback(callback);
+	}
+
+	scenes_.push_back(std::move(scene));
 	
 	return scenes_.back().get();
 }
@@ -503,9 +611,17 @@ std::vector<Scene*> GameEngine::getAllScenes() const
 	return scenes;
 }
 
-void GameEngine::setIGameInstance(scripting::ScriptObjectHandle scriptObjectHandle)
+void GameEngine::testSerialize()
 {
-	scriptObjectHandle_ = scriptObjectHandle;
+	for (auto& scene : scenes_)
+	{
+		scene->serialize("test.out");
+	}
+}
+
+void GameEngine::setIGameInstance(void* object)
+{
+	scriptObjectHandle_ = scripting::ScriptObjectHandle(object);
 }
 
 void GameEngine::setBootstrapScript(const std::string& filename)
@@ -611,23 +727,27 @@ void GameEngine::destroyGui(const graphics::gui::IGui* gui)
 	}
 }
 
-void GameEngine::setCallback(graphics::gui::IButton* button, scripting::ScriptFunctionHandle scriptFunctionHandle)
+void GameEngine::setCallback(graphics::gui::IButton* button, void* object)
 {
-	auto scriptFunctionHandleWrapper = std::make_shared<ScriptFunctionHandleWrapper>(scriptingEngine_.get(), scriptFunctionHandle);
+	scripting::ScriptFunctionHandle scriptFunctionHandle(object);
+
+	auto scriptFunctionHandleWrapper = ScriptFunctionHandleWrapper(scriptingEngine_.get(), scriptFunctionHandle);
 
 	std::function<void (void)> func = [&scriptingEngine_ = scriptingEngine_, scriptFunctionHandleWrapper = scriptFunctionHandleWrapper]() {
-		scriptingEngine_->execute(scriptFunctionHandleWrapper->get());
+		scriptingEngine_->execute(scriptFunctionHandleWrapper.get());
 	};
 	
 	button->setCallback(func);
 }
 
-void GameEngine::setCallback(graphics::gui::IMenuItem* menuItem, scripting::ScriptFunctionHandle scriptFunctionHandle)
+void GameEngine::setCallback(graphics::gui::IMenuItem* menuItem, void* object)
 {
-	auto scriptFunctionHandleWrapper = std::make_shared<ScriptFunctionHandleWrapper>(scriptingEngine_.get(), scriptFunctionHandle);
+	scripting::ScriptFunctionHandle scriptFunctionHandle(object);
+
+	auto scriptFunctionHandleWrapper = ScriptFunctionHandleWrapper(scriptingEngine_.get(), scriptFunctionHandle);
 
 	std::function<void (void)> func = [&scriptingEngine_ = scriptingEngine_, scriptFunctionHandleWrapper = scriptFunctionHandleWrapper]() {
-		scriptingEngine_->execute(scriptFunctionHandleWrapper->get());
+		scriptingEngine_->execute(scriptFunctionHandleWrapper.get());
 	};
 	
 	menuItem->setCallback(func);
@@ -722,9 +842,17 @@ std::shared_future<graphics::model::Model*> GameEngine::importModelAsync(const s
 	auto promise = std::make_shared<std::promise<graphics::model::Model*>>();
 	auto sharedFuture = promise->get_future().share();
 	
-	std::function<void()> func = [=, promise = promise, sharedFuture = sharedFuture, name = name, filename = filename]() {
-		auto model = this->importModel(name, filename);
-		promise->set_value(model);
+	std::function<void()> func = [=, &logger = logger_, promise = promise, sharedFuture = sharedFuture, name = name, filename = filename]() {
+		try
+		{
+			auto model = this->importModel(name, filename);
+			promise->set_value(model);
+		}
+		catch (const std::exception& e)
+		{
+			promise->set_exception(std::current_exception());
+			logger->error("Error while importing model: " + std::string(e.what()));
+		}
 	};
 	
 	backgroundThreadPool_->postWork(std::move(func));
@@ -1067,16 +1195,29 @@ void GameEngine::destroyShaderProgram(const graphics::ShaderProgramHandle& shade
 }
 
 
-graphics::RenderableHandle GameEngine::createRenderable(const graphics::RenderSceneHandle& renderSceneHandle, const ModelHandle& modelHandle, const std::string& name)
+graphics::RenderableHandle GameEngine::createRenderable(
+	const graphics::RenderSceneHandle& renderSceneHandle,
+	const ModelHandle& modelHandle,
+	const glm::vec3& position,
+	const glm::quat& orientation,
+	const glm::vec3& scale
+)
 {
 	auto& data = staticModels_[modelHandle.id()];
 	
-	return createRenderable(renderSceneHandle, data.first, data.second);
+	return createRenderable(renderSceneHandle, data.first, data.second, position, orientation, scale);
 }
 
-graphics::RenderableHandle GameEngine::createRenderable(const graphics::RenderSceneHandle& renderSceneHandle, const graphics::MeshHandle& meshHandle, const graphics::TextureHandle& textureHandle, const std::string& name)
+graphics::RenderableHandle GameEngine::createRenderable(
+	const graphics::RenderSceneHandle& renderSceneHandle,
+	const graphics::MeshHandle& meshHandle,
+	const graphics::TextureHandle& textureHandle,
+	const glm::vec3& position,
+	const glm::quat& orientation,
+	const glm::vec3& scale
+)
 {
-	return graphicsEngine_->createRenderable(renderSceneHandle, meshHandle, textureHandle);
+	return graphicsEngine_->createRenderable(renderSceneHandle, meshHandle, textureHandle, position, orientation, scale);
 }
 
 void GameEngine::handleEvents()
@@ -1181,62 +1322,67 @@ void GameEngine::removeMouseWheelEventListener(IMouseWheelEventListener* mouseWh
 	}
 }
 
-void GameEngine::addWindowEventListener(scripting::ScriptObjectHandle listener)
+void GameEngine::addWindowEventListener(void* object)
 {
+	scripting::ScriptObjectHandle listener(object);
 	auto scriptObjectFunctionHandle = scriptingEngine_->getScriptObjectFunction(listener, "bool processEvent(const WindowEvent& in)");
 	
 	scriptWindowEventListeners_.push_back( std::make_pair(listener, scriptObjectFunctionHandle) );
 }
 
-void GameEngine::addKeyboardEventListener(scripting::ScriptObjectHandle listener)
+void GameEngine::addKeyboardEventListener(void* object)
 {
+	scripting::ScriptObjectHandle listener(object);
 	auto scriptObjectFunctionHandle = scriptingEngine_->getScriptObjectFunction(listener, "bool processEvent(const KeyboardEvent& in)");
 	
 	scriptKeyboardEventListeners_.push_back( std::make_pair(listener, scriptObjectFunctionHandle) );
 }
 
-void GameEngine::addMouseMotionEventListener(scripting::ScriptObjectHandle listener)
+void GameEngine::addMouseMotionEventListener(void* object)
 {
+	scripting::ScriptObjectHandle listener(object);
 	auto scriptObjectFunctionHandle = scriptingEngine_->getScriptObjectFunction(listener, "bool processEvent(const MouseMotionEvent& in)");
 	
 	scriptMouseMotionEventListeners_.push_back( std::make_pair(listener, scriptObjectFunctionHandle) );
 }
 
-void GameEngine::addMouseButtonEventListener(scripting::ScriptObjectHandle listener)
+void GameEngine::addMouseButtonEventListener(void* object)
 {
+	scripting::ScriptObjectHandle listener(object);
 	auto scriptObjectFunctionHandle = scriptingEngine_->getScriptObjectFunction(listener, "bool processEvent(const MouseButtonEvent& in)");
 	
 	scriptMouseButtonEventListeners_.push_back( std::make_pair(listener, scriptObjectFunctionHandle) );
 }
 
-void GameEngine::addMouseWheelEventListener(scripting::ScriptObjectHandle listener)
+void GameEngine::addMouseWheelEventListener(void* object)
 {
+	scripting::ScriptObjectHandle listener(object);
 	auto scriptObjectFunctionHandle = scriptingEngine_->getScriptObjectFunction(listener, "bool processEvent(const MouseWheelEvent& in)");
 	
 	scriptMouseWheelEventListeners_.push_back( std::make_pair(listener, scriptObjectFunctionHandle) );
 }
 
-void GameEngine::removeWindowEventListener(scripting::ScriptObjectHandle listener)
+void GameEngine::removeWindowEventListener(void* object)
 {
 	
 }
 
-void GameEngine::removeKeyboardEventListener(scripting::ScriptObjectHandle listener)
+void GameEngine::removeKeyboardEventListener(void* object)
 {
 	
 }
 
-void GameEngine::removeMouseMotionEventListener(scripting::ScriptObjectHandle listener)
+void GameEngine::removeMouseMotionEventListener(void* object)
 {
 	
 }
 
-void GameEngine::removeMouseButtonEventListener(scripting::ScriptObjectHandle listener)
+void GameEngine::removeMouseButtonEventListener(void* object)
 {
 	
 }
 
-void GameEngine::removeMouseWheelEventListener(scripting::ScriptObjectHandle listener)
+void GameEngine::removeMouseWheelEventListener(void* object)
 {
 	
 }
@@ -1298,38 +1444,41 @@ void GameEngine::removeMessageEventListener(IMessageEventListener* messageEventL
 	}
 }
 
-void GameEngine::addConnectEventListener(scripting::ScriptObjectHandle listener)
+void GameEngine::addConnectEventListener(void* object)
 {
+	scripting::ScriptObjectHandle listener(object);
 	auto scriptObjectFunctionHandle = scriptingEngine_->getScriptObjectFunction(listener, "bool processEvent(const ConnectEvent& in)");
 	
 	scriptConnectEventListeners_.push_back( std::make_pair(listener, scriptObjectFunctionHandle) );
 }
 
-void GameEngine::addDisconnectEventListener(scripting::ScriptObjectHandle listener)
+void GameEngine::addDisconnectEventListener(void* object)
 {
+	scripting::ScriptObjectHandle listener(object);
 	auto scriptObjectFunctionHandle = scriptingEngine_->getScriptObjectFunction(listener, "bool processEvent(const DisconnectEvent& in)");
 	
 	scriptDisconnectEventListeners_.push_back( std::make_pair(listener, scriptObjectFunctionHandle) );
 }
 
-void GameEngine::addMessageEventListener(scripting::ScriptObjectHandle listener)
+void GameEngine::addMessageEventListener(void* object)
 {
+	scripting::ScriptObjectHandle listener(object);
 	auto scriptObjectFunctionHandle = scriptingEngine_->getScriptObjectFunction(listener, "bool processEvent(const MessageEvent& in)");
 	
 	scriptMessageEventListeners_.push_back( std::make_pair(listener, scriptObjectFunctionHandle) );
 }
 
-void GameEngine::removeConnectEventListener(scripting::ScriptObjectHandle listener)
+void GameEngine::removeConnectEventListener(void* object)
 {
 	
 }
 
-void GameEngine::removeDisconnectEventListener(scripting::ScriptObjectHandle listener)
+void GameEngine::removeDisconnectEventListener(void* object)
 {
 	
 }
 
-void GameEngine::removeMessageEventListener(scripting::ScriptObjectHandle listener)
+void GameEngine::removeMessageEventListener(void* object)
 {
 	
 }
@@ -1599,10 +1748,10 @@ void GameEngine::run()
 		
 		auto source = fileSystem_->readAll(filename, fs::FileFlags::READ);
 		
-		bootstrapScriptHandle_ = scriptingEngine_->loadScript(source);
+		bootstrapModuleHandle_ = scriptingEngine_->createModule("", {source});
 	}
 
-	scriptingEngine_->execute(bootstrapScriptHandle_, std::string("void main()"));
+	scriptingEngine_->execute(bootstrapModuleHandle_, std::string("void main()"));
 	
 	scriptingEngine_->execute(scriptObjectHandle_, std::string("void initialize()"));
 	
@@ -1666,7 +1815,7 @@ void GameEngine::run()
 	}
 	
 	scriptingEngine_->releaseAllScriptObjects();
-	scriptingEngine_->destroyAllScripts();
+	scriptingEngine_->destroyAllModules();
 
 	destroy();
 }

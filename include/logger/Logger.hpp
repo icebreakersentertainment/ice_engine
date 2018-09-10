@@ -36,12 +36,14 @@ public:
 	
 	virtual void info(const std::string& message) override;
 	virtual void debug(const std::string& message) override;
+	virtual void trace(const std::string& message) override;
 	virtual void warn(const std::string& message) override;
 	virtual void error(const std::string& message) override;
 	virtual void fatal(const std::string& message) override;
 	
 	virtual void info(const std::wstring& message) override;
 	virtual void debug(const std::wstring& message) override;
+	virtual void trace(const std::wstring& message) override;
 	virtual void warn(const std::wstring& message) override;
 	virtual void error(const std::wstring& message) override;
 	virtual void fatal(const std::wstring& message) override;

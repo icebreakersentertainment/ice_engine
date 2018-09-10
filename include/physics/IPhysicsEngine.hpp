@@ -3,6 +3,8 @@
 
 #include <memory>
 
+#include <boost/any.hpp>
+
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 
@@ -11,6 +13,7 @@
 #include "ray/Ray.hpp"
 
 #include "IImage.hpp"
+#include "IHeightfield.hpp"
 
 #include "physics/PhysicsSceneHandle.hpp"
 #include "physics/CollisionShapeHandle.hpp"
@@ -18,7 +21,6 @@
 #include "physics/GhostObjectHandle.hpp"
 #include "physics/IMotionChangeListener.hpp"
 #include "physics/IPhysicsDebugRenderer.hpp"
-#include "physics/UserData.hpp"
 #include "physics/Raycast.hpp"
 
 namespace ice_engine
@@ -46,7 +48,7 @@ public:
 	
 	virtual CollisionShapeHandle createStaticPlaneShape(const glm::vec3& planeNormal, const float32 planeConstant) = 0;
 	virtual CollisionShapeHandle createStaticBoxShape(const glm::vec3& dimensions) = 0;
-	virtual CollisionShapeHandle createStaticTerrainShape(std::vector<char>&& heightData, const uint32 width, const uint32 height) = 0;
+	virtual CollisionShapeHandle createStaticTerrainShape(const IHeightfield* heightfield) = 0;
 	virtual void destroyStaticShape(const CollisionShapeHandle& collisionShapeHandle) = 0;
 	virtual void destroyAllStaticShapes() = 0;
 	
@@ -54,7 +56,7 @@ public:
 		const PhysicsSceneHandle& physicsSceneHandle, 
 		const CollisionShapeHandle& collisionShapeHandle,
 		std::unique_ptr<IMotionChangeListener> motionStateListener = nullptr,
-		const UserData& userData = UserData()
+		const boost::any& userData = boost::any()
 	) = 0;
 	virtual RigidBodyObjectHandle createRigidBodyObject(
 		const PhysicsSceneHandle& physicsSceneHandle, 
@@ -63,7 +65,7 @@ public:
 		const float32 friction,
 		const float32 restitution,
 		std::unique_ptr<IMotionChangeListener> motionStateListener = nullptr,
-		const UserData& userData = UserData()
+		const boost::any& userData = boost::any()
 	) = 0;
 	virtual RigidBodyObjectHandle createRigidBodyObject(
 		const PhysicsSceneHandle& physicsSceneHandle, 
@@ -74,23 +76,24 @@ public:
 		const float32 friction = 1.0f,
 		const float32 restitution = 1.0f,
 		std::unique_ptr<IMotionChangeListener> motionStateListener = nullptr,
-		const UserData& userData = UserData()
+		const boost::any& userData = boost::any()
 	) = 0;
-	virtual GhostObjectHandle createGhostObject(const PhysicsSceneHandle& physicsSceneHandle, const CollisionShapeHandle& collisionShapeHandle, const UserData& userData = UserData()) = 0;
+	virtual GhostObjectHandle createGhostObject(const PhysicsSceneHandle& physicsSceneHandle, const CollisionShapeHandle& collisionShapeHandle, const boost::any& userData = boost::any()) = 0;
 	virtual GhostObjectHandle createGhostObject(
 		const PhysicsSceneHandle& physicsSceneHandle, 
 		const CollisionShapeHandle& collisionShapeHandle,
 		const glm::vec3& position,
 		const glm::quat& orientation,
-		const UserData& userData = UserData()
+		const boost::any& userData = boost::any()
 	) = 0;
 	virtual void destroy(const PhysicsSceneHandle& physicsSceneHandle, const RigidBodyObjectHandle& rigidBodyObjectHandle) = 0;
+	virtual void destroy(const PhysicsSceneHandle& physicsSceneHandle, const GhostObjectHandle& ghostObjectHandle) = 0;
 	virtual void destroyAllRigidBodies() = 0;
 	
-	virtual void setUserData(const PhysicsSceneHandle& physicsSceneHandle, const RigidBodyObjectHandle& rigidBodyObjectHandle, const UserData& userData) = 0;
-	virtual void setUserData(const PhysicsSceneHandle& physicsSceneHandle, const GhostObjectHandle& ghostObjectHandle, const UserData& userData) = 0;
-	virtual UserData& getUserData(const PhysicsSceneHandle& physicsSceneHandle, const RigidBodyObjectHandle& rigidBodyObjectHandle) const = 0;
-	virtual UserData& getUserData(const PhysicsSceneHandle& physicsSceneHandle, const GhostObjectHandle& ghostObjectHandle) const = 0;
+	virtual void setUserData(const PhysicsSceneHandle& physicsSceneHandle, const RigidBodyObjectHandle& rigidBodyObjectHandle, const boost::any& userData) = 0;
+	virtual void setUserData(const PhysicsSceneHandle& physicsSceneHandle, const GhostObjectHandle& ghostObjectHandle, const boost::any& userData) = 0;
+	virtual boost::any& getUserData(const PhysicsSceneHandle& physicsSceneHandle, const RigidBodyObjectHandle& rigidBodyObjectHandle) const = 0;
+	virtual boost::any& getUserData(const PhysicsSceneHandle& physicsSceneHandle, const GhostObjectHandle& ghostObjectHandle) const = 0;
 	
 	virtual Raycast raycast(const PhysicsSceneHandle& physicsSceneHandle, const ray::Ray& ray) = 0;
 	
@@ -98,6 +101,9 @@ public:
 	
 	virtual void rotation(const PhysicsSceneHandle& physicsSceneHandle, const RigidBodyObjectHandle& rigidBodyObjectHandle, const glm::quat& orientation) = 0;
 	virtual glm::quat rotation(const PhysicsSceneHandle& physicsSceneHandle, const RigidBodyObjectHandle& rigidBodyObjectHandle) const = 0;
+
+	virtual void rotation(const PhysicsSceneHandle& physicsSceneHandle, const GhostObjectHandle& ghostObjectHandle, const glm::quat& orientation) = 0;
+	virtual glm::quat rotation(const PhysicsSceneHandle& physicsSceneHandle, const GhostObjectHandle& ghostObjectHandle) const = 0;
 	
 	virtual void position(const PhysicsSceneHandle& physicsSceneHandle, const RigidBodyObjectHandle& rigidBodyObjectHandle, const float32 x, const float32 y, const float32 z) = 0;
 	virtual void position(const PhysicsSceneHandle& physicsSceneHandle, const RigidBodyObjectHandle& rigidBodyObjectHandle, const glm::vec3& position) = 0;

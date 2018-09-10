@@ -79,15 +79,23 @@ struct Renderable
 	GraphicsData graphicsData;
 };
 
-struct Terrain
+struct TerrainRenderable
 {
 	Vao vao;
 	Ubo ubo;
+	TerrainHandle terrainHandle;
+	GraphicsData graphicsData;
+};
+
+struct Terrain
+{
+	Vao vao;
+	uint32 width = 0;
+	uint32 height = 0;
 	TextureHandle textureHandle;
 	TextureHandle terrainMapTextureHandle;
 	TextureHandle splatMapTextureHandles[3];
 	Texture2dArray splatMapTexture2dArrays[5];
-	GraphicsData graphicsData;
 };
 
 struct Material
@@ -101,7 +109,7 @@ struct RenderScene
 {
 	handles::HandleVector<Renderable, RenderableHandle> renderables;
 	handles::HandleVector<GraphicsData, PointLightHandle> pointLights;
-	handles::HandleVector<Terrain, TerrainHandle> terrain;
+	handles::HandleVector<TerrainRenderable, TerrainRenderableHandle> terrain;
 	ShaderProgramHandle shaderProgramHandle;
 };
 
@@ -136,6 +144,7 @@ public:
 	virtual CameraHandle createCamera(const glm::vec3& position, const glm::vec3& lookAt = glm::vec3(0.0f, 0.0f, 0.0f)) override;
 	
 	virtual PointLightHandle createPointLight(const RenderSceneHandle& renderSceneHandle, const glm::vec3& position) override;
+	virtual void destroy(const RenderSceneHandle& renderSceneHandle, const PointLightHandle& pointLightHandle) override;
 	
 	virtual MeshHandle createStaticMesh(
 		const std::vector<glm::vec3>& vertices,
@@ -168,6 +177,13 @@ public:
 	
 	virtual MaterialHandle createMaterial(const IPbrMaterial* pbrMaterial) override;
 	
+	virtual TerrainHandle createStaticTerrain(
+				const IHeightMap* heightMap,
+				const ISplatMap* splatMap,
+				const IDisplacementMap* displacementMap
+			) override;
+			virtual void destroy(const TerrainHandle& terrainHandle) override;
+
 	virtual VertexShaderHandle createVertexShader(const std::string& data) override;
 	virtual FragmentShaderHandle createFragmentShader(const std::string& data) override;
 	virtual TessellationControlShaderHandle createTessellationControlShader(const std::string& data) override;
@@ -190,17 +206,30 @@ public:
 	virtual bool valid(const ShaderProgramHandle& shaderProgramHandle) const override;
 	virtual void destroyShaderProgram(const ShaderProgramHandle& shaderProgramHandle) override;
 	
-	virtual RenderableHandle createRenderable(const RenderSceneHandle& renderSceneHandle, const MeshHandle& meshHandle, const TextureHandle& textureHandle, const ShaderProgramHandle& shaderProgramHandle = ShaderProgramHandle()) override;
-	virtual RenderableHandle createRenderable(const RenderSceneHandle& renderSceneHandle, const MeshHandle& meshHandle, const MaterialHandle& materialHandle) override;
+	virtual RenderableHandle createRenderable(
+		const RenderSceneHandle& renderSceneHandle,
+		const MeshHandle& meshHandle,
+		const TextureHandle& textureHandle,
+		const glm::vec3& position,
+		const glm::quat& orientation,
+		const glm::vec3& scale = glm::vec3(1.0f),
+		const ShaderProgramHandle& shaderProgramHandle = ShaderProgramHandle()
+	) override;
+	virtual RenderableHandle createRenderable(
+		const RenderSceneHandle& renderSceneHandle,
+		const MeshHandle& meshHandle,
+		const MaterialHandle& materialHandle,
+		const glm::vec3& position,
+		const glm::quat& orientation,
+		const glm::vec3& scale = glm::vec3(1.0f)
+	) override;
 	virtual void destroy(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle) override;
 	
-	virtual TerrainHandle createTerrain(
-		const RenderSceneHandle& renderSceneHandle,
-		const IHeightMap* heightMap,
-		const ISplatMap* splatMap,
-		const IDisplacementMap* displacementMap
-	) override;
-	virtual void destroy(const RenderSceneHandle& renderSceneHandle, const TerrainHandle& terrainHandle) override;
+	virtual TerrainRenderableHandle createTerrainRenderable(
+			const RenderSceneHandle& renderSceneHandle,
+			const TerrainHandle& terrainHandle
+		) override;
+		virtual void destroy(const RenderSceneHandle& renderSceneHandle, const TerrainRenderableHandle& terrainRenderableHandle) override;
 	
 	virtual void rotate(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle, const glm::quat& quaternion, const TransformSpace& relativeTo = TransformSpace::TS_LOCAL) override;
 	virtual void rotate(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle, const float32 degrees, const glm::vec3& axis, const TransformSpace& relativeTo = TransformSpace::TS_LOCAL) override;
@@ -270,6 +299,7 @@ private:
 	handles::HandleVector<ShaderProgram, ShaderProgramHandle> shaderPrograms_;
 	handles::HandleVector<RenderScene, RenderSceneHandle> renderSceneHandles_;
 	handles::HandleVector<Vao, MeshHandle> meshes_;
+	handles::HandleVector<Terrain, TerrainHandle> terrains_;
 	handles::HandleVector<Ubo, SkeletonHandle> skeletons_;
 	handles::HandleVector<Texture2d, TextureHandle> texture2ds_;
 	handles::HandleVector<Material, MaterialHandle> materials_;

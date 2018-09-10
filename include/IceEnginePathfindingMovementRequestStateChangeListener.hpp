@@ -1,5 +1,5 @@
-#ifndef ICEENGINEPATHFINDINGMOVEMENTREQUESTSTATELISTENER_H_
-#define ICEENGINEPATHFINDINGMOVEMENTREQUESTSTATELISTENER_H_
+#ifndef ICEENGINEPATHFINDINGMOVEMENTREQUESTSTATECHANGELISTENER_H_
+#define ICEENGINEPATHFINDINGMOVEMENTREQUESTSTATECHANGELISTENER_H_
 
 #include "pathfinding/IMovementRequestStateChangeListener.hpp"
 
@@ -11,16 +11,16 @@ namespace ice_engine
 class IceEnginePathfindingMovementRequestStateChangeListener : public pathfinding::IMovementRequestStateChangeListener
 {
 public:
-	IceEnginePathfindingMovementRequestStateChangeListener(entityx::Entity entity, Scene* scene);
+	IceEnginePathfindingMovementRequestStateChangeListener(ecs::Entity entity, Scene* scene);
 	virtual ~IceEnginePathfindingMovementRequestStateChangeListener();
 	
 	virtual void update(const pathfinding::MovementRequestState& movementRequestState) override;
 
 private:
-	entityx::Entity entity_;
+	ecs::Entity entity_;
 	Scene* scene_;
 };
 
 }
 
-#endif /* ICEENGINEPATHFINDINGMOVEMENTREQUESTSTATELISTENER_H_ */
+#endif /* ICEENGINEPATHFINDINGMOVEMENTREQUESTSTATECHANGELISTENER_H_ */

@@ -431,11 +431,13 @@ void GraphicsEngine::render(const RenderSceneHandle& renderSceneHandle)
 	
 	glm::mat4 lightProjection, lightView;
 	glm::mat4 lightSpaceMatrix;
-	float near_plane = -10.0f, far_plane = 20.0f;
-	lightProjection = glm::ortho(-10.0f, 10.0f, -10.0f, 10.0f, near_plane, far_plane);
-	glm::vec3 lightPos = (direction * -1.0f) * 5.0f;
+	float near_plane = -10.0f, far_plane = 100.0f;
+	const float lightProjectionSize = 20.0f;
+	lightProjection = glm::ortho(-lightProjectionSize, lightProjectionSize, -lightProjectionSize, lightProjectionSize, near_plane, far_plane);
+	const glm::vec3 lightPos = (direction * -1.0f) + camera_.position;
+	const glm::vec3 lightLookAt = camera_.position;
 	//lightView = glm::lookAt(lightPos, glm::vec3(9.0f, 0.0f, -2.8f), glm::vec3(0.0, 1.0, 0.0));
-	lightView = glm::lookAt(lightPos, glm::vec3(0.0f), glm::vec3(0.0, 1.0, 0.0));
+	lightView = glm::lookAt(lightPos, lightLookAt, glm::vec3(0.0, 1.0, 0.0));
 	lightSpaceMatrix = lightProjection * lightView;
 	
 	// render scene from light's point of view
@@ -617,22 +619,24 @@ void GraphicsEngine::render(const RenderSceneHandle& renderSceneHandle)
 			glBindBufferBase(GL_UNIFORM_BUFFER, 0, t.ubo.id);
 		}
 		
+		auto& terrain = terrains_[t.terrainHandle];
+
 		Texture2d::activate(0);
-		auto& texture = texture2ds_[t.textureHandle];
+		auto& texture = texture2ds_[terrain.textureHandle];
 		texture.bind();
 		
 		Texture2d::activate(1);
-		auto& terrainMapTexture = texture2ds_[t.terrainMapTextureHandle];
+		auto& terrainMapTexture = texture2ds_[terrain.terrainMapTextureHandle];
 		terrainMapTexture.bind();
 		
 		Texture2dArray::activate(2);
-		t.splatMapTexture2dArrays[0].bind();
+		terrain.splatMapTexture2dArrays[0].bind();
 		
 		Texture2dArray::activate(3);
-		t.splatMapTexture2dArrays[1].bind();
+		terrain.splatMapTexture2dArrays[1].bind();
 		
 		Texture2dArray::activate(4);
-		t.splatMapTexture2dArrays[2].bind();
+		terrain.splatMapTexture2dArrays[2].bind();
 		
 		glBindVertexArray(t.vao.id);
 		glDrawElements(t.vao.ebo.mode, t.vao.ebo.count, t.vao.ebo.type, 0);
@@ -695,7 +699,7 @@ void GraphicsEngine::render(const RenderSceneHandle& renderSceneHandle)
 	glUniform3fv(glGetUniformLocation(lightingShaderProgram, ("directionalLights[" + std::to_string(0) + "].specular").c_str()), 1, &specular.x);
 	
 	renderQuad();
-	
+
 	// copy geometry depth buffer to default frame buffers depth buffer
 	glBindFramebuffer(GL_READ_FRAMEBUFFER, frameBuffer_);
 	glBindFramebuffer(GL_DRAW_FRAMEBUFFER, 0);
@@ -707,13 +711,13 @@ void GraphicsEngine::render(const RenderSceneHandle& renderSceneHandle)
 	// Debug draw
 	auto& depthDebugShaderProgram = shaderPrograms_[depthDebugShaderProgramHandle_];
 	depthDebugShaderProgram.use();
-	
+
 	glUniform1f(glGetUniformLocation(depthDebugShaderProgram, "near_plane"), near_plane);
 	glUniform1f(glGetUniformLocation(depthDebugShaderProgram, "far_plane"), far_plane);
-	
+
 	Texture2d::activate(0);
 	shadowMappingDepthMapTexture_.bind();
-	
+
 	renderQuad();
 	*/
 	// Render lights?
@@ -838,6 +842,12 @@ PointLightHandle GraphicsEngine::createPointLight(const RenderSceneHandle& rende
 	light.orientation = glm::quat();
 	
 	return handle;
+}
+
+void GraphicsEngine::destroy(const RenderSceneHandle& renderSceneHandle, const PointLightHandle& pointLightHandle)
+{
+	auto& renderScene = renderSceneHandles_[renderSceneHandle];
+	renderScene.pointLights.destroy(pointLightHandle);
 }
 
 MeshHandle GraphicsEngine::createStaticMesh(
@@ -1091,6 +1101,100 @@ MaterialHandle GraphicsEngine::createMaterial(const IPbrMaterial* pbrMaterial)
 	return handle;
 }
 
+TerrainHandle GraphicsEngine::createStaticTerrain(
+	const IHeightMap* heightMap,
+	const ISplatMap* splatMap,
+	const IDisplacementMap* displacementMap
+)
+{
+	auto handle = terrains_.create();
+	auto& terrain = terrains_[handle];
+
+	//terrain.vao = meshes_[meshHandle];
+	//terrain.textureHandle = textureHandle;
+
+	terrain.width = heightMap->image()->width();
+	terrain.height = heightMap->image()->height();
+
+	{
+//		terrain.textureHandle = createTexture2d(heightMap->image());
+		terrain.textureHandle = texture2ds_.create();
+		auto& texture = texture2ds_[terrain.textureHandle];
+
+		texture.generate(GL_RGBA,  heightMap->image()->width(),  heightMap->image()->height(), GL_RGBA, GL_UNSIGNED_BYTE, &heightMap->image()->data()[0], true);
+	}
+
+	//terrain.terrainMapTextureHandle = createTexture2d(*splatMap->terrainMap());
+	terrain.terrainMapTextureHandle = texture2ds_.create();
+	auto& texture = texture2ds_[terrain.terrainMapTextureHandle];
+
+	texture.generate(GL_RGBA8UI, splatMap->terrainMap()->width(), splatMap->terrainMap()->height(), GL_RGBA_INTEGER, GL_UNSIGNED_BYTE, &splatMap->terrainMap()->data()[0], true);
+	texture.bind();
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
+	terrain.splatMapTexture2dArrays[0] = Texture2dArray();
+	terrain.splatMapTexture2dArrays[0].generate(GL_RGBA, splatMap->materialMap()[0]->albedo()->width(), splatMap->materialMap()[0]->albedo()->height(), 256, GL_RGBA, GL_UNSIGNED_BYTE);
+	terrain.splatMapTexture2dArrays[0].bind();
+	for (int i=0; i < splatMap->materialMap().size(); ++i)
+	{
+		terrain.splatMapTexture2dArrays[0].texSubImage3D(splatMap->materialMap()[i]->albedo()->width(), splatMap->materialMap()[i]->albedo()->height(), i, GL_RGBA, GL_UNSIGNED_BYTE, &splatMap->materialMap()[i]->albedo()->data()[0]);
+	}
+	glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
+
+	terrain.splatMapTexture2dArrays[1] = Texture2dArray();
+	terrain.splatMapTexture2dArrays[1].generate(GL_RGBA, splatMap->materialMap()[0]->normal()->width(), splatMap->materialMap()[0]->normal()->height(), 256, GL_RGBA, GL_UNSIGNED_BYTE);
+	terrain.splatMapTexture2dArrays[1].bind();
+	for (int i=0; i < splatMap->materialMap().size(); ++i)
+	{
+		terrain.splatMapTexture2dArrays[1].texSubImage3D(splatMap->materialMap()[i]->normal()->width(), splatMap->materialMap()[i]->normal()->height(), i, GL_RGBA, GL_UNSIGNED_BYTE, &splatMap->materialMap()[i]->normal()->data()[0]);
+	}
+	glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
+
+	const uint32 width = splatMap->materialMap()[0]->albedo()->width();
+	const uint32 height = splatMap->materialMap()[0]->albedo()->height();
+
+	std::vector<char> metalnessRoughnessAmbientOcclusionData;
+	metalnessRoughnessAmbientOcclusionData.resize(width*height*4);
+
+	terrain.splatMapTexture2dArrays[2] = Texture2dArray();
+	terrain.splatMapTexture2dArrays[2].generate(GL_RGBA, width, height, 256, GL_RGBA, GL_UNSIGNED_BYTE);
+	terrain.splatMapTexture2dArrays[2].bind();
+	for (int i=0; i < splatMap->materialMap().size(); ++i)
+	{
+		const auto metalness = splatMap->materialMap()[i]->metalness();
+		const auto roughness = splatMap->materialMap()[i]->roughness();
+		const auto ambientOcclusion = splatMap->materialMap()[i]->ambientOcclusion();
+
+		for (int j=0; j < metalnessRoughnessAmbientOcclusionData.size(); j+=4)
+		{
+			metalnessRoughnessAmbientOcclusionData[j] = (metalness ? (metalness->data()[j] + metalness->data()[j+1] + metalness->data()[j+2]) / 3 : 127);
+			metalnessRoughnessAmbientOcclusionData[j+1] = (roughness ? (roughness->data()[j] + roughness->data()[j+1] + roughness->data()[j+2]) / 3 : 127);
+			metalnessRoughnessAmbientOcclusionData[j+2] = (ambientOcclusion ? (ambientOcclusion->data()[j] + ambientOcclusion->data()[j+1] + ambientOcclusion->data()[j+2]) / 3 : 127);
+			metalnessRoughnessAmbientOcclusionData[j+3] = 0;
+		}
+		terrain.splatMapTexture2dArrays[2].texSubImage3D(width, height, i, GL_RGBA, GL_UNSIGNED_BYTE, &metalnessRoughnessAmbientOcclusionData[0]);
+	}
+	glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
+
+	//terrain.splatMapTextureHandles[0] = createTexture2d(*splatMap->materialMap()[0]->albedo());
+	//terrain.splatMapTextureHandles[1] = createTexture2d(*splatMap->materialMap()[1]->albedo());
+	//terrain.splatMapTextureHandles[2] = createTexture2d(*splatMap->materialMap()[2]->albedo());
+
+	std::vector<glm::vec3> vertices;
+	std::vector<uint32> indices;
+	std::tie(vertices, indices) = detail::generateGrid(256);
+
+	auto meshHandle = createStaticMesh(vertices, indices, {}, {}, {});
+	terrain.vao = meshes_[meshHandle];
+
+	return handle;
+}
+void GraphicsEngine::destroy(const TerrainHandle& terrainHandle)
+{
+	//terrains_.destroy(handle);
+}
+
 std::string GraphicsEngine::loadShaderContents(const std::string& filename) const
 {
 	const std::string shaderDirectory = properties_->getStringValue("graphics.shaderDirectory", "shaders");
@@ -1228,7 +1332,15 @@ void GraphicsEngine::destroyShaderProgram(const ShaderProgramHandle& shaderProgr
 }
 
 
-RenderableHandle GraphicsEngine::createRenderable(const RenderSceneHandle& renderSceneHandle, const MeshHandle& meshHandle, const TextureHandle& textureHandle, const ShaderProgramHandle& shaderProgramHandle)
+RenderableHandle GraphicsEngine::createRenderable(
+	const RenderSceneHandle& renderSceneHandle,
+	const MeshHandle& meshHandle,
+	const TextureHandle& textureHandle,
+	const glm::vec3& position,
+	const glm::quat& orientation,
+	const glm::vec3& scale,
+	const ShaderProgramHandle& shaderProgramHandle
+)
 {
 	auto& renderScene = renderSceneHandles_[renderSceneHandle];
 	auto handle = renderScene.renderables.create();
@@ -1239,14 +1351,21 @@ RenderableHandle GraphicsEngine::createRenderable(const RenderSceneHandle& rende
 	renderable.vao = meshes_[meshHandle];
 	renderable.textureHandle = textureHandle;
 	
-	renderable.graphicsData.position = glm::vec3(0.0f, 0.0f, 0.0f);
-	renderable.graphicsData.scale = glm::vec3(1.0f, 1.0f, 1.0f);
-	renderable.graphicsData.orientation = glm::quat();
+	renderable.graphicsData.position = position;
+	renderable.graphicsData.scale = scale;
+	renderable.graphicsData.orientation = orientation;
 	
 	return handle;
 }
 
-RenderableHandle GraphicsEngine::createRenderable(const RenderSceneHandle& renderSceneHandle, const MeshHandle& meshHandle, const MaterialHandle& materialHandle)
+RenderableHandle GraphicsEngine::createRenderable(
+	const RenderSceneHandle& renderSceneHandle,
+	const MeshHandle& meshHandle,
+	const MaterialHandle& materialHandle,
+	const glm::vec3& position,
+	const glm::quat& orientation,
+	const glm::vec3& scale
+)
 {
 	auto& renderScene = renderSceneHandles_[renderSceneHandle];
 	auto handle = renderScene.renderables.create();
@@ -1258,9 +1377,9 @@ RenderableHandle GraphicsEngine::createRenderable(const RenderSceneHandle& rende
 	//renderable.textureHandle = textureHandle;
 	renderable.materialHandle = materialHandle;
 	
-	renderable.graphicsData.position = glm::vec3(0.0f, 0.0f, 0.0f);
-	renderable.graphicsData.scale = glm::vec3(1.0f, 1.0f, 1.0f);
-	renderable.graphicsData.orientation = glm::quat();
+	renderable.graphicsData.position = position;
+	renderable.graphicsData.scale = scale;
+	renderable.graphicsData.orientation = orientation;
 	
 	return handle;
 }
@@ -1271,97 +1390,31 @@ void GraphicsEngine::destroy(const RenderSceneHandle& renderSceneHandle, const R
 	renderScene.renderables.destroy(renderableHandle);
 }
 
-TerrainHandle GraphicsEngine::createTerrain(
+TerrainRenderableHandle GraphicsEngine::createTerrainRenderable(
 	const RenderSceneHandle& renderSceneHandle,
-	const IHeightMap* heightMap,
-	const ISplatMap* splatMap,
-	const IDisplacementMap* displacementMap
+	const TerrainHandle& terrainHandle
 )
 {
 	auto& renderScene = renderSceneHandles_[renderSceneHandle];
 	auto handle = renderScene.terrain.create();
-	auto& terrain = renderScene.terrain[handle];
+	auto& terrainRenderable = renderScene.terrain[handle];
 	
-	//terrain.vao = meshes_[meshHandle];
-	//terrain.textureHandle = textureHandle;
+	const auto& terrain = terrains_[terrainHandle];
+
+	terrainRenderable.vao = terrain.vao;
+	terrainRenderable.terrainHandle = terrainHandle;
 	
-	terrain.textureHandle = createTexture2d(heightMap->image());
-	
-	//terrain.terrainMapTextureHandle = createTexture2d(*splatMap->terrainMap());
-	terrain.terrainMapTextureHandle = texture2ds_.create();
-	auto& texture = texture2ds_[terrain.terrainMapTextureHandle];
-	
-	texture.generate(GL_RGBA8UI, splatMap->terrainMap()->width(), splatMap->terrainMap()->height(), GL_RGBA_INTEGER, GL_UNSIGNED_BYTE, &splatMap->terrainMap()->data()[0], true);
-	texture.bind();
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-	
-	terrain.splatMapTexture2dArrays[0] = Texture2dArray();
-	terrain.splatMapTexture2dArrays[0].generate(GL_RGBA, splatMap->materialMap()[0]->albedo()->width(), splatMap->materialMap()[0]->albedo()->height(), 256, GL_RGBA, GL_UNSIGNED_BYTE);
-	terrain.splatMapTexture2dArrays[0].bind();
-	for (int i=0; i < splatMap->materialMap().size(); ++i)
-	{
-		terrain.splatMapTexture2dArrays[0].texSubImage3D(splatMap->materialMap()[i]->albedo()->width(), splatMap->materialMap()[i]->albedo()->height(), i, GL_RGBA, GL_UNSIGNED_BYTE, &splatMap->materialMap()[i]->albedo()->data()[0]);
-	}
-	glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
-	
-	terrain.splatMapTexture2dArrays[1] = Texture2dArray();
-	terrain.splatMapTexture2dArrays[1].generate(GL_RGBA, splatMap->materialMap()[0]->normal()->width(), splatMap->materialMap()[0]->normal()->height(), 256, GL_RGBA, GL_UNSIGNED_BYTE);
-	terrain.splatMapTexture2dArrays[1].bind();
-	for (int i=0; i < splatMap->materialMap().size(); ++i)
-	{
-		terrain.splatMapTexture2dArrays[1].texSubImage3D(splatMap->materialMap()[i]->normal()->width(), splatMap->materialMap()[i]->normal()->height(), i, GL_RGBA, GL_UNSIGNED_BYTE, &splatMap->materialMap()[i]->normal()->data()[0]);
-	}
-	glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
-	
-	const uint32 width = splatMap->materialMap()[0]->albedo()->width();
-	const uint32 height = splatMap->materialMap()[0]->albedo()->height();
-	
-	std::vector<char> metalnessRoughnessAmbientOcclusionData;
-	metalnessRoughnessAmbientOcclusionData.resize(width*height*4);
-		
-	terrain.splatMapTexture2dArrays[2] = Texture2dArray();
-	terrain.splatMapTexture2dArrays[2].generate(GL_RGBA, width, height, 256, GL_RGBA, GL_UNSIGNED_BYTE);
-	terrain.splatMapTexture2dArrays[2].bind();
-	for (int i=0; i < splatMap->materialMap().size(); ++i)
-	{
-		const auto metalness = splatMap->materialMap()[i]->metalness();
-		const auto roughness = splatMap->materialMap()[i]->roughness();
-		const auto ambientOcclusion = splatMap->materialMap()[i]->ambientOcclusion();
-		
-		for (int j=0; j < metalnessRoughnessAmbientOcclusionData.size(); j+=4)
-		{
-			metalnessRoughnessAmbientOcclusionData[j] = (metalness ? (metalness->data()[j] + metalness->data()[j+1] + metalness->data()[j+2]) / 3 : 127);
-			metalnessRoughnessAmbientOcclusionData[j+1] = (roughness ? (roughness->data()[j] + roughness->data()[j+1] + roughness->data()[j+2]) / 3 : 127);
-			metalnessRoughnessAmbientOcclusionData[j+2] = (ambientOcclusion ? (ambientOcclusion->data()[j] + ambientOcclusion->data()[j+1] + ambientOcclusion->data()[j+2]) / 3 : 127);
-			metalnessRoughnessAmbientOcclusionData[j+3] = 0;
-		}
-		terrain.splatMapTexture2dArrays[2].texSubImage3D(width, height, i, GL_RGBA, GL_UNSIGNED_BYTE, &metalnessRoughnessAmbientOcclusionData[0]);
-	}
-	glGenerateMipmap(GL_TEXTURE_2D_ARRAY);
-	
-	//terrain.splatMapTextureHandles[0] = createTexture2d(*splatMap->materialMap()[0]->albedo());
-	//terrain.splatMapTextureHandles[1] = createTexture2d(*splatMap->materialMap()[1]->albedo());
-	//terrain.splatMapTextureHandles[2] = createTexture2d(*splatMap->materialMap()[2]->albedo());
-	
-	std::vector<glm::vec3> vertices;
-	std::vector<uint32> indices;
-	std::tie(vertices, indices) = detail::generateGrid(256);
-	
-	auto meshHandle = createStaticMesh(vertices, indices, {}, {}, {});
-	terrain.vao = meshes_[meshHandle];
-	
-	terrain.graphicsData.position = glm::vec3(0.0f, 0.0f, 0.0f) + glm::vec3(-(float32)heightMap->image()->width()/2.0f, 0.0f, -(float32)heightMap->image()->height()/2.0f);
-	terrain.graphicsData.scale = glm::vec3(1.0f, 1.0f, 1.0f);
-	terrain.graphicsData.orientation = glm::quat();
+	terrainRenderable.graphicsData.position = glm::vec3(0.0f, 0.0f, 0.0f) + glm::vec3(-(float32)terrain.width/2.0f, 0.0f, -(float32)terrain.height/2.0f);
+	terrainRenderable.graphicsData.scale = glm::vec3(1.0f, 1.0f, 1.0f);
+	terrainRenderable.graphicsData.orientation = glm::quat();
 	
 	return handle;
 }
 
-void GraphicsEngine::destroy(const RenderSceneHandle& renderSceneHandle, const TerrainHandle& terrainHandle)
+void GraphicsEngine::destroy(const RenderSceneHandle& renderSceneHandle, const TerrainRenderableHandle& terrainRenderableHandle)
 {
 	auto& renderScene = renderSceneHandles_[renderSceneHandle];
-	renderScene.terrain.destroy(terrainHandle);
+	renderScene.terrain.destroy(terrainRenderableHandle);
 }
 
 void GraphicsEngine::rotate(const CameraHandle& cameraHandle, const glm::quat& quaternion, const TransformSpace& relativeTo)

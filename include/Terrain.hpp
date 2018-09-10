@@ -1,14 +1,14 @@
 #ifndef TERRAIN_H_
 #define TERRAIN_H_
 
-#include <entityx/entityx.h>
-
 #include "ITerrain.hpp"
 
 #include "graphics/IGraphicsEngine.hpp"
 #include "pathfinding/IPathfindingEngine.hpp"
 #include "physics/IPhysicsEngine.hpp"
 #include "audio/IAudioEngine.hpp"
+
+#include "ecs/Entity.hpp"
 
 #include "HeightMap.hpp"
 #include "SplatMap.hpp"
@@ -34,6 +34,9 @@ public:
 		HeightMap heightMap,
 		SplatMap splatMap,
 		DisplacementMap displacementMap,
+		physics::CollisionShapeHandle collisionShapeHandle,
+		pathfinding::PolygonMeshHandle polygonMeshHandle,
+			pathfinding::NavigationMeshHandle navigationMeshHandle,
 		graphics::IGraphicsEngine* graphicsEngine,
 		pathfinding::IPathfindingEngine* pathfindingEngine,
 		physics::IPhysicsEngine* physicsEngine,
@@ -58,7 +61,7 @@ private:
 	logger::ILogger* logger_;
 	
 	Scene* scene_;
-	entityx::Entity terrainEntity_;
+	ecs::Entity terrainEntity_;
 	
 	graphics::TerrainHandle terrainHandle_;
 	

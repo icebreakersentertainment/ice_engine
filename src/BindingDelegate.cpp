@@ -39,6 +39,8 @@
 #include "HeightMap.hpp"
 #include "SplatMap.hpp"
 #include "DisplacementMap.hpp"
+#include "Heightfield.hpp"
+#include "PathfindingTerrain.hpp"
 
 #include "scripting/IScriptingEngine.hpp"
 
@@ -51,9 +53,9 @@
 namespace ice_engine
 {
 
-scripting::ScriptObjectHandle createScriptObjectHandle(scripting::ScriptObjectHandle scriptObjectHandle)
+scripting::ScriptObjectHandle createScriptObjectHandle(void* object)
 {
-	return scriptObjectHandle;
+	return scripting::ScriptObjectHandle(object);
 }
 
 namespace idebugrenderer
@@ -83,13 +85,37 @@ BindingDelegate::~BindingDelegate()
 
 static void InitConstructorPbrMaterial(PbrMaterial* memory, Image* albedo, Image* normal, Image* metalness, Image* roughness, Image* ambientOcclusion) { new(memory) PbrMaterial(albedo, normal, metalness, roughness, ambientOcclusion); }
 static void InitConstructorHeightMap(HeightMap* memory, const Image& image) { new(memory) HeightMap(image); }
-static void InitConstructorSplatMap(HeightMap* memory, const Image& image, std::vector<PbrMaterial> materialMap) { new(memory) SplatMap(image, std::move(materialMap)); }
+static void InitConstructorSplatMap(SplatMap* memory, std::vector<PbrMaterial> materialMap, Image* terrainMap) { new(memory) SplatMap(std::move(materialMap), terrainMap); }
+static void InitConstructorHeightfield(Heightfield* memory, const Image& image) { new(memory) Heightfield(image); }
+static void InitConstructorPathfindingTerrain(PathfindingTerrain* memory, const HeightMap& heightMap) { new(memory) PathfindingTerrain(heightMap); }
 
 void BindingDelegate::bind()
 {
 	scriptingEngine_->registerObjectType("Image", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	scriptingEngine_->registerClassMethod("Image", "const vectorInt8& data()", asMETHOD(Image, data));
+	scriptingEngine_->registerClassMethod("Image", "uint32 width()", asMETHOD(Image, width));
+	scriptingEngine_->registerClassMethod("Image", "uint32 height()", asMETHOD(Image, height));
+
+	scriptingEngine_->registerEnum("ImageFormat");
+	scriptingEngine_->registerEnumValue("ImageFormat", "FORMAT_UNKNOWN", Image::Format::FORMAT_UNKNOWN);
+	scriptingEngine_->registerEnumValue("ImageFormat", "FORMAT_RGB", Image::Format::FORMAT_RGB);
+	scriptingEngine_->registerEnumValue("ImageFormat", "FORMAT_RGBA", Image::Format::FORMAT_RGBA);
+
 	scriptingEngine_->registerObjectType("Audio", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	
+	scriptingEngine_->registerObjectType("IFileSystem", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	scriptingEngine_->registerGlobalProperty("IFileSystem fileSystem", gameEngine_->getFileSystem());
+	scriptingEngine_->registerClassMethod("IFileSystem", "bool exists(const string& in) const", asMETHOD(fs::IFileSystem, exists));
+	scriptingEngine_->registerClassMethod("IFileSystem", "bool isDirectory(const string& in) const", asMETHOD(fs::IFileSystem, isDirectory));
+	scriptingEngine_->registerClassMethod("IFileSystem", "void deleteFile(const string& in) const", asMETHOD(fs::IFileSystem, deleteFile));
+	scriptingEngine_->registerClassMethod("IFileSystem", "void makeDirectory(const string& in) const", asMETHOD(fs::IFileSystem, makeDirectory));
+	scriptingEngine_->registerClassMethod("IFileSystem", "string getBasePath(const string& in) const", asMETHOD(fs::IFileSystem, getBasePath));
+	scriptingEngine_->registerClassMethod("IFileSystem", "string getDirectorySeperator() const", asMETHOD(fs::IFileSystem, getDirectorySeperator));
+	scriptingEngine_->registerClassMethod("IFileSystem", "string getFilename(const string& in) const", asMETHOD(fs::IFileSystem, getFilename));
+	scriptingEngine_->registerClassMethod("IFileSystem", "string getFilenameWithoutExtension(const string& in) const", asMETHOD(fs::IFileSystem, getFilenameWithoutExtension));
+	scriptingEngine_->registerClassMethod("IFileSystem", "string readAll(const string& in) const", asMETHOD(fs::IFileSystem, readAll));
+	scriptingEngine_->registerClassMethod("IFileSystem", "string generateTempFilename() const", asMETHOD(fs::IFileSystem, generateTempFilename));
+
 	auto audioEngineBindingDelegate = AudioEngineBindingDelegate(logger_, scriptingEngine_, gameEngine_, audioEngine_);
 	audioEngineBindingDelegate.bind();
 
@@ -108,6 +134,12 @@ void BindingDelegate::bind()
 	auto pathfindingEngineBindingDelegate = PathfindingEngineBindingDelegate(logger_, scriptingEngine_, gameEngine_, pathfindingEngine_);
 	pathfindingEngineBindingDelegate.bind();
 	
+	// IGame
+	scriptingEngine_->registerInterface("IGame");
+	scriptingEngine_->registerInterfaceMethod("IGame", "void initialize()");
+	scriptingEngine_->registerInterfaceMethod("IGame", "void destroy()");
+	scriptingEngine_->registerInterfaceMethod("IGame", "void tick(const float)");
+
 	// Types available in the scripting engine
 	registerHandleBindings<ModelHandle>(scriptingEngine_, "ModelHandle");
 
@@ -129,24 +161,34 @@ void BindingDelegate::bind()
 		asMETHODPR(HeightMap, image, (), Image*)
 	);
 
-	scriptingEngine_->registerObjectType("SplatMap", sizeof(SplatMap), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<SplatMap>());
+	scriptingEngine_->registerObjectType("SplatMap", sizeof(SplatMap), asOBJ_VALUE | asGetTypeTraits<SplatMap>());
 	//scriptingEngine_->registerObjectBehaviour("SplatMap", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(DefaultConstructor<SplatMap>), asCALL_CDECL_OBJFIRST);
-	scriptingEngine_->registerObjectBehaviour("SplatMap", asBEHAVE_CONSTRUCT, "void f(const Image& in, vectorPbrMaterial)", asFUNCTION(InitConstructorSplatMap), asCALL_CDECL_OBJFIRST);
+	scriptingEngine_->registerObjectBehaviour("SplatMap", asBEHAVE_CONSTRUCT, "void f(vectorPbrMaterial, Image@)", asFUNCTION(InitConstructorSplatMap), asCALL_CDECL_OBJFIRST);
 	scriptingEngine_->registerObjectBehaviour("SplatMap", asBEHAVE_CONSTRUCT, "void f(const SplatMap& in)", asFUNCTION(CopyConstructor<SplatMap>), asCALL_CDECL_OBJFIRST);
 	scriptingEngine_->registerObjectBehaviour("SplatMap", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DefaultDestructor<SplatMap>), asCALL_CDECL_OBJFIRST);
 
-	scriptingEngine_->registerObjectType("DisplacementMap", sizeof(DisplacementMap), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<DisplacementMap>());
+	scriptingEngine_->registerObjectType("DisplacementMap", sizeof(DisplacementMap), asOBJ_VALUE | asGetTypeTraits<DisplacementMap>());
 	scriptingEngine_->registerObjectBehaviour("DisplacementMap", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(DefaultConstructor<DisplacementMap>), asCALL_CDECL_OBJFIRST);
 	//scriptingEngine_->registerObjectBehaviour("DisplacementMap", asBEHAVE_CONSTRUCT, "void f(const Image& in, vectorPbrMaterial in)", asFUNCTION(InitConstructorDisplacementMap), asCALL_CDECL_OBJFIRST);
 	scriptingEngine_->registerObjectBehaviour("DisplacementMap", asBEHAVE_CONSTRUCT, "void f(const DisplacementMap& in)", asFUNCTION(CopyConstructor<DisplacementMap>), asCALL_CDECL_OBJFIRST);
 	scriptingEngine_->registerObjectBehaviour("DisplacementMap", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DefaultDestructor<DisplacementMap>), asCALL_CDECL_OBJFIRST);
 
+	scriptingEngine_->registerObjectType("Heightfield", sizeof(Heightfield), asOBJ_VALUE | asGetTypeTraits<Heightfield>());
+	scriptingEngine_->registerObjectBehaviour("Heightfield", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(DefaultConstructor<Heightfield>), asCALL_CDECL_OBJFIRST);
+	scriptingEngine_->registerObjectBehaviour("Heightfield", asBEHAVE_CONSTRUCT, "void f(const Image& in)", asFUNCTION(InitConstructorHeightfield), asCALL_CDECL_OBJFIRST);
+	scriptingEngine_->registerObjectBehaviour("Heightfield", asBEHAVE_CONSTRUCT, "void f(const Heightfield& in)", asFUNCTION(CopyConstructor<Heightfield>), asCALL_CDECL_OBJFIRST);
+	scriptingEngine_->registerObjectBehaviour("Heightfield", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DefaultDestructor<Heightfield>), asCALL_CDECL_OBJFIRST);
+
+	scriptingEngine_->registerObjectType("PathfindingTerrain", sizeof(PathfindingTerrain), asOBJ_VALUE | asGetTypeTraits<PathfindingTerrain>());
+	scriptingEngine_->registerObjectBehaviour("PathfindingTerrain", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(DefaultConstructor<PathfindingTerrain>), asCALL_CDECL_OBJFIRST);
+	scriptingEngine_->registerObjectBehaviour("PathfindingTerrain", asBEHAVE_CONSTRUCT, "void f(const HeightMap& in)", asFUNCTION(InitConstructorPathfindingTerrain), asCALL_CDECL_OBJFIRST);
+	scriptingEngine_->registerObjectBehaviour("PathfindingTerrain", asBEHAVE_CONSTRUCT, "void f(const PathfindingTerrain& in)", asFUNCTION(CopyConstructor<PathfindingTerrain>), asCALL_CDECL_OBJFIRST);
+	scriptingEngine_->registerObjectBehaviour("PathfindingTerrain", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DefaultDestructor<PathfindingTerrain>), asCALL_CDECL_OBJFIRST);
+
 	registerSharedFutureBindings<Image*>(scriptingEngine_, "shared_futureImage", "Image@");
 	registerSharedFutureBindings<Audio*>(scriptingEngine_, "shared_futureAudio", "Audio@");
 	registerSharedFutureBindings<ModelHandle>(scriptingEngine_, "shared_futureModelHandle", "ModelHandle");
-
-	auto entityBindingDelegate = EntityBindingDelegate(logger_, scriptingEngine_, gameEngine_);
-	entityBindingDelegate.bind();
+	registerSharedFutureBindings<void>(scriptingEngine_, "shared_futureVoid", "void");
 
 	// ITerrain bindings
 	scriptingEngine_->registerObjectType("ITerrain", 0, asOBJ_REF | asOBJ_NOCOUNT);
@@ -164,15 +206,15 @@ void BindingDelegate::bind()
 	);
 	*/
 
-	auto sceneBindingDelegate = SceneBindingDelegate(logger_, scriptingEngine_, gameEngine_, graphicsEngine_, audioEngine_, networkingEngine_, physicsEngine_, pathfindingEngine_);
-	sceneBindingDelegate.bind();
-
 	//scriptingEngine_->registerObjectMethod("IAudio", "Audio@ opCast()", asFUNCTION((refCast<audio::IAudio, Audio>)), asCALL_CDECL_OBJLAST);
 	scriptingEngine_->registerObjectMethod("Audio", "IAudio@ opImplCast()", asFUNCTION((refCast<Audio, audio::IAudio>)), asCALL_CDECL_OBJLAST);
 	//scriptingEngine_->registerObjectMethod("IAudio", "const Audio@ opCast()", asFUNCTION((refCast<audio::IAudio, Audio>)), asCALL_CDECL_OBJLAST);
 	//scriptingEngine_->registerObjectMethod("Audio", "const IAudio@ opImplCast()", asFUNCTION((refCast<Audio, audio::IAudio>)), asCALL_CDECL_OBJLAST);
 	
 	scriptingEngine_->registerObjectMethod("Image", "IImage@ opImplCast()", asFUNCTION((refCast<Image, graphics::IImage>)), asCALL_CDECL_OBJLAST);
+
+	// Register function declarations
+	scriptingEngine_->registerFunctionDefinition("void WorkFunction()");
 
 	// Listeners
 	scriptingEngine_->registerInterface("IWindowEventListener");
@@ -193,15 +235,25 @@ void BindingDelegate::bind()
 	scriptingEngine_->registerInterface("IMessageEventListener");
 	scriptingEngine_->registerInterfaceMethod("IMessageEventListener", "bool processEvent(const MessageEvent& in)");
 
-	scriptingEngine_->registerInterface("IScriptObject");
-	scriptingEngine_->registerInterfaceMethod("IScriptObject", "void tick(const float)");
-	scriptingEngine_->registerInterfaceMethod("IScriptObject", "void update(const MovementRequestState& in)");
+//	scriptingEngine_->registerInterface("ScriptObject");
 
 	scriptingEngine_->registerGlobalFunction(
 		"ScriptObjectHandle createScriptObjectHandle(IScriptObject@)",
-		asFUNCTIONPR(createScriptObjectHandle, (scripting::ScriptObjectHandle), scripting::ScriptObjectHandle),
+		asFUNCTIONPR(createScriptObjectHandle, (void*), scripting::ScriptObjectHandle),
 		asCALL_CDECL
 	);
+
+	scriptingEngine_->registerObjectType("Scene", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	auto entityBindingDelegate = EntityBindingDelegate(logger_, scriptingEngine_, gameEngine_);
+	entityBindingDelegate.bind();
+
+	auto sceneBindingDelegate = SceneBindingDelegate(logger_, scriptingEngine_, gameEngine_, graphicsEngine_, audioEngine_, networkingEngine_, physicsEngine_, pathfindingEngine_);
+	sceneBindingDelegate.bind();
+
+	scriptingEngine_->registerInterfaceMethod("IScriptObject", "void tick(const float)");
+	scriptingEngine_->registerInterfaceMethod("IScriptObject", "void update(const MovementRequestState& in)");
+	scriptingEngine_->registerInterfaceMethod("IScriptObject", "void serialize(Entity)");
+	scriptingEngine_->registerInterfaceMethod("IScriptObject", "void deserialize(Entity)");
 
 	scriptingEngine_->registerObjectType("Noise", sizeof(noise::Noise), asOBJ_VALUE | asOBJ_POD | asOBJ_APP_CLASS_ALLFLOATS | asGetTypeTraits<noise::Noise>());
 	scriptingEngine_->registerClassMethod(
@@ -222,6 +274,11 @@ void BindingDelegate::bind()
 		"ILogger",
 		"void debug(const string& in)",
 		asMETHODPR(logger::ILogger, debug, (const std::string&), void)
+	);
+	scriptingEngine_->registerClassMethod(
+		"ILogger",
+		"void trace(const string& in)",
+		asMETHODPR(logger::ILogger, trace, (const std::string&), void)
 	);
 	scriptingEngine_->registerClassMethod(
 		"ILogger",
@@ -293,7 +350,7 @@ void BindingDelegate::bind()
 	);
 	scriptingEngine_->registerGlobalFunction(
 		"void setIGameInstance(IGame@)",
-		asMETHODPR(GameEngine, setIGameInstance, (scripting::ScriptObjectHandle), void),
+		asMETHODPR(GameEngine, setIGameInstance, (void*), void),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
@@ -347,97 +404,103 @@ void BindingDelegate::bind()
 	);
 	scriptingEngine_->registerGlobalFunction(
 		"void addWindowEventListener(IWindowEventListener@)",
-		asMETHODPR(GameEngine, addWindowEventListener, (scripting::ScriptObjectHandle), void),
+		asMETHODPR(GameEngine, addWindowEventListener, (void*), void),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
 		"void addKeyboardEventListener(IKeyboardEventListener@)",
-		asMETHODPR(GameEngine, addKeyboardEventListener, (scripting::ScriptObjectHandle), void),
+		asMETHODPR(GameEngine, addKeyboardEventListener, (void*), void),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
 		"void addMouseMotionEventListener(IMouseMotionEventListener@)",
-		asMETHODPR(GameEngine, addMouseMotionEventListener, (scripting::ScriptObjectHandle), void),
+		asMETHODPR(GameEngine, addMouseMotionEventListener, (void*), void),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
 		"void addMouseButtonEventListener(IMouseButtonEventListener@)",
-		asMETHODPR(GameEngine, addMouseButtonEventListener, (scripting::ScriptObjectHandle), void),
+		asMETHODPR(GameEngine, addMouseButtonEventListener, (void*), void),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
 		"void addMouseWheelEventListener(IMouseWheelEventListener@)",
-		asMETHODPR(GameEngine, addMouseWheelEventListener, (scripting::ScriptObjectHandle), void),
+		asMETHODPR(GameEngine, addMouseWheelEventListener, (void*), void),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
 		"void removeWindowEventListener(IWindowEventListener@)",
-		asMETHODPR(GameEngine, removeWindowEventListener, (scripting::ScriptObjectHandle), void),
+		asMETHODPR(GameEngine, removeWindowEventListener, (void*), void),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
 		"void removeKeyboardEventListener(IKeyboardEventListener@)",
-		asMETHODPR(GameEngine, removeKeyboardEventListener, (scripting::ScriptObjectHandle), void),
+		asMETHODPR(GameEngine, removeKeyboardEventListener, (void*), void),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
 		"void removeMouseMotionEventListener(IMouseMotionEventListener@)",
-		asMETHODPR(GameEngine, removeMouseMotionEventListener, (scripting::ScriptObjectHandle), void),
+		asMETHODPR(GameEngine, removeMouseMotionEventListener, (void*), void),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
 		"void removeMouseButtonEventListener(IMouseButtonEventListener@)",
-		asMETHODPR(GameEngine, addMouseButtonEventListener, (scripting::ScriptObjectHandle), void),
+		asMETHODPR(GameEngine, addMouseButtonEventListener, (void*), void),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
 		"void removeMouseWheelEventListener(IMouseWheelEventListener@)",
-		asMETHODPR(GameEngine, addMouseWheelEventListener, (scripting::ScriptObjectHandle), void),
+		asMETHODPR(GameEngine, addMouseWheelEventListener, (void*), void),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
 		"void addConnectEventListener(IConnectEventListener@)",
-		asMETHODPR(GameEngine, addConnectEventListener, (scripting::ScriptObjectHandle), void),
+		asMETHODPR(GameEngine, addConnectEventListener, (void*), void),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
 		"void addDisconnectEventListener(IDisconnectEventListener@)",
-		asMETHODPR(GameEngine, addDisconnectEventListener, (scripting::ScriptObjectHandle), void),
+		asMETHODPR(GameEngine, addDisconnectEventListener, (void*), void),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
 		"void addMessageEventListener(IMessageEventListener@)",
-		asMETHODPR(GameEngine, addMessageEventListener, (scripting::ScriptObjectHandle), void),
+		asMETHODPR(GameEngine, addMessageEventListener, (void*), void),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
 		"void removeConnectEventListener(IConnectEventListener@)",
-		asMETHODPR(GameEngine, removeConnectEventListener, (scripting::ScriptObjectHandle), void),
+		asMETHODPR(GameEngine, removeConnectEventListener, (void*), void),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
 		"void removeDisconnectEventListener(IDisconnectEventListener@)",
-		asMETHODPR(GameEngine, addDisconnectEventListener, (scripting::ScriptObjectHandle), void),
+		asMETHODPR(GameEngine, addDisconnectEventListener, (void*), void),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
 		"void removeMessageEventListener(IMessageEventListener@)",
-		asMETHODPR(GameEngine, removeMessageEventListener, (scripting::ScriptObjectHandle), void),
+		asMETHODPR(GameEngine, removeMessageEventListener, (void*), void),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"shared_futureVoid postWorkToBackgroundThreadPool(WorkFunction@)",
+		asMETHODPR(GameEngine, postWorkToBackgroundThreadPool, (void*), std::shared_future<void>),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
@@ -462,6 +525,12 @@ void BindingDelegate::bind()
 	scriptingEngine_->registerGlobalFunction(
 		"shared_futureAudio loadAudioAsync(const string& in, const string& in)",
 		asMETHODPR(GameEngine, loadAudioAsync, (const std::string&, const std::string&), std::shared_future<Audio*>),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"Image@ createImage(const string& in, const vectorInt8& in, const uint, const uint, const ImageFormat)",
+		asMETHODPR(GameEngine, createImage, (const std::string&, const std::vector<char> &, const uint32, const uint32, const Image::Format), Image*),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
@@ -628,6 +697,83 @@ void BindingDelegate::bind()
 		gameEngine_
 	);
 	
+	scriptingEngine_->registerGlobalFunction(
+		"CollisionShapeHandle createStaticPlaneShape(const string& in, const vec3& in, const float)",
+		asMETHODPR(GameEngine, createStaticPlaneShape, (const std::string&, const glm::vec3&, const float32), physics::CollisionShapeHandle),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"CollisionShapeHandle createStaticBoxShape(const string& in, const vec3& in)",
+		asMETHODPR(GameEngine, createStaticBoxShape, (const std::string&, const glm::vec3&), physics::CollisionShapeHandle),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+			"CollisionShapeHandle getStaticShape(const string& in)",
+			asMETHODPR(GameEngine, getStaticShape, (const std::string&) const, physics::CollisionShapeHandle),
+			asCALL_THISCALL_ASGLOBAL,
+			gameEngine_
+		);
+	scriptingEngine_->registerGlobalFunction(
+		"CollisionShapeHandle createStaticTerrainShape(const string& in, const Heightfield& in)",
+		asMETHODPR(GameEngine, createStaticTerrainShape, (const std::string&, const Heightfield&), physics::CollisionShapeHandle),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+//	scriptingEngine_->registerGlobalFunction(
+//		"void destroyStaticShape(const CollisionShapeHandle& in)",
+//		asMETHODPR(GameEngine, destroyStaticShape, (const physics::CollisionShapeHandle&), void)
+//	);
+	scriptingEngine_->registerGlobalFunction(
+		"void destroyAllStaticShapes()",
+		asMETHODPR(GameEngine, destroyAllStaticShapes, (), void),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+			"ModelHandle createStaticModel(const string& in, const Model@)",
+			asMETHODPR(GameEngine, createStaticModel, (const std::string&, const graphics::model::Model*), ModelHandle),
+			asCALL_THISCALL_ASGLOBAL,
+			gameEngine_
+		);
+	scriptingEngine_->registerGlobalFunction(
+			"ModelHandle getStaticModel(const string& in)",
+			asMETHODPR(GameEngine, getStaticModel, (const std::string&) const, ModelHandle),
+			asCALL_THISCALL_ASGLOBAL,
+			gameEngine_
+		);
+	scriptingEngine_->registerGlobalFunction(
+			"TerrainHandle createStaticTerrain(const string& in, const HeightMap& in, const SplatMap& in, const DisplacementMap& in)",
+			asMETHODPR(GameEngine, createStaticTerrain, (const std::string&, const HeightMap&, const SplatMap&, const DisplacementMap&), graphics::TerrainHandle),
+			asCALL_THISCALL_ASGLOBAL,
+			gameEngine_
+		);
+	scriptingEngine_->registerGlobalFunction(
+			"TerrainHandle getStaticTerrain(const string& in)",
+			asMETHODPR(GameEngine, getStaticTerrain, (const std::string&) const, graphics::TerrainHandle),
+			asCALL_THISCALL_ASGLOBAL,
+			gameEngine_
+		);
+	scriptingEngine_->registerGlobalFunction(
+			"PolygonMeshHandle createPolygonMesh(const string& in, const PathfindingTerrain& in, const PolygonMeshConfig& in)",
+			asMETHODPR(GameEngine, createPolygonMesh, (const std::string&, const PathfindingTerrain& in, const pathfinding::PolygonMeshConfig&), pathfinding::PolygonMeshHandle),
+			asCALL_THISCALL_ASGLOBAL,
+			gameEngine_
+		);
+	scriptingEngine_->registerGlobalFunction(
+			"NavigationMeshHandle createNavigationMesh(const string& in, const PolygonMeshHandle& in, const NavigationMeshConfig& in)",
+			asMETHODPR(GameEngine, createNavigationMesh, (const std::string&, const pathfinding::PolygonMeshHandle& in, const pathfinding::NavigationMeshConfig&), pathfinding::NavigationMeshHandle),
+			asCALL_THISCALL_ASGLOBAL,
+			gameEngine_
+		);
+	scriptingEngine_->registerGlobalFunction(
+			"NavigationMeshHandle getNavigationMesh(const string& in)",
+			asMETHODPR(GameEngine, getNavigationMesh, (const std::string&) const, pathfinding::NavigationMeshHandle),
+			asCALL_THISCALL_ASGLOBAL,
+			gameEngine_
+		);
+
 	scriptingEngine_->registerGlobalFunction(
 		"Scene@ createScene(const string& in)",
 		asMETHODPR(GameEngine, createScene, (const std::string&), Scene*),

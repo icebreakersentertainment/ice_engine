@@ -9,6 +9,8 @@
 #include "pathfinding/IPathfindingEngine.hpp"
 #include "physics/IPhysicsEngine.hpp"
 #include "audio/IAudioEngine.hpp"
+#include "pathfinding/PolygonMeshHandle.hpp"
+#include "pathfinding/NavigationMeshHandle.hpp"
 
 #include "HeightMap.hpp"
 #include "SplatMap.hpp"
@@ -40,6 +42,9 @@ public:
 		HeightMap heightMap,
 		SplatMap splatMap,
 		DisplacementMap displacementMap,
+		physics::CollisionShapeHandle collisionShapeHandle,
+		pathfinding::PolygonMeshHandle polygonMeshHandle,
+			pathfinding::NavigationMeshHandle navigationMeshHandle,
 		graphics::IGraphicsEngine* graphicsEngine,
 		pathfinding::IPathfindingEngine* pathfindingEngine,
 		physics::IPhysicsEngine* physicsEngine,

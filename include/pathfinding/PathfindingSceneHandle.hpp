@@ -17,4 +17,16 @@ public:
 }
 }
 
+namespace std
+{
+	template <>
+	struct hash<ice_engine::pathfinding::PathfindingSceneHandle>
+	{
+		std::size_t operator()(const ice_engine::pathfinding::PathfindingSceneHandle& k) const noexcept
+		{
+			return hash<ice_engine::uint64>{}(k.id());
+		}
+	};
+}
+
 #endif /* PATHFINDING_SCENE_HANDLE_H_ */

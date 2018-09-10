@@ -1,10 +1,9 @@
 #ifndef POINTLIGHTCOMPONENT_H_
 #define POINTLIGHTCOMPONENT_H_
 
-#define GLM_FORCE_RADIANS
-#include <glm/glm.hpp>
-
 #include "graphics/PointLightHandle.hpp"
+
+#include "ecs/Serialization.hpp"
 
 namespace ice_engine
 {
@@ -15,13 +14,26 @@ struct PointLightComponent
 {
 	PointLightComponent() = default;
 	
-	PointLightComponent(glm::vec3 position, graphics::PointLightHandle pointLightHandle) : position(position), pointLightHandle(pointLightHandle)
+	PointLightComponent(graphics::PointLightHandle pointLightHandle) : pointLightHandle(pointLightHandle)
 	{
 	};
 	
-	glm::vec3 position;
 	graphics::PointLightHandle pointLightHandle;
 };
+
+}
+}
+
+namespace boost
+{
+namespace serialization
+{
+
+template<class Archive>
+void serialize(Archive& ar, ice_engine::ecs::PointLightComponent& c, const unsigned int version)
+{
+	ar & c.pointLightHandle;
+}
 
 }
 }

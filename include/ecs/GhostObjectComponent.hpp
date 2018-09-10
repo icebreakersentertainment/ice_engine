@@ -12,12 +12,31 @@ struct GhostObjectComponent
 {
 	GhostObjectComponent() = default;
 	
-	GhostObjectComponent(physics::GhostObjectHandle ghostObjectHandle) : ghostObjectHandle(ghostObjectHandle)
+	GhostObjectComponent(physics::CollisionShapeHandle collisionShapeHandle) : collisionShapeHandle(collisionShapeHandle)
+	{
+	};
+
+	GhostObjectComponent(physics::CollisionShapeHandle collisionShapeHandle, physics::GhostObjectHandle ghostObjectHandle) : collisionShapeHandle(collisionShapeHandle), ghostObjectHandle(ghostObjectHandle)
 	{
 	};
 	
+	physics::CollisionShapeHandle collisionShapeHandle;
 	physics::GhostObjectHandle ghostObjectHandle;
 };
+
+}
+}
+
+namespace boost
+{
+namespace serialization
+{
+
+template<class Archive>
+void serialize(Archive& ar, ice_engine::ecs::GhostObjectComponent& c, const unsigned int version)
+{
+	ar & c.collisionShapeHandle & c.ghostObjectHandle;
+}
 
 }
 }

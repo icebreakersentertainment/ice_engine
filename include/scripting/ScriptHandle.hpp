@@ -17,4 +17,16 @@ public:
 }
 }
 
+namespace std
+{
+	template <>
+	struct hash<ice_engine::scripting::ScriptHandle>
+	{
+		std::size_t operator()(const ice_engine::scripting::ScriptHandle& k) const noexcept
+		{
+			return hash<ice_engine::uint64>{}(k.id());
+		}
+	};
+}
+
 #endif /* SCRIPT_HANDLE_H_ */

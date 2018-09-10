@@ -80,10 +80,32 @@ public:
 		}
 	};
 	
+	UserData(UserData&& other)
+	{
+		type_ = other.type_;
+		value_ = other.value_;
+		sizeOf_ = other.sizeOf_;
+		destructor_ = other.destructor_;
+
+		if (type_ == UserDataType::TYPE_OBJECT_VAL)
+		{
+			void* p = malloc(sizeOf_);
+			memcpy(p, value_.valuePointer, sizeOf_);
+			value_.valuePointer = p;
+
+			// destroy the other object
+			other.destructor_(other.value_.valuePointer);
+			other.type_ = UserDataType::TYPE_UNKNOWN;
+			other.value_ = Value();
+			other.sizeOf_ = 0;
+			other.value_.valuePointer = nullptr;
+		}
+	};
+
 	/**
 	 * If the parameter holds a copy of an object, the destructor for that object will be called.
 	 */
-	virtual ~UserData()
+	~UserData()
 	{
 		if (type_ == UserDataType::TYPE_OBJECT_VAL)
 		{
@@ -91,6 +113,26 @@ public:
 		}
 	};
 	
+	UserData& operator=(const UserData& other)
+	{
+		if (this != &other)
+		{
+			type_ = other.type_;
+			value_ = other.value_;
+			sizeOf_ = other.sizeOf_;
+			destructor_ = other.destructor_;
+
+			if (type_ == UserDataType::TYPE_OBJECT_VAL)
+			{
+				void* p = malloc(sizeOf_);
+				memcpy(p, value_.valuePointer, sizeOf_);
+				value_.valuePointer = p;
+			}
+		}
+
+		return *this;
+	};
+
 	/**
 	 * Set the parameter by reference.
 	 */

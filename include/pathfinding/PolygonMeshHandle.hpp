@@ -17,4 +17,16 @@ public:
 }
 }
 
+namespace std
+{
+	template <>
+	struct hash<ice_engine::pathfinding::PolygonMeshHandle>
+	{
+		std::size_t operator()(const ice_engine::pathfinding::PolygonMeshHandle& k) const noexcept
+		{
+			return hash<ice_engine::uint64>{}(k.id());
+		}
+	};
+}
+
 #endif /* POLYGON_MESH_HANDLE_H_ */

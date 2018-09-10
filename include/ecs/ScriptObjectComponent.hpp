@@ -12,12 +12,30 @@ struct ScriptObjectComponent
 {
 	ScriptObjectComponent() = default;
 	
-	ScriptObjectComponent(scripting::ScriptObjectHandle scriptObjectHandle) : scriptObjectHandle(scriptObjectHandle)
+	ScriptObjectComponent(void* object) : scriptObjectHandle(scripting::ScriptObjectHandle(object))
+	{
+	};
+
+	ScriptObjectComponent(scripting::ScriptObjectHandle scriptObjectHandle1) : scriptObjectHandle(scriptObjectHandle1)
 	{
 	};
 	
 	scripting::ScriptObjectHandle scriptObjectHandle;
 };
+
+}
+}
+
+namespace boost
+{
+namespace serialization
+{
+
+template<class Archive>
+void serialize(Archive& ar, ice_engine::ecs::ScriptObjectComponent& c, const unsigned int version)
+{
+	ar & c.scriptObjectHandle;
+}
 
 }
 }

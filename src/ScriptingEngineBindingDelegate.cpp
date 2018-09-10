@@ -28,19 +28,14 @@ ScriptingEngineBindingDelegate::~ScriptingEngineBindingDelegate()
 
 void ScriptingEngineBindingDelegate::bind()
 {
-	scriptingEngine_->registerObjectType("ScriptObjectHandle", sizeof(scripting::ScriptObjectHandle), asOBJ_VALUE | asOBJ_APP_CLASS_ALLINTS | asOBJ_POD | asGetTypeTraits<scripting::ScriptObjectHandle>());
+	registerPointerHandleBindings<scripting::ScriptObjectHandle>(scriptingEngine_, "ScriptObjectHandle", "IScriptObject");
+//	scriptingEngine_->registerObjectType("ScriptObjectHandle", sizeof(scripting::ScriptObjectHandle), asOBJ_VALUE | asOBJ_APP_CLASS_ALLINTS | asOBJ_POD | asGetTypeTraits<scripting::ScriptObjectHandle>());
 
 	// Future bindings
 	scriptingEngine_->registerEnum("future_status");
 	scriptingEngine_->registerEnumValue("future_status", "deferred", static_cast<int64>(std::future_status::deferred));
 	scriptingEngine_->registerEnumValue("future_status", "ready", static_cast<int64>(std::future_status::ready));
 	scriptingEngine_->registerEnumValue("future_status", "timeout", static_cast<int64>(std::future_status::timeout));
-	
-	// IGame
-	scriptingEngine_->registerInterface("IGame");
-	scriptingEngine_->registerInterfaceMethod("IGame", "void initialize()");
-	scriptingEngine_->registerInterfaceMethod("IGame", "void destroy()");
-	scriptingEngine_->registerInterfaceMethod("IGame", "void tick(const float)");
 	
 	// SceneThingy
 	scriptingEngine_->registerInterface("SceneThingy");

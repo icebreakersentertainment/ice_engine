@@ -36,21 +36,22 @@ struct BulletUserData
 {
 	BulletUserData()
 	{
-		
+
 	}
-	
+
 	~BulletUserData()
 	{
-		
+
 	}
-	
+
 	union
 	{
 		RigidBodyObjectHandle rigidBodyObjectHandle;
 		GhostObjectHandle ghostObjectHandle;
 	};
 	BulletCollisionObjectType type = BulletCollisionObjectType::UNKNOWN;
-	UserData userData;
+	boost::any userData;
+
 };
 
 struct BulletRigidBodyData
@@ -100,7 +101,7 @@ public:
 	
 	virtual CollisionShapeHandle createStaticPlaneShape(const glm::vec3& planeNormal, const float32 planeConstant) override;
 	virtual CollisionShapeHandle createStaticBoxShape(const glm::vec3& dimensions) override;
-	virtual CollisionShapeHandle createStaticTerrainShape(std::vector<char>&& heightData, const uint32 width, const uint32 height) override;
+	virtual CollisionShapeHandle createStaticTerrainShape(const IHeightfield* heightfield) override;
 	virtual void destroyStaticShape(const CollisionShapeHandle& collisionShapeHandle) override;
 	virtual void destroyAllStaticShapes() override;
 	
@@ -108,7 +109,7 @@ public:
 		const PhysicsSceneHandle& physicsSceneHandle, 
 		const CollisionShapeHandle& collisionShapeHandle,
 		std::unique_ptr<IMotionChangeListener> motionStateListener = nullptr,
-		const UserData& userData = UserData()
+		const boost::any& userData = boost::any()
 	) override;
 	virtual RigidBodyObjectHandle createRigidBodyObject(
 		const PhysicsSceneHandle& physicsSceneHandle, 
@@ -117,7 +118,7 @@ public:
 		const float32 friction,
 		const float32 restitution,
 		std::unique_ptr<IMotionChangeListener> motionStateListener = nullptr,
-		const UserData& userData = UserData()
+		const boost::any& userData = boost::any()
 	) override;
 	virtual RigidBodyObjectHandle createRigidBodyObject(
 		const PhysicsSceneHandle& physicsSceneHandle, 
@@ -128,23 +129,24 @@ public:
 		const float32 friction = 1.0f,
 		const float32 restitution = 1.0f,
 		std::unique_ptr<IMotionChangeListener> motionStateListener = nullptr,
-		const UserData& userData = UserData()
+		const boost::any& userData = boost::any()
 	) override;
-	virtual GhostObjectHandle createGhostObject(const PhysicsSceneHandle& physicsSceneHandle, const CollisionShapeHandle& collisionShapeHandle, const UserData& userData = UserData()) override;
+	virtual GhostObjectHandle createGhostObject(const PhysicsSceneHandle& physicsSceneHandle, const CollisionShapeHandle& collisionShapeHandle, const boost::any& userData = boost::any()) override;
 	virtual GhostObjectHandle createGhostObject(
 		const PhysicsSceneHandle& physicsSceneHandle, 
 		const CollisionShapeHandle& collisionShapeHandle,
 		const glm::vec3& position,
 		const glm::quat& orientation,
-		const UserData& userData = UserData()
+		const boost::any& userData = boost::any()
 	) override;
 	virtual void destroy(const PhysicsSceneHandle& physicsSceneHandle, const RigidBodyObjectHandle& rigidBodyObjectHandle) override;
+	virtual void destroy(const PhysicsSceneHandle& physicsSceneHandle, const GhostObjectHandle& ghostObjectHandle) override;
 	virtual void destroyAllRigidBodies() override;
 	
-	virtual void setUserData(const PhysicsSceneHandle& physicsSceneHandle, const RigidBodyObjectHandle& rigidBodyObjectHandle, const UserData& userData) override;
-	virtual void setUserData(const PhysicsSceneHandle& physicsSceneHandle, const GhostObjectHandle& ghostObjectHandle, const UserData& userData) override;
-	virtual UserData& getUserData(const PhysicsSceneHandle& physicsSceneHandle, const RigidBodyObjectHandle& rigidBodyObjectHandle) const override;
-	virtual UserData& getUserData(const PhysicsSceneHandle& physicsSceneHandle, const GhostObjectHandle& ghostObjectHandle) const override;
+	virtual void setUserData(const PhysicsSceneHandle& physicsSceneHandle, const RigidBodyObjectHandle& rigidBodyObjectHandle, const boost::any& userData) override;
+	virtual void setUserData(const PhysicsSceneHandle& physicsSceneHandle, const GhostObjectHandle& ghostObjectHandle, const boost::any& userData) override;
+	virtual boost::any& getUserData(const PhysicsSceneHandle& physicsSceneHandle, const RigidBodyObjectHandle& rigidBodyObjectHandle) const override;
+	virtual boost::any& getUserData(const PhysicsSceneHandle& physicsSceneHandle, const GhostObjectHandle& ghostObjectHandle) const override;
 	
 	virtual Raycast raycast(const PhysicsSceneHandle& physicsSceneHandle, const ray::Ray& ray) override;
 	
@@ -153,6 +155,9 @@ public:
 	virtual void rotation(const PhysicsSceneHandle& physicsSceneHandle, const RigidBodyObjectHandle& rigidBodyObjectHandle, const glm::quat& orientation) override;
 	virtual glm::quat rotation(const PhysicsSceneHandle& physicsSceneHandle, const RigidBodyObjectHandle& rigidBodyObjectHandle) const override;
 	
+	virtual void rotation(const PhysicsSceneHandle& physicsSceneHandle, const GhostObjectHandle& ghostObjectHandle, const glm::quat& orientation) override;
+	virtual glm::quat rotation(const PhysicsSceneHandle& physicsSceneHandle, const GhostObjectHandle& ghostObjectHandle) const override;
+
 	virtual void position(const PhysicsSceneHandle& physicsSceneHandle, const RigidBodyObjectHandle& rigidBodyObjectHandle, const float32 x, const float32 y, const float32 z) override;
 	virtual void position(const PhysicsSceneHandle& physicsSceneHandle, const RigidBodyObjectHandle& rigidBodyObjectHandle, const glm::vec3& position) override;
 	virtual glm::vec3 position(const PhysicsSceneHandle& physicsSceneHandle, const RigidBodyObjectHandle& rigidBodyObjectHandle) const override;

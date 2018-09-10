@@ -9,10 +9,10 @@
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 
-#include <entityx/entityx.h>
-
 #include "Platform.hpp"
 #include "Types.hpp"
+
+#include "ecs/Entity.hpp"
 
 #include "scripting/IScriptingEngine.hpp"
 
@@ -27,12 +27,6 @@ class ILogger;
 }
 
 class GameEngine;
-
-template<class T, typename... Args>
-static entityx::ComponentHandle<T> assign(entityx::Entity entity, Args&&... args) { return entity.assign<T>(std::forward<Args>(args)...); }
-
-template<class T>
-static entityx::ComponentHandle<T> assign_from_copy(entityx::Entity entity, const T& t) { return entity.assign_from_copy<T>(t); }
 
 template <class C>
 void registerComponentBehaviours(ice_engine::scripting::IScriptingEngine* scriptingEngine, const std::string& name)
@@ -74,10 +68,27 @@ void registerComponentHandle(ice_engine::scripting::IScriptingEngine* scriptingE
 template <class C, typename ... Args>
 void registerEntityComponentAssignMethod(ice_engine::scripting::IScriptingEngine* scriptingEngine, const std::string& name, const std::string& params = std::string())
 {
+	scriptingEngine->registerClassMethod(
+		"Entity",
+		"ComponentHandle" + name + " assign" + name + "(" + params + ")",
+		asMETHODPR(ecs::Entity, assign<C>, (Args&&... args), entityx::ComponentHandle<C>)
+	);
+}
+
+template <class C, typename ... Args>
+static entityx::ComponentHandle<C> assignNoForward(ecs::Entity& entity, Args... args)
+{
+	return entity.assign<C>(std::forward<Args>(args) ...);
+}
+
+#define COMMA ,
+template <class C, typename ... Args>
+void registerEntityComponentAssignMethodNoForward(ice_engine::scripting::IScriptingEngine* scriptingEngine, const std::string& name, const std::string& params = std::string())
+{
 	scriptingEngine->registerObjectMethod(
 		"Entity",
 		"ComponentHandle" + name + " assign" + name + "(" + params + ")",
-		asFUNCTION((assign<C, Args...>)),
+		asFUNCTION(assignNoForward<C COMMA Args...>),
 		asCALL_CDECL_OBJFIRST
 	);
 }
@@ -85,23 +96,27 @@ void registerEntityComponentAssignMethod(ice_engine::scripting::IScriptingEngine
 template <class C, typename ... Args>
 void registerEntityComponentMethods(ice_engine::scripting::IScriptingEngine* scriptingEngine, const std::string& name, const std::string& params = std::string())
 {
-	registerEntityComponentAssignMethod<C, Args...>(scriptingEngine, name, params);
+	registerEntityComponentAssignMethodNoForward<C>(scriptingEngine, name);
 
-	scriptingEngine->registerObjectMethod(
+	if (sizeof...(Args) > 0)
+	{
+		registerEntityComponentAssignMethodNoForward<C, Args...>(scriptingEngine, name, params);
+	}
+
+	scriptingEngine->registerClassMethod(
 		"Entity",
-		"ComponentHandle" + name + " assign_from_copy" + name + "(const " + name + "& in)",
-		asFUNCTION((assign_from_copy<C>)),
-		asCALL_CDECL_OBJFIRST
+		"ComponentHandle" + name + " assignFromCopy" + name + "(const " + name + "& in)",
+		asMETHOD(ecs::Entity, assignFromCopy<C>)
 	);
 	scriptingEngine->registerClassMethod(
 		"Entity",
-		"bool has_component" + name + "() const",
-		asMETHODPR(entityx::Entity, has_component<C>, () const, bool)
+		"bool hasComponent" + name + "() const",
+		asMETHODPR(ecs::Entity, hasComponent<C>, () const, bool)
 	);
 	scriptingEngine->registerClassMethod(
 		"Entity",
 		"ComponentHandle" + name + " component" + name + "()",
-		asMETHODPR(entityx::Entity, component<C>, (), entityx::ComponentHandle<C>)
+		asMETHODPR(ecs::Entity, component<C>, (), entityx::ComponentHandle<C>)
 	);
 }
 

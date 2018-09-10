@@ -17,4 +17,16 @@ public:
 }
 }
 
+namespace std
+{
+	template <>
+	struct hash<ice_engine::pathfinding::CrowdHandle>
+	{
+		std::size_t operator()(const ice_engine::pathfinding::CrowdHandle& k) const noexcept
+		{
+			return hash<ice_engine::uint64>{}(k.id());
+		}
+	};
+}
+
 #endif /* CROWD_HANDLE_H_ */

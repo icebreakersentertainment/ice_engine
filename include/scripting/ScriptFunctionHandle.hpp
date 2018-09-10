@@ -8,15 +8,27 @@ namespace ice_engine
 namespace scripting
 {
 
-class ScriptFunctionHandle : public handles::PointerHandle
+class ScriptFunctionHandle : public handles::PointerHandle<ScriptFunctionHandle>
 {
 public:
-	using handles::PointerHandle::PointerHandle;
+	using handles::PointerHandle<ScriptFunctionHandle>::PointerHandle;
 	
 	static const ScriptFunctionHandle INVALID;
 };
 
 }
+}
+
+namespace std
+{
+	template <>
+	struct hash<ice_engine::scripting::ScriptFunctionHandle>
+	{
+		std::size_t operator()(const ice_engine::scripting::ScriptFunctionHandle& k) const noexcept
+		{
+			return hash<const void*>{}(k.get());
+		}
+	};
 }
 
 #endif /* SCRIPT_FUNCTION_HANDLE_H_ */

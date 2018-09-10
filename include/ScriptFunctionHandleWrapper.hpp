@@ -1,6 +1,9 @@
 #ifndef SCRIPT_FUNCTION_HANDLE_WRAPPER_H_
 #define SCRIPT_FUNCTION_HANDLE_WRAPPER_H_
 
+#include <memory>
+#include <utility>
+
 #include "scripting/IScriptingEngine.hpp"
 
 namespace ice_engine
@@ -15,8 +18,7 @@ public:
 	scripting::ScriptFunctionHandle get() const;
 	
 private:
-	scripting::IScriptingEngine* scriptingEngine_;
-	scripting::ScriptFunctionHandle scriptFunctionHandle_;
+	std::shared_ptr<std::pair<scripting::IScriptingEngine*, scripting::ScriptFunctionHandle>> data_;
 };
 
 }

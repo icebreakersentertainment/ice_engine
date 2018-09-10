@@ -39,36 +39,98 @@ void EntityBindingDelegate::bind()
 	scriptingEngine_->registerClassMethod("Id", "bool opEquals(const Id& in) const", asMETHODPR(entityx::Entity::Id, operator==, (const entityx::Entity::Id&) const, bool));
 
 	// Entity
-	scriptingEngine_->registerObjectType("Entity", sizeof(entityx::Entity), asOBJ_VALUE | asOBJ_APP_CLASS_ALLINTS | asGetTypeTraits<entityx::Entity>());
-	scriptingEngine_->registerObjectBehaviour("Entity", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(DefaultConstructor<entityx::Entity>), asCALL_CDECL_OBJFIRST);
+	scriptingEngine_->registerObjectType("Entity", sizeof(ecs::Entity), asOBJ_VALUE | asOBJ_APP_CLASS_ALLINTS | asGetTypeTraits<ecs::Entity>());
+	scriptingEngine_->registerObjectBehaviour("Entity", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(DefaultConstructor<ecs::Entity>), asCALL_CDECL_OBJFIRST);
 	//scriptingEngine_->registerObjectBehaviour("Entity", asBEHAVE_CONSTRUCT, "void f(const uint64)", asFUNCTION(InitConstructor<T>), asCALL_CDECL_OBJFIRST);
-	scriptingEngine_->registerObjectBehaviour("Entity", asBEHAVE_CONSTRUCT, "void f(const Entity& in)", asFUNCTION(CopyConstructor<entityx::Entity>), asCALL_CDECL_OBJFIRST);
-	scriptingEngine_->registerObjectBehaviour("Entity", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DefaultDestructor<entityx::Entity>), asCALL_CDECL_OBJFIRST);
-	scriptingEngine_->registerClassMethod("Entity", "Entity& opAssign(const Entity& in)", asMETHODPR(entityx::Entity, operator=, (const entityx::Entity&), entityx::Entity&));
-	scriptingEngine_->registerClassMethod("Entity", "Id id() const", asMETHODPR(entityx::Entity, id, () const, entityx::Entity::Id));
-	scriptingEngine_->registerClassMethod("Entity", "bool opImplConv() const", asMETHODPR(entityx::Entity, operator bool, () const, bool ));
-	scriptingEngine_->registerClassMethod("Entity", "bool opEquals(const Entity& in) const", asMETHODPR(entityx::Entity, operator==, (const entityx::Entity&) const, bool));
-
-	scriptingEngine_->registerObjectType("RigidBodyObjectComponent", sizeof(ecs::RigidBodyObjectComponent), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<ecs::RigidBodyObjectComponent>());
-	scriptingEngine_->registerObjectProperty("RigidBodyObjectComponent", "RigidBodyObjectHandle rigidBodyObjectHandle", asOFFSET(ecs::RigidBodyObjectComponent, rigidBodyObjectHandle));
-	scriptingEngine_->registerObjectType("GhostObjectComponent", sizeof(ecs::GhostObjectComponent), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<ecs::GhostObjectComponent>());
-	scriptingEngine_->registerObjectProperty("GhostObjectComponent", "GhostObjectHandle ghostObjectHandle", asOFFSET(ecs::GhostObjectComponent, ghostObjectHandle));
-	scriptingEngine_->registerObjectType("PositionOrientationComponent", sizeof(ecs::PositionOrientationComponent), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<ecs::PositionOrientationComponent>());
-	scriptingEngine_->registerObjectProperty("PositionOrientationComponent", "vec3 position", asOFFSET(ecs::PositionOrientationComponent, position));
-	scriptingEngine_->registerObjectProperty("PositionOrientationComponent", "quat orientation", asOFFSET(ecs::PositionOrientationComponent, orientation));
-	scriptingEngine_->registerObjectType("PointLightComponent", sizeof(ecs::PointLightComponent), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<ecs::PointLightComponent>());
-	scriptingEngine_->registerObjectProperty("PointLightComponent", "vec3 position", asOFFSET(ecs::PointLightComponent, position));
-	scriptingEngine_->registerObjectProperty("PointLightComponent", "PointLightHandle pointLightHandle", asOFFSET(ecs::PointLightComponent, pointLightHandle));
+	scriptingEngine_->registerObjectBehaviour("Entity", asBEHAVE_CONSTRUCT, "void f(const Entity& in)", asFUNCTION(CopyConstructor<ecs::Entity>), asCALL_CDECL_OBJFIRST);
+	scriptingEngine_->registerObjectBehaviour("Entity", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DefaultDestructor<ecs::Entity>), asCALL_CDECL_OBJFIRST);
+	scriptingEngine_->registerClassMethod("Entity", "Entity& opAssign(const Entity& in)", asMETHODPR(ecs::Entity, operator=, (const ecs::Entity&), ecs::Entity&));
+	scriptingEngine_->registerClassMethod("Entity", "Id id() const", asMETHODPR(ecs::Entity, id, () const, entityx::Entity::Id));
+	scriptingEngine_->registerClassMethod("Entity", "void destroy()", asMETHOD(ecs::Entity, destroy));
+	scriptingEngine_->registerClassMethod("Entity", "bool opImplConv() const", asMETHODPR(ecs::Entity, operator bool, () const, bool ));
+	scriptingEngine_->registerClassMethod("Entity", "bool opEquals(const Entity& in) const", asMETHODPR(ecs::Entity, operator==, (const ecs::Entity&) const, bool));
+	scriptingEngine_->registerClassMethod("Entity", "Scene@ scene() const", asMETHOD(ecs::Entity, scene));
 	
-	registerComponent<ecs::PathfindingAgentComponent, pathfinding::CrowdHandle, pathfinding::AgentHandle>(
+	registerComponent<ecs::PositionComponent, glm::vec3>(
+		scriptingEngine_,
+		"PositionComponent",
+		{
+			{"vec3 position", asOFFSET(ecs::PositionComponent, position)}
+		},
+		"vec3"
+	);
+
+	registerComponent<ecs::OrientationComponent, glm::quat>(
+		scriptingEngine_,
+		"OrientationComponent",
+		{
+			{"quat orientation", asOFFSET(ecs::OrientationComponent, orientation)}
+		},
+		"quat"
+	);
+
+	registerComponent<ecs::GhostObjectComponent, physics::CollisionShapeHandle, physics::GhostObjectHandle>(
+		scriptingEngine_,
+		"GhostObjectComponent",
+		{
+			{"CollisionShapeHandle collisionShapeHandle", asOFFSET(ecs::GhostObjectComponent, collisionShapeHandle)},
+			{"GhostObjectHandle ghostObjectHandle", asOFFSET(ecs::GhostObjectComponent, ghostObjectHandle)}
+		},
+		"CollisionShapeHandle, GhostObjectHandle"
+	);
+	registerEntityComponentAssignMethodNoForward<ecs::GhostObjectComponent, physics::CollisionShapeHandle>(scriptingEngine_, "GhostObjectComponent", "CollisionShapeHandle");
+
+	registerComponent<ecs::PointLightComponent, graphics::PointLightHandle>(
+		scriptingEngine_,
+		"PointLightComponent",
+		{
+			{"PointLightHandle pointLightHandle", asOFFSET(ecs::PointLightComponent, pointLightHandle)}
+		},
+		"PointLightHandle"
+	);
+
+	registerComponent<ecs::RigidBodyObjectComponent, physics::CollisionShapeHandle, float32, float32, float32, physics::RigidBodyObjectHandle>(
+		scriptingEngine_,
+		"RigidBodyObjectComponent",
+		{
+			{"CollisionShapeHandle collisionShapeHandle", asOFFSET(ecs::RigidBodyObjectComponent, collisionShapeHandle)},
+			{"float mass", asOFFSET(ecs::RigidBodyObjectComponent, mass)},
+			{"float friction", asOFFSET(ecs::RigidBodyObjectComponent, friction)},
+			{"float restitution", asOFFSET(ecs::RigidBodyObjectComponent, restitution)},
+			{"RigidBodyObjectHandle rigidBodyObjectHandle", asOFFSET(ecs::RigidBodyObjectComponent, rigidBodyObjectHandle)}
+		},
+		"CollisionShapeHandle, float, float, float, RigidBodyObjectHandle"
+	);
+	registerEntityComponentAssignMethodNoForward<ecs::RigidBodyObjectComponent, physics::CollisionShapeHandle>(scriptingEngine_, "RigidBodyObjectComponent", "CollisionShapeHandle");
+	registerEntityComponentAssignMethodNoForward<ecs::RigidBodyObjectComponent, physics::CollisionShapeHandle, float32, float32, float32>(scriptingEngine_, "RigidBodyObjectComponent", "CollisionShapeHandle, float = 1.0f, float = 1.0f, float = 1.0f");
+
+	registerComponent<ecs::PathfindingCrowdComponent, pathfinding::NavigationMeshHandle, pathfinding::CrowdHandle>(
+				scriptingEngine_,
+				"PathfindingCrowdComponent",
+				{
+					{"NavigationMeshHandle navigationMeshHandle", asOFFSET(ecs::PathfindingCrowdComponent, navigationMeshHandle)},
+					{"CrowdHandle crowdHandle", asOFFSET(ecs::PathfindingCrowdComponent, crowdHandle)}
+
+				},
+				"NavigationMeshHandle, CrowdHandle"
+			);
+		registerEntityComponentAssignMethodNoForward<ecs::PathfindingCrowdComponent, pathfinding::NavigationMeshHandle>(scriptingEngine_, "PathfindingCrowdComponent", "NavigationMeshHandle");
+
+	registerComponent<ecs::PathfindingAgentComponent, pathfinding::CrowdHandle, pathfinding::AgentHandle, pathfinding::AgentParams, glm::vec3>(
 		scriptingEngine_,
 		"PathfindingAgentComponent",
 		{
 			{"CrowdHandle crowdHandle", asOFFSET(ecs::PathfindingAgentComponent, crowdHandle)},
-			{"AgentHandle agentHandle", asOFFSET(ecs::PathfindingAgentComponent, agentHandle)}
+			{"AgentHandle agentHandle", asOFFSET(ecs::PathfindingAgentComponent, agentHandle)},
+			{"AgentParams agentParams", asOFFSET(ecs::PathfindingAgentComponent, agentParams)},
+			{"AgentState  agentState", asOFFSET(ecs::PathfindingAgentComponent, agentState)},
+			{"MovementRequestState  movementRequestState", asOFFSET(ecs::PathfindingAgentComponent, movementRequestState)},
+			{"vec3 target", asOFFSET(ecs::PathfindingAgentComponent, target)},
 		},
-		"CrowdHandle crowdHandle, AgentHandle agentHandle"
+		"CrowdHandle, AgentHandle, AgentParams = AgentParams(), vec3 = vec3()"
 	);
+	registerEntityComponentAssignMethodNoForward<ecs::PathfindingAgentComponent, pathfinding::CrowdHandle, pathfinding::AgentParams, glm::vec3>(scriptingEngine_, "PathfindingAgentComponent", "CrowdHandle, AgentParams, vec3");
+
 	registerComponent<ecs::GraphicsComponent, ModelHandle, glm::vec3, graphics::RenderableHandle>(
 		scriptingEngine_,
 		"GraphicsComponent",
@@ -78,87 +140,62 @@ void EntityBindingDelegate::bind()
 			{"RenderableHandle renderableHandle", asOFFSET(ecs::GraphicsComponent, renderableHandle)}
 		}
 	);
-	registerEntityComponentAssignMethod<ecs::GraphicsComponent, ModelHandle>(scriptingEngine_, "GraphicsComponent", "ModelHandle modelHandle");
+	registerEntityComponentAssignMethodNoForward<ecs::GraphicsComponent, ModelHandle>(scriptingEngine_, "GraphicsComponent", "ModelHandle");
+	registerEntityComponentAssignMethodNoForward<ecs::GraphicsComponent, ModelHandle, glm::vec3>(scriptingEngine_, "GraphicsComponent", "ModelHandle, vec3");
+
+	registerComponent<ecs::GraphicsTerrainComponent, graphics::TerrainHandle, graphics::TerrainRenderableHandle>(
+		scriptingEngine_,
+		"GraphicsTerrainComponent",
+		{
+			{"TerrainHandle terrainHandle", asOFFSET(ecs::GraphicsTerrainComponent, terrainHandle)},
+			{"TerrainRenderableHandle terrainRenderableHandle", asOFFSET(ecs::GraphicsTerrainComponent, terrainRenderableHandle)}
+		},
+		"TerrainHandle, TerrainRenderableHandle"
+	);
+	registerEntityComponentAssignMethodNoForward<ecs::GraphicsTerrainComponent, graphics::TerrainHandle>(scriptingEngine_, "GraphicsTerrainComponent", "TerrainHandle");
+
 	registerComponent<ecs::ScriptObjectComponent, scripting::ScriptObjectHandle>(
 		scriptingEngine_,
 		"ScriptObjectComponent",
 		{
 			{"ScriptObjectHandle scriptObjectHandle", asOFFSET(ecs::ScriptObjectComponent, scriptObjectHandle)}
-		}
+		},
+		"ScriptObjectHandle"
+	);
+//	registerEntityComponentAssignMethodNoForward<ecs::ScriptObjectComponent, scripting::ScriptObjectHandle>(scriptingEngine_, "ScriptObjectComponent", "ScriptObjectHandle");
+	registerEntityComponentAssignMethodNoForward<ecs::ScriptObjectComponent, void*>(scriptingEngine_, "ScriptObjectComponent", "IScriptObject@");
+
+	scriptingEngine_->registerEnum("DirtyFlags");
+	scriptingEngine_->registerEnumValue("DirtyFlags", "DIRTY_SOURCE_SCRIPT", ecs::DirtyFlags::DIRTY_SOURCE_SCRIPT);
+	scriptingEngine_->registerEnumValue("DirtyFlags", "DIRTY_POSITION", ecs::DirtyFlags::DIRTY_POSITION);
+	registerComponent<ecs::DirtyComponent, uint16>(
+		scriptingEngine_,
+		"DirtyComponent",
+		{
+			{"uint16 dirty", asOFFSET(ecs::DirtyComponent, dirty)}
+		},
+		"uint16"
 	);
 
-	scriptingEngine_->registerObjectType("ComponentHandlePositionOrientationComponent", sizeof(entityx::ComponentHandle<ecs::PositionOrientationComponent>), asOBJ_VALUE | asOBJ_APP_CLASS_ALLINTS | asGetTypeTraits<entityx::ComponentHandle<ecs::PositionOrientationComponent>>());
-	scriptingEngine_->registerObjectBehaviour("ComponentHandlePositionOrientationComponent", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(DefaultConstructor<entityx::ComponentHandle<ecs::PositionOrientationComponent>>), asCALL_CDECL_OBJFIRST);
-	//scriptingEngine_->registerObjectBehaviour("ComponentHandlePositionOrientationComponent", asBEHAVE_CONSTRUCT, "void f(const uint64)", asFUNCTION(InitConstructor<T>), asCALL_CDECL_OBJFIRST);
-	scriptingEngine_->registerObjectBehaviour("ComponentHandlePositionOrientationComponent", asBEHAVE_CONSTRUCT, "void f(const ComponentHandlePositionOrientationComponent& in)", asFUNCTION(CopyConstructor<entityx::ComponentHandle<ecs::PositionOrientationComponent>>), asCALL_CDECL_OBJFIRST);
-	scriptingEngine_->registerObjectBehaviour("ComponentHandlePositionOrientationComponent", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DefaultDestructor<entityx::ComponentHandle<ecs::PositionOrientationComponent>>), asCALL_CDECL_OBJFIRST);
-	scriptingEngine_->registerClassMethod("ComponentHandlePositionOrientationComponent", "ComponentHandlePositionOrientationComponent& opAssign(const ComponentHandlePositionOrientationComponent& in)", asMETHODPR(entityx::ComponentHandle<ecs::PositionOrientationComponent>, operator=, (const entityx::ComponentHandle<ecs::PositionOrientationComponent>&), entityx::ComponentHandle<ecs::PositionOrientationComponent>&));
-	scriptingEngine_->registerClassMethod("ComponentHandlePositionOrientationComponent", "bool opEquals(const ComponentHandlePositionOrientationComponent& in) const", asMETHODPR(entityx::ComponentHandle<ecs::PositionOrientationComponent>, operator==, (const entityx::ComponentHandle<ecs::PositionOrientationComponent>&) const, bool));
-	scriptingEngine_->registerClassMethod("ComponentHandlePositionOrientationComponent", "bool opImplConv() const", asMETHODPR(entityx::ComponentHandle<ecs::PositionOrientationComponent>, operator bool, () const, bool )); 
-	/*
-	scriptingEngine_->registerClassMethod(
-		"ComponentHandlePositionOrientationComponent",
-		"PositionOrientationComponent@ get()",
-		//asFUNCTION((component<ecs::PositionOrientationComponent>)),
-		//asCALL_CDECL_OBJFIRST
-		asMETHODPR(entityx::ComponentHandle<ecs::PositionOrientationComponent>, get, (), ecs::PositionOrientationComponent*)
-	);*/
-	
-	scriptingEngine_->registerObjectType("ComponentHandleRigidBodyObjectComponent", sizeof(entityx::ComponentHandle<ecs::RigidBodyObjectComponent>), asOBJ_VALUE | asOBJ_APP_CLASS_ALLINTS | asGetTypeTraits<entityx::ComponentHandle<ecs::RigidBodyObjectComponent>>());
-	scriptingEngine_->registerObjectBehaviour("ComponentHandleRigidBodyObjectComponent", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(DefaultConstructor<entityx::ComponentHandle<ecs::RigidBodyObjectComponent>>), asCALL_CDECL_OBJFIRST);
-	//scriptingEngine_->registerObjectBehaviour("ComponentHandleRigidBodyObjectComponent", asBEHAVE_CONSTRUCT, "void f(const uint64)", asFUNCTION(InitConstructor<T>), asCALL_CDECL_OBJFIRST);
-	scriptingEngine_->registerObjectBehaviour("ComponentHandleRigidBodyObjectComponent", asBEHAVE_CONSTRUCT, "void f(const ComponentHandleRigidBodyObjectComponent& in)", asFUNCTION(CopyConstructor<entityx::ComponentHandle<ecs::RigidBodyObjectComponent>>), asCALL_CDECL_OBJFIRST);
-	scriptingEngine_->registerObjectBehaviour("ComponentHandleRigidBodyObjectComponent", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DefaultDestructor<entityx::ComponentHandle<ecs::RigidBodyObjectComponent>>), asCALL_CDECL_OBJFIRST);
-	scriptingEngine_->registerClassMethod("ComponentHandleRigidBodyObjectComponent", "ComponentHandleRigidBodyObjectComponent& opAssign(const ComponentHandleRigidBodyObjectComponent& in)", asMETHODPR(entityx::ComponentHandle<ecs::RigidBodyObjectComponent>, operator=, (const entityx::ComponentHandle<ecs::RigidBodyObjectComponent>&), entityx::ComponentHandle<ecs::RigidBodyObjectComponent>&));
-	scriptingEngine_->registerClassMethod("ComponentHandleRigidBodyObjectComponent", "bool opEquals(const ComponentHandleRigidBodyObjectComponent& in) const", asMETHODPR(entityx::ComponentHandle<ecs::RigidBodyObjectComponent>, operator==, (const entityx::ComponentHandle<ecs::RigidBodyObjectComponent>&) const, bool));
-	scriptingEngine_->registerClassMethod("ComponentHandleRigidBodyObjectComponent", "bool opImplConv() const", asMETHODPR(entityx::ComponentHandle<ecs::RigidBodyObjectComponent>, operator bool, () const, bool )); 
+	registerComponent<ecs::PersistableComponent>(
+		scriptingEngine_,
+		"PersistableComponent",
+		{}
+	);
 
-	//registerHandleBindings<ecs::Entity>(scriptingEngine_, "Entity");
-	
-	scriptingEngine_->registerObjectMethod(
-		"Entity",
-		"ComponentHandlePositionOrientationComponent assignPositionOrientationComponent(vec3, quat)",
-		asFUNCTION((assign<ecs::PositionOrientationComponent, glm::vec3, glm::quat>)),
-		asCALL_CDECL_OBJFIRST
-		//asMETHODPR(entityx::Entity, assign<ecs::PositionOrientationComponent>, (glm::vec3, glm::quat), entityx::ComponentHandle<ecs::PositionOrientationComponent>)
-	);
-	scriptingEngine_->registerClassMethod(
-		"Entity",
-		"bool has_componentPositionOrientationComponent() const",
-		//asFUNCTION((component<PositionOrientationComponent>)),
-		//asCALL_CDECL_OBJFIRST
-		asMETHODPR(entityx::Entity, has_component<ecs::PositionOrientationComponent>, () const, bool)
-	);
-	scriptingEngine_->registerClassMethod(
-		"Entity",
-		"ComponentHandlePositionOrientationComponent componentPositionOrientationComponent()",
-		//asFUNCTION((component<PositionOrientationComponent>)),
-		//asCALL_CDECL_OBJFIRST
-		asMETHODPR(entityx::Entity, component<ecs::PositionOrientationComponent>, (), entityx::ComponentHandle<ecs::PositionOrientationComponent>)
-	);
-	
-	/*
-	scriptingEngine_->registerObjectMethod(
-		"Entity",
-		"ComponentHandleRigidBodyObjectComponent assignRigidBodyObjectComponent(vec3, quat)",
-		asFUNCTION((assign<ecs::RigidBodyObjectComponent, glm::vec3, glm::quat>)),
-		asCALL_CDECL_OBJFIRST
-		//asMETHODPR(entityx::Entity, assign<ecs::RigidBodyObjectComponent>, (glm::vec3, glm::quat), entityx::ComponentHandle<ecs::RigidBodyObjectComponent>)
-	);*/
-	scriptingEngine_->registerClassMethod(
-		"Entity",
-		"bool has_componentRigidBodyObjectComponent() const",
-		//asFUNCTION((component<RigidBodyObjectComponent>)),
-		//asCALL_CDECL_OBJFIRST
-		asMETHODPR(entityx::Entity, has_component<ecs::RigidBodyObjectComponent>, () const, bool)
-	);
-	scriptingEngine_->registerClassMethod(
-		"Entity",
-		"ComponentHandleRigidBodyObjectComponent componentRigidBodyObjectComponent()",
-		//asFUNCTION((component<RigidBodyObjectComponent>)),
-		//asCALL_CDECL_OBJFIRST
-		asMETHODPR(entityx::Entity, component<ecs::RigidBodyObjectComponent>, (), entityx::ComponentHandle<ecs::RigidBodyObjectComponent>)
-	);
+//	enum DirtyFlags : uint16
+//	{
+//		DIRTY_SOURCE_SCRIPT				= 1 << 0,
+//		DIRTY_SOURCE_PHYSICS			= 1 << 1,
+//		DIRTY_SOURCE_PATHFINDING		= 1 << 2,
+//
+//		DIRTY_ALL						= 1 << 3,
+//		DIRTY_POSITION					= 1 << 4,
+//		DIRTY_ORIENTATION				= 1 << 5,
+//		DIRTY_RIGID_BODY_OBJECT			= 1 << 6,
+//		DIRTY_GHOST_OBJECT				= 1 << 7,
+//		DIRTY_PATHFINDING_AGENT			= 1 << 8,
+//	};
 }
 	
 };

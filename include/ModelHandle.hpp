@@ -14,4 +14,16 @@ public:
 
 }
 
+namespace std
+{
+	template <>
+	struct hash<ice_engine::ModelHandle>
+	{
+		std::size_t operator()(const ice_engine::ModelHandle& k) const noexcept
+		{
+			return hash<ice_engine::uint64>{}(k.id());
+		}
+	};
+}
+
 #endif /* MODEL_HANDLE_H_ */

@@ -28,6 +28,9 @@ static void CopyConstructor(T* memory, const T& other) { new(memory) T(other); }
 template<class T>
 static void DefaultDestructor(T* memory) { ((T*)memory)->~T(); }
 
+template<class T>
+static T& defaultAssignmentOperator(const T& other, T* v) { (*v) = std::move(const_cast<T&>(other)); return *v; }
+
 template<typename T, typename V>
 class VectorRegisterHelper
 {
@@ -231,6 +234,57 @@ void registerHandleBindings(scripting::IScriptingEngine* scriptingEngine, const 
 	scriptingEngine->registerClassMethod(name.c_str(), "bool opEquals(const " + name + "& in) const", asMETHODPR(T, operator==, (const T&) const, bool));
 }
 
+
+template<typename T>
+class PointerHandleRegisterHelper
+{
+public:
+	static void DefaultConstructor(T* memory) { new(memory) T(); }
+
+	static void InitConstructor(T* memory, void* object) { new(memory) T(object); }
+
+	static void CopyConstructor(T* memory, const T& other) { new(memory) T(other); }
+	static void DefaultDestructor(T* memory) { ((T*)memory)->~T(); }
+};
+
+/**
+ * Register our Pointer Handle bindings.
+ */
+template<typename T>
+void registerPointerHandleBindings(scripting::IScriptingEngine* scriptingEngine, const std::string& name)
+{
+	typedef PointerHandleRegisterHelper<T> HandleBase;
+
+	scriptingEngine->registerObjectType(name.c_str(), sizeof(T), asOBJ_VALUE | asOBJ_APP_CLASS_ALLINTS | asGetTypeTraits<T>());
+	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(HandleBase::DefaultConstructor), asCALL_CDECL_OBJFIRST);
+//	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f(ref@)", asFUNCTION(HandleBase::InitConstructor), asCALL_CDECL_OBJFIRST);
+//	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f(const " + name + "& in)", asFUNCTION(HandleBase::CopyConstructor), asCALL_CDECL_OBJFIRST);
+	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_DESTRUCT, "void f()", asFUNCTION(HandleBase::DefaultDestructor), asCALL_CDECL_OBJFIRST);
+	scriptingEngine->registerClassMethod(name.c_str(), name + "& opAssign(const " + name + "& in)", asMETHODPR(T, operator=, (const T&), T&));
+//	scriptingEngine->registerClassMethod(name.c_str(), scriptTypeName + "@ get()", asMETHODPR(T, get, (), void*));
+	scriptingEngine->registerClassMethod(name.c_str(), "bool opImplConv() const", asMETHODPR(T, operator bool, () const, bool ));
+	scriptingEngine->registerClassMethod(name.c_str(), "bool opEquals(const " + name + "& in) const", asMETHODPR(T, operator==, (const T&) const, bool));
+}
+
+/**
+ * Register our Pointer Handle bindings.
+ */
+template<typename T>
+void registerPointerHandleBindings(scripting::IScriptingEngine* scriptingEngine, const std::string& name, const std::string& scriptTypeName)
+{
+	typedef PointerHandleRegisterHelper<T> HandleBase;
+
+	scriptingEngine->registerObjectType(name.c_str(), sizeof(T), asOBJ_VALUE | asOBJ_APP_CLASS_ALLINTS | asGetTypeTraits<T>());
+	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(HandleBase::DefaultConstructor), asCALL_CDECL_OBJFIRST);
+//	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f(ref@)", asFUNCTION(HandleBase::InitConstructor), asCALL_CDECL_OBJFIRST);
+//	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f(const " + name + "& in)", asFUNCTION(HandleBase::CopyConstructor), asCALL_CDECL_OBJFIRST);
+	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_DESTRUCT, "void f()", asFUNCTION(HandleBase::DefaultDestructor), asCALL_CDECL_OBJFIRST);
+	scriptingEngine->registerClassMethod(name.c_str(), name + "& opAssign(const " + name + "& in)", asMETHODPR(T, operator=, (const T&), T&));
+	scriptingEngine->registerClassMethod(name.c_str(), scriptTypeName + "@+ get()", asMETHODPR(T, get, (), void*));
+	scriptingEngine->registerClassMethod(name.c_str(), "bool opImplConv() const", asMETHODPR(T, operator bool, () const, bool ));
+	scriptingEngine->registerClassMethod(name.c_str(), "bool opEquals(const " + name + "& in) const", asMETHODPR(T, operator==, (const T&) const, bool));
+}
+
 template<class A, class B>
 B* refCast(A* a)
 {
@@ -246,6 +300,12 @@ B* refCast(A* a)
     }
     return b;
     */
+}
+
+template<class A, class B>
+B valueCast(A& a)
+{
+    return static_cast<B>(a);
 }
 
 }

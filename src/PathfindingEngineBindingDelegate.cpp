@@ -32,6 +32,8 @@ void PathfindingEngineBindingDelegate::bind()
 	registerHandleBindings<pathfinding::AgentHandle>(scriptingEngine_, "AgentHandle");
 	registerHandleBindings<pathfinding::CrowdHandle>(scriptingEngine_, "CrowdHandle");
 	
+	scriptingEngine_->registerObjectType("IPathfindingTerrain", 0, asOBJ_REF | asOBJ_NOCOUNT);
+
 	scriptingEngine_->registerObjectType("PolygonMeshConfig", sizeof(pathfinding::PolygonMeshConfig), asOBJ_VALUE | asOBJ_APP_CLASS_ALLFLOATS | asGetTypeTraits<pathfinding::PolygonMeshConfig>());
 	scriptingEngine_->registerObjectBehaviour("PolygonMeshConfig", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(DefaultConstructor<pathfinding::PolygonMeshConfig>), asCALL_CDECL_OBJFIRST);
 	scriptingEngine_->registerObjectBehaviour("PolygonMeshConfig", asBEHAVE_CONSTRUCT, "void f(const PolygonMeshConfig& in)", asFUNCTION(CopyConstructor<pathfinding::PolygonMeshConfig>), asCALL_CDECL_OBJFIRST);
@@ -83,13 +85,18 @@ void PathfindingEngineBindingDelegate::bind()
 	scriptingEngine_->registerEnumValue("MovementRequestState", "WAITING_FOR_PATH", pathfinding::WAITING_FOR_PATH);
 	scriptingEngine_->registerEnumValue("MovementRequestState", "VELOCITY", pathfinding::VELOCITY);
 
+	scriptingEngine_->registerEnum("AgentState");
+	scriptingEngine_->registerEnumValue("AgentState", "INVALID", pathfinding::AgentState::INVALID);
+	scriptingEngine_->registerEnumValue("AgentState", "WALKING", pathfinding::AgentState::WALKING);
+	scriptingEngine_->registerEnumValue("AgentState", "OFFMESH", pathfinding::AgentState::OFFMESH);
+
 	// IPathfindingEngine
 	scriptingEngine_->registerObjectType("IPathfindingEngine", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	scriptingEngine_->registerGlobalProperty("IPathfindingEngine pathfinding", pathfindingEngine_);
 	scriptingEngine_->registerClassMethod(
 		"IPathfindingEngine",
-		"PolygonMeshHandle createPolygonMesh(const vectorVec3& in, const vectorUInt32& in, const PolygonMeshConfig& in)",
-		asMETHODPR(pathfinding::IPathfindingEngine, createPolygonMesh, (const std::vector<glm::vec3>&, const std::vector<uint32>&, const pathfinding::PolygonMeshConfig&), pathfinding::PolygonMeshHandle )
+		"PolygonMeshHandle createPolygonMesh(const IPathfindingTerrain@, const PolygonMeshConfig& in)",
+		asMETHODPR(pathfinding::IPathfindingEngine, createPolygonMesh, (const pathfinding::ITerrain*, const pathfinding::PolygonMeshConfig&), pathfinding::PolygonMeshHandle )
 	);
 	scriptingEngine_->registerClassMethod(
 		"IPathfindingEngine",

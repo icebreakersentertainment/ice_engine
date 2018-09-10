@@ -625,6 +625,8 @@ void GraphicsEngineBindingDelegate::bind()
 	registerHandleBindings<graphics::MeshHandle>(scriptingEngine_, "MeshHandle");
 	registerHandleBindings<graphics::TextureHandle>(scriptingEngine_, "TextureHandle");
 	registerHandleBindings<graphics::RenderableHandle>(scriptingEngine_, "RenderableHandle");
+	registerHandleBindings<graphics::TerrainHandle>(scriptingEngine_, "TerrainHandle");
+	registerHandleBindings<graphics::TerrainRenderableHandle>(scriptingEngine_, "TerrainRenderableHandle");
 	registerHandleBindings<graphics::PointLightHandle>(scriptingEngine_, "PointLightHandle");
 	registerHandleBindings<graphics::VertexShaderHandle>(scriptingEngine_, "VertexShaderHandle");
 	registerHandleBindings<graphics::FragmentShaderHandle>(scriptingEngine_, "FragmentShaderHandle");
@@ -730,7 +732,7 @@ void GraphicsEngineBindingDelegate::bind()
 	scriptingEngine_->registerObjectMethod(
 		"IButton",
 		"void setCallback(ButtonClickCallback@ callback)",
-		asMETHODPR(GameEngine, setCallback, (graphics::gui::IButton*, scripting::ScriptFunctionHandle), void),
+		asMETHODPR(GameEngine, setCallback, (graphics::gui::IButton*, void*), void),
 		asCALL_THISCALL_OBJFIRST,
 		gameEngine_
 	);
@@ -740,7 +742,7 @@ void GraphicsEngineBindingDelegate::bind()
 	scriptingEngine_->registerObjectMethod(
 		"IMenuItem",
 		"void setCallback(MenuItemClickCallback@ callback)",
-		asMETHODPR(GameEngine, setCallback, (graphics::gui::IMenuItem*, scripting::ScriptFunctionHandle), void),
+		asMETHODPR(GameEngine, setCallback, (graphics::gui::IMenuItem*, void*), void),
 		asCALL_THISCALL_OBJFIRST,
 		gameEngine_
 	);
@@ -787,6 +789,16 @@ void GraphicsEngineBindingDelegate::bind()
 		"IWindow",
 		"IButton@ createButton(const uint32, const uint32, const uint32, const uint32, const string = string())",
 		asMETHODPR(graphics::gui::IWindow, createButton, (const uint32, const uint32, const uint32, const uint32, const std::string), graphics::gui::IButton*)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IWindow",
+		"void destroy(const IButton@)",
+		asMETHODPR(graphics::gui::IWindow, destroy, (const graphics::gui::IButton*), void)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IWindow",
+		"void destroy(const ILabel@)",
+		asMETHODPR(graphics::gui::IWindow, destroy, (const graphics::gui::ILabel*), void)
 	);
 	scriptingEngine_->registerObjectType("IGui", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	scriptingEngine_->registerClassMethod(
@@ -845,8 +857,8 @@ void GraphicsEngineBindingDelegate::bind()
 	);
 	scriptingEngine_->registerClassMethod(
 		"IGraphicsEngine",
-		"RenderableHandle createRenderable(const RenderSceneHandle& in, const MeshHandle& in, const TextureHandle& in, const ShaderProgramHandle& in)",
-		asMETHODPR(graphics::IGraphicsEngine, createRenderable, (const graphics::RenderSceneHandle&, const graphics::MeshHandle&, const graphics::TextureHandle&, const graphics::ShaderProgramHandle&), graphics::RenderableHandle)
+		"RenderableHandle createRenderable(const RenderSceneHandle& in, const MeshHandle& in, const TextureHandle& in, const vec3& in, const quat& in, const vec3& in = vec3(1.0f), const ShaderProgramHandle& in = ShaderProgramHandle())",
+		asMETHODPR(graphics::IGraphicsEngine, createRenderable, (const graphics::RenderSceneHandle&, const graphics::MeshHandle&, const graphics::TextureHandle&, const glm::vec3&, const glm::quat&, const glm::vec3&, const graphics::ShaderProgramHandle&), graphics::RenderableHandle)
 	);
 	scriptingEngine_->registerClassMethod(
 		"IGraphicsEngine",

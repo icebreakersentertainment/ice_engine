@@ -78,6 +78,25 @@ MovementRequestState moveRequestStateToMovementRequestState(const unsigned char 
 	return MovementRequestState::NONE;
 }
 
+AgentState agentStateToAgentState(const unsigned char agentState)
+{
+	switch (agentState)
+	{
+		case DT_CROWDAGENT_STATE_INVALID:
+			return AgentState::INVALID;
+
+		case DT_CROWDAGENT_STATE_WALKING:
+			return AgentState::WALKING;
+
+		case DT_CROWDAGENT_STATE_OFFMESH:
+			return AgentState::OFFMESH;
+
+		default:
+			assert(false && "We should never get here");
+			break;
+	}
+}
+
 PathfindingEngine::PathfindingEngine(utilities::Properties* properties, fs::IFileSystem* fileSystem, logger::ILogger* logger)
 {
 	properties_ = properties;
@@ -227,6 +246,18 @@ void PathfindingEngine::tick(const PathfindingSceneHandle& pathfindingSceneHandl
 
 			if (agent.agentMotionChangeListener) agent.agentMotionChangeListener->update(glm::vec3(ag->npos[0], ag->npos[1], ag->npos[2]));
 		}
+
+		for (auto& agent : crowd.agents)
+		{
+			const dtCrowdAgent* ag = crowd.crowd->getAgent(agent.index);
+			if (!ag->active) continue;
+
+			if (ag->state != agent.state)
+			{
+				agent.state = ag->state;
+				if (agent.agentStateChangeListener) agent.agentStateChangeListener->update(agentStateToAgentState(agent.state));
+			}
+		}
 	}
 }
 
@@ -256,7 +287,7 @@ void PathfindingEngine::setDebugRendering(const PathfindingSceneHandle& pathfind
 	pathfindingScene.debugRendering = enabled;
 }
 
-PolygonMeshHandle PathfindingEngine::createPolygonMesh(const std::vector<glm::vec3>& vertices, const std::vector<uint32>& indices, const PolygonMeshConfig& polygonMeshConfig)
+PolygonMeshHandle PathfindingEngine::createPolygonMesh(const ITerrain* terrain, const PolygonMeshConfig& polygonMeshConfig)
 {
 	logger_->info("Creating polygon mesh");
 	
@@ -268,7 +299,7 @@ PolygonMeshHandle PathfindingEngine::createPolygonMesh(const std::vector<glm::ve
 	float bmin[3];
 	float bmax[3];
 	
-	rcCalcBounds(&vertices[0].x, vertices.size(), bmin, bmax);
+	rcCalcBounds(&terrain->vertices()[0].x, terrain->vertices().size(), bmin, bmax);
 	
 	polygonMesh.config.cs = polygonMeshConfig.cellSize;
 	polygonMesh.config.ch = polygonMeshConfig.cellHeight;
@@ -301,13 +332,13 @@ PolygonMeshHandle PathfindingEngine::createPolygonMesh(const std::vector<glm::ve
 		throw std::runtime_error("Unable to create height field.");
 	}
 	
-	std::vector<unsigned char> triangleAreas = std::vector<unsigned char>(indices.size()/3, 0);
+	std::vector<unsigned char> triangleAreas = std::vector<unsigned char>(terrain->indices().size()/3, 0);
 	
 	logger_->debug("triangleAreas size: " + std::to_string(triangleAreas.size()));
 	
-	rcMarkWalkableTriangles(&ctx, polygonMesh.config.walkableSlopeAngle, &vertices[0].x, vertices.size()*3, reinterpret_cast<const int*>(&indices[0]), indices.size()/3, &triangleAreas[0]);
+	rcMarkWalkableTriangles(&ctx, polygonMesh.config.walkableSlopeAngle, &terrain->vertices()[0].x, terrain->vertices().size()*3, reinterpret_cast<const int*>(&terrain->indices()[0]), terrain->indices().size()/3, &triangleAreas[0]);
 	
-	if (!rcRasterizeTriangles(&ctx, &vertices[0].x, vertices.size()*3, reinterpret_cast<const int*>(&indices[0]), &triangleAreas[0], indices.size()/3, *polygonMesh.heightField, polygonMesh.config.walkableClimb))
+	if (!rcRasterizeTriangles(&ctx, &terrain->vertices()[0].x, terrain->vertices().size()*3, reinterpret_cast<const int*>(&terrain->indices()[0]), &triangleAreas[0], terrain->indices().size()/3, *polygonMesh.heightField, polygonMesh.config.walkableClimb))
 	{
 		throw std::runtime_error("Unable to rasterize triangles.");
 	}
@@ -411,6 +442,11 @@ PolygonMeshHandle PathfindingEngine::createPolygonMesh(const std::vector<glm::ve
 	}
 	
 	return polygonMeshHandle;
+}
+
+void PathfindingEngine::destroy(const PolygonMeshHandle& polygonMeshHandle)
+{
+	polygonMeshes_.destroy(polygonMeshHandle);
 }
 
 NavigationMeshHandle PathfindingEngine::createNavigationMesh(const PolygonMeshHandle& polygonMeshHandle, const NavigationMeshConfig& navigationMeshConfig)
@@ -526,6 +562,11 @@ NavigationMeshHandle PathfindingEngine::createNavigationMesh(const PolygonMeshHa
 	return navigationMeshHandle;
 }
 
+void PathfindingEngine::destroy(const NavigationMeshHandle& navigationMeshHandle)
+{
+	navigationMeshes_.destroy(navigationMeshHandle);
+}
+
 CrowdHandle PathfindingEngine::createCrowd(const PathfindingSceneHandle& pathfindingSceneHandle, const NavigationMeshHandle& navigationMeshHandle)
 {
 	auto& pathfindingScene = pathfindingScenes_[pathfindingSceneHandle];
@@ -592,6 +633,7 @@ AgentHandle PathfindingEngine::createAgent(
 	const glm::vec3& position,
 	const AgentParams& agentParams,
 	std::unique_ptr<IAgentMotionChangeListener> agentMotionChangeListener,
+	std::unique_ptr<IAgentStateChangeListener> agentStateChangeListener,
 	std::unique_ptr<IMovementRequestStateChangeListener> movementRequestStateChangeListener,
 	const UserData& userData
 )
@@ -631,6 +673,7 @@ AgentHandle PathfindingEngine::createAgent(
 	
 	agent.index = idx;
 	agent.agentMotionChangeListener = std::move(agentMotionChangeListener);
+	agent.agentStateChangeListener = std::move(agentStateChangeListener);
 	agent.movementRequestStateChangeListener = std::move(movementRequestStateChangeListener);
 	
 	const dtQueryFilter* filter = crowd.crowd->getFilter(0);
@@ -763,6 +806,20 @@ void PathfindingEngine::setMotionChangeListener(
 }
 
 void PathfindingEngine::setStateChangeListener(
+	const PathfindingSceneHandle& pathfindingSceneHandle,
+	const CrowdHandle& crowdHandle,
+	const AgentHandle& agentHandle,
+	std::unique_ptr<IAgentStateChangeListener> agentStateChangeListener
+)
+{
+	auto& pathfindingScene = pathfindingScenes_[pathfindingSceneHandle];
+	auto& crowd = pathfindingScene.crowds[crowdHandle];
+	auto& agent = crowd.agents[agentHandle];
+
+	agent.agentStateChangeListener = std::move(agentStateChangeListener);
+}
+
+void PathfindingEngine::setMovementRequestChangeListener(
 	const PathfindingSceneHandle& pathfindingSceneHandle,
 	const CrowdHandle& crowdHandle,
 	const AgentHandle& agentHandle,

@@ -5,22 +5,27 @@
 namespace ice_engine
 {
 
+void ScriptFunctionHandleWrapperDeleter(std::pair<scripting::IScriptingEngine*, scripting::ScriptFunctionHandle>* data)
+{
+	std::cout << "destroyed" << std::endl;
+	data->first->releaseScriptFunction(data->second);
+}
+
 ScriptFunctionHandleWrapper::ScriptFunctionHandleWrapper(scripting::IScriptingEngine* scriptingEngine, scripting::ScriptFunctionHandle scriptFunctionHandle)
 	:
-	scriptingEngine_(scriptingEngine), scriptFunctionHandle_(scriptFunctionHandle)
+	data_(new std::pair<scripting::IScriptingEngine*, scripting::ScriptFunctionHandle>(scriptingEngine, scriptFunctionHandle), ScriptFunctionHandleWrapperDeleter)
 {
 	
 }
 
 ScriptFunctionHandleWrapper::~ScriptFunctionHandleWrapper()
 {
-	std::cout << "destroyed" << std::endl;
-	scriptingEngine_->releaseScriptFunction(scriptFunctionHandle_);
+
 }
 
 scripting::ScriptFunctionHandle ScriptFunctionHandleWrapper::get() const
 {
-	return scriptFunctionHandle_;
+	return data_->second;
 }
 
 }

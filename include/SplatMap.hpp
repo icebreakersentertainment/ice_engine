@@ -14,11 +14,13 @@ class SplatMap : public graphics::ISplatMap
 {
 public:
 
-	SplatMap(const Image& heightMap, std::vector<PbrMaterial> materialMap)
+	SplatMap() = default;
+	
+	SplatMap(std::vector<PbrMaterial> materialMap, Image* terrainMap)
+	:
+		materialMap_(std::move(materialMap)),
+		terrainMap_(terrainMap)
 	{
-		materialMap_ = std::move(materialMap);
-		terrainMap_ = generateTerrainMap(heightMap);
-
 		materialMapPointers_.clear();
 
 		for (auto& material : materialMap_) materialMapPointers_.push_back(&material);
@@ -60,7 +62,7 @@ public:
 
 	SplatMap(const SplatMap& other)
 	{
-		terrainMap_ = std::make_unique<Image>(*other.terrainMap_);
+		terrainMap_ = other.terrainMap_;
 		materialMap_ = other.materialMap_;
 
 		for (auto& material : materialMap_) materialMapPointers_.push_back(&material);
@@ -75,12 +77,12 @@ public:
 
 	const graphics::IImage* terrainMap() const override
 	{
-		return terrainMap_.get();
+		return terrainMap_;
 	}
 
 
 private:
-	std::unique_ptr<Image> terrainMap_;
+	Image* terrainMap_;
 	std::vector<PbrMaterial> materialMap_;
 	std::vector<graphics::IPbrMaterial*> materialMapPointers_;
 
@@ -102,52 +104,52 @@ private:
 
 		image.data_ = std::move(data);
 	}
-
-	std::unique_ptr<Image> generateTerrainMap(const Image& heightMap)
-	{
-		std::vector<char> data = std::vector<char>();
-		data.resize(heightMap.width()*heightMap.height()*4);
-		int width = heightMap.width();
-		int height = heightMap.height();
-		Image::Format format = Image::Format::FORMAT_RGBA;
-
-		for (int i=0; i < heightMap.data().size(); i+=4)
-		{
-			const unsigned char height = static_cast<unsigned char>(heightMap.data()[i+3]);
-
-			data[i] = 0;
-			data[i+1] = 1;
-			data[i+2] = 2;
-
-			if (height <= 30)
-			{
-				// 1111 0000
-				data[i+3] = 208 + 0;
-			}
-			else if (height <= 50)
-			{
-				// 1000 1000
-				data[i+3] = 128 + 8;
-			}
-			else if (height > 50 && height <= 80)
-			{
-				// 0000 1111
-				data[i+3] = 0 + 15;
-			}
-			else if (height > 80 && height < 100)
-			{
-				// 0000 1000
-				data[i+3] = 0 + 8;
-			}
-			else
-			{
-				// 0000 0000
-				data[i+3] = 0;
-			}
-		}
-
-		return std::make_unique<Image>(data, width, height, format);
-	}
+//
+//	std::unique_ptr<Image> generateTerrainMap(const Image& heightMap)
+//	{
+//		std::vector<char> data = std::vector<char>();
+//		data.resize(heightMap.width()*heightMap.height()*4);
+//		int width = heightMap.width();
+//		int height = heightMap.height();
+//		Image::Format format = Image::Format::FORMAT_RGBA;
+//
+//		for (int i=0; i < heightMap.data().size(); i+=4)
+//		{
+//			const unsigned char height = static_cast<unsigned char>(heightMap.data()[i+3]);
+//
+//			data[i] = 0;
+//			data[i+1] = 1;
+//			data[i+2] = 2;
+//
+//			if (height <= 30)
+//			{
+//				// 1111 0000
+//				data[i+3] = 208 + 0;
+//			}
+//			else if (height <= 50)
+//			{
+//				// 1000 1000
+//				data[i+3] = 128 + 8;
+//			}
+//			else if (height > 50 && height <= 80)
+//			{
+//				// 0000 1111
+//				data[i+3] = 0 + 15;
+//			}
+//			else if (height > 80 && height < 100)
+//			{
+//				// 0000 1000
+//				data[i+3] = 0 + 8;
+//			}
+//			else
+//			{
+//				// 0000 0000
+//				data[i+3] = 0;
+//			}
+//		}
+//
+//		return std::make_unique<Image>(data, width, height, format);
+//	}
 /*
 	std::vector<PbrMaterial> generateMaterialMap(const Image& heightMap, fs::IFileSystem* fileSystem)
 	{

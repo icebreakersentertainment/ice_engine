@@ -73,6 +73,24 @@ PluginManager::PluginManager(
 	
 	LOG_INFO(logger_, "Finished loading module plugins.");
 	
+	LOG_INFO(logger_, "Loading scripting engine binding plugins.");
+
+	std::vector<std::string> scriptingEngineBindingPluginNames;
+	utilities::explode(properties_->getStringValue("plugins.scriptingenginebindingplugins"), ',', std::back_inserter(scriptingEngineBindingPluginNames));
+
+	for (const auto& scriptingEngineBindingPluginName : scriptingEngineBindingPluginNames)
+	{
+		LOG_INFO(logger_, "Loading scripting engine binding plugin '" + scriptingEngineBindingPluginName + "'.");
+		auto pluginBoostSharedPtr = boost::dll::import<ice_engine::IScriptingEngineBindingPlugin>("./" + scriptingEngineBindingPluginName + "_plugin", "plugin", boost::dll::load_mode::append_decorations);
+
+		// Convert from boost::shared_ptr<T> to std::shared_ptr<T>
+		auto pluginStdSharedPtr = std::shared_ptr<ice_engine::IScriptingEngineBindingPlugin>(pluginBoostSharedPtr.get(), [pluginBoostSharedPtr](ice_engine::IScriptingEngineBindingPlugin*){});
+
+		scriptingEngineBindingPlugins_.push_back( pluginStdSharedPtr );
+	}
+
+	LOG_INFO(logger_, "Finished loading scripting engine binding plugins.");
+
 	LOG_INFO(logger_, "Finished loading plugins.");
 }
 
@@ -93,6 +111,11 @@ std::shared_ptr<IGraphicsPlugin> PluginManager::getGraphicsPlugin() const
 const std::vector<std::shared_ptr<IModulePlugin>>& PluginManager::getModulePlugins() const
 {
 	return modulePlugins_;
+}
+
+const std::vector<std::shared_ptr<IScriptingEngineBindingPlugin>>& PluginManager::getScriptingEngineBindingPlugins() const
+{
+	return scriptingEngineBindingPlugins_;
 }
 
 }

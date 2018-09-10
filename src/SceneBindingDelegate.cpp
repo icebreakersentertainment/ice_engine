@@ -95,12 +95,12 @@ void SceneBindingDelegate::bind()
 	scriptingEngine_->registerClassMethod(
 		"Raycast",
 		"void setEntity(const Entity& in)",
-		asMETHODPR(Raycast, setEntity, (const entityx::Entity&), void)
+		asMETHODPR(Raycast, setEntity, (const ecs::Entity&), void)
 	);
 	scriptingEngine_->registerClassMethod(
 		"Raycast",
-		"const Entity& entity() const",
-		asMETHODPR(Raycast, entity, () const, const entityx::Entity&)
+		"Entity entity() const",
+		asMETHODPR(Raycast, entity, () const, ecs::Entity)
 	);
 	//scriptingEngine_->registerObjectProperty("Raycast", "vec3 from", asOFFSET(ray::Ray, from));
 	//scriptingEngine_->registerObjectProperty("Raycast", "vec3 to", asOFFSET(ray::Ray, to));
@@ -109,10 +109,18 @@ void SceneBindingDelegate::bind()
 	scriptingEngine_->registerObjectProperty("SceneStatistics", "float physicsTime", asOFFSET(SceneStatistics, physicsTime));
 	scriptingEngine_->registerObjectProperty("SceneStatistics", "float renderTime", asOFFSET(SceneStatistics, renderTime));
 	
+	scriptingEngine_->registerFunctionDefinition("void PreSerializeCallback(Scene@)");
+	scriptingEngine_->registerFunctionDefinition("void PostSerializeCallback(Scene@)");
+	scriptingEngine_->registerFunctionDefinition("void PreDeserializeCallback(Scene@)");
+	scriptingEngine_->registerFunctionDefinition("void PostDeserializeCallback(Scene@)");
+
+	scriptingEngine_->registerFunctionDefinition("void EntitiesWithComponentsCallBack(Entity)");
+
 	// Scene
-	scriptingEngine_->registerObjectType("Scene", 0, asOBJ_REF | asOBJ_NOCOUNT);
+//	scriptingEngine_->registerObjectType("Scene", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	scriptingEngine_->registerClassMethod("Scene", "string getName() const", asMETHODPR(Scene, getName, () const, std::string));
-	scriptingEngine_->registerClassMethod("Scene", "bool visible() const", asMETHODPR(Scene, visible, () const, bool));
+	scriptingEngine_->registerClassMethod("Scene", "bool visible() const", asMETHOD(Scene, visible));
+	scriptingEngine_->registerClassMethod("Scene", "void setVisible(const bool)", asMETHOD(Scene, setVisible));
 	scriptingEngine_->registerClassMethod(
 		"Scene",
 		"const SceneStatistics@ getSceneStatistics()",
@@ -145,26 +153,6 @@ void SceneBindingDelegate::bind()
 	);
 	scriptingEngine_->registerClassMethod(
 		"Scene",
-		"CollisionShapeHandle createStaticPlaneShape(const vec3& in, const float)",
-		asMETHODPR(Scene, createStaticPlaneShape, (const glm::vec3&, const float32), physics::CollisionShapeHandle)
-	);
-	scriptingEngine_->registerClassMethod(
-		"Scene",
-		"CollisionShapeHandle createStaticBoxShape(const vec3& in)",
-		asMETHODPR(Scene, createStaticBoxShape, (const glm::vec3&), physics::CollisionShapeHandle)
-	);
-	scriptingEngine_->registerClassMethod(
-		"Scene",
-		"void destroyStaticShape(const CollisionShapeHandle& in)",
-		asMETHODPR(Scene, destroyStaticShape, (const physics::CollisionShapeHandle&), void)
-	);
-	scriptingEngine_->registerClassMethod(
-		"Scene",
-		"void destroyAllStaticShapes()",
-		asMETHODPR(Scene, destroyAllStaticShapes, (), void)
-	);
-	scriptingEngine_->registerClassMethod(
-		"Scene",
 		"RigidBodyObjectHandle createRigidBodyObject(const CollisionShapeHandle& in)",
 		asMETHODPR(Scene, createRigidBodyObject, (const physics::CollisionShapeHandle&), physics::RigidBodyObjectHandle)
 	);
@@ -190,13 +178,13 @@ void SceneBindingDelegate::bind()
 	);
 	scriptingEngine_->registerClassMethod(
 		"Scene",
-		"RenderableHandle createRenderable(const ModelHandle& in, const string& in = string())",
-		asMETHODPR(Scene, createRenderable, (const ModelHandle&, const std::string&), graphics::RenderableHandle)
+		"RenderableHandle createRenderable(const ModelHandle& in, const vec3& in, const quat& in, const vec3& in = vec3(1.0f))",
+		asMETHODPR(Scene, createRenderable, (const ModelHandle&, const glm::vec3&, const glm::quat&, const glm::vec3&), graphics::RenderableHandle)
 	);
 	scriptingEngine_->registerClassMethod(
 		"Scene",
-		"RenderableHandle createRenderable(const MeshHandle& in, const TextureHandle& in, const string& in = string())",
-		asMETHODPR(Scene, createRenderable, (const graphics::MeshHandle&, const graphics::TextureHandle&, const std::string&), graphics::RenderableHandle)
+		"RenderableHandle createRenderable(const MeshHandle& in, const TextureHandle& in, const vec3& in, const quat& in, const vec3& in = vec3(1.0f))",
+		asMETHODPR(Scene, createRenderable, (const graphics::MeshHandle&, const graphics::TextureHandle&, const glm::vec3&, const glm::quat&, const glm::vec3&), graphics::RenderableHandle)
 	);
 	scriptingEngine_->registerClassMethod(
 		"Scene",
@@ -210,106 +198,27 @@ void SceneBindingDelegate::bind()
 	);
 	scriptingEngine_->registerClassMethod(
 		"Scene",
-		"ITerrain@ testCreateTerrain(HeightMap, SplatMap, DisplacementMap)",
-		asMETHODPR(Scene, testCreateTerrain, (HeightMap, SplatMap, DisplacementMap), ITerrain*)
+		"ITerrain@ testCreateTerrain(HeightMap, SplatMap, DisplacementMap, CollisionShapeHandle, PolygonMeshHandle, NavigationMeshHandle)",
+		asMETHOD(Scene, testCreateTerrain)
 	);
-	scriptingEngine_->registerClassMethod("Scene", "Entity createEntity()", asMETHODPR(Scene, createEntity, (), entityx::Entity));
-	scriptingEngine_->registerClassMethod("Scene", "void destroy(const Entity& in)", asMETHODPR(Scene, destroy, (const entityx::Entity&), void));
+	scriptingEngine_->registerClassMethod(
+		"Scene",
+		"void entitiesWithComponentsScriptObjectComponent(EntitiesWithComponentsCallBack@)",
+		asMETHODPR(Scene, entitiesWithComponents<ecs::ScriptObjectComponent>, (void*), void)
+	);
+	scriptingEngine_->registerClassMethod("Scene", "void addPreSerializeCallback(PreSerializeCallback@)", asMETHODPR(Scene, addPreSerializeCallback, (void*), void));
+	scriptingEngine_->registerClassMethod("Scene", "void addPostSerializeCallback(PostSerializeCallback@)", asMETHODPR(Scene, addPostSerializeCallback, (void*), void));
+	scriptingEngine_->registerClassMethod("Scene", "void addPreDeserializeCallback(PreDeserializeCallback@)", asMETHODPR(Scene, addPreDeserializeCallback, (void*), void));
+	scriptingEngine_->registerClassMethod("Scene", "void addPostDeserializeCallback(PostDeserializeCallback@)", asMETHODPR(Scene, addPostDeserializeCallback, (void*), void));
+	scriptingEngine_->registerClassMethod("Scene", "void serialize(const string& in)", asMETHODPR(Scene, serialize, (const std::string&), void));
+	scriptingEngine_->registerClassMethod("Scene", "void deserialize(const string& in)", asMETHODPR(Scene, deserialize, (const std::string&), void));
+	scriptingEngine_->registerClassMethod("Scene", "Entity createEntity()", asMETHODPR(Scene, createEntity, (), ecs::Entity));
+	scriptingEngine_->registerClassMethod("Scene", "void destroy(const Entity& in)", asMETHODPR(Scene, destroy, (ecs::Entity&), void));
 	scriptingEngine_->registerClassMethod("Scene", "uint32 getNumEntities()", asMETHODPR(Scene, getNumEntities, () const, uint32));
 	scriptingEngine_->registerClassMethod(
 		"Scene",
 		"Raycast raycast(const Ray& in)",
 		asMETHODPR(Scene, raycast, (const ray::Ray&), Raycast)
-	);
-	scriptingEngine_->registerClassMethod(
-		"Scene",
-		"void assign(const Entity& in, const GraphicsComponent& in)", 
-		asMETHODPR(Scene, assign, (const entityx::Entity&, const ecs::GraphicsComponent&), void)
-	);
-	scriptingEngine_->registerClassMethod(
-		"Scene",
-		"void assign(const Entity& in, const ScriptObjectComponent& in)",
-		asMETHODPR(Scene, assign, (const entityx::Entity&, const ecs::ScriptObjectComponent&), void)
-	);
-	scriptingEngine_->registerClassMethod(
-		"Scene",
-		"void assign(const Entity& in, const RigidBodyObjectComponent& in)", 
-		asMETHODPR(Scene, assign, (const entityx::Entity&, const ecs::RigidBodyObjectComponent&), void)
-	);
-	scriptingEngine_->registerClassMethod(
-		"Scene",
-		"void assign(const Entity& in, const GhostObjectComponent& in)", 
-		asMETHODPR(Scene, assign, (const entityx::Entity&, const ecs::GhostObjectComponent&), void)
-	);
-	scriptingEngine_->registerClassMethod(
-		"Scene",
-		"void assign(const Entity& in, const PathfindingAgentComponent& in)",
-		asMETHODPR(Scene, assign, (const entityx::Entity&, const ecs::PathfindingAgentComponent&), void)
-	);
-	scriptingEngine_->registerClassMethod(
-		"Scene",
-		"void assign(const Entity& in, const PointLightComponent& in)", 
-		asMETHODPR(Scene, assign, (const entityx::Entity&, const ecs::PointLightComponent&), void)
-	);
-	scriptingEngine_->registerClassMethod(
-		"Scene",
-		"void rotate(const Entity& in, const quat& in, const TransformSpace& in = TransformSpace::TS_LOCAL)",
-		asMETHODPR(Scene, rotate, (const entityx::Entity&, const glm::quat&, const graphics::TransformSpace&), void)
-	);
-	scriptingEngine_->registerClassMethod(
-		"Scene",
-		"void rotate(const Entity& in, const float, const vec3& in, const TransformSpace& in = TransformSpace::TS_LOCAL)",
-		asMETHODPR(Scene, rotate, (const entityx::Entity&, const float32, const glm::vec3&, const graphics::TransformSpace&), void)
-	);
-	scriptingEngine_->registerClassMethod(
-		"Scene",
-		"void rotation(const Entity& in, const quat& in)",
-		asMETHODPR(Scene, rotation, (const entityx::Entity&, const glm::quat&), void)
-	);
-	scriptingEngine_->registerClassMethod(
-		"Scene",
-		"quat rotation(const Entity& in) const",
-		asMETHODPR(Scene, rotation, (const entityx::Entity&) const, glm::quat)
-	);
-	scriptingEngine_->registerClassMethod(
-		"Scene",
-		"void scale(const Entity& in, const float)",
-		asMETHODPR(Scene, scale, (const entityx::Entity&, const float32), void)
-	);
-	scriptingEngine_->registerClassMethod(
-		"Scene",
-		"void scale(const Entity& in, const vec3& in)",
-		asMETHODPR(Scene, scale, (const entityx::Entity&, const glm::vec3&), void)
-	);
-	scriptingEngine_->registerClassMethod(
-		"Scene",
-		"vec3 scale(const Entity& in) const",
-		asMETHODPR(Scene, scale, (const entityx::Entity&) const, glm::vec3)
-	);
-	scriptingEngine_->registerClassMethod(
-		"Scene",
-		"void scale(const Entity& in, const float, const float, const float)",
-		asMETHODPR(Scene, scale, (const entityx::Entity&, const float32, const float32, const float32), void)
-	);
-	scriptingEngine_->registerClassMethod(
-		"Scene",
-		"void translate(const Entity& in, const vec3& in)",
-		asMETHODPR(Scene, translate, (const entityx::Entity&, const glm::vec3&), void)
-	);
-	scriptingEngine_->registerClassMethod(
-		"Scene",
-		"void position(const Entity& in, const vec3& in)",
-		asMETHODPR(Scene, position, (const entityx::Entity&, const glm::vec3&), void)
-	);
-	scriptingEngine_->registerClassMethod(
-		"Scene",
-		"void position(const Entity& in, const float, const float, const float)",
-		asMETHODPR(Scene, position, (const entityx::Entity&, const float32, const float32, const float32), void)
-	);
-	scriptingEngine_->registerClassMethod(
-		"Scene",
-		"vec3 position(const Entity& in) const",
-		asMETHODPR(Scene, position, (const entityx::Entity&) const, glm::vec3)
 	);
 }
 	

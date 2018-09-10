@@ -57,7 +57,7 @@ public:
 	
 	bool valid() const
 	{
-		return (id_ != INVALID);
+		return (id_ != INVALID && version() != 0);
 	}
 	
 	explicit operator bool() const

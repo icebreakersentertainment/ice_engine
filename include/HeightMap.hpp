@@ -9,6 +9,8 @@
 
 #include "graphics/IHeightMap.hpp"
 
+#include "Image.hpp"
+
 namespace ice_engine
 {
 
@@ -16,6 +18,8 @@ class HeightMap : public graphics::IHeightMap
 {
 public:
 
+	HeightMap() = default;
+	
 	HeightMap(const Image& image)
 	{
 		image_ = generateFormattedHeightmap(image);
@@ -27,6 +31,12 @@ public:
 	}
 
 	virtual ~HeightMap() = default;
+
+	HeightMap& operator=(const HeightMap& other)
+	{
+		image_ = std::make_unique<Image>(*other.image_);
+		return *this;
+	}
 
 	uint8 height(uint32 x, uint32 z) const
 	{
@@ -55,14 +65,14 @@ private:
 	// https://stackoverflow.com/questions/2368728/can-normal-maps-be-generated-from-a-texture
 	// and
 	// http://www.catalinzima.com/2008/01/converting-displacement-maps-into-normal-maps/
-	uint8 height(const std::vector<char>& data, const int width, const int height, uint32 x, uint32 z)
+	float32 height(const std::vector<char>& data, const int width, const int height, uint32 x, uint32 z)
 	{
 		if (x >= width)  x %= width;
 		while (x < 0)    x += width;
 		if (z >= height) z %= height;
 		while (z < 0)    z += height;
 
-		return data[z*width*4 + x*4 + 3];
+		return static_cast<float32>(data[z*width*4 + x*4 + 3]) / 255.0f;
 	}
 
 	uint8 textureCoordinateToRgb(const float32 value)
@@ -86,8 +96,8 @@ private:
 
 		// sobel filter
 		const float32 dX = (tr + 2.0 * r + br) - (tl + 2.0 * l + bl);
-		const float32 dY = 1.0 / strength;
-		const float32 dZ = (bl + 2.0 * b + br) - (tl + 2.0 * t + tr);
+		const float32 dY = (bl + 2.0 * b + br) - (tl + 2.0 * t + tr);
+		const float32 dZ = 1.0 / strength;
 
 		glm::vec3 n(dX, dY, dZ);
 		n = glm::normalize(n);
@@ -138,9 +148,9 @@ private:
 		{
 			for (int i=0; i < image.data().size(); i+=4)
 			{
-				//data_[i] = image.data()[i];
-				//data_[i+1] = image.data()[i+1];
-				//data_[i+2] = image.data()[i+2];
+				data[i] = image.data()[i];
+				data[i+1] = image.data()[i+1];
+				data[i+2] = image.data()[i+2];
 				data[i+3] = (image.data()[i] + image.data()[i+1] + image.data()[i+2]) / 3;
 			}
 		}

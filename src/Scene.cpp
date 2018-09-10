@@ -1,13 +1,19 @@
 #include <chrono>
+#include <fstream>
+#include <sstream>
+
+#include <boost/archive/text_oarchive.hpp>
 
 #include <glm/gtx/string_cast.hpp>
 
 #include "Scene.hpp"
 
+#include "ecs/EntityComponentSystem.hpp"
 #include "EntityComponentSystemEventListener.hpp"
 
 #include "IceEngineMotionChangeListener.hpp"
 #include "IceEnginePathfindingAgentMotionChangeListener.hpp"
+#include "IceEnginePathfindingAgentStateChangeListener.hpp"
 #include "IceEnginePathfindingMovementRequestStateChangeListener.hpp"
 
 namespace ice_engine
@@ -42,7 +48,8 @@ Scene::Scene(
 		fileSystem_(fileSystem),
 		logger_(logger),
 		threadPool_(threadPool),
-		openGlLoader_(openGlLoader)
+		openGlLoader_(openGlLoader),
+		entityComponentSystem_(std::make_unique<ecs::EntityComponentSystem>(this))
 {
 	initialize();
 }
@@ -60,11 +67,23 @@ void Scene::initialize()
 	pathfindingSceneHandle_ = pathfindingEngine_->createPathfindingScene();
 	executionContextHandle_ = scriptingEngine_->createExecutionContext();
 	
-	entityComponentSystemEventListener_ = std::make_unique<EntityComponentSystemEventListener>(*this, entityComponentSystem_);
+	auto filename = std::string("../data/scripts/all.as");
+	if (!fileSystem_->exists(filename))
+	{
+		throw std::runtime_error("Script file '" + filename + "' does not exist.");
+	}
+
+	auto source = fileSystem_->readAll(filename, fs::FileFlags::READ);
+
+	moduleHandle_ = scriptingEngine_->createModule(name_, {source});
+
+	entityComponentSystemEventListener_ = std::make_unique<EntityComponentSystemEventListener>(*this, *entityComponentSystem_);
 }
 
 void Scene::destroy()
 {
+	LOG_DEBUG(logger_, "Destroying scene: %s", name_);
+
 	audioEngine_->destroyAudioScene(audioSceneHandle_);
 	graphicsEngine_->destroyRenderScene(renderSceneHandle_);
 	physicsEngine_->destroyPhysicsScene(physicsSceneHandle_);
@@ -74,6 +93,166 @@ void Scene::destroy()
 	if (scriptObjectHandle_)
 	{
 		scriptingEngine_->releaseScriptObject(scriptObjectHandle_);
+	}
+
+	for (auto  entity : entityComponentSystem_->entitiesWithComponents<ecs::ScriptObjectComponent>())
+	{
+		auto handle = entity.component<ecs::ScriptObjectComponent>();
+
+		if (handle->scriptObjectHandle)
+		{
+			scriptingEngine_->releaseScriptObject(handle->scriptObjectHandle);
+		}
+	}
+
+	scriptingEngine_->destroyModule(moduleHandle_);
+}
+
+void Scene::applyChangesToEntities()
+{
+	std::vector<ecs::Entity> dirtyEntities;
+	for (auto& entity : entityComponentSystem_->entitiesWithComponents<ecs::DirtyComponent>())
+	{
+		dirtyEntities.push_back(entity);
+
+		auto dirtyComponent = entity.component<ecs::DirtyComponent>();
+
+		if (dirtyComponent->dirty & ecs::DirtyFlags::DIRTY_SOURCE_SCRIPT)
+		{
+			if (dirtyComponent->dirty & ecs::DirtyFlags::DIRTY_POSITION)
+			{
+				auto pc = entity.component<ecs::PositionComponent>();
+
+				if (auto graphicsComponent = entity.component<ecs::GraphicsComponent>())
+				{
+					graphicsEngine_->position(renderSceneHandle_, graphicsComponent->renderableHandle, pc->position);
+				}
+				if (auto rigidBodyObjectComponent = entity.component<ecs::RigidBodyObjectComponent>())
+				{
+					physicsEngine_->position(physicsSceneHandle_, rigidBodyObjectComponent->rigidBodyObjectHandle, pc->position);
+				}
+				if (auto ghostObjectComponent = entity.component<ecs::GhostObjectComponent>())
+				{
+					physicsEngine_->position(physicsSceneHandle_, ghostObjectComponent->ghostObjectHandle, pc->position);
+				}
+			}
+			if (dirtyComponent->dirty & ecs::DirtyFlags::DIRTY_ORIENTATION)
+			{
+				auto oc = entity.component<ecs::OrientationComponent>();
+
+				if (auto graphicsComponent = entity.component<ecs::GraphicsComponent>())
+				{
+					graphicsEngine_->rotation(renderSceneHandle_, graphicsComponent->renderableHandle, oc->orientation);
+				}
+				if (auto rigidBodyObjectComponent = entity.component<ecs::RigidBodyObjectComponent>())
+				{
+					physicsEngine_->rotation(physicsSceneHandle_, rigidBodyObjectComponent->rigidBodyObjectHandle, oc->orientation);
+				}
+				if (auto ghostObjectComponent = entity.component<ecs::GhostObjectComponent>())
+				{
+					physicsEngine_->rotation(physicsSceneHandle_, ghostObjectComponent->ghostObjectHandle, oc->orientation);
+				}
+			}
+
+			if (dirtyComponent->dirty & ecs::DirtyFlags::DIRTY_RIGID_BODY_OBJECT)
+			{
+				if (auto rigidBodyObjectComponent = entity.component<ecs::RigidBodyObjectComponent>())
+				{
+					addUserData(entity, *rigidBodyObjectComponent);
+					addMotionChangeListener(entity);
+				}
+			}
+			if (dirtyComponent->dirty & ecs::DirtyFlags::DIRTY_GHOST_OBJECT)
+			{
+				if (auto ghostObjectComponent = entity.component<ecs::GhostObjectComponent>())
+				{
+					//if (ghostObjectComponent->ghostObjectHandle) addUserData(entity, *ghostObjectComponent);
+					addUserData(entity, *ghostObjectComponent);
+				}
+			}
+			if (dirtyComponent->dirty & ecs::DirtyFlags::DIRTY_PATHFINDING_AGENT)
+			{
+				if (auto pathfindingAgentComponent = entity.component<ecs::PathfindingAgentComponent>())
+				{
+					addUserData(entity, *pathfindingAgentComponent);
+					//addPathfindingAgentMotionChangeListener(entity);
+
+					auto motionChangeListener = std::make_unique<IceEnginePathfindingAgentMotionChangeListener>(entity, this);
+
+					pathfindingEngine_->setMotionChangeListener(pathfindingSceneHandle_, pathfindingAgentComponent->crowdHandle, pathfindingAgentComponent->agentHandle, std::move(motionChangeListener));
+
+					auto stateChangeListener = std::make_unique<IceEnginePathfindingAgentStateChangeListener>(entity, this);
+
+					pathfindingEngine_->setStateChangeListener(pathfindingSceneHandle_, pathfindingAgentComponent->crowdHandle, pathfindingAgentComponent->agentHandle, std::move(stateChangeListener));
+
+					auto movementRequestChangeListener = std::make_unique<IceEnginePathfindingMovementRequestStateChangeListener>(entity, this);
+
+					pathfindingEngine_->setMovementRequestChangeListener(pathfindingSceneHandle_, pathfindingAgentComponent->crowdHandle, pathfindingAgentComponent->agentHandle, std::move(movementRequestChangeListener));
+
+					if (pathfindingAgentComponent->agentState == pathfinding::MovementRequestState::REQUESTING)
+					{
+						pathfindingEngine_->requestMoveTarget(pathfindingSceneHandle_, pathfindingAgentComponent->crowdHandle, pathfindingAgentComponent->agentHandle, pathfindingAgentComponent->target);
+					}
+				}
+			}
+		}
+
+		if (dirtyComponent->dirty & ecs::DirtyFlags::DIRTY_SOURCE_PHYSICS)
+		{
+			if (dirtyComponent->dirty & ecs::DirtyFlags::DIRTY_POSITION)
+			{
+				auto pc = entity.component<ecs::PositionComponent>();
+
+				if (auto graphicsComponent = entity.component<ecs::GraphicsComponent>())
+				{
+					graphicsEngine_->position(renderSceneHandle_, graphicsComponent->renderableHandle, pc->position);
+				}
+			}
+			if (dirtyComponent->dirty & ecs::DirtyFlags::DIRTY_ORIENTATION)
+			{
+				auto oc = entity.component<ecs::OrientationComponent>();
+
+				if (auto graphicsComponent = entity.component<ecs::GraphicsComponent>())
+				{
+					graphicsEngine_->rotation(renderSceneHandle_, graphicsComponent->renderableHandle, oc->orientation);
+				}
+			}
+		}
+
+		if (dirtyComponent->dirty & ecs::DirtyFlags::DIRTY_SOURCE_PATHFINDING)
+		{
+			if (dirtyComponent->dirty & ecs::DirtyFlags::DIRTY_POSITION)
+			{
+				auto pc = entity.component<ecs::PositionComponent>();
+
+				if (auto graphicsComponent = entity.component<ecs::GraphicsComponent>())
+				{
+					graphicsEngine_->position(renderSceneHandle_, graphicsComponent->renderableHandle, pc->position);
+				}
+				if (auto ghostObjectComponent = entity.component<ecs::GhostObjectComponent>())
+				{
+					physicsEngine_->position(physicsSceneHandle_, ghostObjectComponent->ghostObjectHandle, pc->position);
+				}
+			}
+			if (dirtyComponent->dirty & ecs::DirtyFlags::DIRTY_ORIENTATION)
+			{
+				auto oc = entity.component<ecs::OrientationComponent>();
+
+				if (auto graphicsComponent = entity.component<ecs::GraphicsComponent>())
+				{
+					graphicsEngine_->rotation(renderSceneHandle_, graphicsComponent->renderableHandle, oc->orientation);
+				}
+				if (auto ghostObjectComponent = entity.component<ecs::GhostObjectComponent>())
+				{
+					physicsEngine_->rotation(physicsSceneHandle_, ghostObjectComponent->ghostObjectHandle, oc->orientation);
+				}
+			}
+		}
+	}
+
+	for (auto& entity : dirtyEntities)
+	{
+		entity.remove<ecs::DirtyComponent>();
 	}
 }
 
@@ -99,7 +278,7 @@ void Scene::tick(const float32 delta)
 	
 	pathfindingEngine_->tick(pathfindingSceneHandle_, delta);
 	
-		for (auto e : entityComponentSystem_.entitiesWithComponents<ecs::ScriptObjectComponent>())
+		for (auto e : entityComponentSystem_->entitiesWithComponents<ecs::ScriptObjectComponent>())
 		{
 			auto scriptObjectComponent = e.component<ecs::ScriptObjectComponent>();
 
@@ -114,16 +293,18 @@ void Scene::tick(const float32 delta)
 	{
 		scriptingEngine_->execute(scriptObjectHandle_, std::string("void postTick(const float)"), params, executionContextHandle_);
 	}
+
+	applyChangesToEntities();
 }
 
 void Scene::render()
 {
-	graphicsEngine_->render(renderSceneHandle_);
+	if (visible()) graphicsEngine_->render(renderSceneHandle_);
 }
 
-void Scene::setSceneThingyInstance(scripting::ScriptObjectHandle scriptObjectHandle)
+void Scene::setSceneThingyInstance(void* object)
 {
-	scriptObjectHandle_ = scriptObjectHandle;
+	scriptObjectHandle_ = scripting::ScriptObjectHandle(object);
 }
 
 void Scene::setDebugRendering(const bool enabled)
@@ -134,35 +315,35 @@ void Scene::setDebugRendering(const bool enabled)
 	pathfindingEngine_->setDebugRendering(pathfindingSceneHandle_, debugRendering_);
 }
 
-void Scene::createResources(const entityx::Entity& entity)
+void Scene::createResources(const ecs::Entity& entity)
 {
-	auto positionOrientationComponent = entityComponentSystem_.component<ecs::PositionOrientationComponent>(entity.id());
-	auto graphicsComponent = entityComponentSystem_.component<ecs::GraphicsComponent>(entity.id());
-	auto rigidBodyObjectComponent = entityComponentSystem_.component<ecs::RigidBodyObjectComponent>(entity.id());
-	auto pointLightComponent = entityComponentSystem_.component<ecs::PointLightComponent>(entity.id());
-
-	if (positionOrientationComponent)
-	{
-		if (graphicsComponent && !graphicsComponent->renderableHandle)
-		{
-			graphicsComponent->renderableHandle = gameEngine_->createRenderable(renderSceneHandle_, graphicsComponent->modelHandle);
-			//graphicsEngine_->position(renderSceneHandle_, graphicsComponent->renderableHandle, positionOrientationComponent->position);
-		}
-
-		if (rigidBodyObjectComponent)
-		{
-			//physicsEngine_->position(physicsSceneHandle_, rigidBodyObjectComponent->rigidBodyObjectHandle, positionOrientationComponent->position);
-		}
-
-		if (pointLightComponent)
-		{
-			//pointLightComponent->position += translate;
-			//graphicsEngine_->position(renderSceneHandle_, pointLightComponent->pointLightHandle, pointLightComponent->position);
-		}
-	}
+//	auto positionOrientationComponent = entityComponentSystem_->component<ecs::PositionOrientationComponent>(entity.id());
+//	auto graphicsComponent = entityComponentSystem_->component<ecs::GraphicsComponent>(entity.id());
+//	auto rigidBodyObjectComponent = entityComponentSystem_->component<ecs::RigidBodyObjectComponent>(entity.id());
+//	auto pointLightComponent = entityComponentSystem_->component<ecs::PointLightComponent>(entity.id());
+//
+//	if (positionOrientationComponent)
+//	{
+//		if (graphicsComponent && !graphicsComponent->renderableHandle)
+//		{
+//			//graphicsComponent->renderableHandle = gameEngine_->createRenderable(renderSceneHandle_, graphicsComponent->modelHandle);
+//			//graphicsEngine_->position(renderSceneHandle_, graphicsComponent->renderableHandle, positionOrientationComponent->position);
+//		}
+//
+//		if (rigidBodyObjectComponent)
+//		{
+//			//physicsEngine_->position(physicsSceneHandle_, rigidBodyObjectComponent->rigidBodyObjectHandle, positionOrientationComponent->position);
+//		}
+//
+//		if (pointLightComponent)
+//		{
+//			//pointLightComponent->position += translate;
+//			//graphicsEngine_->position(renderSceneHandle_, pointLightComponent->pointLightHandle, pointLightComponent->position);
+//		}
+//	}
 }
 
-void Scene::destroyResources(const entityx::Entity& entity)
+void Scene::destroyResources(const ecs::Entity& entity)
 {
 }
 
@@ -202,26 +383,6 @@ void Scene::requestMoveVelocity(
 )
 {
 	pathfindingEngine_->requestMoveVelocity(pathfindingSceneHandle_, crowdHandle, agentHandle, velocity);
-}
-
-physics::CollisionShapeHandle Scene::createStaticPlaneShape(const glm::vec3& planeNormal, const float32 planeConstant)
-{
-	return physicsEngine_->createStaticPlaneShape(planeNormal, planeConstant);
-}
-
-physics::CollisionShapeHandle Scene::createStaticBoxShape(const glm::vec3& dimensions)
-{
-	return physicsEngine_->createStaticBoxShape(dimensions);
-}
-
-void Scene::destroyStaticShape(const physics::CollisionShapeHandle& collisionShapeHandle)
-{
-	return physicsEngine_->destroyStaticShape(collisionShapeHandle);
-}
-
-void Scene::destroyAllStaticShapes()
-{
-	return physicsEngine_->destroyAllStaticShapes();
 }
 
 physics::RigidBodyObjectHandle Scene::createRigidBodyObject(const physics::CollisionShapeHandle& collisionShapeHandle)
@@ -270,98 +431,110 @@ physics::GhostObjectHandle Scene::createGhostObject(
 	return physicsEngine_->createGhostObject(physicsSceneHandle_, collisionShapeHandle, position, orientation);
 }
 
-void Scene::addMotionChangeListener(const entityx::Entity& entity)
+void Scene::destroy(const physics::GhostObjectHandle& ghostObjectHandle)
 {
-	auto rigidBodyObjectComponent = entityComponentSystem_.component<ecs::RigidBodyObjectComponent>(entity.id());
+	return physicsEngine_->destroy(physicsSceneHandle_, ghostObjectHandle);
+}
+
+void Scene::addMotionChangeListener(const ecs::Entity& entity)
+{
+	auto rigidBodyObjectComponent = entityComponentSystem_->component<ecs::RigidBodyObjectComponent>(entity.id());
 	
 	std::unique_ptr<IceEngineMotionChangeListener> motionChangeListener = std::make_unique<IceEngineMotionChangeListener>(entity, this);
 	
 	physicsEngine_->setMotionChangeListener(physicsSceneHandle_, rigidBodyObjectComponent->rigidBodyObjectHandle, std::move(motionChangeListener));
 }
 
-void Scene::addPathfindingAgentMotionChangeListener(const entityx::Entity& entity)
+void Scene::addPathfindingAgentMotionChangeListener(const ecs::Entity& entity)
 {
-	auto pathfindingAgentComponent = entityComponentSystem_.component<ecs::PathfindingAgentComponent>(entity.id());
+	auto pathfindingAgentComponent = entityComponentSystem_->component<ecs::PathfindingAgentComponent>(entity.id());
 	
 	std::unique_ptr<IceEnginePathfindingAgentMotionChangeListener> motionChangeListener = std::make_unique<IceEnginePathfindingAgentMotionChangeListener>(entity, this);
 	
 	pathfindingEngine_->setMotionChangeListener(pathfindingSceneHandle_, pathfindingAgentComponent->crowdHandle, pathfindingAgentComponent->agentHandle, std::move(motionChangeListener));
 }
 
-void Scene::removeMotionChangeListener(const entityx::Entity& entity)
+void Scene::removeMotionChangeListener(const ecs::Entity& entity)
 {
-	auto rigidBodyObjectComponent = entityComponentSystem_.component<ecs::RigidBodyObjectComponent>(entity.id());
+	auto rigidBodyObjectComponent = entityComponentSystem_->component<ecs::RigidBodyObjectComponent>(entity.id());
 	
 	physicsEngine_->setMotionChangeListener(physicsSceneHandle_, rigidBodyObjectComponent->rigidBodyObjectHandle, nullptr);
 }
 
-void Scene::removePathfindingAgentMotionChangeListener(const entityx::Entity& entity)
+void Scene::removePathfindingAgentMotionChangeListener(const ecs::Entity& entity)
 {
-	auto pathfindingAgentComponent = entityComponentSystem_.component<ecs::PathfindingAgentComponent>(entity.id());
+	auto pathfindingAgentComponent = entityComponentSystem_->component<ecs::PathfindingAgentComponent>(entity.id());
 	
 	pathfindingEngine_->setMotionChangeListener(pathfindingSceneHandle_, pathfindingAgentComponent->crowdHandle, pathfindingAgentComponent->agentHandle, nullptr);
 }
 
-void Scene::addPathfindingMovementRequestStateChangeListener(const entityx::Entity& entity)
+void Scene::addPathfindingMovementRequestStateChangeListener(const ecs::Entity& entity)
 {
-	auto pathfindingAgentComponent = entityComponentSystem_.component<ecs::PathfindingAgentComponent>(entity.id());
+	auto pathfindingAgentComponent = entityComponentSystem_->component<ecs::PathfindingAgentComponent>(entity.id());
 
 	std::unique_ptr<IceEnginePathfindingMovementRequestStateChangeListener> movementRequestStateChangeListener = std::make_unique<IceEnginePathfindingMovementRequestStateChangeListener>(entity, this);
 
-	pathfindingEngine_->setStateChangeListener(pathfindingSceneHandle_, pathfindingAgentComponent->crowdHandle, pathfindingAgentComponent->agentHandle, std::move(movementRequestStateChangeListener));
+	pathfindingEngine_->setMovementRequestChangeListener(pathfindingSceneHandle_, pathfindingAgentComponent->crowdHandle, pathfindingAgentComponent->agentHandle, std::move(movementRequestStateChangeListener));
 }
 
-void Scene::removePathfindingMovementRequestStateChangeListener(const entityx::Entity& entity)
+void Scene::removePathfindingMovementRequestStateChangeListener(const ecs::Entity& entity)
 {
-	auto pathfindingAgentComponent = entityComponentSystem_.component<ecs::PathfindingAgentComponent>(entity.id());
+	auto pathfindingAgentComponent = entityComponentSystem_->component<ecs::PathfindingAgentComponent>(entity.id());
 
 	pathfindingEngine_->setStateChangeListener(pathfindingSceneHandle_, pathfindingAgentComponent->crowdHandle, pathfindingAgentComponent->agentHandle, nullptr);
 }
 
-void Scene::addUserData(const entityx::Entity& entity, const ecs::RigidBodyObjectComponent& rigidBodyObjectComponent)
+void Scene::addUserData(const ecs::Entity& entity, const ecs::RigidBodyObjectComponent& rigidBodyObjectComponent)
 {
-	physics::UserData userData;
-	userData.value(entity);
-	physicsEngine_->setUserData(physicsSceneHandle_, rigidBodyObjectComponent.rigidBodyObjectHandle, userData);
+	physicsEngine_->setUserData(physicsSceneHandle_, rigidBodyObjectComponent.rigidBodyObjectHandle, boost::any(entity));
 }
 
-void Scene::addUserData(const entityx::Entity& entity, const ecs::GhostObjectComponent& ghostObjectComponent)
+void Scene::addUserData(const ecs::Entity& entity, const ecs::GhostObjectComponent& ghostObjectComponent)
 {
-	physics::UserData userData;
-	userData.value(entity);
-	physicsEngine_->setUserData(physicsSceneHandle_, ghostObjectComponent.ghostObjectHandle, userData);
+	physicsEngine_->setUserData(physicsSceneHandle_, ghostObjectComponent.ghostObjectHandle, boost::any(entity));
 }
 
-void Scene::addUserData(const entityx::Entity& entity, const ecs::PathfindingAgentComponent& pathfindingAgentComponent)
+void Scene::addUserData(const ecs::Entity& entity, const ecs::PathfindingAgentComponent& pathfindingAgentComponent)
 {
 	pathfinding::UserData userData;
 	userData.value(entity);
 	pathfindingEngine_->setUserData(pathfindingSceneHandle_, pathfindingAgentComponent.crowdHandle, pathfindingAgentComponent.agentHandle, userData);
 }
 
-void Scene::removeUserData(const entityx::Entity& entity, const ecs::RigidBodyObjectComponent& rigidBodyObjectComponent)
+void Scene::removeUserData(const ecs::Entity& entity, const ecs::RigidBodyObjectComponent& rigidBodyObjectComponent)
 {
-	physicsEngine_->setUserData(physicsSceneHandle_, rigidBodyObjectComponent.rigidBodyObjectHandle, physics::UserData());
+	physicsEngine_->setUserData(physicsSceneHandle_, rigidBodyObjectComponent.rigidBodyObjectHandle, boost::any());
 }
 
-void Scene::removeUserData(const entityx::Entity& entity, const ecs::GhostObjectComponent& ghostObjectComponent)
+void Scene::removeUserData(const ecs::Entity& entity, const ecs::GhostObjectComponent& ghostObjectComponent)
 {
-	physicsEngine_->setUserData(physicsSceneHandle_, ghostObjectComponent.ghostObjectHandle, physics::UserData());
+	physicsEngine_->setUserData(physicsSceneHandle_, ghostObjectComponent.ghostObjectHandle, boost::any());
 }
 
-void Scene::removeUserData(const entityx::Entity& entity, const ecs::PathfindingAgentComponent& pathfindingAgentComponent)
+void Scene::removeUserData(const ecs::Entity& entity, const ecs::PathfindingAgentComponent& pathfindingAgentComponent)
 {
 	pathfindingEngine_->setUserData(pathfindingSceneHandle_, pathfindingAgentComponent.crowdHandle, pathfindingAgentComponent.agentHandle, pathfinding::UserData());
 }
 
-graphics::RenderableHandle Scene::createRenderable(const ModelHandle& modelHandle, const std::string& name)
+graphics::RenderableHandle Scene::createRenderable(
+	const ModelHandle& modelHandle,
+	const glm::vec3& position,
+	const glm::quat& orientation,
+	const glm::vec3& scale
+)
 {
-	return gameEngine_->createRenderable(renderSceneHandle_, modelHandle, name);
+	return gameEngine_->createRenderable(renderSceneHandle_, modelHandle, position, orientation, scale);
 }
 
-graphics::RenderableHandle Scene::createRenderable(const graphics::MeshHandle& meshHandle, const graphics::TextureHandle& textureHandle, const std::string& name)
+graphics::RenderableHandle Scene::createRenderable(
+	const graphics::MeshHandle& meshHandle,
+	const graphics::TextureHandle& textureHandle,
+	const glm::vec3& position,
+	const glm::quat& orientation,
+	const glm::vec3& scale
+)
 {
-	return gameEngine_->createRenderable(renderSceneHandle_, meshHandle, textureHandle, name);
+	return gameEngine_->createRenderable(renderSceneHandle_, meshHandle, textureHandle, position, orientation, scale);
 }
 
 void Scene::destroy(const graphics::RenderableHandle& renderableHandle)
@@ -379,20 +552,41 @@ graphics::PointLightHandle Scene::createPointLight(const glm::vec3& position)
 	return graphicsEngine_->createPointLight(renderSceneHandle_, position);
 }
 
-ITerrain* Scene::testCreateTerrain(HeightMap heightMap, SplatMap splatMap, DisplacementMap displacementMap)
+void Scene::destroy(const graphics::PointLightHandle& pointLightHandle)
 {
-	//terrainFactory_->create(renderSceneHandle_);
-	auto terrain = terrainFactory_->create(properties_, fileSystem_, logger_, this, heightMap, splatMap, displacementMap, graphicsEngine_, pathfindingEngine_, physicsEngine_, audioEngine_, audioSceneHandle_, renderSceneHandle_, physicsSceneHandle_, pathfindingSceneHandle_);
-	auto terrainPtr = terrain.get();
-	
-	terrain_.push_back( std::move(terrain) );
-	
-	return terrainPtr;
+	graphicsEngine_->destroy(renderSceneHandle_, pointLightHandle);
+}
+
+void Scene::serialize(const std::string& filename)
+{
+	logger_->info("Serializing scene " + getName() + " to file " + filename);
+
+	auto file = fileSystem_->open(filename, fs::FileFlags::WRITE);
+
+	serialization::TextOutArchive ar(file->getOutputStream());
+
+	ar & *this;
+}
+
+void Scene::deserialize(const std::string& filename)
+{
+	logger_->info("Deserializing scene " + getName() + " from file " + filename);
+
+	auto file = fileSystem_->open(filename, fs::FileFlags::READ);
+
+	serialization::TextInArchive ar(file->getInputStream());
+
+	ar & *this;
 }
 
 std::string Scene::getName() const
 {
 	return name_;
+}
+
+void Scene::setVisible(const bool visible)
+{
+	visible_ = visible;
 }
 
 bool Scene::visible() const
@@ -405,23 +599,23 @@ const SceneStatistics& Scene::getSceneStatistics() const
 	return sceneStatistics_;
 }
 
-entityx::Entity Scene::createEntity()
+ecs::Entity Scene::createEntity()
 {
-	entityx::Entity e = entityComponentSystem_.create();
+	ecs::Entity e = entityComponentSystem_->create();
 	
 	LOG_DEBUG(logger_, "Created entity with id: " + std::to_string(e.id().id()) );
 	
 	return e;
 }
 
-void Scene::destroy(const entityx::Entity& entity)
+void Scene::destroy(ecs::Entity& entity)
 {
-	entityComponentSystem_.destroy(entity.id());
+	entityComponentSystem_->destroy(entity.id());
 }
 
 uint32 Scene::getNumEntities() const
 {
-	return entityComponentSystem_.numEntities();
+	return entityComponentSystem_->numEntities();
 }
 
 Raycast Scene::raycast(const ray::Ray& ray)
@@ -429,22 +623,22 @@ Raycast Scene::raycast(const ray::Ray& ray)
 	Raycast result;
 	
 	auto physicsRaycast = physicsEngine_->raycast(physicsSceneHandle_, ray);
-	
+
 	result.setRay(physicsRaycast.ray());
 	result.setHitPointWorld(physicsRaycast.hitPointWorld());
 	result.setHitNormalWorld(physicsRaycast.hitNormalWorld());
 	
-	entityx::Entity entity;
+	ecs::Entity entity;
 	
 	if (physicsRaycast.rigidBodyObjectHandle())
 	{
 		auto userData = physicsEngine_->getUserData(physicsSceneHandle_, physicsRaycast.rigidBodyObjectHandle());
-		entity = userData.value<entityx::Entity>();
+		entity = boost::any_cast<ecs::Entity>(userData);
 	}
 	else if (physicsRaycast.ghostObjectHandle())
 	{
 		auto userData = physicsEngine_->getUserData(physicsSceneHandle_, physicsRaycast.ghostObjectHandle());
-		entity = userData.value<entityx::Entity>();
+		entity = boost::any_cast<ecs::Entity>(userData);
 	}
 	
 	result.setEntity(entity);
@@ -452,240 +646,295 @@ Raycast Scene::raycast(const ray::Ray& ray)
 	return result;
 }
 
-void Scene::assign(const entityx::Entity& entity, const ecs::GraphicsComponent& component)
+std::unordered_map<scripting::ScriptObjectHandle, std::string> Scene::getScriptObjectNameMap() const
 {
-	entityComponentSystem_.assign<ecs::GraphicsComponent>(entity.id(), std::forward<const ecs::GraphicsComponent>(component));
+	std::unordered_map<scripting::ScriptObjectHandle, std::string> map;
+
+	for (auto entity : entityComponentSystem_->entitiesWithComponents<ecs::ScriptObjectComponent>())
+		{
+			auto componentHandle = entity.component<ecs::ScriptObjectComponent>();
+
+			map[componentHandle->scriptObjectHandle] = scriptingEngine_->getScriptObjectName(componentHandle->scriptObjectHandle);
+		}
+
+	return map;
 }
 
-void ice_engine::Scene::assign(const entityx::Entity& entity, const ecs::ScriptObjectComponent& component)
+void normalizeHandles(
+	ecs::EntityComponentSystem& entityComponentSystem,
+	const std::unordered_map<physics::CollisionShapeHandle, physics::CollisionShapeHandle>& normalizedMap,
+	logger::ILogger* logger
+)
 {
-	entityComponentSystem_.assign<ecs::ScriptObjectComponent>(entity.id(), std::forward<const ecs::ScriptObjectComponent>(component));
+	LOG_DEBUG(logger, "Normalizing CollisionShapeHandles");
+//	std::cout << "normalizedMap size " << normalizedMap.size() << std::endl;
+//	for (const auto& kv : normalizedMap)
+//		{
+//			std::cout << "KV " << kv.first << " " << kv.second << std::endl;
+//		}
+
+	for (auto entity : entityComponentSystem.entitiesWithComponents<ecs::RigidBodyObjectComponent>())
+	{
+		auto componentHandle = entity.component<ecs::RigidBodyObjectComponent>();
+		componentHandle->rigidBodyObjectHandle.invalidate();
+
+		auto component = *componentHandle;
+//		std::cout << "find in normalized map " << component.collisionShapeHandle << std::endl;
+		component.collisionShapeHandle = normalizedMap.at(component.collisionShapeHandle);
+		entity.assign<ecs::RigidBodyObjectComponent>(component);
+	}
+
+	for (auto entity : entityComponentSystem.entitiesWithComponents<ecs::GhostObjectComponent>())
+	{
+		auto componentHandle = entity.component<ecs::GhostObjectComponent>();
+		componentHandle->ghostObjectHandle.invalidate();
+
+		auto component = *componentHandle;
+		component.collisionShapeHandle = normalizedMap.at(component.collisionShapeHandle);
+		entity.assign<ecs::GhostObjectComponent>(component);
+	}
 }
 
-void Scene::assign(const entityx::Entity& entity, const ecs::RigidBodyObjectComponent& component)
+void normalizeHandles(
+	ecs::EntityComponentSystem& entityComponentSystem,
+	const std::unordered_map<ModelHandle, ModelHandle>& normalizedMap,
+	logger::ILogger* logger
+)
 {
-	entityComponentSystem_.assign<ecs::RigidBodyObjectComponent>(entity.id(), std::forward<const ecs::RigidBodyObjectComponent>(component));
-	
-	addUserData(entity, component);
-	addMotionChangeListener(entity);
+	LOG_DEBUG(logger, "Normalizing ModelHandles");
+//	std::cout << "normalizedMap size " << normalizedMap.size() << std::endl;
+//	for (const auto& kv : normalizedMap)
+//		{
+//			std::cout << "KV " << kv.first << " " << kv.second << std::endl;
+//		}
+
+	for (auto entity : entityComponentSystem.entitiesWithComponents<ecs::GraphicsComponent>())
+	{
+		auto componentHandle = entity.component<ecs::GraphicsComponent>();
+		componentHandle->renderableHandle.invalidate();
+
+		auto component = *componentHandle;
+//		std::cout << "find in normalized map " << component.modelHandle << std::endl;
+		component.modelHandle = normalizedMap.at(component.modelHandle);
+		entity.assign<ecs::GraphicsComponent>(component);
+	}
 }
 
-void Scene::assign(const entityx::Entity& entity, const ecs::GhostObjectComponent& component)
+void normalizeHandles(
+	ecs::EntityComponentSystem& entityComponentSystem,
+	const std::unordered_map<graphics::TerrainHandle, graphics::TerrainHandle>& normalizedMap,
+	logger::ILogger* logger
+)
 {
-	entityComponentSystem_.assign<ecs::GhostObjectComponent>(entity.id(), std::forward<const ecs::GhostObjectComponent>(component));
-	
-	addUserData(entity, component);
-	//addMotionChangeListener(entity);
+	LOG_DEBUG(logger, "Normalizing TerrainHandles");
+//	std::cout << "normalizedMap size " << normalizedMap.size() << std::endl;
+//	for (const auto& kv : normalizedMap)
+//		{
+//			std::cout << "KV " << kv.first << " " << kv.second << std::endl;
+//		}
+
+	for (auto entity : entityComponentSystem.entitiesWithComponents<ecs::GraphicsTerrainComponent>())
+	{
+		auto componentHandle = entity.component<ecs::GraphicsTerrainComponent>();
+		componentHandle->terrainRenderableHandle.invalidate();
+
+		auto component = *componentHandle;
+//		std::cout << "find in normalized map " << component.terrainHandle << std::endl;
+		component.terrainHandle = normalizedMap.at(component.terrainHandle);
+		entity.assign<ecs::GraphicsTerrainComponent>(component);
+	}
 }
 
-void Scene::assign(const entityx::Entity& entity, const ecs::PathfindingAgentComponent& component)
+void normalizeHandles(
+	ecs::EntityComponentSystem& entityComponentSystem,
+	const std::unordered_map<pathfinding::CrowdHandle, pathfinding::CrowdHandle>& normalizedMap,
+	logger::ILogger* logger
+)
 {
-	entityComponentSystem_.assign<ecs::PathfindingAgentComponent>(entity.id(), std::forward<const ecs::PathfindingAgentComponent>(component));
-	
-	addUserData(entity, component);
-	addPathfindingAgentMotionChangeListener(entity);
+	LOG_DEBUG(logger, "Normalizing CrowdHandles");
+
+	for (auto entity : entityComponentSystem.entitiesWithComponents<ecs::PathfindingAgentComponent>())
+	{
+		auto componentHandle = entity.component<ecs::PathfindingAgentComponent>();
+
+		componentHandle->agentHandle.invalidate();
+		auto component = *componentHandle;
+
+		component.crowdHandle = normalizedMap.at(component.crowdHandle);
+		entity.assign<ecs::PathfindingAgentComponent>(component);
+	}
 }
 
-void Scene::assign(const entityx::Entity& entity, const ecs::PositionOrientationComponent& component)
+void normalizeHandles(
+	ecs::EntityComponentSystem& entityComponentSystem,
+	const std::unordered_map<pathfinding::NavigationMeshHandle, pathfinding::NavigationMeshHandle>& normalizedMap,
+	std::unordered_map<pathfinding::CrowdHandle, pathfinding::CrowdHandle>& normalizedCrowdHandleMap,
+	logger::ILogger* logger
+)
 {
-	entityComponentSystem_.assign<ecs::PositionOrientationComponent>(entity.id(), std::forward<const ecs::PositionOrientationComponent>(component));
+	LOG_DEBUG(logger, "Normalizing NavigationMashHandles");
+
+	for (auto entity : entityComponentSystem.entitiesWithComponents<ecs::PathfindingCrowdComponent>())
+	{
+		auto componentHandle = entity.component<ecs::PathfindingCrowdComponent>();
+
+		auto oldCrowdHandle = componentHandle->crowdHandle;
+		componentHandle->crowdHandle.invalidate();
+
+		auto component = *entity.component<ecs::PathfindingCrowdComponent>();
+		component.navigationMeshHandle = normalizedMap.at(component.navigationMeshHandle);
+		entity.assign<ecs::PathfindingCrowdComponent>(component);
+
+		auto newCrowdHandle = entity.component<ecs::PathfindingCrowdComponent>()->crowdHandle;
+
+		normalizedCrowdHandleMap[oldCrowdHandle] = newCrowdHandle;
+		// update all of the pathfinding agents with the new crowd
+//		updateHandles(entityComponentSystem, oldCrowdHandle, newCrowdHandle, logger);
+	}
 }
 
-void Scene::assign(const entityx::Entity& entity, const ecs::PointLightComponent& component)
+void normalizeHandles(
+	ecs::EntityComponentSystem& entityComponentSystem,
+	scripting::IScriptingEngine* scriptingEngine,
+	scripting::ModuleHandle moduleHandle,
+	scripting::ExecutionContextHandle executionContextHandle,
+	const std::unordered_map<scripting::ScriptObjectHandle, std::string>& scriptObjectHandleMap,
+	logger::ILogger* logger
+)
 {
-	entityComponentSystem_.assign<ecs::PointLightComponent>(entity.id(), std::forward<const ecs::PointLightComponent>(component));
+	LOG_DEBUG(logger, "Re-creating script objects");
+
+	std::cout << "scriptObjectHandleMap size " << scriptObjectHandleMap.size() << std::endl;
+	for (const auto& kv : scriptObjectHandleMap)
+		{
+			std::cout << "KV " << kv.first.get() << " " << kv.second << std::endl;
+		}
+
+	for (auto entity : entityComponentSystem.entitiesWithComponents<ecs::ScriptObjectComponent>())
+	{
+		auto componentHandle = entity.component<ecs::ScriptObjectComponent>();
+		std::cout << "find in normalized map " << componentHandle->scriptObjectHandle.get() << std::endl;
+		auto scriptObjectName = scriptObjectHandleMap.at(componentHandle->scriptObjectHandle);
+
+		LOG_DEBUG(logger, "Re-creating script object");
+		componentHandle->scriptObjectHandle = scriptingEngine->createUninitializedScriptObject(moduleHandle, scriptObjectName);
+
+		scripting::ParameterList params;
+		params.add(entity);
+
+		scriptingEngine->execute(componentHandle->scriptObjectHandle, std::string("void deserialize(Entity)"), params, executionContextHandle);
+	}
 }
 
-void Scene::rotate(const entityx::Entity& entity, const float32 degrees, const glm::vec3& axis, const graphics::TransformSpace& relativeTo)
+void Scene::normalizeHandles(
+	const std::unordered_map<physics::CollisionShapeHandle, physics::CollisionShapeHandle>& normalizedCollisionShapeHandleMap,
+	const std::unordered_map<ModelHandle, ModelHandle>& normalizedModelHandleMap,
+	const std::unordered_map<graphics::TerrainHandle, graphics::TerrainHandle>& normalizedTerrainHandleMap,
+	const std::unordered_map<std::string, pathfinding::PolygonMeshHandle>& polygonMeshHandleMap,
+	const std::unordered_map<pathfinding::NavigationMeshHandle, pathfinding::NavigationMeshHandle>& normalizedNavigationMeshHandleMap,
+	const std::unordered_map<scripting::ScriptObjectHandle, std::string>& scriptObjectHandleMap,
+	std::unordered_map<pathfinding::CrowdHandle, pathfinding::CrowdHandle>& normalizedCrowdHandleMap
+	)
 {
-	auto component = entityComponentSystem_.component<ecs::PositionOrientationComponent>(entity.id());
-	auto graphicsComponent = entityComponentSystem_.component<ecs::GraphicsComponent>(entity.id());
-	auto rigidBodyObjectComponent = entityComponentSystem_.component<ecs::RigidBodyObjectComponent>(entity.id());
-	
+	LOG_DEBUG(logger_, "Normalizing handles");
+	ice_engine::normalizeHandles(*entityComponentSystem_, normalizedCollisionShapeHandleMap, logger_);
+	ice_engine::normalizeHandles(*entityComponentSystem_, normalizedModelHandleMap, logger_);
+	ice_engine::normalizeHandles(*entityComponentSystem_, normalizedTerrainHandleMap, logger_);
+	ice_engine::normalizeHandles(*entityComponentSystem_, normalizedNavigationMeshHandleMap, normalizedCrowdHandleMap, logger_);
+	ice_engine::normalizeHandles(*entityComponentSystem_, scriptingEngine_, moduleHandle_, executionContextHandle_, scriptObjectHandleMap, logger_);
+	ice_engine::normalizeHandles(*entityComponentSystem_, normalizedCrowdHandleMap, logger_);
+}
+
+/*
+void Scene::rotate(ecs::Entity& entity, const float32 degrees, const glm::vec3& axis, const graphics::TransformSpace& relativeTo)
+{
+	auto oc = entity.component<ecs::OrientationComponent>();
+	auto graphicsComponent = entityComponentSystem_->component<ecs::GraphicsComponent>(entity.id());
+	auto rigidBodyObjectComponent = entityComponentSystem_->component<ecs::RigidBodyObjectComponent>(entity.id());
+
 	switch( relativeTo )
 	{
 		case graphics::TransformSpace::TS_LOCAL:
-			component->orientation = glm::normalize( glm::angleAxis(glm::radians(degrees), axis) ) * component->orientation;
+			oc->orientation = glm::normalize( glm::angleAxis(glm::radians(degrees), axis) ) * oc->orientation;
 			break;
-		
+
 		case graphics::TransformSpace::TS_WORLD:
-			component->orientation =  component->orientation * glm::normalize( glm::angleAxis(glm::radians(degrees), axis) );
+			oc->orientation =  oc->orientation * glm::normalize( glm::angleAxis(glm::radians(degrees), axis) );
 			break;
-			
+
 		default:
 			throw std::runtime_error(std::string("Invalid TransformSpace type."));
 	}
-	
-	graphicsEngine_->rotation(renderSceneHandle_, graphicsComponent->renderableHandle, component->orientation);
-	
+
+	graphicsEngine_->rotation(renderSceneHandle_, graphicsComponent->renderableHandle, oc->orientation);
+
 	if (rigidBodyObjectComponent)
 	{
-		physicsEngine_->rotation(physicsSceneHandle_, rigidBodyObjectComponent->rigidBodyObjectHandle, component->orientation);
+		physicsEngine_->rotation(physicsSceneHandle_, rigidBodyObjectComponent->rigidBodyObjectHandle, oc->orientation);
 	}
 }
 
-void Scene::rotate(const entityx::Entity& entity, const glm::quat& orientation, const graphics::TransformSpace& relativeTo)
+void Scene::rotate(ecs::Entity& entity, const glm::quat& orientation, const graphics::TransformSpace& relativeTo)
 {
-	auto component = entityComponentSystem_.component<ecs::PositionOrientationComponent>(entity.id());
-	auto graphicsComponent = entityComponentSystem_.component<ecs::GraphicsComponent>(entity.id());
-	auto rigidBodyObjectComponent = entityComponentSystem_.component<ecs::RigidBodyObjectComponent>(entity.id());
-	
+		auto oc = entity.component<ecs::OrientationComponent>();
+	auto graphicsComponent = entityComponentSystem_->component<ecs::GraphicsComponent>(entity.id());
+	auto rigidBodyObjectComponent = entityComponentSystem_->component<ecs::RigidBodyObjectComponent>(entity.id());
+
 	switch( relativeTo )
 	{
 		case graphics::TransformSpace::TS_LOCAL:
-			component->orientation = component->orientation * glm::normalize( orientation );
+			oc->orientation = oc->orientation * glm::normalize( orientation );
 			break;
-		
+
 		case graphics::TransformSpace::TS_WORLD:
-			component->orientation =  glm::normalize( orientation ) * component->orientation;
+			oc->orientation =  glm::normalize( orientation ) * oc->orientation;
 			break;
-			
+
 		default:
 			throw std::runtime_error(std::string("Invalid TransformSpace type."));
 	}
-	
-	graphicsEngine_->rotation(renderSceneHandle_, graphicsComponent->renderableHandle, component->orientation);
-	physicsEngine_->rotation(physicsSceneHandle_, rigidBodyObjectComponent->rigidBodyObjectHandle, component->orientation);
+
+	graphicsEngine_->rotation(renderSceneHandle_, graphicsComponent->renderableHandle, oc->orientation);
+	physicsEngine_->rotation(physicsSceneHandle_, rigidBodyObjectComponent->rigidBodyObjectHandle, oc->orientation);
 }
 
-void Scene::rotation(const entityx::Entity& entity, const float32 degrees, const glm::vec3& axis)
+void Scene::rotation(ecs::Entity& entity, const float32 degrees, const glm::vec3& axis)
 {
-	auto component = entityComponentSystem_.component<ecs::PositionOrientationComponent>(entity.id());
-	auto graphicsComponent = entityComponentSystem_.component<ecs::GraphicsComponent>(entity.id());
-	auto rigidBodyObjectComponent = entityComponentSystem_.component<ecs::RigidBodyObjectComponent>(entity.id());
-	
-	component->orientation = glm::normalize( glm::angleAxis(glm::radians(degrees), axis) );
-	
-	graphicsEngine_->rotation(renderSceneHandle_, graphicsComponent->renderableHandle, component->orientation);
-	physicsEngine_->rotation(physicsSceneHandle_, rigidBodyObjectComponent->rigidBodyObjectHandle, component->orientation);
+		auto oc = entity.component<ecs::OrientationComponent>();
+	auto graphicsComponent = entityComponentSystem_->component<ecs::GraphicsComponent>(entity.id());
+	auto rigidBodyObjectComponent = entityComponentSystem_->component<ecs::RigidBodyObjectComponent>(entity.id());
+
+	oc->orientation = glm::normalize( glm::angleAxis(glm::radians(degrees), axis) );
+
+	graphicsEngine_->rotation(renderSceneHandle_, graphicsComponent->renderableHandle, oc->orientation);
+	physicsEngine_->rotation(physicsSceneHandle_, rigidBodyObjectComponent->rigidBodyObjectHandle, oc->orientation);
 }
 
-void Scene::rotation(const entityx::Entity& entity, const glm::quat& orientation)
+void Scene::rotation(ecs::Entity& entity, const glm::quat& orientation)
 {
-	auto component = entityComponentSystem_.component<ecs::PositionOrientationComponent>(entity.id());
-	auto graphicsComponent = entityComponentSystem_.component<ecs::GraphicsComponent>(entity.id());
-	auto rigidBodyObjectComponent = entityComponentSystem_.component<ecs::RigidBodyObjectComponent>(entity.id());
-	
-	component->orientation = glm::normalize( orientation );
-	
-	graphicsEngine_->rotation(renderSceneHandle_, graphicsComponent->renderableHandle, component->orientation);
-	physicsEngine_->rotation(physicsSceneHandle_, rigidBodyObjectComponent->rigidBodyObjectHandle, component->orientation);
+		auto oc = entity.component<ecs::OrientationComponent>();
+	auto graphicsComponent = entityComponentSystem_->component<ecs::GraphicsComponent>(entity.id());
+	auto rigidBodyObjectComponent = entityComponentSystem_->component<ecs::RigidBodyObjectComponent>(entity.id());
+
+	oc->orientation = glm::normalize( orientation );
+
+	graphicsEngine_->rotation(renderSceneHandle_, graphicsComponent->renderableHandle, oc->orientation);
+	physicsEngine_->rotation(physicsSceneHandle_, rigidBodyObjectComponent->rigidBodyObjectHandle, oc->orientation);
 }
 
-glm::quat Scene::rotation(const entityx::Entity& entity) const
+void Scene::lookAt(ecs::Entity& entity, const glm::vec3& lookAt)
 {
-	auto component = entityComponentSystem_.component<const ecs::PositionOrientationComponent>(entity.id());
-	return component->orientation;
-}
+	auto pc = entity.component<ecs::PositionComponent>();
+		auto oc = entity.component<ecs::OrientationComponent>();
+	auto graphicsComponent = entityComponentSystem_->component<ecs::GraphicsComponent>(entity.id());
+	auto rigidBodyObjectComponent = entityComponentSystem_->component<ecs::RigidBodyObjectComponent>(entity.id());
 
-void Scene::translate(const entityx::Entity& entity, const glm::vec3& translate)
-{
-	auto component = entityComponentSystem_.component<ecs::PositionOrientationComponent>(entity.id());
-	auto graphicsComponent = entityComponentSystem_.component<ecs::GraphicsComponent>(entity.id());
-	auto rigidBodyObjectComponent = entityComponentSystem_.component<ecs::RigidBodyObjectComponent>(entity.id());
-	auto pointLightComponent = entityComponentSystem_.component<ecs::PointLightComponent>(entity.id());
-	
-	if (component)
-	{
-		component->position += translate;
-	}
-	
-	if (graphicsComponent)
-	{
-		graphicsEngine_->position(renderSceneHandle_, graphicsComponent->renderableHandle, component->position);
-	}
-	
-	if (rigidBodyObjectComponent)
-	{
-		physicsEngine_->position(physicsSceneHandle_, rigidBodyObjectComponent->rigidBodyObjectHandle, component->position);
-	}
-	
-	if (pointLightComponent)
-	{
-		pointLightComponent->position += translate;
-		graphicsEngine_->position(renderSceneHandle_, pointLightComponent->pointLightHandle, pointLightComponent->position);
-	}
-}
+	const glm::mat4 lookAtMatrix = glm::lookAt(pc->position, lookAt, glm::vec3(0.0f, 1.0f, 0.0f));
+	oc->orientation =  glm::normalize( oc->orientation * glm::quat_cast( lookAtMatrix ) );
 
-void Scene::scale(const entityx::Entity& entity, const float32 scale)
-{
-	auto component = entityComponentSystem_.component<ecs::GraphicsComponent>(entity.id());
-	component->scale = glm::vec3(scale, scale, scale);
-	
-	graphicsEngine_->scale(renderSceneHandle_, component->renderableHandle, scale);
+	graphicsEngine_->rotation(renderSceneHandle_, graphicsComponent->renderableHandle, oc->orientation);
+	physicsEngine_->rotation(physicsSceneHandle_, rigidBodyObjectComponent->rigidBodyObjectHandle, oc->orientation);
 }
-
-void Scene::scale(const entityx::Entity& entity, const glm::vec3& scale)
-{
-	auto component = entityComponentSystem_.component<ecs::GraphicsComponent>(entity.id());
-	component->scale = scale;
-	
-	graphicsEngine_->scale(renderSceneHandle_, component->renderableHandle, scale);
-}
-
-void Scene::scale(const entityx::Entity& entity, const float32 x, const float32 y, const float32 z)
-{
-	auto component = entityComponentSystem_.component<ecs::GraphicsComponent>(entity.id());
-	component->scale = glm::vec3(x, y, z);
-	
-	graphicsEngine_->scale(renderSceneHandle_, component->renderableHandle, x, y, z);
-}
-
-glm::vec3 Scene::scale(const entityx::Entity& entity) const
-{
-	auto component = entityComponentSystem_.component<const ecs::GraphicsComponent>(entity.id());
-	return component->scale;
-}
-
-void Scene::lookAt(const entityx::Entity& entity, const glm::vec3& lookAt)
-{
-	auto component = entityComponentSystem_.component<ecs::PositionOrientationComponent>(entity.id());
-	auto graphicsComponent = entityComponentSystem_.component<ecs::GraphicsComponent>(entity.id());
-	auto rigidBodyObjectComponent = entityComponentSystem_.component<ecs::RigidBodyObjectComponent>(entity.id());
-	
-	const glm::mat4 lookAtMatrix = glm::lookAt(component->position, lookAt, glm::vec3(0.0f, 1.0f, 0.0f));
-	component->orientation =  glm::normalize( component->orientation * glm::quat_cast( lookAtMatrix ) );
-	
-	graphicsEngine_->rotation(renderSceneHandle_, graphicsComponent->renderableHandle, component->orientation);
-	physicsEngine_->rotation(physicsSceneHandle_, rigidBodyObjectComponent->rigidBodyObjectHandle, component->orientation);
-}
-
-void Scene::position(const entityx::Entity& entity, const glm::vec3& position)
-{
-	auto component = entityComponentSystem_.component<ecs::PositionOrientationComponent>(entity.id());
-	auto graphicsComponent = entityComponentSystem_.component<ecs::GraphicsComponent>(entity.id());
-	auto rigidBodyObjectComponent = entityComponentSystem_.component<ecs::RigidBodyObjectComponent>(entity.id());
-	auto ghostObjectComponent = entityComponentSystem_.component<ecs::GhostObjectComponent>(entity.id());
-	
-	component->position = position;
-	
-	graphicsEngine_->position(renderSceneHandle_, graphicsComponent->renderableHandle, position);
-	if (rigidBodyObjectComponent)
-	{
-		physicsEngine_->position(physicsSceneHandle_, rigidBodyObjectComponent->rigidBodyObjectHandle, position);
-	}
-	if (ghostObjectComponent)
-	{
-		physicsEngine_->position(physicsSceneHandle_, ghostObjectComponent->ghostObjectHandle, position);
-	}
-}
-
-void Scene::position(const entityx::Entity& entity, const float32 x, const float32 y, const float32 z)
-{
-	auto component = entityComponentSystem_.component<ecs::PositionOrientationComponent>(entity.id());
-	auto graphicsComponent = entityComponentSystem_.component<ecs::GraphicsComponent>(entity.id());
-	auto rigidBodyObjectComponent = entityComponentSystem_.component<ecs::RigidBodyObjectComponent>(entity.id());
-	
-	component->position = glm::vec3(x, y, z);
-	
-	graphicsEngine_->position(renderSceneHandle_, graphicsComponent->renderableHandle, x, y, z);
-	physicsEngine_->position(physicsSceneHandle_, rigidBodyObjectComponent->rigidBodyObjectHandle, x, y, z);
-}
-
-glm::vec3 Scene::position(const entityx::Entity& entity) const
-{
-	auto component = entityComponentSystem_.component<const ecs::PositionOrientationComponent>(entity.id());
-	return component->position;
-}
+*/
 
 }
