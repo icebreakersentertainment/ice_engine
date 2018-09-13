@@ -65,8 +65,8 @@ void main()
 }
 
 )END";
-		scriptHandle = scriptingEngine->loadScript(source);
-		scriptingEngine->execute(scriptHandle, std::string("void main()"));
+		moduleHandle = scriptingEngine->createModule("", {source});
+		scriptingEngine->execute(moduleHandle, std::string("void main()"));
 		
 		scriptObjectFunctionHandle = scriptingEngine->getScriptObjectFunction(scriptObjectHandle, std::string("void tick(const float)"));
 	}
@@ -78,7 +78,7 @@ void main()
 	
 	ice_engine::scripting::ScriptObjectHandle scriptObjectHandle;
 	ice_engine::scripting::ScriptObjectFunctionHandle scriptObjectFunctionHandle;
-	ice_engine::scripting::ScriptHandle scriptHandle;
+	ice_engine::scripting::ModuleHandle moduleHandle;
 };
 
 BASELINE_F(ScriptingEngine, ExecuteScriptData, Fixture, 0, 10000)

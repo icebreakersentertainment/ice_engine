@@ -578,6 +578,7 @@ void ScriptingEngine::execute(const std::string& scriptData, const std::string& 
 	auto context = getContext(executionContextHandle);
 	auto module = createModuleFromScript(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME, scriptData);
 	callFunction(context, module, function);
+	context->Unprepare();
 	destroyModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME);
 }
 
@@ -587,6 +588,7 @@ void ScriptingEngine::execute(const std::string& scriptData, const std::string& 
 	auto module = createModuleFromScript(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME, scriptData);
 	callFunction(context, module, function);
 	returnObjectParser(context->GetReturnObject());
+	context->Unprepare();
 	destroyModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME);
 }
 
@@ -596,6 +598,7 @@ void ScriptingEngine::execute(const std::string& scriptData, const std::string& 
 	auto module = createModuleFromScript(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME, scriptData);
 	callFunction(context, module, function);
 	returnValue = context->GetReturnFloat();
+	context->Unprepare();
 	destroyModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME);
 }
 
@@ -605,6 +608,7 @@ void ScriptingEngine::execute(const std::string& scriptData, const std::string& 
 	auto module = createModuleFromScript(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME, scriptData);
 	callFunction(context, module, function);
 	returnValue = context->GetReturnDouble();
+	context->Unprepare();
 	destroyModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME);
 }
 
@@ -614,6 +618,7 @@ void ScriptingEngine::execute(const std::string& scriptData, const std::string& 
 	auto module = createModuleFromScript(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME, scriptData);
 	callFunction(context, module, function);
 	returnValue = context->GetReturnByte();
+	context->Unprepare();
 	destroyModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME);
 }
 
@@ -623,6 +628,7 @@ void ScriptingEngine::execute(const std::string& scriptData, const std::string& 
 	auto module = createModuleFromScript(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME, scriptData);
 	callFunction(context, module, function);
 	returnValue = context->GetReturnByte();
+	context->Unprepare();
 	destroyModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME);
 }
 
@@ -632,6 +638,7 @@ void ScriptingEngine::execute(const std::string& scriptData, const std::string& 
 	auto module = createModuleFromScript(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME, scriptData);
 	callFunction(context, module, function);
 	returnValue = context->GetReturnWord();
+	context->Unprepare();
 	destroyModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME);
 }
 
@@ -641,6 +648,7 @@ void ScriptingEngine::execute(const std::string& scriptData, const std::string& 
 	auto module = createModuleFromScript(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME, scriptData);
 	callFunction(context, module, function);
 	returnValue = context->GetReturnWord();
+	context->Unprepare();
 	destroyModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME);
 }
 
@@ -650,6 +658,7 @@ void ScriptingEngine::execute(const std::string& scriptData, const std::string& 
 	auto module = createModuleFromScript(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME, scriptData);
 	callFunction(context, module, function);
 	returnValue = context->GetReturnDWord();
+	context->Unprepare();
 	destroyModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME);
 }
 
@@ -659,6 +668,7 @@ void ScriptingEngine::execute(const std::string& scriptData, const std::string& 
 	auto module = createModuleFromScript(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME, scriptData);
 	callFunction(context, module, function);
 	returnValue = context->GetReturnDWord();
+	context->Unprepare();
 	destroyModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME);
 }
 
@@ -668,6 +678,7 @@ void ScriptingEngine::execute(const std::string& scriptData, const std::string& 
 	auto module = createModuleFromScript(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME, scriptData);
 	callFunction(context, module, function);
 	returnValue = context->GetReturnQWord();
+	context->Unprepare();
 	destroyModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME);
 }
 
@@ -677,6 +688,7 @@ void ScriptingEngine::execute(const std::string& scriptData, const std::string& 
 	auto module = createModuleFromScript(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME, scriptData);
 	callFunction(context, module, function);
 	returnValue = context->GetReturnQWord();
+	context->Unprepare();
 	destroyModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME);
 }
 
@@ -685,6 +697,7 @@ void ScriptingEngine::execute(const std::string& scriptData, const std::string& 
 	auto context = getContext(executionContextHandle);
 	auto module = createModuleFromScript(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME, scriptData);
 	callFunction(context, module, function, arguments);
+	context->Unprepare();
 	destroyModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME);
 }
 
@@ -694,6 +707,7 @@ void ScriptingEngine::execute(const std::string& scriptData, const std::string& 
 	auto module = createModuleFromScript(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME, scriptData);
 	callFunction(context, module, function, arguments);
 	returnObjectParser(context->GetReturnObject());
+	context->Unprepare();
 	destroyModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME);
 }
 
@@ -703,6 +717,7 @@ void ScriptingEngine::execute(const std::string& scriptData, const std::string& 
 	auto module = createModuleFromScript(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME, scriptData);
 	callFunction(context, module, function, arguments);
 	returnValue = context->GetReturnFloat();
+	context->Unprepare();
 	destroyModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME);
 }
 
@@ -712,6 +727,7 @@ void ScriptingEngine::execute(const std::string& scriptData, const std::string& 
 	auto module = createModuleFromScript(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME, scriptData);
 	callFunction(context, module, function, arguments);
 	returnValue = context->GetReturnDouble();
+	context->Unprepare();
 	destroyModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME);
 }
 
@@ -721,6 +737,7 @@ void ScriptingEngine::execute(const std::string& scriptData, const std::string& 
 	auto module = createModuleFromScript(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME, scriptData);
 	callFunction(context, module, function, arguments);
 	returnValue = context->GetReturnByte();
+	context->Unprepare();
 	destroyModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME);
 }
 
@@ -730,6 +747,7 @@ void ScriptingEngine::execute(const std::string& scriptData, const std::string& 
 	auto module = createModuleFromScript(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME, scriptData);
 	callFunction(context, module, function, arguments);
 	returnValue = context->GetReturnByte();
+	context->Unprepare();
 	destroyModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME);
 }
 
@@ -739,6 +757,7 @@ void ScriptingEngine::execute(const std::string& scriptData, const std::string& 
 	auto module = createModuleFromScript(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME, scriptData);
 	callFunction(context, module, function, arguments);
 	returnValue = context->GetReturnWord();
+	context->Unprepare();
 	destroyModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME);
 }
 
@@ -748,6 +767,7 @@ void ScriptingEngine::execute(const std::string& scriptData, const std::string& 
 	auto module = createModuleFromScript(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME, scriptData);
 	callFunction(context, module, function, arguments);
 	returnValue = context->GetReturnWord();
+	context->Unprepare();
 	destroyModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME);
 }
 
@@ -757,6 +777,7 @@ void ScriptingEngine::execute(const std::string& scriptData, const std::string& 
 	auto module = createModuleFromScript(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME, scriptData);
 	callFunction(context, module, function, arguments);
 	returnValue = context->GetReturnDWord();
+	context->Unprepare();
 	destroyModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME);
 }
 
@@ -766,6 +787,7 @@ void ScriptingEngine::execute(const std::string& scriptData, const std::string& 
 	auto module = createModuleFromScript(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME, scriptData);
 	callFunction(context, module, function, arguments);
 	returnValue = context->GetReturnDWord();
+	context->Unprepare();
 	destroyModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME);
 }
 
@@ -775,6 +797,7 @@ void ScriptingEngine::execute(const std::string& scriptData, const std::string& 
 	auto module = createModuleFromScript(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME, scriptData);
 	callFunction(context, module, function, arguments);
 	returnValue = context->GetReturnQWord();
+	context->Unprepare();
 	destroyModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME);
 }
 
@@ -784,6 +807,7 @@ void ScriptingEngine::execute(const std::string& scriptData, const std::string& 
 	auto module = createModuleFromScript(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME, scriptData);
 	callFunction(context, module, function, arguments);
 	returnValue = context->GetReturnQWord();
+	context->Unprepare();
 	destroyModule(ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME);
 }
 
@@ -1839,7 +1863,7 @@ void ScriptingEngine::destroy()
 			c.context->Release();
 		}
 	}
-	
+
 	releaseAllScriptObjects();
 	destroyAllModules();
 	
