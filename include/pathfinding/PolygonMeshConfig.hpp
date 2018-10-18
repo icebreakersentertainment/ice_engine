@@ -12,7 +12,8 @@ struct PolygonMeshConfig
 {
 	int width = 0;
 	int height = 0;
-	int tileSize = 0;
+//	int tileSize = 0;
+	int tileSize = 48;
 	int borderSize = 0;
 
 	float cellSize = 1.0f;
@@ -33,6 +34,8 @@ struct PolygonMeshConfig
 	float detailSampleDist = 0.0f;
 
 	float detailSampleMaxError = 0.0f;
+
+	int maxObstacles = 128;
 };
 
 }

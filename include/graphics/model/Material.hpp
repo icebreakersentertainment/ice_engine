@@ -1,5 +1,5 @@
-#ifndef MATERIAL_H_
-#define MATERIAL_H_
+#ifndef gMATERIAL_H_
+#define gMATERIAL_H_
 
 #include <string>
 

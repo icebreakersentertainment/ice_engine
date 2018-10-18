@@ -20,6 +20,8 @@ struct OrientationComponent
 	{
 	};
 	
+	static uint8 id()  { return 2; }
+
 	glm::quat orientation;
 };
 

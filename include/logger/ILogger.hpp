@@ -4,32 +4,47 @@
 #include <string>
 #include <cstdio>
 
-// original source: https://stackoverflow.com/a/26221725/780281
-template <typename ... Args>
-inline std::string printFunction(const std::string& format, const Args ... args)
+#include <boost/format.hpp>
+
+inline boost::format& printFunctionRecursive(boost::format& format)
 {
-	size_t size = snprintf( nullptr, 0, format.c_str(), args ... ) + 1;
-
-	std::unique_ptr<char[]> buffer(new char[size]);
-
-	snprintf(buffer.get(), size, format.c_str(), args ...);
-
-	return std::string(buffer.get(), buffer.get() + size - 1);
+	return format;
 }
 
-#define LOG_INFO(logger, message, ...) logger->info(printFunction(std::string(__FUNCTION__) + " line " + std::to_string(__LINE__) + ": " + message, __VA_ARGS__));
-#define LOG_WARN(logger, message, ...) logger->warn(printFunction(std::string(__FUNCTION__) + " line " + std::to_string(__LINE__) + ": " + message, __VA_ARGS__));
-#define LOG_ERROR(logger, message, ...) logger->error(printFunction(std::string(__FUNCTION__) + " line " + std::to_string(__LINE__) + ": " + message, __VA_ARGS__));
-#define LOG_FATAL(logger, message, ...) logger->fatal(printFunction(std::string(__FUNCTION__) + " line " + std::to_string(__LINE__) + ": " + message, __VA_ARGS__));
+template <typename Arg, typename ... Args>
+inline boost::format& printFunctionRecursive(boost::format& format, const Arg& arg, const Args& ... args)
+{
+	format % arg;
+
+	return printFunctionRecursive(format, args ...);
+}
+
+template <typename ... Args>
+inline std::string printFunction(boost::format& format, const Args& ... args)
+{
+	return boost::str( printFunctionRecursive(format, args ...) );
+}
+
+template <typename ... Args>
+inline std::string printFunction(const std::string& format, const Args& ... args)
+{
+	boost::format boostFormat(format);
+	return printFunction(boostFormat, args ...);
+}
+
+#define LOG_INFO(logger, message, ...) logger->info(std::string(__FUNCTION__) + " line " + std::to_string(__LINE__) + ": " + printFunction(message, ##__VA_ARGS__));
+#define LOG_WARN(logger, message, ...) logger->warn(std::string(__FUNCTION__) + " line " + std::to_string(__LINE__) + ": " + printFunction(message, ##__VA_ARGS__));
+#define LOG_ERROR(logger, message, ...) logger->error(std::string(__FUNCTION__) + " line " + std::to_string(__LINE__) + ": " + printFunction(message, ##__VA_ARGS__));
+#define LOG_FATAL(logger, message, ...) logger->fatal(std::string(__FUNCTION__) + " line " + std::to_string(__LINE__) + ": " + printFunction(message, ##__VA_ARGS__));
 
 #if defined(DEBUG) || defined(ICEENGINE_ENABLE_DEBUG_LOGGING)
-	#define LOG_DEBUG(logger, message, ...) logger->debug(printFunction(std::string(__FUNCTION__) + " line " + std::to_string(__LINE__) + ": " + message, __VA_ARGS__));
+	#define LOG_DEBUG(logger, message, ...) logger->debug(std::string(__FUNCTION__) + " line " + std::to_string(__LINE__) + ": " + printFunction(message, ##__VA_ARGS__));
 #else
 	#define LOG_DEBUG(logger, message, ...)
 #endif
 
 #if defined(DEBUG) || defined(ICEENGINE_ENABLE_TRACE_LOGGING)
-	#define LOG_TRACE(logger, message, ...) logger->trace(printFunction(std::string(__FUNCTION__) + " line " + std::to_string(__LINE__) + ": " + message, __VA_ARGS__));
+	#define LOG_TRACE(logger, message, ...) logger->trace(std::string(__FUNCTION__) + " line " + std::to_string(__LINE__) + ": " + printFunction(message, ##__VA_ARGS__));
 #else
 	#define LOG_TRACE(logger, message, ...)
 #endif

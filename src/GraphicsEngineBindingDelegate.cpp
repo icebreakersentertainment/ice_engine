@@ -682,16 +682,10 @@ void GraphicsEngineBindingDelegate::bind()
 	scriptingEngine_->registerObjectProperty("MouseWheelEvent", "int32 y", asOFFSET(graphics::MouseWheelEvent, y));
 	scriptingEngine_->registerObjectProperty("MouseWheelEvent", "uint32 direction", asOFFSET(graphics::MouseWheelEvent, direction));
 	
-	// Register Model/Mesh/etc
-	//registerVectorBindings<glm::vec3>(engine_, "vectorVec3", "vec3");
-	//scriptingEngine_->registerObjectType("Mesh", 0, asOBJ_REF | asOBJ_NOCOUNT);
-	//scriptingEngine_->registerObjectProperty("Mesh", "vectorMVec3 vertices", asOFFSET(graphics::model::Mesh, vertices));
-	//scriptingEngine_->registerObjectType("Model", 0, asOBJ_REF | asOBJ_NOCOUNT);
-	//scriptingEngine_->registerObjectType("Model", sizeof(graphics::model::Model), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<graphics::model::Model>());
-	scriptingEngine_->registerObjectType("Model", 0, asOBJ_REF | asOBJ_NOCOUNT);
-	//scriptingEngine_->registerObjectProperty("Model", "vectorMesh meshes", asOFFSET(graphics::model::Model, meshes));
+	scriptingEngine_->registerObjectType("IMesh", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	scriptingEngine_->registerObjectType("ITexture", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	scriptingEngine_->registerObjectType("ISkeleton", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	
-	registerSharedFutureBindings<graphics::model::Model*>(scriptingEngine_, "shared_futureModel", "Model@");
 	registerSharedFutureBindings<graphics::VertexShaderHandle>(scriptingEngine_, "shared_futureVertexShaderHandle", "VertexShaderHandle");
 	registerSharedFutureBindings<graphics::FragmentShaderHandle>(scriptingEngine_, "shared_futureFragmentShaderHandle", "FragmentShaderHandle");
 	registerSharedFutureBindings<graphics::ShaderProgramHandle>(scriptingEngine_, "shared_futureShaderProgramHandle", "ShaderProgramHandle");
@@ -845,16 +839,16 @@ void GraphicsEngineBindingDelegate::bind()
 		"PointLightHandle createPointLight(const RenderSceneHandle& in, const vec3& in)",
 		asMETHODPR(graphics::IGraphicsEngine, createPointLight, (const graphics::RenderSceneHandle&, const glm::vec3&), graphics::PointLightHandle)
 	);
-	scriptingEngine_->registerClassMethod(
-		"IGraphicsEngine",
-		"MeshHandle createStaticMesh(const vectorVec3& in, const vectorUInt32& in, const vectorVec4& in, const vectorVec3& in, const vectorVec2& in)",
-		asMETHODPR(graphics::IGraphicsEngine, createStaticMesh, (const std::vector<glm::vec3>&, const std::vector<uint32>&, const std::vector<glm::vec4>&, const std::vector<glm::vec3>&, const std::vector<glm::vec2>&), graphics::MeshHandle)
-	);
-	scriptingEngine_->registerClassMethod(
-		"IGraphicsEngine",
-		"TextureHandle createTexture2d(IImage@)",
-		asMETHODPR(graphics::IGraphicsEngine, createTexture2d, (const graphics::IImage*), graphics::TextureHandle)
-	);
+//	scriptingEngine_->registerClassMethod(
+//		"IGraphicsEngine",
+//		"MeshHandle createStaticMesh(const IMesh@)",
+//		asMETHODPR(graphics::IGraphicsEngine, createStaticMesh, (const graphics::IMesh*), graphics::MeshHandle)
+//	);
+//	scriptingEngine_->registerClassMethod(
+//		"IGraphicsEngine",
+//		"TextureHandle createTexture2d(ITexture@)",
+//		asMETHODPR(graphics::IGraphicsEngine, createTexture2d, (const graphics::ITexture*), graphics::TextureHandle)
+//	);
 	scriptingEngine_->registerClassMethod(
 		"IGraphicsEngine",
 		"RenderableHandle createRenderable(const RenderSceneHandle& in, const MeshHandle& in, const TextureHandle& in, const vec3& in, const quat& in, const vec3& in = vec3(1.0f), const ShaderProgramHandle& in = ShaderProgramHandle())",

@@ -3,7 +3,7 @@
 
 #include "pathfinding/IMovementRequestStateChangeListener.hpp"
 
-#include "Scene.hpp"
+#include "ecs/Entity.hpp"
 
 namespace ice_engine
 {
@@ -11,14 +11,13 @@ namespace ice_engine
 class IceEnginePathfindingMovementRequestStateChangeListener : public pathfinding::IMovementRequestStateChangeListener
 {
 public:
-	IceEnginePathfindingMovementRequestStateChangeListener(ecs::Entity entity, Scene* scene);
+	IceEnginePathfindingMovementRequestStateChangeListener(ecs::Entity entity);
 	virtual ~IceEnginePathfindingMovementRequestStateChangeListener();
 	
 	virtual void update(const pathfinding::MovementRequestState& movementRequestState) override;
 
 private:
 	ecs::Entity entity_;
-	Scene* scene_;
 };
 
 }

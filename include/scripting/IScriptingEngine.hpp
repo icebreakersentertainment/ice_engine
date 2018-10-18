@@ -7,6 +7,8 @@
 
 #include <angelscript/angelscript.h>
 
+#include "scripting/angel_script/autowrapper/aswrappedcall.h"
+
 #include "scripting/ModuleHandle.hpp"
 #include "scripting/ExecutionContextHandle.hpp"
 #include "scripting/ScriptObjectHandle.hpp"

@@ -18,6 +18,7 @@
 #include "MaterialHandle.hpp"
 #include "TextureHandle.hpp"
 #include "SkeletonHandle.hpp"
+#include "BonesHandle.hpp"
 #include "PointLightHandle.hpp"
 #include "CameraHandle.hpp"
 #include "VertexShaderHandle.hpp"
@@ -28,9 +29,12 @@
 #include "IHeightMap.hpp"
 #include "ISplatMap.hpp"
 #include "IDisplacementMap.hpp"
+#include "IMesh.hpp"
+#include "ITexture.hpp"
+#include "ISkeleton.hpp"
 #include "IImage.hpp"
 
-#include "model/Model.hpp"
+//#include "model/Model.hpp"
 
 namespace ice_engine
 {
@@ -74,34 +78,28 @@ public:
 	virtual PointLightHandle createPointLight(const RenderSceneHandle& renderSceneHandle, const glm::vec3& position) = 0;
 	virtual void destroy(const RenderSceneHandle& renderSceneHandle, const PointLightHandle& pointLightHandle) = 0;
 	
-	virtual MeshHandle createStaticMesh(
-		const std::vector<glm::vec3>& vertices,
-		const std::vector<uint32>& indices,
-		const std::vector<glm::vec4>& colors,
-		const std::vector<glm::vec3>& normals,
-		const std::vector<glm::vec2>& textureCoordinates
-	) = 0;
-	virtual MeshHandle createStaticMesh(const model::Mesh& mesh) = 0;
-	virtual MeshHandle createAnimatedMesh(
-		const std::vector<glm::vec3>& vertices,
-		const std::vector<uint32>& indices,
-		const std::vector<glm::vec4>& colors,
-		const std::vector<glm::vec3>& normals,
-		const std::vector<glm::vec2>& textureCoordinates,
-		const std::vector<glm::ivec4>& boneIds,
-		const std::vector<glm::vec4>& boneWeights
-	) = 0;
-	virtual MeshHandle createDynamicMesh(
-		const std::vector<glm::vec3>& vertices,
-		const std::vector<uint32>& indices,
-		const std::vector<glm::vec4>& colors,
-		const std::vector<glm::vec3>& normals,
-		const std::vector<glm::vec2>& textureCoordinates
-	) = 0;
+	virtual MeshHandle createStaticMesh(const IMesh* mesh) = 0;
+	virtual MeshHandle createDynamicMesh(const IMesh* mesh) = 0;
 	
-	virtual SkeletonHandle createSkeleton(const uint32 numberOfBones) = 0;
+	virtual SkeletonHandle createSkeleton(const MeshHandle& meshHandle, const ISkeleton* skelton) = 0;
+	virtual void destroy(const SkeletonHandle& skeletonHandle) = 0;
+
+	virtual BonesHandle createBones(const uint32 maxNumberOfBones) = 0;
+	virtual void destroy(const BonesHandle& bonesHandle) = 0;
+
+	virtual void attach(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle, const BonesHandle& bonesHandle) = 0;
+	virtual void detach(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle, const BonesHandle& bonesHandle) = 0;
+
+	virtual void attachBoneAttachment(
+		const RenderSceneHandle& renderSceneHandle,
+		const RenderableHandle& renderableHandle,
+		const BonesHandle& bonesHandle,
+		const glm::ivec4& boneIds,
+		const glm::vec4& boneWeights
+	) = 0;
+	virtual void detachBoneAttachment(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle) = 0;
 	
-	virtual TextureHandle createTexture2d(const IImage* image) = 0;
+	virtual TextureHandle createTexture2d(const ITexture* texture) = 0;
 	
 	virtual MaterialHandle createMaterial(const IPbrMaterial* pbrMaterial) = 0;
 	
@@ -198,7 +196,12 @@ public:
 	
 	virtual void assign(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle, const SkeletonHandle& skeletonHandle) = 0;
 	
-	virtual void update(const SkeletonHandle& skeletonHandle, const void* data, const uint32 size) = 0;
+	virtual void update(
+		const RenderSceneHandle& renderSceneHandle,
+		const RenderableHandle& renderableHandle,
+		const BonesHandle& bonesHandle,
+		const std::vector<glm::mat4>& transformations
+	) = 0;
 	
 	virtual void setMouseRelativeMode(const bool enabled) = 0;
 	virtual void setWindowGrab(const bool enabled) = 0;

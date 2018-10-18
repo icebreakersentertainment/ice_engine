@@ -1,6 +1,8 @@
 #include <iostream>
 #include <stdio.h>
 
+#include <boost/format.hpp>
+
 #include "scripting/angel_script/ScriptingEngine.hpp"
 
 #include "scripting/angel_script/scripthelper/scripthelper.h"
@@ -15,6 +17,8 @@
 
 #include "exceptions/Exception.hpp"
 #include "exceptions/InvalidArgumentException.hpp"
+
+#include "Platform.hpp"
 
 namespace ice_engine
 {
@@ -221,6 +225,16 @@ asIScriptModule* ScriptingEngine::createModuleFromScript(const std::string& modu
 asIScriptModule* ScriptingEngine::createModuleFromScripts(const std::string& moduleName, const std::vector<std::string>& scriptData)
 {
 	CScriptBuilder builder = CScriptBuilder();
+
+#if defined(PLATFORM_WINDOWS)
+	builder.DefineWord("PLATFORM_WINDOWS");
+#elif defined(PLATFORM_MAC)
+	builder.DefineWord("PLATFORM_MAC");
+	#define PLATFORM_MAC
+#elif defined(PLATFORM_LINUX)
+	builder.DefineWord("PLATFORM_LINUX");
+#endif
+
 	builder.StartNewModule(engine_, moduleName.c_str());
 
 	for (const auto& data : scriptData)
@@ -1957,10 +1971,16 @@ void ScriptingEngine::MessageCallback(const asSMessageInfo* msg, void* param)
 	if ( msg->type == asMSGTYPE_WARNING )
 	{
 		type = std::string("WARN");
+		LOG_WARN(logger_, boost::format("%s (%d, %d) : %s") % msg->section %  msg->row %  msg->col %  msg->message );
 	}
 	else if ( msg->type == asMSGTYPE_INFORMATION )
 	{
 		type = std::string("INFO");
+		LOG_INFO(logger_, boost::format("%s (%d, %d) : %s") % msg->section %  msg->row %  msg->col %  msg->message );
+	}
+	else
+	{
+		LOG_ERROR(logger_, boost::format("%s (%d, %d) : %s") % msg->section %  msg->row %  msg->col %  msg->message );
 	}
 	
 	printf("%s (%d, %d) : %s : %s\n", msg->section, msg->row, msg->col, type.c_str(), msg->message);

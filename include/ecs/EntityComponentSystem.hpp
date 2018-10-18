@@ -11,6 +11,7 @@
 #include "ecs/PositionComponent.hpp"
 #include "ecs/OrientationComponent.hpp"
 #include "ecs/PathfindingAgentComponent.hpp"
+#include "ecs/PathfindingObstacleComponent.hpp"
 #include "ecs/PathfindingCrowdComponent.hpp"
 #include "ecs/PointLightComponent.hpp"
 #include "ecs/ScriptObjectComponent.hpp"
@@ -27,6 +28,12 @@ class Scene;
 
 namespace ecs
 {
+
+template <bool All>
+using ViewIteratorDelegateIterator = typename entityx::EntityManager::BaseView<All>::Iterator;
+
+template <bool All>
+using ViewIteratorIterator = entityx::EntityManager::ViewIterator<ViewIteratorDelegateIterator<All>, All>;
 
 template <bool All = false>
 class ViewIterator
@@ -45,12 +52,12 @@ public:
 
     bool operator==(const ViewIterator& rhs) const
     {
-    	return *static_cast<const entityx::EntityManager::BaseView<All>::Iterator*>(&viewIterator_) == *static_cast<const entityx::EntityManager::BaseView<All>::Iterator*>(&rhs.viewIterator_);
+    	return *static_cast<const ViewIteratorDelegateIterator<All>*>(&viewIterator_) == *static_cast<const ViewIteratorDelegateIterator<All>*>(&rhs.viewIterator_);
     }
 
     bool operator!=(const ViewIterator& rhs) const
     {
-    	return *static_cast<const entityx::EntityManager::BaseView<All>::Iterator*>(&viewIterator_) != *static_cast<const entityx::EntityManager::BaseView<All>::Iterator*>(&rhs.viewIterator_);
+    	return *static_cast<const ViewIteratorDelegateIterator<All>*>(&viewIterator_) != *static_cast<const ViewIteratorDelegateIterator<All>*>(&rhs.viewIterator_);
     }
 
     Entity operator*()
@@ -65,7 +72,7 @@ public:
 
 private:
     Scene* scene_;
-    entityx::EntityManager::ViewIterator<typename entityx::EntityManager::BaseView<All>::Iterator, All> viewIterator_;
+    ViewIteratorIterator<All> viewIterator_;
 };
 
 template <bool All = false>
@@ -80,7 +87,7 @@ public:
 	public:
 		Iterator(
 			Scene* scene,
-			entityx::EntityManager::ViewIterator<typename entityx::EntityManager::BaseView<All>::Iterator, All> viewIterator) : ViewIterator<All>(scene, viewIterator)
+			ViewIteratorIterator<All> viewIterator) : ViewIterator<All>(scene, viewIterator)
 		{
 		}
 	};
@@ -220,16 +227,22 @@ private:
 	{
 		entityx::EntityManager::ComponentMask mask;
 
-		if (entity.hasComponent<ice_engine::ecs::GhostObjectComponent>()) mask.set(0);
-		if (entity.hasComponent<ice_engine::ecs::GraphicsComponent>()) mask.set(1);
-		if (entity.hasComponent<ice_engine::ecs::GraphicsTerrainComponent>()) mask.set(2);
-		if (entity.hasComponent<ice_engine::ecs::PathfindingAgentComponent>()) mask.set(3);
-		if (entity.hasComponent<ice_engine::ecs::PathfindingCrowdComponent>()) mask.set(4);
-		if (entity.hasComponent<ice_engine::ecs::PointLightComponent>()) mask.set(5);
-		if (entity.hasComponent<ice_engine::ecs::PositionComponent>()) mask.set(6);
-		if (entity.hasComponent<ice_engine::ecs::OrientationComponent>()) mask.set(7);
-		if (entity.hasComponent<ice_engine::ecs::RigidBodyObjectComponent>()) mask.set(8);
-		if (entity.hasComponent<ice_engine::ecs::ScriptObjectComponent>()) mask.set(9);
+		if (entity.hasComponent<ice_engine::ecs::GhostObjectComponent>())			mask.set(ice_engine::ecs::GhostObjectComponent::id());
+		if (entity.hasComponent<ice_engine::ecs::GraphicsComponent>())				mask.set(ice_engine::ecs::GraphicsComponent::id());
+		if (entity.hasComponent<ice_engine::ecs::SkeletonComponent>())				mask.set(ice_engine::ecs::SkeletonComponent::id());
+		if (entity.hasComponent<ice_engine::ecs::AnimationComponent>())				mask.set(ice_engine::ecs::AnimationComponent::id());
+		if (entity.hasComponent<ice_engine::ecs::GraphicsTerrainComponent>())		mask.set(ice_engine::ecs::GraphicsTerrainComponent::id());
+		if (entity.hasComponent<ice_engine::ecs::PathfindingAgentComponent>())		mask.set(ice_engine::ecs::PathfindingAgentComponent::id());
+		if (entity.hasComponent<ice_engine::ecs::PathfindingObstacleComponent>())	mask.set(ice_engine::ecs::PathfindingObstacleComponent::id());
+		if (entity.hasComponent<ice_engine::ecs::PathfindingCrowdComponent>())		mask.set(ice_engine::ecs::PathfindingCrowdComponent::id());
+		if (entity.hasComponent<ice_engine::ecs::PointLightComponent>())			mask.set(ice_engine::ecs::PointLightComponent::id());
+		if (entity.hasComponent<ice_engine::ecs::PositionComponent>())				mask.set(ice_engine::ecs::PositionComponent::id());
+		if (entity.hasComponent<ice_engine::ecs::OrientationComponent>())			mask.set(ice_engine::ecs::OrientationComponent::id());
+		if (entity.hasComponent<ice_engine::ecs::RigidBodyObjectComponent>())		mask.set(ice_engine::ecs::RigidBodyObjectComponent::id());
+		if (entity.hasComponent<ice_engine::ecs::ScriptObjectComponent>())			mask.set(ice_engine::ecs::ScriptObjectComponent::id());
+		if (entity.hasComponent<ice_engine::ecs::ParentComponent>())				mask.set(ice_engine::ecs::ParentComponent::id());
+		if (entity.hasComponent<ice_engine::ecs::ChildrenComponent>())				mask.set(ice_engine::ecs::ChildrenComponent::id());
+		if (entity.hasComponent<ice_engine::ecs::ParentBoneAttachmentComponent>())	mask.set(ice_engine::ecs::ParentBoneAttachmentComponent::id());
 
 		return mask;
 	}
@@ -252,14 +265,20 @@ private:
 
 		if (entity.hasComponent<ice_engine::ecs::GhostObjectComponent>()) saveComponent<Archive, ice_engine::ecs::GhostObjectComponent>(ar, entity, version);
 		if (entity.hasComponent<ice_engine::ecs::GraphicsComponent>()) saveComponent<Archive, ice_engine::ecs::GraphicsComponent>(ar, entity, version);
+		if (entity.hasComponent<ice_engine::ecs::SkeletonComponent>()) saveComponent<Archive, ice_engine::ecs::SkeletonComponent>(ar, entity, version);
+		if (entity.hasComponent<ice_engine::ecs::AnimationComponent>()) saveComponent<Archive, ice_engine::ecs::AnimationComponent>(ar, entity, version);
 		if (entity.hasComponent<ice_engine::ecs::GraphicsTerrainComponent>()) saveComponent<Archive, ice_engine::ecs::GraphicsTerrainComponent>(ar, entity, version);
 		if (entity.hasComponent<ice_engine::ecs::PathfindingAgentComponent>()) saveComponent<Archive, ice_engine::ecs::PathfindingAgentComponent>(ar, entity, version);
+		if (entity.hasComponent<ice_engine::ecs::PathfindingObstacleComponent>()) saveComponent<Archive, ice_engine::ecs::PathfindingObstacleComponent>(ar, entity, version);
 		if (entity.hasComponent<ice_engine::ecs::PathfindingCrowdComponent>()) saveComponent<Archive, ice_engine::ecs::PathfindingCrowdComponent>(ar, entity, version);
 		if (entity.hasComponent<ice_engine::ecs::PointLightComponent>()) saveComponent<Archive, ice_engine::ecs::PointLightComponent>(ar, entity, version);
 		if (entity.hasComponent<ice_engine::ecs::PositionComponent>()) saveComponent<Archive, ice_engine::ecs::PositionComponent>(ar, entity, version);
 		if (entity.hasComponent<ice_engine::ecs::OrientationComponent>()) saveComponent<Archive, ice_engine::ecs::OrientationComponent>(ar, entity, version);
 		if (entity.hasComponent<ice_engine::ecs::RigidBodyObjectComponent>()) saveComponent<Archive, ice_engine::ecs::RigidBodyObjectComponent>(ar, entity, version);
 		if (entity.hasComponent<ice_engine::ecs::ScriptObjectComponent>()) saveComponent<Archive, ice_engine::ecs::ScriptObjectComponent>(ar, entity, version);
+		if (entity.hasComponent<ice_engine::ecs::ParentComponent>()) saveComponent<Archive, ice_engine::ecs::ParentComponent>(ar, entity, version);
+		if (entity.hasComponent<ice_engine::ecs::ChildrenComponent>()) saveComponent<Archive, ice_engine::ecs::ChildrenComponent>(ar, entity, version);
+		if (entity.hasComponent<ice_engine::ecs::ParentBoneAttachmentComponent>()) saveComponent<Archive, ice_engine::ecs::ParentBoneAttachmentComponent>(ar, entity, version);
 	}
 
 	template<class Archive>
@@ -284,16 +303,23 @@ private:
 	template<class Archive>
 	void loadEntity(Archive& ar, ice_engine::ecs::Entity& entity, const entityx::EntityManager::ComponentMask mask, const unsigned int version)
 	{
-		if (mask.test(0)) loadComponent<Archive, ice_engine::ecs::GhostObjectComponent>(ar, entity, version);
-		if (mask.test(1)) loadComponent<Archive, ice_engine::ecs::GraphicsComponent>(ar, entity, version);
-		if (mask.test(2)) loadComponent<Archive, ice_engine::ecs::GraphicsTerrainComponent>(ar, entity, version);
-		if (mask.test(3)) loadComponent<Archive, ice_engine::ecs::PathfindingAgentComponent>(ar, entity, version);
-		if (mask.test(4)) loadComponent<Archive, ice_engine::ecs::PathfindingCrowdComponent>(ar, entity, version);
-		if (mask.test(5)) loadComponent<Archive, ice_engine::ecs::PointLightComponent>(ar, entity, version);
-		if (mask.test(6)) loadComponent<Archive, ice_engine::ecs::PositionComponent>(ar, entity, version);
-		if (mask.test(7)) loadComponent<Archive, ice_engine::ecs::OrientationComponent>(ar, entity, version);
-		if (mask.test(8)) loadComponent<Archive, ice_engine::ecs::RigidBodyObjectComponent>(ar, entity, version);
-		if (mask.test(9)) loadComponent<Archive, ice_engine::ecs::ScriptObjectComponent>(ar, entity, version);
+
+		if (mask.test(ice_engine::ecs::GhostObjectComponent::id())) loadComponent<Archive, ice_engine::ecs::GhostObjectComponent>(ar, entity, version);
+		if (mask.test(ice_engine::ecs::GraphicsComponent::id())) loadComponent<Archive, ice_engine::ecs::GraphicsComponent>(ar, entity, version);
+		if (mask.test(ice_engine::ecs::SkeletonComponent::id())) loadComponent<Archive, ice_engine::ecs::SkeletonComponent>(ar, entity, version);
+		if (mask.test(ice_engine::ecs::AnimationComponent::id())) loadComponent<Archive, ice_engine::ecs::AnimationComponent>(ar, entity, version);
+		if (mask.test(ice_engine::ecs::GraphicsTerrainComponent::id())) loadComponent<Archive, ice_engine::ecs::GraphicsTerrainComponent>(ar, entity, version);
+		if (mask.test(ice_engine::ecs::PathfindingAgentComponent::id())) loadComponent<Archive, ice_engine::ecs::PathfindingAgentComponent>(ar, entity, version);
+		if (mask.test(ice_engine::ecs::PathfindingObstacleComponent::id())) loadComponent<Archive, ice_engine::ecs::PathfindingObstacleComponent>(ar, entity, version);
+		if (mask.test(ice_engine::ecs::PathfindingCrowdComponent::id())) loadComponent<Archive, ice_engine::ecs::PathfindingCrowdComponent>(ar, entity, version);
+		if (mask.test(ice_engine::ecs::PointLightComponent::id())) loadComponent<Archive, ice_engine::ecs::PointLightComponent>(ar, entity, version);
+		if (mask.test(ice_engine::ecs::PositionComponent::id())) loadComponent<Archive, ice_engine::ecs::PositionComponent>(ar, entity, version);
+		if (mask.test(ice_engine::ecs::OrientationComponent::id())) loadComponent<Archive, ice_engine::ecs::OrientationComponent>(ar, entity, version);
+		if (mask.test(ice_engine::ecs::RigidBodyObjectComponent::id())) loadComponent<Archive, ice_engine::ecs::RigidBodyObjectComponent>(ar, entity, version);
+		if (mask.test(ice_engine::ecs::ScriptObjectComponent::id())) loadComponent<Archive, ice_engine::ecs::ScriptObjectComponent>(ar, entity, version);
+		if (mask.test(ice_engine::ecs::ParentComponent::id())) loadComponent<Archive, ice_engine::ecs::ParentComponent>(ar, entity, version);
+		if (mask.test(ice_engine::ecs::ChildrenComponent::id())) loadComponent<Archive, ice_engine::ecs::ChildrenComponent>(ar, entity, version);
+		if (mask.test(ice_engine::ecs::ParentBoneAttachmentComponent::id())) loadComponent<Archive, ice_engine::ecs::ParentBoneAttachmentComponent>(ar, entity, version);
 
 		entity.assign<ice_engine::ecs::PersistableComponent>();
 	}

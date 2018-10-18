@@ -3,6 +3,7 @@
 
 #include "pathfinding/CrowdHandle.hpp"
 #include "pathfinding/NavigationMeshHandle.hpp"
+#include "pathfinding/CrowdConfig.hpp"
 
 #include "ecs/Serialization.hpp"
 
@@ -16,22 +17,22 @@ struct PathfindingCrowdComponent
 	PathfindingCrowdComponent() = default;
 	
 	PathfindingCrowdComponent(
-		pathfinding::NavigationMeshHandle&& navigationMeshHandle
+		pathfinding::NavigationMeshHandle navigationMeshHandle,
+		pathfinding::CrowdConfig crowdConfig = pathfinding::CrowdConfig(),
+		pathfinding::CrowdHandle crowdHandle = pathfinding::CrowdHandle()
 	)
-	:  navigationMeshHandle(std::forward<pathfinding::NavigationMeshHandle>(navigationMeshHandle))
+	:
+		navigationMeshHandle(navigationMeshHandle),
+		crowdConfig(crowdConfig),
+		crowdHandle(crowdHandle)
 	{
-	};
-	
-	PathfindingCrowdComponent(
-		pathfinding::NavigationMeshHandle&& navigationMeshHandle,
-		pathfinding::CrowdHandle&& crowdHandle
-	)
-	:  navigationMeshHandle(std::forward<pathfinding::NavigationMeshHandle>(navigationMeshHandle)),
-	   crowdHandle(std::forward<pathfinding::CrowdHandle>(crowdHandle))
-	{
+		std::cout << "e a: "<< crowdConfig.maxAgents << std::endl;
 	};
 
+	static uint8 id()  { return 10; }
+
 	pathfinding::NavigationMeshHandle navigationMeshHandle;
+	pathfinding::CrowdConfig crowdConfig;
 	pathfinding::CrowdHandle crowdHandle;
 };
 

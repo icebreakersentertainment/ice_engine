@@ -131,11 +131,7 @@ void SceneBindingDelegate::bind()
 		"void setDebugRendering(const bool)",
 		asMETHODPR(Scene, setDebugRendering, (const bool), void )
 	);
-	scriptingEngine_->registerClassMethod(
-		"Scene",
-		"CrowdHandle createCrowd(const NavigationMeshHandle& in)",
-		asMETHODPR(Scene, createCrowd, (const pathfinding::NavigationMeshHandle&), pathfinding::CrowdHandle )
-	);
+	scriptingEngine_->registerClassMethod("Scene", "CrowdHandle createCrowd(const NavigationMeshHandle& in, const CrowdConfig& in)", asMETHOD(Scene, createCrowd));
 	scriptingEngine_->registerClassMethod(
 		"Scene",
 		"AgentHandle createAgent(const CrowdHandle& in, const vec3& in, const AgentParams& in)",
@@ -146,6 +142,7 @@ void SceneBindingDelegate::bind()
 		"void requestMoveTarget(const CrowdHandle& in, const AgentHandle& in, const vec3& in)",
 		asMETHODPR(Scene, requestMoveTarget, (const pathfinding::CrowdHandle&, const pathfinding::AgentHandle&, const glm::vec3&), void )
 	);
+	scriptingEngine_->registerClassMethod("Scene", "void resetMoveTarget(const CrowdHandle& in, const AgentHandle& in)", asMETHOD(Scene, resetMoveTarget));
 	scriptingEngine_->registerClassMethod(
 		"Scene",
 		"void requestMoveVelocity(const CrowdHandle& in, const AgentHandle& in, const vec3& in)",

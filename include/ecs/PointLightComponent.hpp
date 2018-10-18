@@ -18,6 +18,8 @@ struct PointLightComponent
 	{
 	};
 	
+	static uint8 id()  { return 9; }
+
 	graphics::PointLightHandle pointLightHandle;
 };
 

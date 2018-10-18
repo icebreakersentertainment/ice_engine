@@ -1,5 +1,5 @@
-#ifndef BONEDATA_H_
-#define BONEDATA_H_
+#ifndef gBONEDATA_H_
+#define gBONEDATA_H_
 
 #include <string>
 #include <map>

@@ -1,5 +1,5 @@
-#ifndef SKELETON_HANDLE_H_
-#define SKELETON_HANDLE_H_
+#ifndef gSKELETON_HANDLE_H_
+#define gSKELETON_HANDLE_H_
 
 #include "handles/Handle.hpp"
 

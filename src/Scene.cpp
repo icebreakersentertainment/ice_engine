@@ -2,6 +2,7 @@
 #include <fstream>
 #include <sstream>
 
+#include "exceptions/Throw.hpp"
 #include <boost/archive/text_oarchive.hpp>
 
 #include <glm/gtx/string_cast.hpp>
@@ -111,7 +112,7 @@ void Scene::destroy()
 void Scene::applyChangesToEntities()
 {
 	std::vector<ecs::Entity> dirtyEntities;
-	for (auto& entity : entityComponentSystem_->entitiesWithComponents<ecs::DirtyComponent>())
+	for (auto entity : entityComponentSystem_->entitiesWithComponents<ecs::DirtyComponent>())
 	{
 		dirtyEntities.push_back(entity);
 
@@ -181,11 +182,11 @@ void Scene::applyChangesToEntities()
 
 					pathfindingEngine_->setMotionChangeListener(pathfindingSceneHandle_, pathfindingAgentComponent->crowdHandle, pathfindingAgentComponent->agentHandle, std::move(motionChangeListener));
 
-					auto stateChangeListener = std::make_unique<IceEnginePathfindingAgentStateChangeListener>(entity, this);
+					auto stateChangeListener = std::make_unique<IceEnginePathfindingAgentStateChangeListener>(entity);
 
 					pathfindingEngine_->setStateChangeListener(pathfindingSceneHandle_, pathfindingAgentComponent->crowdHandle, pathfindingAgentComponent->agentHandle, std::move(stateChangeListener));
 
-					auto movementRequestChangeListener = std::make_unique<IceEnginePathfindingMovementRequestStateChangeListener>(entity, this);
+					auto movementRequestChangeListener = std::make_unique<IceEnginePathfindingMovementRequestStateChangeListener>(entity);
 
 					pathfindingEngine_->setMovementRequestChangeListener(pathfindingSceneHandle_, pathfindingAgentComponent->crowdHandle, pathfindingAgentComponent->agentHandle, std::move(movementRequestChangeListener));
 
@@ -247,6 +248,34 @@ void Scene::applyChangesToEntities()
 					physicsEngine_->rotation(physicsSceneHandle_, ghostObjectComponent->ghostObjectHandle, oc->orientation);
 				}
 			}
+			if (dirtyComponent->dirty & ecs::DirtyFlags::DIRTY_AGENT_STATE)
+			{
+				auto scriptObjectComponent = entity.component<ecs::ScriptObjectComponent>();
+
+				if (scriptObjectComponent && scriptObjectComponent->scriptObjectHandle)
+				{
+					auto pac = entity.component<ecs::PathfindingAgentComponent>();
+
+					scripting::ParameterList params;
+					params.addRef(pac->agentState);
+
+					scriptingEngine_->execute(scriptObjectComponent->scriptObjectHandle, std::string("void update(const AgentState& in)"), params, executionContextHandle_);
+				}
+			}
+			if (dirtyComponent->dirty & ecs::DirtyFlags::DIRTY_MOVEMENT_REQUEST_STATE)
+			{
+				auto scriptObjectComponent = entity.component<ecs::ScriptObjectComponent>();
+
+				if (scriptObjectComponent && scriptObjectComponent->scriptObjectHandle)
+				{
+					auto pac = entity.component<ecs::PathfindingAgentComponent>();
+
+					scripting::ParameterList params;
+					params.addRef(pac->movementRequestState);
+
+					scriptingEngine_->execute(scriptObjectComponent->scriptObjectHandle, std::string("void update(const MovementRequestState& in)"), params, executionContextHandle_);
+				}
+			}
 		}
 	}
 
@@ -292,6 +321,52 @@ void Scene::tick(const float32 delta)
 	if (scriptObjectHandle_)
 	{
 		scriptingEngine_->execute(scriptObjectHandle_, std::string("void postTick(const float)"), params, executionContextHandle_);
+	}
+
+	for (auto e : entityComponentSystem_->entitiesWithComponents<ecs::GraphicsComponent, ecs::AnimationComponent>())
+	{
+		auto graphicsComponent = e.component<ecs::GraphicsComponent>();
+		auto skeletonComponent = e.component<ecs::SkeletonComponent>();
+		auto animationComponent = e.component<ecs::AnimationComponent>();
+
+		if (graphicsComponent->renderableHandle && animationComponent->animationHandle)
+		{
+			auto& transformations = animationComponent->transformations;
+//			gameEngine_->getForegroundThreadPool()->postWork([=, &transformations = animationComponent->transformations]() {
+				gameEngine_->animateSkeleton(transformations, graphicsComponent->meshHandle, animationComponent->animationHandle, skeletonComponent->skeletonHandle);
+				gameEngine_->getForegroundGraphicsThreadPool()->postWork([=]() {
+					graphicsEngine_->update(renderSceneHandle_, graphicsComponent->renderableHandle, animationComponent->bonesHandle, animationComponent->transformations);
+				});
+//			});
+		}
+	}
+
+	for (auto e : entityComponentSystem_->entitiesWithComponents<ecs::ParentComponent>())
+	{
+		auto parentComponent = e.component<ecs::ParentComponent>();
+
+		auto parentPositionComponent = parentComponent->entity.component<ecs::PositionComponent>();
+		auto parentOrientationComponent = parentComponent->entity.component<ecs::OrientationComponent>();
+
+		auto positionComponent = e.component<ecs::PositionComponent>();
+		auto orientationComponent = e.component<ecs::OrientationComponent>();
+		auto graphicsComponent = e.component<ecs::GraphicsComponent>();
+
+		if (graphicsComponent->renderableHandle)
+		{
+			positionComponent->position = parentPositionComponent->position;
+			orientationComponent->orientation = parentOrientationComponent->orientation;
+
+			if (e.hasComponent<ecs::DirtyComponent>())
+			{
+				auto dirtyComponent = e.component<ecs::DirtyComponent>();
+				dirtyComponent->dirty |= ecs::DirtyFlags::DIRTY_SOURCE_SCRIPT | ecs::DirtyFlags::DIRTY_POSITION | ecs::DirtyFlags::DIRTY_ORIENTATION;
+			}
+			else
+			{
+				e.assign<ecs::DirtyComponent>(ecs::DirtyFlags::DIRTY_SOURCE_SCRIPT | ecs::DirtyFlags::DIRTY_POSITION | ecs::DirtyFlags::DIRTY_ORIENTATION);
+			}
+		}
 	}
 
 	applyChangesToEntities();
@@ -347,9 +422,9 @@ void Scene::destroyResources(const ecs::Entity& entity)
 {
 }
 
-pathfinding::CrowdHandle Scene::createCrowd(const pathfinding::NavigationMeshHandle& navigationMeshHandle)
+pathfinding::CrowdHandle Scene::createCrowd(const pathfinding::NavigationMeshHandle& navigationMeshHandle, const pathfinding::CrowdConfig& crowdConfig)
 {
-	return pathfindingEngine_->createCrowd(pathfindingSceneHandle_, navigationMeshHandle);
+	return pathfindingEngine_->createCrowd(pathfindingSceneHandle_, navigationMeshHandle, crowdConfig);
 }
 
 void Scene::destroy(const pathfinding::CrowdHandle& crowdHandle)
@@ -472,7 +547,7 @@ void Scene::addPathfindingMovementRequestStateChangeListener(const ecs::Entity& 
 {
 	auto pathfindingAgentComponent = entityComponentSystem_->component<ecs::PathfindingAgentComponent>(entity.id());
 
-	std::unique_ptr<IceEnginePathfindingMovementRequestStateChangeListener> movementRequestStateChangeListener = std::make_unique<IceEnginePathfindingMovementRequestStateChangeListener>(entity, this);
+	std::unique_ptr<IceEnginePathfindingMovementRequestStateChangeListener> movementRequestStateChangeListener = std::make_unique<IceEnginePathfindingMovementRequestStateChangeListener>(entity);
 
 	pathfindingEngine_->setMovementRequestChangeListener(pathfindingSceneHandle_, pathfindingAgentComponent->crowdHandle, pathfindingAgentComponent->agentHandle, std::move(movementRequestStateChangeListener));
 }
@@ -697,13 +772,14 @@ void normalizeHandles(
 
 void normalizeHandles(
 	ecs::EntityComponentSystem& entityComponentSystem,
-	const std::unordered_map<ModelHandle, ModelHandle>& normalizedMap,
+	const std::unordered_map<graphics::MeshHandle, graphics::MeshHandle>& normalizedMeshHandleMap,
+	const std::unordered_map<graphics::TextureHandle, graphics::TextureHandle>& normalizedTextureHandleMap,
 	logger::ILogger* logger
 )
 {
-	LOG_DEBUG(logger, "Normalizing ModelHandles");
-//	std::cout << "normalizedMap size " << normalizedMap.size() << std::endl;
-//	for (const auto& kv : normalizedMap)
+	LOG_DEBUG(logger, "Normalizing MeshHandles and TextureHandles");
+//	std::cout << "normalizedMeshHandleMap size " << normalizedMeshHandleMap.size() << std::endl;
+//	for (const auto& kv : normalizedMeshHandleMap)
 //		{
 //			std::cout << "KV " << kv.first << " " << kv.second << std::endl;
 //		}
@@ -714,9 +790,76 @@ void normalizeHandles(
 		componentHandle->renderableHandle.invalidate();
 
 		auto component = *componentHandle;
-//		std::cout << "find in normalized map " << component.modelHandle << std::endl;
-		component.modelHandle = normalizedMap.at(component.modelHandle);
+//		std::cout << "find in normalized map " << component.meshHandle << std::endl;
+
+		try
+		{
+			component.meshHandle = normalizedMeshHandleMap.at(component.meshHandle);
+		}
+		catch (const std::out_of_range& e)
+		{
+			throw Exception("Unable to find mesh handle " + std::to_string(component.meshHandle.id()));
+		}
+
+		try
+		{
+			component.textureHandle = normalizedTextureHandleMap.at(component.textureHandle);
+		}
+		catch (const std::out_of_range& e)
+		{
+			throw Exception("Unable to find texture handle " + std::to_string(component.textureHandle.id()));
+		}
+
 		entity.assign<ecs::GraphicsComponent>(component);
+	}
+}
+
+void normalizeHandles(
+	ecs::EntityComponentSystem& entityComponentSystem,
+	const std::unordered_map<SkeletonHandle, SkeletonHandle>& normalizedSkeletonHandleMap,
+	logger::ILogger* logger
+)
+{
+	LOG_DEBUG(logger, "Normalizing SkeletonHandles");
+//	std::cout << "normalizedMap size " << normalizedMap.size() << std::endl;
+//	for (const auto& kv : normalizedMap)
+//		{
+//			std::cout << "KV " << kv.first << " " << kv.second << std::endl;
+//		}
+
+	for (auto entity : entityComponentSystem.entitiesWithComponents<ecs::SkeletonComponent>())
+	{
+		auto componentHandle = entity.component<ecs::SkeletonComponent>();
+
+		auto component = *componentHandle;
+//		std::cout << "find in normalized map " << component.modelHandle << std::endl;
+		component.skeletonHandle = normalizedSkeletonHandleMap.at(component.skeletonHandle);
+		entity.assign<ecs::SkeletonComponent>(component);
+	}
+}
+
+void normalizeHandles(
+	ecs::EntityComponentSystem& entityComponentSystem,
+	const std::unordered_map<AnimationHandle, AnimationHandle>& normalizedAnimationHandleMap,
+	logger::ILogger* logger
+)
+{
+	LOG_DEBUG(logger, "Normalizing AnimationHandles");
+//	std::cout << "normalizedMap size " << normalizedMap.size() << std::endl;
+//	for (const auto& kv : normalizedMap)
+//		{
+//			std::cout << "KV " << kv.first << " " << kv.second << std::endl;
+//		}
+
+	for (auto entity : entityComponentSystem.entitiesWithComponents<ecs::AnimationComponent>())
+	{
+		auto componentHandle = entity.component<ecs::AnimationComponent>();
+		componentHandle->bonesHandle.invalidate();
+
+		auto component = *componentHandle;
+//		std::cout << "find in normalized map " << component.modelHandle << std::endl;
+		component.animationHandle = normalizedAnimationHandleMap.at(component.animationHandle);
+		entity.assign<ecs::AnimationComponent>(component);
 	}
 }
 
@@ -793,6 +936,38 @@ void normalizeHandles(
 	}
 }
 
+void normalizeParentEntities(ecs::EntityComponentSystem& entityComponentSystem,	logger::ILogger* logger)
+{
+	LOG_DEBUG(logger, "Normalizing parent entities");
+
+	for (auto entity : entityComponentSystem.entitiesWithComponents<ecs::ParentComponent>())
+	{
+		auto componentHandle = entity.component<ecs::ParentComponent>();
+		auto component = *componentHandle;
+
+		component.entity = entityComponentSystem.get(entityComponentSystem.createId(component.entity.id().index()));
+		entity.assign<ecs::ParentComponent>(component);
+	}
+}
+
+void normalizeChildEntities(ecs::EntityComponentSystem& entityComponentSystem,	logger::ILogger* logger)
+{
+	LOG_DEBUG(logger, "Normalizing child entities");
+
+	for (auto entity : entityComponentSystem.entitiesWithComponents<ecs::ChildrenComponent>())
+	{
+		auto componentHandle = entity.component<ecs::ChildrenComponent>();
+		auto component = *componentHandle;
+
+		for (auto& e : component.children)
+		{
+			e = entityComponentSystem.get(entityComponentSystem.createId(e.id().index()));
+		}
+
+		entity.assign<ecs::ChildrenComponent>(component);
+	}
+}
+
 void normalizeHandles(
 	ecs::EntityComponentSystem& entityComponentSystem,
 	scripting::IScriptingEngine* scriptingEngine,
@@ -804,16 +979,17 @@ void normalizeHandles(
 {
 	LOG_DEBUG(logger, "Re-creating script objects");
 
-	std::cout << "scriptObjectHandleMap size " << scriptObjectHandleMap.size() << std::endl;
-	for (const auto& kv : scriptObjectHandleMap)
-		{
-			std::cout << "KV " << kv.first.get() << " " << kv.second << std::endl;
-		}
+//	std::cout << "scriptObjectHandleMap size " << scriptObjectHandleMap.size() << std::endl;
+//	for (const auto& kv : scriptObjectHandleMap)
+//		{
+//			std::cout << "KV " << kv.first.get() << " " << kv.second << std::endl;
+//		}
 
 	for (auto entity : entityComponentSystem.entitiesWithComponents<ecs::ScriptObjectComponent>())
 	{
 		auto componentHandle = entity.component<ecs::ScriptObjectComponent>();
-		std::cout << "find in normalized map " << componentHandle->scriptObjectHandle.get() << std::endl;
+//		std::cout << "find in normalized map " << componentHandle->scriptObjectHandle.get() << std::endl;
+
 		auto scriptObjectName = scriptObjectHandleMap.at(componentHandle->scriptObjectHandle);
 
 		LOG_DEBUG(logger, "Re-creating script object");
@@ -829,6 +1005,10 @@ void normalizeHandles(
 void Scene::normalizeHandles(
 	const std::unordered_map<physics::CollisionShapeHandle, physics::CollisionShapeHandle>& normalizedCollisionShapeHandleMap,
 	const std::unordered_map<ModelHandle, ModelHandle>& normalizedModelHandleMap,
+	const std::unordered_map<graphics::MeshHandle, graphics::MeshHandle>& normalizedMeshHandleMap,
+	const std::unordered_map<graphics::TextureHandle, graphics::TextureHandle>& normalizedTextureHandleMap,
+	const std::unordered_map<SkeletonHandle, SkeletonHandle>& normalizedSkeletonHandleMap,
+	const std::unordered_map<AnimationHandle, AnimationHandle>& normalizedAnimationHandleMap,
 	const std::unordered_map<graphics::TerrainHandle, graphics::TerrainHandle>& normalizedTerrainHandleMap,
 	const std::unordered_map<std::string, pathfinding::PolygonMeshHandle>& polygonMeshHandleMap,
 	const std::unordered_map<pathfinding::NavigationMeshHandle, pathfinding::NavigationMeshHandle>& normalizedNavigationMeshHandleMap,
@@ -837,10 +1017,16 @@ void Scene::normalizeHandles(
 	)
 {
 	LOG_DEBUG(logger_, "Normalizing handles");
+
 	ice_engine::normalizeHandles(*entityComponentSystem_, normalizedCollisionShapeHandleMap, logger_);
-	ice_engine::normalizeHandles(*entityComponentSystem_, normalizedModelHandleMap, logger_);
+//	ice_engine::normalizeHandles(*entityComponentSystem_, normalizedModelHandleMap, logger_);
+	ice_engine::normalizeHandles(*entityComponentSystem_, normalizedMeshHandleMap, normalizedTextureHandleMap, logger_);
+	ice_engine::normalizeHandles(*entityComponentSystem_, normalizedSkeletonHandleMap, logger_);
+	ice_engine::normalizeHandles(*entityComponentSystem_, normalizedAnimationHandleMap, logger_);
 	ice_engine::normalizeHandles(*entityComponentSystem_, normalizedTerrainHandleMap, logger_);
 	ice_engine::normalizeHandles(*entityComponentSystem_, normalizedNavigationMeshHandleMap, normalizedCrowdHandleMap, logger_);
+	ice_engine::normalizeParentEntities(*entityComponentSystem_, logger_);
+	ice_engine::normalizeChildEntities(*entityComponentSystem_, logger_);
 	ice_engine::normalizeHandles(*entityComponentSystem_, scriptingEngine_, moduleHandle_, executionContextHandle_, scriptObjectHandleMap, logger_);
 	ice_engine::normalizeHandles(*entityComponentSystem_, normalizedCrowdHandleMap, logger_);
 }

@@ -10,7 +10,7 @@
 #include "pathfinding/AgentState.hpp"
 #include "pathfinding/MovementRequestState.hpp"
 
-#include "serialization/SplitMember.hpp"
+#include "serialization/SplitFree.hpp"
 
 namespace boost
 {

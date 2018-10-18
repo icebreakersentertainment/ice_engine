@@ -1,6 +1,8 @@
 #ifndef AGENTPARAMS_H_
 #define AGENTPARAMS_H_
 
+#include "detail/DebugSerializer.hpp"
+
 namespace ice_engine
 {
 namespace pathfinding
@@ -33,6 +35,21 @@ struct AgentParams
 	/// User defined data attached to the agent.
 	//void* userData;
 };
+
+inline std::ostream& operator<<(std::ostream& os, const AgentParams& data)
+{
+    os << "AgentParams("
+		PRINT_TO_STREAM(data, radius)
+		PRINT_DELIMITER() PRINT_TO_STREAM(data, height)
+		PRINT_DELIMITER() PRINT_TO_STREAM(data, maxAcceleration)
+		PRINT_DELIMITER() PRINT_TO_STREAM(data, maxSpeed)
+		PRINT_DELIMITER() PRINT_TO_STREAM(data, collisionQueryRange)
+		PRINT_DELIMITER() PRINT_TO_STREAM(data, pathOptimizationRange)
+		PRINT_DELIMITER() PRINT_TO_STREAM(data, separationWeight)
+		<< ")";
+
+    return os;
+}
 
 }
 }

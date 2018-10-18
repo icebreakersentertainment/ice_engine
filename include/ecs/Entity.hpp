@@ -1,33 +1,37 @@
 #ifndef ICEENGINEENTITY_H_
 #define ICEENGINEENTITY_H_
 
-namespace ice_engine
-{
-namespace ecs
-{
-class Entity;
-}
-}
+#include <boost/static_assert.hpp>
 
 #include <glm/gtx/string_cast.hpp>
 
 #include <entityx/entityx.h>
 
+#include "pathfinding/IPathfindingEngine.hpp"
+
 #include "ecs/GraphicsComponent.hpp"
 #include "ecs/PointLightComponent.hpp"
+#include "ecs/AnimationComponent.hpp"
+#include "ecs/SkeletonComponent.hpp"
 #include "ecs/GraphicsTerrainComponent.hpp"
 #include "ecs/RigidBodyObjectComponent.hpp"
 #include "ecs/GhostObjectComponent.hpp"
 #include "ecs/PositionComponent.hpp"
 #include "ecs/OrientationComponent.hpp"
 #include "ecs/PathfindingAgentComponent.hpp"
+#include "ecs/PathfindingObstacleComponent.hpp"
 #include "ecs/PathfindingCrowdComponent.hpp"
 //#include "ecs/PathfindingComponent.hpp"
 //#include "ecs/ScriptObjectComponent.hpp"
 #include "ecs/DirtyComponent.hpp"
+#include "ecs/ParentBoneAttachmentComponent.hpp"
+
+#include "ModelHandle.hpp"
 
 #include "serialization/std/Bitset.hpp"
 #include "serialization/SplitMember.hpp"
+
+#include "exceptions/RuntimeException.hpp"
 
 namespace ice_engine
 {
@@ -37,12 +41,107 @@ class Scene;
 namespace ecs
 {
 
+class ParentComponent;
+class ChildrenComponent;
+
+class SceneDelegate
+{
+public:
+	SceneDelegate(Scene* scene = nullptr) : scene_(scene)
+	{
+	}
+
+	pathfinding::CrowdHandle createCrowd(const pathfinding::NavigationMeshHandle& navigationMeshHandle, const pathfinding::CrowdConfig& crowdConfig);
+	void destroy(const pathfinding::CrowdHandle& crowdHandle);
+
+	pathfinding::AgentHandle createAgent(const pathfinding::CrowdHandle& crowdHandle, const glm::vec3& position, const pathfinding::AgentParams& agentParams = pathfinding::AgentParams());
+	void destroy(const pathfinding::CrowdHandle& crowdHandle, const pathfinding::AgentHandle& agentHandle);
+
+	physics::RigidBodyObjectHandle createRigidBodyObject(const physics::CollisionShapeHandle& collisionShapeHandle);
+	physics::RigidBodyObjectHandle createRigidBodyObject(
+		const physics::CollisionShapeHandle& collisionShapeHandle,
+		const float32 mass,
+		const float32 friction,
+		const float32 restitution
+	);
+	physics::RigidBodyObjectHandle createRigidBodyObject(
+		const physics::CollisionShapeHandle& collisionShapeHandle,
+		const glm::vec3& position,
+		const glm::quat& orientation,
+		const float32 mass = 1.0f,
+		const float32 friction = 1.0f,
+		const float32 restitution = 1.0f
+	);
+	void destroy(const physics::RigidBodyObjectHandle& rigidBodyObjectHandle);
+	physics::GhostObjectHandle createGhostObject(const physics::CollisionShapeHandle& collisionShapeHandle);
+	physics::GhostObjectHandle createGhostObject(
+		const physics::CollisionShapeHandle& collisionShapeHandle,
+		const glm::vec3& position,
+		const glm::quat& orientation
+	);
+	void destroy(const physics::GhostObjectHandle& ghostObjectHandle);
+
+	graphics::RenderableHandle createRenderable(
+		const ModelHandle& modelHandle,
+		const glm::vec3& position,
+		const glm::quat& orientation,
+		const glm::vec3& scale = glm::vec3(1.0f)
+	);
+	graphics::RenderableHandle createRenderable(
+		const graphics::MeshHandle& meshHandle,
+		const graphics::TextureHandle& textureHandle,
+		const glm::vec3& position,
+		const glm::quat& orientation,
+		const glm::vec3& scale = glm::vec3(1.0f)
+	);
+	void destroy(const graphics::RenderableHandle& renderableHandle);
+
+	graphics::PointLightHandle createPointLight(const glm::vec3& position);
+	void destroy(const graphics::PointLightHandle& pointLightHandle);
+
+	graphics::BonesHandle createBones(const uint32 maxNumberOfBones);
+	void destroy(const graphics::BonesHandle& bonesHandle);
+
+	void attach(const graphics::RenderableHandle& renderableHandle, const graphics::BonesHandle& bonesHandle);
+	void detach(const graphics::RenderableHandle& renderableHandle, const graphics::BonesHandle& bonesHandle);
+
+	void attachBoneAttachment(
+		const graphics::RenderableHandle& renderableHandle,
+		const graphics::BonesHandle& bonesHandle,
+		const glm::ivec4& boneIds,
+		const glm::vec4& boneWeights
+	);
+
+	void attachBoneAttachment(
+		const graphics::RenderableHandle& renderableHandle,
+		const graphics::BonesHandle& bonesHandle,
+		const graphics::MeshHandle meshHandle,
+		const std::string& boneName,
+		const glm::ivec4& boneIds,
+		const glm::vec4& boneWeights
+	);
+
+	void detachBoneAttachment(const graphics::RenderableHandle& renderableHandle);
+
+	graphics::TerrainRenderableHandle createTerrainRenderable(const graphics::TerrainHandle terrainHandle);
+	void destroy(const graphics::TerrainRenderableHandle& terrainRenderableHandle);
+
+	pathfinding::IPathfindingEngine& pathfindingEngine() const;
+
+private:
+	Scene* scene_ = nullptr;
+};
+
 class Entity
 {
 public:
 	Entity() = default;
 
-	Entity(Scene* scene, entityx::Entity entity) : scene_(scene), entity_(entity)
+	Entity(entityx::Entity::Id id) : entity_(nullptr, id)
+	{
+	}
+
+	Entity(Scene* scene, entityx::Entity entity) : scene_(scene), sceneDelegate_({scene}), entity_(entity)
 	{
 	}
 
@@ -68,12 +167,13 @@ public:
 
       bool valid() const
       {
-    	  return entity_.valid();
+    	  return entity_.valid() && scene_ != nullptr;
       }
 
       void invalidate()
       {
          	  entity_.invalidate();
+         	 scene_ = nullptr;
       }
 
       Scene* scene() const
@@ -83,21 +183,78 @@ public:
 
       entityx::Entity::Id id() const { return entity_.id(); }
 
+      template <typename C>
+      typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<ParentComponent>>::value, entityx::ComponentHandle<C>>::type
+      assign(const ParentComponent& parentComponent);
+
         template <typename C, typename ... Args>
         typename std::enable_if<
 			!std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<GraphicsComponent>>::value
+			&& !std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<AnimationComponent>>::value
 			&& !std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<PointLightComponent>>::value
 			&& !std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<GraphicsTerrainComponent>>::value
 			&& !std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<RigidBodyObjectComponent>>::value
 			&& !std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<GhostObjectComponent>>::value
 			&& !std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<PathfindingCrowdComponent>>::value
 			&& !std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<PathfindingAgentComponent>>::value
+			&& !std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<PathfindingObstacleComponent>>::value
+			&& !std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<ParentComponent>>::value
+			&& !std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<ChildrenComponent>>::value
+			&& !std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<ParentBoneAttachmentComponent>>::value
 			, entityx::ComponentHandle<C>>::type
         assign(Args && ... args)
 		{
         	//std::cout << entity_ << std::endl;
           return entity_.assign<C>(std::forward<Args>(args) ...);
         }
+
+        template <typename C, typename ... Args>
+        typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<ParentComponent>>::value, entityx::ComponentHandle<C>>::type
+		assign(Args && ... args);
+//        {
+//        	//static_assert(0);
+////        	BOOST_STATIC_ASSERT(0);
+//        	return {};
+//        }
+
+        template <typename C, typename ... Args>
+        typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<ChildrenComponent>>::value, entityx::ComponentHandle<C>>::type
+		assign(Args && ... args);
+//        {
+//        	//static_assert(0);
+//        	//        	BOOST_STATIC_ASSERT(0);
+//			return {};
+//        }
+
+        template <typename C, typename ... Args>
+        typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<ParentBoneAttachmentComponent>>::value, entityx::ComponentHandle<C>>::type
+		assign(Args && ... args);
+//        {
+//        	//static_assert(0);
+//        	//        	BOOST_STATIC_ASSERT(0);
+//			return {};
+//        }
+
+//        template <typename C, typename ... Args>
+//        typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<ParentBoneAttachmentComponent>>::value, entityx::ComponentHandle<C>>::type
+//		assign(Args & ... args);
+//        {
+//        	//static_assert(0);
+//        	//        	BOOST_STATIC_ASSERT(0);
+//			return {};
+//        }
+
+//        template <typename C, typename ... Args>
+//        typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<ChildrenComponent>>::value, entityx::ComponentHandle<C>>::type
+//        assign();
+//
+//        template <typename C, typename ... Args>
+//        typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<ChildrenComponent>>::value, entityx::ComponentHandle<C>>::type
+//        assign(std::vector<Entity> children);
+
+//        template <typename C, typename ... Args>
+//        typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<ParentBoneAttachmentComponent>>::value, entityx::ComponentHandle<C>>::type
+//        assign(std::string&& boneName = {},  glm::ivec4&& boneIds = {}, glm::vec4&& boneWeights = {});
 
         template <typename C, typename ... Args>
         typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<GraphicsComponent>>::value, entityx::ComponentHandle<C>>::type
@@ -110,7 +267,7 @@ public:
         	if (entity_.has_component<C>())
         	{
         		auto c = entity_.component<C>();
-        		if (c->renderableHandle) scene_->destroy(c->renderableHandle);
+        		if (c->renderableHandle) sceneDelegate_.destroy(c->renderableHandle);
         	}
 
         	std::cout << "GCGCGCGC" << std::endl;
@@ -120,7 +277,46 @@ public:
         	{
         		auto pc = entity_.component<PositionComponent>();
         		auto oc = entity_.component<OrientationComponent>();
-        		componentHandle->renderableHandle = scene_->createRenderable(componentHandle->modelHandle, pc->position, oc->orientation, componentHandle->scale);
+        		componentHandle->renderableHandle = sceneDelegate_.createRenderable(componentHandle->meshHandle, componentHandle->textureHandle, pc->position, oc->orientation, componentHandle->scale);
+        	}
+
+        	return componentHandle;
+        }
+
+        template <typename C, typename ... Args>
+        typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<AnimationComponent>>::value, entityx::ComponentHandle<C>>::type
+        assign(Args && ... args)
+		{
+        	std::cout << entity_ << std::endl;
+
+        	entityx::ComponentHandle<C> componentHandle;
+
+        	auto gc = entity_.component<ecs::GraphicsComponent>();
+
+        	std::cout << "ACACACAC 1" << std::endl;
+        	if (!gc) throw RuntimeException("cannot assign animation component - graphics component does not exist");
+        	std::cout << "ACACACAC 2" << std::endl;
+        	if (!gc->renderableHandle) throw RuntimeException("cannot assign animation component - renderableHandle is not valid");
+        	std::cout << "ACACACAC 3" << std::endl;
+
+        	if (entity_.has_component<C>())
+        	{
+        		auto c = entity_.component<C>();
+        		if (c->bonesHandle)
+				{
+        			std::cout << "ACACACAC 4" << std::endl;
+        			sceneDelegate_.detach(gc->renderableHandle, c->bonesHandle);
+        			sceneDelegate_.destroy(c->bonesHandle);
+				}
+        	}
+
+        	std::cout << "ACACACAC" << std::endl;
+        	componentHandle = entity_.assign<C>(std::forward<Args>(args) ...);
+
+        	if (!componentHandle->bonesHandle)
+        	{
+        		componentHandle->bonesHandle = sceneDelegate_.createBones(100);
+        		sceneDelegate_.attach(gc->renderableHandle, componentHandle->bonesHandle);
         	}
 
         	return componentHandle;
@@ -137,7 +333,7 @@ public:
         	if (entity_.has_component<C>())
         	{
         		auto c = entity_.component<C>();
-        		if (c->pointLightHandle) scene_->destroy(c->pointLightHandle);
+        		if (c->pointLightHandle) sceneDelegate_.destroy(c->pointLightHandle);
         	}
 
         	std::cout << "PL" << std::endl;
@@ -146,7 +342,7 @@ public:
         	if (!componentHandle->pointLightHandle)
         	{
         		auto pc = entity_.component<PositionComponent>();
-        		componentHandle->pointLightHandle = scene_->createPointLight(pc->position);
+        		componentHandle->pointLightHandle = sceneDelegate_.createPointLight(pc->position);
         	}
 
         	return componentHandle;
@@ -163,7 +359,7 @@ public:
         	if (entity_.has_component<C>())
         	{
         		auto c = entity_.component<C>();
-        		if (c->terrainRenderableHandle) scene_->destroy(c->terrainRenderableHandle);
+        		if (c->terrainRenderableHandle) sceneDelegate_.destroy(c->terrainRenderableHandle);
         	}
 
         	std::cout << "GTC" << std::endl;
@@ -172,7 +368,7 @@ public:
         	if (!componentHandle->terrainRenderableHandle)
         	{
         		auto pc = entity_.component<PositionComponent>();
-        		componentHandle->terrainRenderableHandle = scene_->createTerrainRenderable(
+        		componentHandle->terrainRenderableHandle = sceneDelegate_.createTerrainRenderable(
         			componentHandle->terrainHandle
 				);
         	}
@@ -191,7 +387,7 @@ public:
         	if (entity_.has_component<C>())
         	{
         		auto c = entity_.component<C>();
-        		if (c->rigidBodyObjectHandle) scene_->destroy(c->rigidBodyObjectHandle);
+        		if (c->rigidBodyObjectHandle) sceneDelegate_.destroy(c->rigidBodyObjectHandle);
         	}
 
         	std::cout << "PCPCPCPC" << std::endl;
@@ -202,7 +398,7 @@ public:
         		auto pc = entity_.component<PositionComponent>();
 				auto oc = entity_.component<OrientationComponent>();
 
-        		componentHandle->rigidBodyObjectHandle = scene_->createRigidBodyObject(
+        		componentHandle->rigidBodyObjectHandle = sceneDelegate_.createRigidBodyObject(
 					componentHandle->collisionShapeHandle,
 					pc->position,
 					oc->orientation,
@@ -236,7 +432,7 @@ public:
         	if (entity_.has_component<C>())
         	{
         		auto c = entity_.component<C>();
-        		if (c->ghostObjectHandle) scene_->destroy(c->ghostObjectHandle);
+        		if (c->ghostObjectHandle) sceneDelegate_.destroy(c->ghostObjectHandle);
         	}
 
         	std::cout << "GHC" << std::endl;
@@ -247,7 +443,7 @@ public:
         		auto pc = entity_.component<PositionComponent>();
         		        		auto oc = entity_.component<OrientationComponent>();
 
-        		componentHandle->ghostObjectHandle = scene_->createGhostObject(
+        		componentHandle->ghostObjectHandle = sceneDelegate_.createGhostObject(
 					componentHandle->collisionShapeHandle,
 					pc->position,
 					oc->orientation
@@ -278,7 +474,7 @@ public:
         	if (entity_.has_component<C>())
         	{
         		auto c = entity_.component<C>();
-        		if (c->crowdHandle) scene_->destroy(c->crowdHandle);
+        		if (c->crowdHandle) sceneDelegate_.destroy(c->crowdHandle);
         	}
 
         	std::cout << "CC" << std::endl;
@@ -286,11 +482,14 @@ public:
 
         	if (!componentHandle->crowdHandle)
         	{
+        		std::cout << "e: "<< componentHandle->crowdConfig.maxAgents << std::endl;
+
         		auto pc = entity_.component<PositionComponent>();
 				auto oc = entity_.component<OrientationComponent>();
 
-        		componentHandle->crowdHandle = scene_->createCrowd(
-					componentHandle->navigationMeshHandle
+        		componentHandle->crowdHandle = sceneDelegate_.createCrowd(
+					componentHandle->navigationMeshHandle,
+					componentHandle->crowdConfig
 				);
         	}
 
@@ -308,7 +507,7 @@ public:
         	if (entity_.has_component<C>())
         	{
         		auto c = entity_.component<C>();
-        		if (c->agentHandle) scene_->destroy(c->crowdHandle, c->agentHandle);
+        		if (c->agentHandle) sceneDelegate_.destroy(c->crowdHandle, c->agentHandle);
         	}
 
         	std::cout << "PAC" << std::endl;
@@ -320,12 +519,12 @@ public:
 				auto oc = entity_.component<OrientationComponent>();
 
 				std::cout << "PAC: " << glm::to_string(pc->position) << std::endl;
-        		componentHandle->agentHandle = scene_->createAgent(
+        		componentHandle->agentHandle = sceneDelegate_.createAgent(
 					componentHandle->crowdHandle,
 					pc->position,
 					componentHandle->agentParams
 				);
-
+        		std::cout << "PAC: " << glm::to_string(pc->position) << std::endl;
         		if (entity_.has_component<DirtyComponent>())
         		{
         			auto dirtyComponent = entity_.component<DirtyComponent>();
@@ -335,6 +534,38 @@ public:
         		{
         			entity_.assign<DirtyComponent>(DirtyFlags::DIRTY_SOURCE_SCRIPT | DirtyFlags::DIRTY_PATHFINDING_AGENT);
         		}
+        	}
+
+        	return componentHandle;
+        }
+
+        template <typename C, typename ... Args>
+        typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<PathfindingObstacleComponent>>::value, entityx::ComponentHandle<C>>::type
+        assign(Args && ... args)
+		{
+        		std::cout << entity_ << std::endl;
+
+        	entityx::ComponentHandle<C> componentHandle;
+
+        	if (entity_.has_component<C>())
+        	{
+        		auto c = entity_.component<C>();
+        		if (c->obstacleHandle) sceneDelegate_.pathfindingEngine().destroy(c->polygonMeshHandle, c->obstacleHandle);
+        	}
+
+        	std::cout << "POC" << std::endl;
+        	componentHandle = entity_.assign<C>(std::forward<Args>(args) ...);
+
+        	if (!componentHandle->obstacleHandle)
+        	{
+        		auto pc = entity_.component<PositionComponent>();
+
+        		componentHandle->obstacleHandle = sceneDelegate_.pathfindingEngine().createObstacle(
+					componentHandle->polygonMeshHandle,
+					pc->position,
+					componentHandle->radius,
+					componentHandle->height
+				);
         	}
 
         	return componentHandle;
@@ -399,12 +630,15 @@ public:
 
 private:
     entityx::Entity entity_;
-    Scene* scene_;
+    SceneDelegate sceneDelegate_;
+    Scene* scene_ = nullptr;
 };
 
 }
 }
 
-#include "Scene.hpp"
+#include "ecs/ParentComponent.hpp"
+#include "ecs/ChildrenComponent.hpp"
+//#include "Scene.hpp"
 
 #endif /* ICEENGINEENTITY_H_ */

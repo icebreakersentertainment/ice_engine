@@ -12,6 +12,8 @@
 #include "graphics/IImage.hpp"
 #include "physics/IImage.hpp"
 
+#include "exceptions/RuntimeException.hpp"
+
 namespace ice_engine
 {
 
@@ -135,7 +137,7 @@ private:
 
 			if (bitmap == nullptr)
 			{
-				throw std::runtime_error("Unable to load image data");
+				throw RuntimeException("Unable to load image data");
 			}
 
 			FIBITMAP* temp = bitmap;

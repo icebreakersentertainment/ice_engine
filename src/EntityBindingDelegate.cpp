@@ -6,7 +6,6 @@
 #include "Platform.hpp"
 #include "Types.hpp"
 
-#include "ModelHandle.hpp"
 #include "Scene.hpp"
 
 #include "graphics/IGraphicsEngine.hpp"
@@ -32,7 +31,10 @@ EntityBindingDelegate::EntityBindingDelegate(logger::ILogger* logger, scripting:
 
 void EntityBindingDelegate::bind()
 {
-	scriptingEngine_->registerObjectType("Id", sizeof(entityx::Entity::Id), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<entityx::Entity::Id>());
+	scriptingEngine_->registerObjectType("Id", sizeof(entityx::Entity::Id), asOBJ_VALUE | asOBJ_POD | asOBJ_APP_CLASS_ALLINTS | asGetTypeTraits<entityx::Entity::Id>());
+//	scriptingEngine_->registerObjectBehaviour("Id", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(DefaultConstructor<entityx::Entity::Id>), asCALL_CDECL_OBJFIRST);
+//	scriptingEngine_->registerObjectBehaviour("Id", asBEHAVE_CONSTRUCT, "void f(const Id& in)", asFUNCTION(CopyConstructor<entityx::Entity::Id>), asCALL_CDECL_OBJFIRST);
+//	scriptingEngine_->registerObjectBehaviour("Id", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DefaultDestructor<entityx::Entity::Id>), asCALL_CDECL_OBJFIRST);
 	scriptingEngine_->registerClassMethod("Id", "uint64 id() const", asMETHODPR(entityx::Entity::Id, id, () const, uint64));
 	scriptingEngine_->registerClassMethod("Id", "uint32 index() const", asMETHODPR(entityx::Entity::Id, index, () const, uint32));
 	scriptingEngine_->registerClassMethod("Id", "uint32 version() const", asMETHODPR(entityx::Entity::Id, version, () const, uint32));
@@ -51,6 +53,8 @@ void EntityBindingDelegate::bind()
 	scriptingEngine_->registerClassMethod("Entity", "bool opEquals(const Entity& in) const", asMETHODPR(ecs::Entity, operator==, (const ecs::Entity&) const, bool));
 	scriptingEngine_->registerClassMethod("Entity", "Scene@ scene() const", asMETHOD(ecs::Entity, scene));
 	
+	registerVectorBindings<ecs::Entity>(scriptingEngine_, "vectorEntity", "Entity");
+
 	registerComponent<ecs::PositionComponent, glm::vec3>(
 		scriptingEngine_,
 		"PositionComponent",
@@ -104,17 +108,19 @@ void EntityBindingDelegate::bind()
 	registerEntityComponentAssignMethodNoForward<ecs::RigidBodyObjectComponent, physics::CollisionShapeHandle>(scriptingEngine_, "RigidBodyObjectComponent", "CollisionShapeHandle");
 	registerEntityComponentAssignMethodNoForward<ecs::RigidBodyObjectComponent, physics::CollisionShapeHandle, float32, float32, float32>(scriptingEngine_, "RigidBodyObjectComponent", "CollisionShapeHandle, float = 1.0f, float = 1.0f, float = 1.0f");
 
-	registerComponent<ecs::PathfindingCrowdComponent, pathfinding::NavigationMeshHandle, pathfinding::CrowdHandle>(
+	registerComponent<ecs::PathfindingCrowdComponent, pathfinding::NavigationMeshHandle, pathfinding::CrowdConfig, pathfinding::CrowdHandle>(
 				scriptingEngine_,
 				"PathfindingCrowdComponent",
 				{
 					{"NavigationMeshHandle navigationMeshHandle", asOFFSET(ecs::PathfindingCrowdComponent, navigationMeshHandle)},
+					{"CrowdConfig crowdConfig", asOFFSET(ecs::PathfindingCrowdComponent, crowdConfig)},
 					{"CrowdHandle crowdHandle", asOFFSET(ecs::PathfindingCrowdComponent, crowdHandle)}
 
 				},
-				"NavigationMeshHandle, CrowdHandle"
+				"NavigationMeshHandle, CrowdConfig, CrowdHandle"
 			);
 		registerEntityComponentAssignMethodNoForward<ecs::PathfindingCrowdComponent, pathfinding::NavigationMeshHandle>(scriptingEngine_, "PathfindingCrowdComponent", "NavigationMeshHandle");
+		registerEntityComponentAssignMethodNoForward<ecs::PathfindingCrowdComponent, pathfinding::NavigationMeshHandle, pathfinding::CrowdConfig>(scriptingEngine_, "PathfindingCrowdComponent", "NavigationMeshHandle, CrowdConfig");
 
 	registerComponent<ecs::PathfindingAgentComponent, pathfinding::CrowdHandle, pathfinding::AgentHandle, pathfinding::AgentParams, glm::vec3>(
 		scriptingEngine_,
@@ -129,19 +135,50 @@ void EntityBindingDelegate::bind()
 		},
 		"CrowdHandle, AgentHandle, AgentParams = AgentParams(), vec3 = vec3()"
 	);
-	registerEntityComponentAssignMethodNoForward<ecs::PathfindingAgentComponent, pathfinding::CrowdHandle, pathfinding::AgentParams, glm::vec3>(scriptingEngine_, "PathfindingAgentComponent", "CrowdHandle, AgentParams, vec3");
+//	registerEntityComponentAssignMethodNoForward2<ecs::PathfindingAgentComponent, pathfinding::CrowdHandle, pathfinding::AgentParams, glm::vec3>(scriptingEngine_, "PathfindingAgentComponent", "CrowdHandle, AgentParams, vec3");
+	registerEntityComponentAssignMethodNoForward<ecs::PathfindingAgentComponent, const pathfinding::CrowdHandle&, const pathfinding::AgentParams&, const glm::vec3&>(scriptingEngine_, "PathfindingAgentComponent", "const CrowdHandle& in, const AgentParams& in, const vec3& in");
 
-	registerComponent<ecs::GraphicsComponent, ModelHandle, glm::vec3, graphics::RenderableHandle>(
+	registerComponent<ecs::PathfindingObstacleComponent, pathfinding::PolygonMeshHandle, float32, float32, pathfinding::ObstacleHandle>(
+		scriptingEngine_,
+		"PathfindingObstacleComponent",
+		{
+			{"PolygonMeshHandle polygonMeshHandle", asOFFSET(ecs::PathfindingObstacleComponent, polygonMeshHandle)},
+			{"float radius", asOFFSET(ecs::PathfindingObstacleComponent, radius)},
+			{"float height", asOFFSET(ecs::PathfindingObstacleComponent, height)},
+			{"ObstacleHandle obstacleHandle", asOFFSET(ecs::PathfindingObstacleComponent, obstacleHandle)},
+		},
+		"PolygonMeshHandle, float = 0.0f, float = 0.0f, ObstacleHandle = ObstacleHandle()"
+	);
+
+	registerComponent<ecs::GraphicsComponent, graphics::MeshHandle, graphics::TextureHandle, glm::vec3, graphics::RenderableHandle>(
 		scriptingEngine_,
 		"GraphicsComponent",
 		{
-			{"ModelHandle modelHandle", asOFFSET(ecs::GraphicsComponent, modelHandle)},
+			{"MeshHandle meshHandle", asOFFSET(ecs::GraphicsComponent, meshHandle)},
+			{"TextureHandle textureHandle", asOFFSET(ecs::GraphicsComponent, textureHandle)},
 			{"vec3 scale", asOFFSET(ecs::GraphicsComponent, scale)},
 			{"RenderableHandle renderableHandle", asOFFSET(ecs::GraphicsComponent, renderableHandle)}
 		}
 	);
-	registerEntityComponentAssignMethodNoForward<ecs::GraphicsComponent, ModelHandle>(scriptingEngine_, "GraphicsComponent", "ModelHandle");
-	registerEntityComponentAssignMethodNoForward<ecs::GraphicsComponent, ModelHandle, glm::vec3>(scriptingEngine_, "GraphicsComponent", "ModelHandle, vec3");
+	registerEntityComponentAssignMethodNoForward<ecs::GraphicsComponent, graphics::MeshHandle>(scriptingEngine_, "GraphicsComponent", "MeshHandle");
+	registerEntityComponentAssignMethodNoForward<ecs::GraphicsComponent, graphics::MeshHandle, graphics::TextureHandle>(scriptingEngine_, "GraphicsComponent", "MeshHandle, TextureHandle");
+	registerEntityComponentAssignMethodNoForward<ecs::GraphicsComponent, graphics::MeshHandle, graphics::TextureHandle, glm::vec3>(scriptingEngine_, "GraphicsComponent", "MeshHandle, TextureHandle, vec3");
+
+	registerComponent<ecs::AnimationComponent, AnimationHandle>(
+		scriptingEngine_,
+		"AnimationComponent",
+		{
+			{"AnimationHandle animationHandle", asOFFSET(ecs::AnimationComponent, animationHandle)}
+		}
+	);
+
+	registerComponent<ecs::SkeletonComponent, SkeletonHandle>(
+		scriptingEngine_,
+		"SkeletonComponent",
+		{
+			{"SkeletonHandle skeletonHandle", asOFFSET(ecs::SkeletonComponent, skeletonHandle)}
+		}
+	);
 
 	registerComponent<ecs::GraphicsTerrainComponent, graphics::TerrainHandle, graphics::TerrainRenderableHandle>(
 		scriptingEngine_,
@@ -168,6 +205,7 @@ void EntityBindingDelegate::bind()
 	scriptingEngine_->registerEnum("DirtyFlags");
 	scriptingEngine_->registerEnumValue("DirtyFlags", "DIRTY_SOURCE_SCRIPT", ecs::DirtyFlags::DIRTY_SOURCE_SCRIPT);
 	scriptingEngine_->registerEnumValue("DirtyFlags", "DIRTY_POSITION", ecs::DirtyFlags::DIRTY_POSITION);
+	scriptingEngine_->registerEnumValue("DirtyFlags", "DIRTY_ORIENTATION", ecs::DirtyFlags::DIRTY_ORIENTATION);
 	registerComponent<ecs::DirtyComponent, uint16>(
 		scriptingEngine_,
 		"DirtyComponent",
@@ -176,6 +214,37 @@ void EntityBindingDelegate::bind()
 		},
 		"uint16"
 	);
+
+	registerComponent<ecs::ParentComponent>(
+			scriptingEngine_,
+			"ParentComponent",
+			{
+				{"Entity entity", asOFFSET(ecs::ParentComponent, entity)}
+			}
+		);
+	// for some reason on Linux using the no forward version causes the entity to be invalid
+	registerEntityComponentAssignMethod<ecs::ParentComponent, ecs::Entity>(scriptingEngine_, "ParentComponent", "Entity");
+
+	registerComponent<ecs::ChildrenComponent, std::vector<ecs::Entity>>(
+			scriptingEngine_,
+			"ChildrenComponent",
+			{
+				{"vectorEntity children", asOFFSET(ecs::ChildrenComponent, children)}
+			},
+			"vectorEntity"
+		);
+
+	registerComponent<ecs::ParentBoneAttachmentComponent, std::string, glm::ivec4, glm::vec4>(
+			scriptingEngine_,
+			"ParentBoneAttachmentComponent",
+			{
+				{"string boneName", asOFFSET(ecs::ParentBoneAttachmentComponent, boneName)},
+				{"ivec4 boneIds", asOFFSET(ecs::ParentBoneAttachmentComponent, boneIds)},
+				{"vec4 boneWeights", asOFFSET(ecs::ParentBoneAttachmentComponent, boneWeights)}
+			},
+			"string, ivec4, vec4"
+		);
+	registerEntityComponentAssignMethodNoForward<ecs::ParentBoneAttachmentComponent, std::string>(scriptingEngine_, "ParentBoneAttachmentComponent", "string");
 
 	registerComponent<ecs::PersistableComponent>(
 		scriptingEngine_,

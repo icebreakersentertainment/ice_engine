@@ -1,5 +1,5 @@
-#ifndef BONE_H_
-#define BONE_H_
+#ifndef GBONE_H_
+#define GBONE_H_
 
 #include <string>
 

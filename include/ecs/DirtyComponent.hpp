@@ -20,6 +20,8 @@ enum DirtyFlags : uint16
 	DIRTY_RIGID_BODY_OBJECT			= 1 << 6,
 	DIRTY_GHOST_OBJECT				= 1 << 7,
 	DIRTY_PATHFINDING_AGENT			= 1 << 8,
+	DIRTY_AGENT_STATE				= 1 << 9,
+	DIRTY_MOVEMENT_REQUEST_STATE	= 1 << 10,
 };
 
 struct DirtyComponent

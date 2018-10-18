@@ -1,5 +1,5 @@
-#ifndef VERTEXBONEDATA_H_
-#define VERTEXBONEDATA_H_
+#ifndef gVERTEXBONEDATA_H_
+#define gVERTEXBONEDATA_H_
 
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>

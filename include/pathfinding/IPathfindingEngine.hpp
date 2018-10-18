@@ -16,9 +16,11 @@
 #include "pathfinding/PolygonMeshHandle.hpp"
 #include "pathfinding/NavigationMeshHandle.hpp"
 #include "pathfinding/AgentHandle.hpp"
+#include "pathfinding/ObstacleHandle.hpp"
 #include "pathfinding/CrowdHandle.hpp"
 #include "pathfinding/PolygonMeshConfig.hpp"
 #include "pathfinding/NavigationMeshConfig.hpp"
+#include "pathfinding/CrowdConfig.hpp"
 #include "pathfinding/AgentParams.hpp"
 #include "pathfinding/AgentState.hpp"
 #include "pathfinding/MovementRequestState.hpp"
@@ -55,10 +57,13 @@ public:
 	virtual PolygonMeshHandle createPolygonMesh(const ITerrain* terrain, const PolygonMeshConfig& polygonMeshConfig = PolygonMeshConfig()) = 0;
 	virtual void destroy(const PolygonMeshHandle& polygonMeshHandle) = 0;
 
+	virtual ObstacleHandle createObstacle(const PolygonMeshHandle& polygonMeshHandle, const glm::vec3& position, const float32 radius, const float32 height) = 0;
+	virtual void destroy(const PolygonMeshHandle& polygonMeshHandle, const ObstacleHandle& obstacleHandle) = 0;
+
 	virtual NavigationMeshHandle createNavigationMesh(const PolygonMeshHandle& polygonMeshHandle, const NavigationMeshConfig& navigationMeshConfig = NavigationMeshConfig()) = 0;
 	virtual void destroy(const NavigationMeshHandle& navigationMeshHandle) = 0;
 	
-	virtual CrowdHandle createCrowd(const PathfindingSceneHandle& pathfindingSceneHandle, const NavigationMeshHandle& navigationMeshHandle) = 0;
+	virtual CrowdHandle createCrowd(const PathfindingSceneHandle& pathfindingSceneHandle, const NavigationMeshHandle& navigationMeshHandle, const CrowdConfig& crowdConfig) = 0;
 	virtual void destroy(const PathfindingSceneHandle& pathfindingSceneHandle, const CrowdHandle& crowdHandle) = 0;
 	
 	virtual AgentHandle createAgent(
@@ -73,11 +78,25 @@ public:
 	) = 0;
 	virtual void destroy(const PathfindingSceneHandle& pathfindingSceneHandle, const CrowdHandle& crowdHandle, const AgentHandle& agentHandle) = 0;
 	
+//	virtual ObstacleHandle createBoxObstacle(
+//		const PolygonMeshHandle& polygonMeshHandle,
+//		const glm::vec3& position,
+//		const glm::vec3& dimensions,
+//		const float32 yRadians = 0.0f
+//	) = 0;
+//	virtual void destroy(const PolygonMeshHandle& polygonMeshHandle, const ObstacleHandle& obstacleHandle) = 0;
+
 	virtual void requestMoveTarget(
 		const PathfindingSceneHandle& pathfindingSceneHandle,
 		const CrowdHandle& crowdHandle,
 		const AgentHandle& agentHandle,
 		const glm::vec3& position
+	) = 0;
+
+	virtual void resetMoveTarget(
+		const PathfindingSceneHandle& pathfindingSceneHandle,
+		const CrowdHandle& crowdHandle,
+		const AgentHandle& agentHandle
 	) = 0;
 	
 	virtual void requestMoveVelocity(

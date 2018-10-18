@@ -16,22 +16,24 @@ struct GraphicsTerrainComponent
 	GraphicsTerrainComponent() = default;
 	
 	GraphicsTerrainComponent(
-		graphics::TerrainHandle&& terrainHandle
+		graphics::TerrainHandle terrainHandle
 	)
-		: terrainHandle(std::forward<graphics::TerrainHandle>(terrainHandle))
+		: terrainHandle(terrainHandle)
 	{
 	};
 
 
 	GraphicsTerrainComponent(
-		graphics::TerrainHandle&& terrainHandle,
-		graphics::TerrainRenderableHandle&& terrainRenderableHandle
+		graphics::TerrainHandle terrainHandle,
+		graphics::TerrainRenderableHandle terrainRenderableHandle
 	)
-		: terrainRenderableHandle(std::forward<graphics::TerrainRenderableHandle>(terrainRenderableHandle)),
-		  terrainHandle(std::forward<graphics::TerrainHandle>(terrainHandle))
+		: terrainRenderableHandle(terrainRenderableHandle),
+		  terrainHandle(terrainHandle)
 	{
 	};
 	
+	static uint8 id()  { return 1; }
+
 	graphics::TerrainHandle terrainHandle;
 	graphics::TerrainRenderableHandle terrainRenderableHandle;
 };

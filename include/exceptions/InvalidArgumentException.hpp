@@ -6,7 +6,7 @@
 namespace ice_engine
 {
 
-class InvalidArgumentException : public Exception
+struct InvalidArgumentException : virtual Exception
 {
 	using Exception::Exception;
 };

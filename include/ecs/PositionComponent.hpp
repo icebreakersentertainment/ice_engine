@@ -6,6 +6,8 @@
 
 #include "serialization/glm/Vec3.hpp"
 
+#include "Types.hpp"
+
 namespace ice_engine
 {
 namespace ecs
@@ -18,7 +20,9 @@ struct PositionComponent
 	PositionComponent(glm::vec3 position) : position(position)
 	{
 	};
-	
+
+	static uint8 id() { return 3; }
+
 	glm::vec3 position;
 };
 

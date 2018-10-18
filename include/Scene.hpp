@@ -10,6 +10,8 @@
 
 #include "Types.hpp"
 
+#include "exceptions/Exception.hpp"
+
 #include "SceneStatistics.hpp"
 
 #include "ModelHandle.hpp"
@@ -67,10 +69,10 @@ namespace ice_engine
 {
 
 //class GameEngine;
-namespace ecs
-{
-class EntityComponentSystem;
-}
+//namespace ecs
+//{
+//class EntityComponentSystem;
+//}
 
 class EntityComponentSystemEventListener;
 
@@ -104,7 +106,7 @@ public:
 	void createResources(const ecs::Entity& entity);
 	void destroyResources(const ecs::Entity& entity);
 
-	pathfinding::CrowdHandle createCrowd(const pathfinding::NavigationMeshHandle& navigationMeshHandle);
+	pathfinding::CrowdHandle createCrowd(const pathfinding::NavigationMeshHandle& navigationMeshHandle, const pathfinding::CrowdConfig& crowdConfig);
 	void destroy(const pathfinding::CrowdHandle& crowdHandle);
 	
 	pathfinding::AgentHandle createAgent(const pathfinding::CrowdHandle& crowdHandle, const glm::vec3& position, const pathfinding::AgentParams& agentParams = pathfinding::AgentParams());
@@ -115,6 +117,11 @@ public:
 		const pathfinding::AgentHandle& agentHandle,
 		const glm::vec3& position
 	);
+
+	void resetMoveTarget(const pathfinding::CrowdHandle& crowdHandle, const pathfinding::AgentHandle& agentHandle)
+	{
+		pathfindingEngine_->resetMoveTarget(pathfindingSceneHandle_, crowdHandle, agentHandle);
+	}
 	
 	void requestMoveVelocity(
 		const pathfinding::CrowdHandle& crowdHandle,
@@ -168,6 +175,53 @@ public:
 	graphics::PointLightHandle createPointLight(const glm::vec3& position);
 	void destroy(const graphics::PointLightHandle& pointLightHandle);
 	
+	graphics::BonesHandle createBones(const uint32 maxNumberOfBones)
+	{
+		return graphicsEngine_->createBones(maxNumberOfBones);
+	}
+
+	void destroy(const graphics::BonesHandle& bonesHandle)
+	{
+		graphicsEngine_->destroy(bonesHandle);
+	}
+
+	void attach(const graphics::RenderableHandle& renderableHandle, const graphics::BonesHandle& bonesHandle)
+	{
+		graphicsEngine_->attach(renderSceneHandle_, renderableHandle, bonesHandle);
+	}
+
+	void detach(const graphics::RenderableHandle& renderableHandle, const graphics::BonesHandle& bonesHandle)
+	{
+		graphicsEngine_->detach(renderSceneHandle_, renderableHandle, bonesHandle);
+	}
+
+	void attachBoneAttachment(
+		const graphics::RenderableHandle& renderableHandle,
+		const graphics::BonesHandle& bonesHandle,
+		const glm::ivec4& boneIds,
+		const glm::vec4& boneWeights
+	)
+	{
+		graphicsEngine_->attachBoneAttachment(renderSceneHandle_, renderableHandle, bonesHandle, boneIds, boneWeights);
+	}
+
+	void attachBoneAttachment(
+		const graphics::RenderableHandle& renderableHandle,
+		const graphics::BonesHandle& bonesHandle,
+		const graphics::MeshHandle meshHandle,
+		const std::string& boneName,
+		const glm::ivec4& boneIds,
+		const glm::vec4& boneWeights
+	)
+	{
+		const auto boneId = gameEngine_->getBoneId(meshHandle, boneName);
+		graphicsEngine_->attachBoneAttachment(renderSceneHandle_, renderableHandle, bonesHandle, {boneId,0,0,0}, {1,0,0,0});
+	}
+
+	void detachBoneAttachment(const graphics::RenderableHandle& renderableHandle)
+	{
+		graphicsEngine_->detachBoneAttachment(renderSceneHandle_, renderableHandle);
+	}
 	
 	graphics::TerrainRenderableHandle createTerrainRenderable(const graphics::TerrainHandle terrainHandle)
 	{
@@ -191,6 +245,11 @@ public:
 		return terrainPtr;
 	}
 	
+	pathfinding::IPathfindingEngine& pathfindingEngine() const
+	{
+		return *gameEngine_->getPathfindingEngine();
+	}
+
 	template <typename ... C>
 	void entitiesWithComponents(void* object)
 	{
@@ -198,7 +257,7 @@ public:
 
 		auto scriptFunctionHandleWrapper = ScriptFunctionHandleWrapper(scriptingEngine_, scriptFunctionHandle);
 
-		for (auto entity : entityComponentSystem_->entitiesWithComponents<C ...>())
+		for (auto entity : entityComponentSystem_->template entitiesWithComponents<C ...>())
 		{
 			scripting::ParameterList params;
 			params.add(entity);
@@ -214,7 +273,7 @@ public:
 
 		auto scriptFunctionHandleWrapper = ScriptFunctionHandleWrapper(scriptingEngine_, scriptFunctionHandle);
 
-		for (const auto entity : const_cast<EntityComponentSystem*>(entityComponentSystem_)->entities_.entities_with_components<C ...>())
+		for (const auto entity : const_cast<ecs::EntityComponentSystem*>(entityComponentSystem_)->entities_.template entities_with_components<C ...>())
 		{
 			scripting::ParameterList params;
 			params.add(entity);
@@ -248,6 +307,10 @@ public:
 				ecs::EntityComponentSystem&,
 				const std::unordered_map<physics::CollisionShapeHandle, physics::CollisionShapeHandle>&,
 				const std::unordered_map<ModelHandle, ModelHandle>&,
+				const std::unordered_map<graphics::MeshHandle, graphics::MeshHandle>&,
+				const std::unordered_map<graphics::TextureHandle, graphics::TextureHandle>&,
+				const std::unordered_map<SkeletonHandle, SkeletonHandle>&,
+				const std::unordered_map<AnimationHandle, AnimationHandle>&,
 				const std::unordered_map<graphics::TerrainHandle, graphics::TerrainHandle>&,
 				const std::unordered_map<std::string, pathfinding::PolygonMeshHandle>&,
 				const std::unordered_map<pathfinding::NavigationMeshHandle, pathfinding::NavigationMeshHandle>&,
@@ -359,6 +422,10 @@ private:
 				ecs::EntityComponentSystem&,
 				const std::unordered_map<physics::CollisionShapeHandle, physics::CollisionShapeHandle>&,
 				const std::unordered_map<ModelHandle, ModelHandle>&,
+				const std::unordered_map<graphics::MeshHandle, graphics::MeshHandle>&,
+				const std::unordered_map<graphics::TextureHandle, graphics::TextureHandle>&,
+				const std::unordered_map<SkeletonHandle, SkeletonHandle>&,
+				const std::unordered_map<AnimationHandle, AnimationHandle>&,
 				const std::unordered_map<graphics::TerrainHandle, graphics::TerrainHandle>&,
 				const std::unordered_map<std::string, pathfinding::PolygonMeshHandle>&,
 				const std::unordered_map<pathfinding::NavigationMeshHandle, pathfinding::NavigationMeshHandle>&,
@@ -406,6 +473,10 @@ private:
 	{
 		ar & gameEngine_->resourceHandleCache().collisionShapeHandleMap();
 		ar & gameEngine_->resourceHandleCache().modelHandleMap();
+		ar & gameEngine_->resourceHandleCache().meshHandleMap();
+		ar & gameEngine_->resourceHandleCache().textureHandleMap();
+		ar & gameEngine_->resourceHandleCache().skeletonHandleMap();
+		ar & gameEngine_->resourceHandleCache().animationHandleMap();
 		ar & gameEngine_->resourceHandleCache().terrainHandleMap();
 		ar & gameEngine_->resourceHandleCache().polygonMeshHandleMap();
 		ar & gameEngine_->resourceHandleCache().navigationMeshHandleMap();
@@ -453,6 +524,10 @@ private:
 	void normalizeHandles(
 		const std::unordered_map<physics::CollisionShapeHandle, physics::CollisionShapeHandle>& normalizedCollisionShapeHandleMap,
 		const std::unordered_map<ModelHandle, ModelHandle>& normalizedModelHandleMap,
+		const std::unordered_map<graphics::MeshHandle, graphics::MeshHandle>& normalizedMeshHandleMap,
+		const std::unordered_map<graphics::TextureHandle, graphics::TextureHandle>& normalizedTextureHandleMap,
+		const std::unordered_map<SkeletonHandle, SkeletonHandle>& normalizedSkeletonHandleMap,
+		const std::unordered_map<AnimationHandle, AnimationHandle>& normalizedAnimationHandleMap,
 		const std::unordered_map<graphics::TerrainHandle, graphics::TerrainHandle>& normalizedTerrainHandleMap,
 		const std::unordered_map<std::string, pathfinding::PolygonMeshHandle>& polygonMeshHandleMap,
 		const std::unordered_map<pathfinding::NavigationMeshHandle, pathfinding::NavigationMeshHandle>& normalizedNavigationMeshHandleMap,
@@ -480,9 +555,9 @@ private:
 
 		LOG_DEBUG(logger_, "Calling serialize on script objects");
 
-		for (auto entity : entityComponentSystem_->entitiesWithComponents<ecs::ScriptObjectComponent>())
+		for (auto entity : entityComponentSystem_->template entitiesWithComponents<ecs::ScriptObjectComponent>())
 		{
-			auto componentHandle = entity.component<ecs::ScriptObjectComponent>();
+			auto componentHandle = entity.template component<ecs::ScriptObjectComponent>();
 
 			scripting::ParameterList params;
 			params.add(entity);
@@ -542,6 +617,18 @@ private:
 		std::unordered_map<std::string, ModelHandle> modelHandleMap;
 		ar & modelHandleMap;
 
+		std::unordered_map<std::string, graphics::MeshHandle> meshHandleMap;
+		ar & meshHandleMap;
+
+		std::unordered_map<std::string, graphics::TextureHandle> textureHandleMap;
+		ar & textureHandleMap;
+
+		std::unordered_map<std::string, SkeletonHandle> skeletonHandleMap;
+		ar & skeletonHandleMap;
+
+		std::unordered_map<std::string, AnimationHandle> animationHandleMap;
+		ar & animationHandleMap;
+
 		std::unordered_map<std::string, graphics::TerrainHandle> terrainHandleMap;
 		ar & terrainHandleMap;
 
@@ -566,17 +653,61 @@ private:
 
 		auto normalizedCollisionShapeHandleMap = generateNormalizedMap(collisionShapeHandleMap, gameEngine_->resourceHandleCache().collisionShapeHandleMap(), logger_);
 		auto normalizedModelHandleMap = generateNormalizedMap(modelHandleMap, gameEngine_->resourceHandleCache().modelHandleMap(), logger_);
+		auto normalizedMeshHandleMap = generateNormalizedMap(meshHandleMap, gameEngine_->resourceHandleCache().meshHandleMap(), logger_);
+		auto normalizedTextureHandleMap = generateNormalizedMap(textureHandleMap, gameEngine_->resourceHandleCache().textureHandleMap(), logger_);
+		auto normalizedSkeletonHandleMap = generateNormalizedMap(skeletonHandleMap, gameEngine_->resourceHandleCache().skeletonHandleMap(), logger_);
+		auto normalizedAnimationHandleMap = generateNormalizedMap(animationHandleMap, gameEngine_->resourceHandleCache().animationHandleMap(), logger_);
 		auto normalizedTerrainHandleMap = generateNormalizedMap(terrainHandleMap, gameEngine_->resourceHandleCache().terrainHandleMap(), logger_);
 		auto normalizedNavigationMeshHandleMap = generateNormalizedMap(navigationMeshHandleMap, gameEngine_->resourceHandleCache().navigationMeshHandleMap(), logger_);
 //		generateNormalizedMap(scriptingEngine_, moduleHandle_, executionContextHandle_, scriptObjectHandleMap, logger_);
 
-		normalizeHandles(normalizedCollisionShapeHandleMap, normalizedModelHandleMap, normalizedTerrainHandleMap, polygonMeshHandleMap, normalizedNavigationMeshHandleMap, scriptObjectHandleMap, normalizedCrowdHandleMap);
+		normalizeHandles(
+			normalizedCollisionShapeHandleMap,
+			normalizedModelHandleMap,
+			normalizedMeshHandleMap,
+			normalizedTextureHandleMap,
+			normalizedSkeletonHandleMap,
+			normalizedAnimationHandleMap,
+			normalizedTerrainHandleMap,
+			polygonMeshHandleMap,
+			normalizedNavigationMeshHandleMap,
+			scriptObjectHandleMap,
+			normalizedCrowdHandleMap
+		);
+
+		for (auto entity : entityComponentSystem_->template entitiesWithComponents<ecs::ParentBoneAttachmentComponent>())
+		{
+			auto componentHandle = entity.template component<ecs::ParentBoneAttachmentComponent>();
+			entity.template assign<ecs::ParentBoneAttachmentComponent>(ecs::ParentBoneAttachmentComponent(*componentHandle));
+		}
+
+		for (auto entity : entityComponentSystem_->template entitiesWithComponents<ecs::PathfindingObstacleComponent>())
+		{
+			auto componentHandle = entity.template component<ecs::PathfindingObstacleComponent>();
+			componentHandle->obstacleHandle.invalidate();
+			entity.template assign<ecs::PathfindingObstacleComponent>(ecs::PathfindingObstacleComponent(*componentHandle));
+		}
 
 		LOG_DEBUG(logger_, "Calling post deserialize callbacks");
 
 		for (auto& callback : postDeserializeCallbacks_)
 		{
-			callback(static_cast<serialization::TextInArchive&>(ar), *entityComponentSystem_, normalizedCollisionShapeHandleMap, normalizedModelHandleMap, normalizedTerrainHandleMap, polygonMeshHandleMap, normalizedNavigationMeshHandleMap, scriptObjectHandleMap, normalizedCrowdHandleMap, version);
+			callback(
+				static_cast<serialization::TextInArchive&>(ar),
+				*entityComponentSystem_,
+				normalizedCollisionShapeHandleMap,
+				normalizedModelHandleMap,
+				normalizedMeshHandleMap,
+				normalizedTextureHandleMap,
+				normalizedSkeletonHandleMap,
+				normalizedAnimationHandleMap,
+				normalizedTerrainHandleMap,
+				polygonMeshHandleMap,
+				normalizedNavigationMeshHandleMap,
+				scriptObjectHandleMap,
+				normalizedCrowdHandleMap,
+				version
+			);
 		}
 
 		for (auto& scriptFunctionHandleWrapper : scriptPostDeserializeCallbacks_)
@@ -587,10 +718,15 @@ private:
 			scriptingEngine_->execute(scriptFunctionHandleWrapper.get(), params, executionContextHandle_);
 		}
 		}
+		 catch(const Exception& e)
+		 {
+			 LOG_ERROR(logger_, std::string("Exception: ") + boost::diagnostic_information(e));
+			 std::cerr << "Exception: " << boost::diagnostic_information(e) << std::endl;
+		 }
 		 catch(const std::exception& e)
 		 {
-			 LOG_ERROR(logger_, std::string("Exception: ") + e.what());
-			 std::cout << "Exception: " << e.what() << std::endl;
+			 LOG_ERROR(logger_, std::string("Exception: ") + boost::diagnostic_information(e));
+			 std::cerr << "Exception: " << boost::diagnostic_information(e) << std::endl;
 		 }
 	}
 };

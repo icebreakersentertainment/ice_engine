@@ -20,6 +20,8 @@ struct GhostObjectComponent
 	{
 	};
 	
+	static uint8 id()  { return 5; }
+
 	physics::CollisionShapeHandle collisionShapeHandle;
 	physics::GhostObjectHandle ghostObjectHandle;
 };

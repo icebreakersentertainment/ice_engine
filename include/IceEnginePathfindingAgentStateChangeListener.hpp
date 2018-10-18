@@ -3,7 +3,7 @@
 
 #include "pathfinding/IAgentStateChangeListener.hpp"
 
-#include "Scene.hpp"
+#include "ecs/Entity.hpp"
 
 namespace ice_engine
 {
@@ -11,14 +11,13 @@ namespace ice_engine
 class IceEnginePathfindingAgentStateChangeListener : public pathfinding::IAgentStateChangeListener
 {
 public:
-	IceEnginePathfindingAgentStateChangeListener(ecs::Entity entity, Scene* scene);
+	IceEnginePathfindingAgentStateChangeListener(ecs::Entity entity);
 	virtual ~IceEnginePathfindingAgentStateChangeListener();
 	
 	virtual void update(const pathfinding::AgentState& agentState) override;
 
 private:
 	ecs::Entity entity_;
-	Scene* scene_;
 };
 
 }

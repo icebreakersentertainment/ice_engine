@@ -178,7 +178,6 @@ static bool operator==(const glm::quat& a, const glm::quat& b) { return (a.x == 
 static glm::vec3 TimesVec3(const glm::vec3& a, const glm::quat& b) { return a * b; }
 }
 
-
 /**
  * Register our glm bindings.
  */
@@ -446,6 +445,7 @@ void RegisterGlmBindings(asIScriptEngine* engine)
 	// glm functions
 	r = engine->RegisterGlobalFunction("mat4 inverse(const mat4& in)", asFUNCTIONPR(glm::inverse, (const glm::mat4&), glm::mat4), asCALL_CDECL); assert( r >= 0 );
 	r = engine->RegisterGlobalFunction("vec3 normalize(const vec3& in)", asFUNCTIONPR(glm::normalize, (const glm::vec3&), glm::vec3), asCALL_CDECL); assert( r >= 0 );
+	r = engine->RegisterGlobalFunction("quat angleAxis(const float& in, const vec3& in)", asFUNCTIONPR(glm::angleAxis, (const float& , const glm::vec3&), glm::quat), asCALL_CDECL); assert( r >= 0 );
 
 	// glm math functions
 	r = engine->RegisterGlobalFunction("float ceil(const float)", asFUNCTIONPR(glm::ceil, (const float), float), asCALL_CDECL); assert( r >= 0 );
@@ -453,6 +453,9 @@ void RegisterGlmBindings(asIScriptEngine* engine)
 
 	// glm exponential functions
 	r = engine->RegisterGlobalFunction("float sqrt(const float)", asFUNCTIONPR(glm::sqrt, (const float), float), asCALL_CDECL); assert( r >= 0 );
+
+	// glm trigonometric functions
+	r = engine->RegisterGlobalFunction("float atan2(float, float)", asFUNCTIONPR(std::atan2, (float, float), float), asCALL_CDECL); assert( r >= 0 );
 }
 
 END_AS_NAMESPACE

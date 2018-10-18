@@ -4,7 +4,8 @@
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 
-#include "ModelHandle.hpp"
+#include "graphics/MeshHandle.hpp"
+#include "graphics/TextureHandle.hpp"
 #include "graphics/RenderableHandle.hpp"
 
 #include "serialization/glm/Vec3.hpp"
@@ -20,32 +21,45 @@ struct GraphicsComponent
 {
 	GraphicsComponent() = default;
 	
-	GraphicsComponent(ModelHandle&& modelHandle)
-		: modelHandle(std::forward<ModelHandle>(modelHandle))
+	GraphicsComponent(graphics::MeshHandle meshHandle)
+		: meshHandle(meshHandle)
+	{
+	};
+
+	GraphicsComponent(graphics::MeshHandle meshHandle, graphics::TextureHandle textureHandle)
+		: meshHandle(meshHandle),
+		  textureHandle(textureHandle)
 	{
 	};
 
 	GraphicsComponent(
-		ModelHandle&& modelHandle,
-		glm::vec3&& scale
+		graphics::MeshHandle meshHandle,
+		graphics::TextureHandle textureHandle,
+		glm::vec3 scale
 	)
-		: modelHandle(std::forward<ModelHandle>(modelHandle)),
-		  scale(std::forward<glm::vec3>(scale))
+		: meshHandle(meshHandle),
+		  textureHandle(textureHandle),
+		  scale(scale)
 	{
 	};
 
 	GraphicsComponent(
-		ModelHandle&& modelHandle,
-		glm::vec3&& scale,
-		graphics::RenderableHandle&& renderableHandle
+		graphics::MeshHandle meshHandle,
+		graphics::TextureHandle textureHandle,
+		glm::vec3 scale,
+		graphics::RenderableHandle renderableHandle
 	)
-		: modelHandle(std::forward<ModelHandle>(modelHandle)),
-		  scale(std::forward<glm::vec3>(scale)),
-		  renderableHandle(std::forward<graphics::RenderableHandle>(renderableHandle))
+		: meshHandle(meshHandle),
+		  textureHandle(textureHandle),
+		  scale(scale),
+		  renderableHandle(renderableHandle)
 	{
 	};
 	
-	ModelHandle modelHandle;
+	static uint8 id()  { return 0; }
+
+	graphics::MeshHandle meshHandle;
+	graphics::TextureHandle textureHandle;
 	glm::vec3 scale = glm::vec3(1.0f, 1.0f, 1.0f);
 	graphics::RenderableHandle renderableHandle;
 };
@@ -61,7 +75,7 @@ namespace serialization
 template<class Archive>
 void serialize(Archive& ar, ice_engine::ecs::GraphicsComponent& c, const unsigned int version)
 {
-	ar & c.modelHandle & c.scale & c.renderableHandle;
+	ar & c.meshHandle & c.textureHandle & c.scale & c.renderableHandle;
 }
 
 }

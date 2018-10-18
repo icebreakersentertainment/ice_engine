@@ -1,0 +1,1 @@
+set(GLEW_INCLUDE_DIRS "${CMAKE_CURRENT_LIST_DIR}/../deps/glew/include")

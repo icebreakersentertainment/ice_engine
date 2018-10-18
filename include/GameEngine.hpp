@@ -37,15 +37,16 @@
 
 #include "physics/IPhysicsEngine.hpp"
 
-#include "image/Image.hpp"
-
 #include "extras/FpsCamera.hpp"
+
+#include "handles/HandleVector.hpp"
 
 #include "utilities/Properties.hpp"
 #include "logger/ILogger.hpp"
 #include "fs/IFileSystem.hpp"
 
 #include "ResourceCache.hpp"
+#include "ResourceHandleCache.hpp"
 #include "Camera.hpp"
 #include "ThreadPool.hpp"
 #include "OpenGlLoader.hpp"
@@ -78,6 +79,9 @@
 #include "serialization/TextInArchive.hpp"
 
 #include "Audio.hpp"
+#include "Model.hpp"
+
+#include "Animate.hpp"
 
 namespace ice_engine
 {
@@ -88,258 +92,6 @@ namespace ecs
 {
 class EntityComponentSystem;
 }
-
-class ResourceHandleCache
-{
-public:
-	void addCollisionShapeHandle(const std::string& name, const physics::CollisionShapeHandle& handle)
-	{
-		std::unique_lock<std::shared_mutex> lock(collisionShapeHandleMutex_);
-
-		if (collisionShapeHandleMap_.find(name) != collisionShapeHandleMap_.end())
-		{
-			throw std::runtime_error("Resource with name already exists.");
-		}
-
-		collisionShapeHandleMap_[name] = handle;
-	}
-
-	void removeCollisionShapeHandle(const std::string& name)
-	{
-		std::unique_lock<std::shared_mutex> lock(collisionShapeHandleMutex_);
-
-		auto it = collisionShapeHandleMap_.find(name);
-		if (it != collisionShapeHandleMap_.end())
-		{
-			collisionShapeHandleMap_.erase(it);
-		}
-	}
-
-	void removeAllCollisionShapeHandles()
-	{
-		std::unique_lock<std::shared_mutex> lock(collisionShapeHandleMutex_);
-
-		collisionShapeHandleMap_.clear();
-	}
-
-	physics::CollisionShapeHandle getCollisionShapeHandle(const std::string& name) const
-	{
-		std::shared_lock<std::shared_mutex> lock(collisionShapeHandleMutex_);
-
-		auto it = collisionShapeHandleMap_.find(name);
-		if (it != collisionShapeHandleMap_.end()) return it->second;
-
-		return physics::CollisionShapeHandle();
-	}
-
-	void addModelHandle(const std::string& name, const ModelHandle& handle)
-		{
-			std::unique_lock<std::shared_mutex> lock(modelHandleMutex_);
-
-			if (modelHandleMap_.find(name) != modelHandleMap_.end())
-			{
-				throw std::runtime_error("Resource with name already exists.");
-			}
-
-			modelHandleMap_[name] = handle;
-		}
-
-		void removeModelHandle(const std::string& name)
-		{
-			std::unique_lock<std::shared_mutex> lock(modelHandleMutex_);
-
-			auto it = modelHandleMap_.find(name);
-			if (it != modelHandleMap_.end())
-			{
-				modelHandleMap_.erase(it);
-			}
-		}
-
-		void removeAllModelHandles()
-		{
-			std::unique_lock<std::shared_mutex> lock(modelHandleMutex_);
-
-			modelHandleMap_.clear();
-		}
-
-		ModelHandle getModelHandle(const std::string& name) const
-		{
-			std::shared_lock<std::shared_mutex> lock(modelHandleMutex_);
-
-			auto it = modelHandleMap_.find(name);
-			if (it != modelHandleMap_.end()) return it->second;
-
-			return ModelHandle();
-		}
-
-	void addTerrainHandle(const std::string& name, const graphics::TerrainHandle& handle)
-		{
-			std::unique_lock<std::shared_mutex> lock(terrainHandleMutex_);
-
-			if (terrainHandleMap_.find(name) != terrainHandleMap_.end())
-			{
-				throw std::runtime_error("Resource with name already exists.");
-			}
-
-			terrainHandleMap_[name] = handle;
-		}
-
-		void removeTerrainHandle(const std::string& name)
-		{
-			std::unique_lock<std::shared_mutex> lock(terrainHandleMutex_);
-
-			auto it = terrainHandleMap_.find(name);
-			if (it != terrainHandleMap_.end())
-			{
-				terrainHandleMap_.erase(it);
-			}
-		}
-
-		void removeAllTerrainHandles()
-		{
-			std::unique_lock<std::shared_mutex> lock(terrainHandleMutex_);
-
-			terrainHandleMap_.clear();
-		}
-
-		graphics::TerrainHandle getTerrainHandle(const std::string& name) const
-		{
-			std::shared_lock<std::shared_mutex> lock(terrainHandleMutex_);
-
-			auto it = terrainHandleMap_.find(name);
-			if (it != terrainHandleMap_.end()) return it->second;
-
-			return graphics::TerrainHandle();
-		}
-
-	void addPolygonMeshHandle(const std::string& name, const pathfinding::PolygonMeshHandle& handle)
-	{
-		std::unique_lock<std::shared_mutex> lock(polygonMeshHandleMutex_);
-
-		if (polygonMeshHandleMap_.find(name) != polygonMeshHandleMap_.end())
-		{
-			throw std::runtime_error("Resource with name already exists.");
-		}
-
-		polygonMeshHandleMap_[name] = handle;
-	}
-
-	void removePolygonMeshHandle(const std::string& name)
-	{
-		std::unique_lock<std::shared_mutex> lock(polygonMeshHandleMutex_);
-
-		auto it = polygonMeshHandleMap_.find(name);
-		if (it != polygonMeshHandleMap_.end())
-		{
-			polygonMeshHandleMap_.erase(it);
-		}
-	}
-
-	void removeAllPolygonMeshHandles()
-	{
-		std::unique_lock<std::shared_mutex> lock(polygonMeshHandleMutex_);
-
-		polygonMeshHandleMap_.clear();
-	}
-
-	pathfinding::PolygonMeshHandle getPolygonMeshHandle(const std::string& name) const
-	{
-		std::shared_lock<std::shared_mutex> lock(polygonMeshHandleMutex_);
-
-		auto it = polygonMeshHandleMap_.find(name);
-		if (it != polygonMeshHandleMap_.end()) return it->second;
-
-		return pathfinding::PolygonMeshHandle();
-	}
-
-	void addNavigationMeshHandle(const std::string& name, const pathfinding::NavigationMeshHandle& handle)
-	{
-		std::unique_lock<std::shared_mutex> lock(navigationMeshHandleMutex_);
-
-		if (navigationMeshHandleMap_.find(name) != navigationMeshHandleMap_.end())
-		{
-			throw std::runtime_error("Resource with name already exists.");
-		}
-
-		navigationMeshHandleMap_[name] = handle;
-	}
-
-	void removeNavigationMeshHandle(const std::string& name)
-	{
-		std::unique_lock<std::shared_mutex> lock(navigationMeshHandleMutex_);
-
-		auto it = navigationMeshHandleMap_.find(name);
-		if (it != navigationMeshHandleMap_.end())
-		{
-			navigationMeshHandleMap_.erase(it);
-		}
-	}
-
-	void removeAllNavigationMeshHandles()
-	{
-		std::unique_lock<std::shared_mutex> lock(navigationMeshHandleMutex_);
-
-		navigationMeshHandleMap_.clear();
-	}
-
-	pathfinding::NavigationMeshHandle getNavigationMeshHandle(const std::string& name) const
-	{
-		std::shared_lock<std::shared_mutex> lock(navigationMeshHandleMutex_);
-
-		auto it = navigationMeshHandleMap_.find(name);
-		if (it != navigationMeshHandleMap_.end()) return it->second;
-
-		return pathfinding::NavigationMeshHandle();
-	}
-
-	std::unordered_map<std::string, physics::CollisionShapeHandle> collisionShapeHandleMap()
-		{
-		std::shared_lock<std::shared_mutex> lock(collisionShapeHandleMutex_);
-
-			return collisionShapeHandleMap_;
-		}
-
-	std::unordered_map<std::string, ModelHandle> modelHandleMap()
-		{
-		std::shared_lock<std::shared_mutex> lock(modelHandleMutex_);
-
-			return modelHandleMap_;
-		}
-
-	std::unordered_map<std::string, graphics::TerrainHandle> terrainHandleMap()
-		{
-		std::shared_lock<std::shared_mutex> lock(terrainHandleMutex_);
-
-			return terrainHandleMap_;
-		}
-
-	std::unordered_map<std::string, pathfinding::PolygonMeshHandle> polygonMeshHandleMap()
-		{
-		std::shared_lock<std::shared_mutex> lock(polygonMeshHandleMutex_);
-
-		 return polygonMeshHandleMap_;
-		}
-
-	std::unordered_map<std::string, pathfinding::NavigationMeshHandle> navigationMeshHandleMap()
-		{
-			std::shared_lock<std::shared_mutex> lock(navigationMeshHandleMutex_);
-
-			return navigationMeshHandleMap_;
-		}
-
-private:
-	mutable std::shared_mutex collisionShapeHandleMutex_;
-	mutable std::shared_mutex modelHandleMutex_;
-	mutable std::shared_mutex terrainHandleMutex_;
-	mutable std::shared_mutex polygonMeshHandleMutex_;
-	mutable std::shared_mutex navigationMeshHandleMutex_;
-
-	std::unordered_map<std::string, physics::CollisionShapeHandle> collisionShapeHandleMap_;
-	std::unordered_map<std::string, ModelHandle> modelHandleMap_;
-	std::unordered_map<std::string, graphics::TerrainHandle> terrainHandleMap_;
-	std::unordered_map<std::string, pathfinding::PolygonMeshHandle> polygonMeshHandleMap_;
-	std::unordered_map<std::string, pathfinding::NavigationMeshHandle> navigationMeshHandleMap_;
-};
 
 class GameEngine : public graphics::IEventListener, public networking::IEventListener
 {
@@ -378,6 +130,10 @@ public:
 	IThreadPool* getBackgroundThreadPool() const;
 	IThreadPool* getForegroundThreadPool() const;
 	IOpenGlLoader* getOpenGlLoader() const;
+	IOpenGlLoader* getForegroundGraphicsThreadPool() const
+	{
+		return forgroundGraphicsThreadPool_.get();
+	}
 	logger::ILogger* getLogger() const;
 	fs::IFileSystem* getFileSystem() const;
 	ResourceCache& resourceCache()
@@ -399,24 +155,35 @@ public:
 	Audio* loadAudio(const std::string& name, const std::string& filename);
 	std::shared_future<Audio*> loadAudioAsync(const std::string& name, const std::string& filename);
 
-	template <typename ... Args>
-	Image* createImage(const std::string& name, const Args ... args)
+	Image* createImage(const std::string& name, const std::vector<char>& data, const uint32 width, const uint32 height, const Image::Format format)
 	{
-		LOG_DEBUG(logger_, "Creating image: " + name);
+		LOG_DEBUG(logger_, "Creating image: %s", name);
 
-			resourceCache_.addImage( name, std::make_unique<Image>(args ...) );
+		resourceCache_.addImage( name, std::make_unique<Image>(data, width, height, format) );
 
-			LOG_DEBUG(logger_, "Done creating image: " + name);
+		LOG_DEBUG(logger_, "Done creating image: %s", name);
 
-			return resourceCache_.getImage(name);
+		return resourceCache_.getImage(name);
 	}
+
+//	template <typename ... Args>
+//	Image* createImage(const std::string& name, const Args ... args)
+//	{
+//		LOG_DEBUG(logger_, "Creating image: " + name);
+//
+//			resourceCache_.addImage( name, std::make_unique<Image>(args ...) );
+//
+//			LOG_DEBUG(logger_, "Done creating image: " + name);
+//
+//			return resourceCache_.getImage(name);
+//	}
 
 	Image* loadImage(const std::string& name, const std::string& filename);
 	std::shared_future<Image*> loadImageAsync(const std::string& name, const std::string& filename);
-	graphics::model::Model* loadModel(const std::string& name, const std::string& filename);
-	std::shared_future<graphics::model::Model*> loadModelAsync(const std::string& name, const std::string& filename);
-	graphics::model::Model* importModel(const std::string& name, const std::string& filename);
-	std::shared_future<graphics::model::Model*> importModelAsync(const std::string& name, const std::string& filename);
+	Model* loadModel(const std::string& name, const std::string& filename);
+	std::shared_future<Model*> loadModelAsync(const std::string& name, const std::string& filename);
+	Model* importModel(const std::string& name, const std::string& filename);
+	std::shared_future<Model*> importModelAsync(const std::string& name, const std::string& filename);
 	
 	void unloadAudio(const std::string& name);
 	void unloadImage(const std::string& name);
@@ -424,10 +191,10 @@ public:
 	
 	Audio* getAudio(const std::string& name) const;
 	Image* getImage(const std::string& name) const;
-	graphics::model::Model* getModel(const std::string& name) const;
+	Model* getModel(const std::string& name) const;
 	
-	ModelHandle loadStaticModel(const graphics::model::Model* model);
-	std::shared_future<ModelHandle> loadStaticModelAsync(const graphics::model::Model* model);
+	ModelHandle loadStaticModel(const Model* model);
+	std::shared_future<ModelHandle> loadStaticModelAsync(const Model* model);
 	graphics::RenderableHandle createRenderable(
 		const graphics::RenderSceneHandle& renderSceneHandle,
 		const ModelHandle& modelHandle,
@@ -492,6 +259,10 @@ public:
 				ecs::EntityComponentSystem&,
 				const std::unordered_map<physics::CollisionShapeHandle, physics::CollisionShapeHandle>&,
 				const std::unordered_map<ModelHandle, ModelHandle>&,
+				const std::unordered_map<graphics::MeshHandle, graphics::MeshHandle>&,
+				const std::unordered_map<graphics::TextureHandle, graphics::TextureHandle>&,
+				const std::unordered_map<SkeletonHandle, SkeletonHandle>&,
+				const std::unordered_map<AnimationHandle, AnimationHandle>&,
 				const std::unordered_map<graphics::TerrainHandle, graphics::TerrainHandle>&,
 				const std::unordered_map<std::string, pathfinding::PolygonMeshHandle>&,
 				const std::unordered_map<pathfinding::NavigationMeshHandle, pathfinding::NavigationMeshHandle>&,
@@ -555,10 +326,28 @@ public:
 	virtual bool processEvent(const networking::DisconnectEvent& event) override;
 	virtual bool processEvent(const networking::MessageEvent& event) override;
 
+	physics::CollisionShapeHandle createStaticBoxShape(const std::string& name, const glm::vec3& dimensions)
+	{
+		auto handle = physicsEngine_->createStaticBoxShape(dimensions);
+
+		resourceHandleCache_.addCollisionShapeHandle(name, handle);
+
+		return handle;
+	}
+
 	template <typename ... Args>
 	physics::CollisionShapeHandle createStaticBoxShape(const std::string& name, const Args ... args)
 	{
 		auto handle = physicsEngine_->createStaticBoxShape(args ...);
+
+		resourceHandleCache_.addCollisionShapeHandle(name, handle);
+
+		return handle;
+	}
+
+	physics::CollisionShapeHandle createStaticPlaneShape(const std::string& name, const glm::vec3& planeNormal, const float32 planeConstant)
+	{
+		auto handle = physicsEngine_->createStaticPlaneShape(planeNormal, planeConstant);
 
 		resourceHandleCache_.addCollisionShapeHandle(name, handle);
 
@@ -617,10 +406,10 @@ public:
 		return resourceHandleCache_.getCollisionShapeHandle(name);
 	}
 
-		ModelHandle createStaticModel(const std::string& name, const graphics::model::Model* model)
+		ModelHandle createStaticModel(const std::string& name, const Model& model)
 		{
-			auto meshHandle = graphicsEngine_->createStaticMesh(model->meshes[0].vertices, model->meshes[0].indices, model->meshes[0].colors, model->meshes[0].normals, model->meshes[0].textureCoordinates);
-			auto textureHandle = graphicsEngine_->createTexture2d( static_cast<const graphics::IImage*>(&model->textures[0].image) );
+			auto meshHandle = graphicsEngine_->createStaticMesh(&model.meshes()[0]);
+			auto textureHandle = graphicsEngine_->createTexture2d(&model.textures()[0]);
 
 			staticModels_.push_back(std::make_pair(meshHandle, textureHandle));
 
@@ -656,6 +445,177 @@ public:
 		ModelHandle getStaticModel(const std::string& name) const
 		{
 			return resourceHandleCache_.getModelHandle(name);
+		}
+
+		SkeletonHandle createSkeleton(const std::string& name, const Skeleton& skeleton)
+		{
+			auto handle = skeletons_.create();
+			skeletons_[handle] = Skeleton(skeleton);
+
+			resourceHandleCache_.addSkeletonHandle(name, handle);
+
+			return handle;
+		}
+
+		void animateSkeleton(
+			std::vector< glm::mat4 >& transformations,
+			const graphics::MeshHandle& meshHandle,
+			const AnimationHandle& animationHandle,
+			const SkeletonHandle& skeletonHandle
+		);
+
+		void destroySkeleton(const std::string& name)
+		{
+			auto handle = resourceHandleCache_.getSkeletonHandle(name);
+			if (handle)
+			{
+				resourceHandleCache_.removeSkeletonHandle(name);
+
+				skeletons_.destroy(handle);
+
+				//graphicsEngine_->destroy(staticSkeleton->first);
+				//graphicsEngine_->destroy(staticSkeleton->second);
+			}
+		}
+
+		void destroyAllSkeletons()
+		{
+			resourceHandleCache_.removeAllSkeletonHandles();
+
+			//physicsEngine_->destroyAllSkeletons();
+		}
+
+		SkeletonHandle getSkeleton(const std::string& name) const
+		{
+			return resourceHandleCache_.getSkeletonHandle(name);
+		}
+
+		void createSkeleton(const graphics::MeshHandle& meshHandle, const graphics::ISkeleton& skeleton)
+		{
+			graphicsEngine_->createSkeleton(meshHandle, &skeleton);
+		}
+
+		AnimationHandle createAnimation(const std::string& name, const Animation& animation)
+		{
+			auto handle = animations_.create();
+			animations_[handle] = Animation(animation);
+
+			resourceHandleCache_.addAnimationHandle(name, handle);
+
+			return handle;
+		}
+
+		void destroyAnimation(const std::string& name)
+		{
+			auto handle = resourceHandleCache_.getAnimationHandle(name);
+			if (handle)
+			{
+				resourceHandleCache_.removeAnimationHandle(name);
+
+				animations_.destroy(handle);
+			}
+		}
+
+		void destroyAllAnimations()
+		{
+			resourceHandleCache_.removeAllAnimationHandles();
+
+			//physicsEngine_->destroyAllAnimations();
+		}
+
+		AnimationHandle getAnimation(const std::string& name) const
+		{
+			return resourceHandleCache_.getAnimationHandle(name);
+		}
+
+		graphics::MeshHandle createStaticMesh(const std::string& name, const Mesh& mesh)
+		{
+			auto handle = graphicsEngine_->createStaticMesh(&mesh);
+
+			resourceHandleCache_.addMeshHandle(name, handle);
+
+			meshes_[handle] = mesh;
+
+			return handle;
+		}
+
+		void destroyStaticMesh(const std::string& name)
+		{
+			auto handle = resourceHandleCache_.getMeshHandle(name);
+			if (handle)
+			{
+				resourceHandleCache_.removeMeshHandle(name);
+
+				//auto staticMesh = staticMeshs_[handle.index()];
+
+				//graphicsEngine_->destroy(staticMesh->first);
+				//graphicsEngine_->destroy(staticMesh->second);
+			}
+		}
+
+		void destroyAllStaticMeshs()
+		{
+			resourceHandleCache_.removeAllMeshHandles();
+
+			//physicsEngine_->destroyAllStaticMeshs();
+		}
+
+		graphics::MeshHandle getStaticMesh(const std::string& name) const
+		{
+			return resourceHandleCache_.getMeshHandle(name);
+		}
+
+		uint32 getBoneId(const graphics::MeshHandle meshHandle, const std::string& name) const
+		{
+			auto it = meshes_.find(meshHandle);
+
+			if (it != meshes_.end())
+			{
+				const Mesh& mesh = it->second;
+
+				auto boneIndexMapIterator = mesh.boneData().boneIndexMap.find(name);
+				if (boneIndexMapIterator != mesh.boneData().boneIndexMap.end())
+				{
+					return boneIndexMapIterator->second;
+				}
+			}
+
+			return 0;
+		}
+
+		graphics::TextureHandle createTexture(const std::string& name, const Texture& texture)
+		{
+			auto handle = graphicsEngine_->createTexture2d(&texture);
+
+			resourceHandleCache_.addTextureHandle(name, handle);
+
+			return handle;
+		}
+
+		void destroyTexture(const std::string& name)
+		{
+			auto handle = resourceHandleCache_.getTextureHandle(name);
+			if (handle)
+			{
+				resourceHandleCache_.removeTextureHandle(name);
+
+				//auto staticTexture = staticTextures_[handle.index()];
+
+				//graphicsEngine_->destroy(staticTexture->first);
+				//graphicsEngine_->destroy(staticTexture->second);
+			}
+		}
+
+		void destroyAllTextures()
+		{
+			resourceHandleCache_.removeAllTextureHandles();
+
+			//physicsEngine_->destroyAllStaticTextures();
+		}
+
+		graphics::TextureHandle getTexture(const std::string& name) const
+		{
+			return resourceHandleCache_.getTextureHandle(name);
 		}
 
 		graphics::TerrainHandle createStaticTerrain(const std::string& name, const HeightMap& heightMap, const SplatMap& splatMap, const DisplacementMap& displacementMap)
@@ -725,6 +685,15 @@ public:
 		return resourceHandleCache_.getPolygonMeshHandle(name);
 	}
 
+	pathfinding::NavigationMeshHandle createNavigationMesh(const std::string& name, const pathfinding::PolygonMeshHandle& polygonMeshHandle, const pathfinding::NavigationMeshConfig& navigationMeshConfig)
+	{
+		auto handle = pathfindingEngine_->createNavigationMesh(polygonMeshHandle, navigationMeshConfig);
+
+		resourceHandleCache_.addNavigationMeshHandle(name, handle);
+
+		return handle;
+	}
+
 	template <typename ... Args>
 	pathfinding::NavigationMeshHandle createNavigationMesh(const std::string& name, const Args ... args)
 	{
@@ -781,6 +750,7 @@ private:
 	std::unique_ptr<networking::INetworkingEngineFactory> networkingEngineFactory_;
 	std::unique_ptr< networking::INetworkingEngine > networkingEngine_;
 	
+	std::unique_ptr<physics::IPhysicsEngineFactory> physicsEngineFactory_;
 	std::unique_ptr< physics::IPhysicsEngine > physicsEngine_;
 	std::unique_ptr<pathfinding::IPathfindingEngineFactory> pathfindingEngineFactory_;
 	std::unique_ptr< pathfinding::IPathfindingEngine > pathfindingEngine_;
@@ -804,6 +774,10 @@ private:
 	std::vector<std::pair<scripting::ScriptObjectHandle, scripting::ScriptObjectFunctionHandle>> scriptDisconnectEventListeners_;
 	std::vector<std::pair<scripting::ScriptObjectHandle, scripting::ScriptObjectFunctionHandle>> scriptMessageEventListeners_;
 	
+	std::unordered_map<graphics::MeshHandle, Mesh> meshes_;
+	handles::HandleVector<Skeleton, SkeletonHandle> skeletons_;
+	handles::HandleVector<Animation, AnimationHandle> animations_;
+
 	std::vector<std::unique_ptr<Scene>> scenes_;
 	
 	std::unordered_map<std::string, graphics::VertexShaderHandle> vertexShaderHandles_;
@@ -874,6 +848,10 @@ private:
 			ecs::EntityComponentSystem&,
 			const std::unordered_map<physics::CollisionShapeHandle, physics::CollisionShapeHandle>&,
 			const std::unordered_map<ModelHandle, ModelHandle>&,
+			const std::unordered_map<graphics::MeshHandle, graphics::MeshHandle>&,
+			const std::unordered_map<graphics::TextureHandle, graphics::TextureHandle>&,
+			const std::unordered_map<SkeletonHandle, SkeletonHandle>&,
+			const std::unordered_map<AnimationHandle, AnimationHandle>&,
 			const std::unordered_map<graphics::TerrainHandle, graphics::TerrainHandle>&,
 			const std::unordered_map<std::string, pathfinding::PolygonMeshHandle>&,
 			const std::unordered_map<pathfinding::NavigationMeshHandle, pathfinding::NavigationMeshHandle>&,
@@ -888,6 +866,7 @@ private:
 	std::unique_ptr<ThreadPool> backgroundThreadPool_;
 	std::unique_ptr<ThreadPool> foregroundThreadPool_;
 	std::unique_ptr<OpenGlLoader> openGlLoader_;
+	std::unique_ptr<OpenGlLoader> forgroundGraphicsThreadPool_;
 	
 	//std::unique_ptr<pyliteserializer::SqliteDataStore> dataStore_;
 };

@@ -20,6 +20,8 @@ struct ScriptObjectComponent
 	{
 	};
 	
+	static uint8 id()  { return 6; }
+
 	scripting::ScriptObjectHandle scriptObjectHandle;
 };
 

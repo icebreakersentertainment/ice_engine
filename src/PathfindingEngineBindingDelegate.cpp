@@ -30,6 +30,7 @@ void PathfindingEngineBindingDelegate::bind()
 	registerHandleBindings<pathfinding::PolygonMeshHandle>(scriptingEngine_, "PolygonMeshHandle");
 	registerHandleBindings<pathfinding::NavigationMeshHandle>(scriptingEngine_, "NavigationMeshHandle");
 	registerHandleBindings<pathfinding::AgentHandle>(scriptingEngine_, "AgentHandle");
+	registerHandleBindings<pathfinding::ObstacleHandle>(scriptingEngine_, "ObstacleHandle");
 	registerHandleBindings<pathfinding::CrowdHandle>(scriptingEngine_, "CrowdHandle");
 	
 	scriptingEngine_->registerObjectType("IPathfindingTerrain", 0, asOBJ_REF | asOBJ_NOCOUNT);
@@ -64,7 +65,14 @@ void PathfindingEngineBindingDelegate::bind()
 	scriptingEngine_->registerObjectProperty("NavigationMeshConfig", "float walkableClimb", asOFFSET(pathfinding::NavigationMeshConfig, walkableClimb));
 	scriptingEngine_->registerObjectProperty("NavigationMeshConfig", "float walkableRadius", asOFFSET(pathfinding::NavigationMeshConfig, walkableRadius));
 
-	scriptingEngine_->registerObjectType("AgentParams", sizeof(pathfinding::AgentParams), asOBJ_VALUE | asOBJ_APP_CLASS_ALLFLOATS | asGetTypeTraits<pathfinding::AgentParams>());
+	scriptingEngine_->registerObjectType("CrowdConfig", sizeof(pathfinding::CrowdConfig), asOBJ_VALUE | asOBJ_APP_CLASS_ALLINTS | asGetTypeTraits<pathfinding::CrowdConfig>());
+	scriptingEngine_->registerObjectBehaviour("CrowdConfig", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(DefaultConstructor<pathfinding::CrowdConfig>), asCALL_CDECL_OBJFIRST);
+	scriptingEngine_->registerObjectBehaviour("CrowdConfig", asBEHAVE_CONSTRUCT, "void f(const CrowdConfig& in)", asFUNCTION(CopyConstructor<pathfinding::CrowdConfig>), asCALL_CDECL_OBJFIRST);
+	scriptingEngine_->registerObjectBehaviour("CrowdConfig", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DefaultDestructor<pathfinding::CrowdConfig>), asCALL_CDECL_OBJFIRST);
+	scriptingEngine_->registerObjectProperty("CrowdConfig", "int maxAgents", asOFFSET(pathfinding::CrowdConfig, maxAgents));
+	scriptingEngine_->registerObjectProperty("CrowdConfig", "float maxAgentRadius", asOFFSET(pathfinding::CrowdConfig, maxAgentRadius));
+
+	scriptingEngine_->registerObjectType("AgentParams", sizeof(pathfinding::AgentParams), asOBJ_VALUE | asOBJ_APP_CLASS_CDK | asGetTypeTraits<pathfinding::AgentParams>());
 	scriptingEngine_->registerObjectBehaviour("AgentParams", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(DefaultConstructor<pathfinding::AgentParams>), asCALL_CDECL_OBJFIRST);
 	scriptingEngine_->registerObjectBehaviour("AgentParams", asBEHAVE_CONSTRUCT, "void f(const AgentParams& in)", asFUNCTION(CopyConstructor<pathfinding::AgentParams>), asCALL_CDECL_OBJFIRST);
 	scriptingEngine_->registerObjectBehaviour("AgentParams", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DefaultDestructor<pathfinding::AgentParams>), asCALL_CDECL_OBJFIRST);
@@ -99,10 +107,26 @@ void PathfindingEngineBindingDelegate::bind()
 		asMETHODPR(pathfinding::IPathfindingEngine, createPolygonMesh, (const pathfinding::ITerrain*, const pathfinding::PolygonMeshConfig&), pathfinding::PolygonMeshHandle )
 	);
 	scriptingEngine_->registerClassMethod(
+			"IPathfindingEngine",
+			"void destroy(const PolygonMeshHandle& in)",
+			asMETHODPR(pathfinding::IPathfindingEngine, destroy, (const pathfinding::PolygonMeshHandle&), void)
+		);
+	scriptingEngine_->registerClassMethod("IPathfindingEngine", "ObstacleHandle createObstacle(const PolygonMeshHandle& in, const vec3& in, const float, const float)", asMETHOD(pathfinding::IPathfindingEngine, createObstacle));
+	scriptingEngine_->registerClassMethod(
+		"IPathfindingEngine",
+		"void destroy(const PolygonMeshHandle& in, const ObstacleHandle& in)",
+		asMETHODPR(pathfinding::IPathfindingEngine, destroy, (const pathfinding::PolygonMeshHandle&, const pathfinding::ObstacleHandle&), void)
+	);
+	scriptingEngine_->registerClassMethod(
 		"IPathfindingEngine",
 		"NavigationMeshHandle createNavigationMesh(const PolygonMeshHandle& in, const NavigationMeshConfig& in)",
 		asMETHODPR(pathfinding::IPathfindingEngine, createNavigationMesh, (const pathfinding::PolygonMeshHandle&, const pathfinding::NavigationMeshConfig&), pathfinding::NavigationMeshHandle )
 	);
+	scriptingEngine_->registerClassMethod(
+			"IPathfindingEngine",
+			"void destroy(const NavigationMeshHandle& in)",
+			asMETHODPR(pathfinding::IPathfindingEngine, destroy, (const pathfinding::NavigationMeshHandle&), void)
+		);
 	/*
 	scriptingEngine_->registerClassMethod(
 		"IPathfindingEngine",

@@ -18,6 +18,8 @@
 
 #include "BindingDelegateUtilities.hpp"
 
+#include "scripting/angel_script/autowrapper/aswrappedcall.h"
+
 namespace ice_engine
 {
 
@@ -78,7 +80,7 @@ void registerEntityComponentAssignMethod(ice_engine::scripting::IScriptingEngine
 template <class C, typename ... Args>
 static entityx::ComponentHandle<C> assignNoForward(ecs::Entity& entity, Args... args)
 {
-	return entity.assign<C>(std::forward<Args>(args) ...);
+	return entity.assign<C>(args ...);
 }
 
 #define COMMA ,
@@ -106,7 +108,7 @@ void registerEntityComponentMethods(ice_engine::scripting::IScriptingEngine* scr
 	scriptingEngine->registerClassMethod(
 		"Entity",
 		"ComponentHandle" + name + " assignFromCopy" + name + "(const " + name + "& in)",
-		asMETHOD(ecs::Entity, assignFromCopy<C>)
+		asMETHODPR(ecs::Entity, assignFromCopy<C>, (const C&), entityx::ComponentHandle<C>)
 	);
 	scriptingEngine->registerClassMethod(
 		"Entity",

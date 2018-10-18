@@ -35,7 +35,7 @@ void ResourceCache::addImage(const std::string& name, std::unique_ptr<Image> ima
 	images_[name] = std::move(image);
 }
 
-void ResourceCache::addModel(const std::string& name, std::unique_ptr<graphics::model::Model> model)
+void ResourceCache::addModel(const std::string& name, std::unique_ptr<Model> model)
 {
 	std::lock_guard<std::recursive_mutex> lock(modelMutex_);
 	
@@ -106,7 +106,7 @@ Image* ResourceCache::getImage(const std::string& name) const
 	return nullptr;
 }
 
-graphics::model::Model* ResourceCache::getModel(const std::string& name) const
+Model* ResourceCache::getModel(const std::string& name) const
 {
 	std::lock_guard<std::recursive_mutex> lock(modelMutex_);
 	

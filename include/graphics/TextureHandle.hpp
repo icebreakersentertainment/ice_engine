@@ -17,4 +17,16 @@ public:
 }
 }
 
+namespace std
+{
+	template <>
+	struct hash<ice_engine::graphics::TextureHandle>
+	{
+		std::size_t operator()(const ice_engine::graphics::TextureHandle& k) const noexcept
+		{
+			return hash<ice_engine::uint64>{}(k.id());
+		}
+	};
+}
+
 #endif /* TEXTURE_HANDLE_H_ */

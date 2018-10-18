@@ -2,6 +2,7 @@
 #define BINDINGDELEGATEUTILITIES_H_
 
 #include <string>
+#include <map>
 #include <chrono>
 #include <future>
 
@@ -29,7 +30,7 @@ template<class T>
 static void DefaultDestructor(T* memory) { ((T*)memory)->~T(); }
 
 template<class T>
-static T& defaultAssignmentOperator(const T& other, T* v) { (*v) = std::move(const_cast<T&>(other)); return *v; }
+static T& defaultAssignmentOperator(const T& other, T* v) { (*v) = other; return *v; }
 
 template<typename T, typename V>
 class VectorRegisterHelper
@@ -111,6 +112,56 @@ void registerVectorBindings(scripting::IScriptingEngine* scriptingEngine, const 
 	scriptingEngine->registerObjectMethod(name.c_str(), "int max_size() const", asFUNCTION(VectorBase::max_size), asCALL_CDECL_OBJLAST);
 	scriptingEngine->registerObjectMethod(name.c_str(), "void reserve(int)", asFUNCTION(VectorBase::reserve), asCALL_CDECL_OBJLAST);
 	scriptingEngine->registerObjectMethod(name.c_str(), "int capacity() const", asFUNCTION(VectorBase::capacity), asCALL_CDECL_OBJLAST);
+}
+
+template<typename T, typename K, typename V>
+class MapRegisterHelper
+{
+public:
+	static void DefaultConstructor(T* memory) { new(memory) T(); }
+	static void CopyConstructor(const T& other, T* memory) { new(memory) T(other); }
+	static void DefaultDestructor(T* memory) { ((T*)memory)->~T(); }
+
+	static T& assignmentOperator(const T& other, T* m) { (*m) = other; return *m; }
+
+	static int size(T* m) { return m->size(); }
+	static V& at(const K& k, T* m) { return m->at(k); }
+	static V& index(const K& k, T* m) { return (*m)[k]; }
+	static void clear(T* m) { m->clear(); }
+	static bool empty(T* m) { return m->empty(); }
+	static int max_size(T* m) { return m->max_size(); }
+};
+
+/**
+ * Register our map bindings.
+ */
+template<typename K, typename V>
+void registerMapBindings(scripting::IScriptingEngine* scriptingEngine, const std::string& name, const std::string& keyType, const std::string& valueType, asEObjTypeFlags objectTypeFlags = asOBJ_APP_CLASS_ALLINTS)
+{
+
+	typedef MapRegisterHelper<std::map<K, V>, K, V> MapBase;
+
+	scriptingEngine->registerObjectType(name.c_str(), sizeof(std::map<K, V>), asOBJ_VALUE | objectTypeFlags | asGetTypeTraits<std::map<K, V>>());
+
+	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(MapBase::DefaultConstructor), asCALL_CDECL_OBJLAST);
+	auto copyConstructorString = std::string("void f(const ") + name + "& in)";
+	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, copyConstructorString.c_str(), asFUNCTION(MapBase::CopyConstructor), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_DESTRUCT, "void f()", asFUNCTION(MapBase::DefaultDestructor), asCALL_CDECL_OBJLAST);
+
+	auto assignmentOperatorFunctionString = name + std::string("& opAssign(const ") + name + "& in)";
+	scriptingEngine->registerObjectMethod(name.c_str(), assignmentOperatorFunctionString.c_str(), asFUNCTION(MapBase::assignmentOperator), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectMethod(name.c_str(), "int size() const", asFUNCTION(MapBase::size), asCALL_CDECL_OBJLAST);
+	auto atFunctionString = valueType + "& at(" + keyType + ")";
+	scriptingEngine->registerObjectMethod(name.c_str(), atFunctionString.c_str(), asFUNCTION(MapBase::at), asCALL_CDECL_OBJLAST);
+	auto atConstFunctionString = std::string("const ") + valueType + "& at(" + keyType + ") const";
+	scriptingEngine->registerObjectMethod(name.c_str(), atConstFunctionString.c_str(), asFUNCTION(MapBase::at), asCALL_CDECL_OBJLAST);
+	auto indexFunctionString = valueType + "& opIndex(" + keyType + ")";
+	scriptingEngine->registerObjectMethod(name.c_str(), indexFunctionString.c_str(), asFUNCTION(MapBase::index), asCALL_CDECL_OBJLAST);
+	auto indexConstFunctionString = std::string("const ") + valueType + "& opIndex(" + keyType + ") const";
+	scriptingEngine->registerObjectMethod(name.c_str(), indexConstFunctionString.c_str(), asFUNCTION(MapBase::index), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectMethod(name.c_str(), "void clear()", asFUNCTION(MapBase::clear), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectMethod(name.c_str(), "bool empty() const", asFUNCTION(MapBase::empty), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectMethod(name.c_str(), "int max_size() const", asFUNCTION(MapBase::max_size), asCALL_CDECL_OBJLAST);
 }
 
 template<typename T, typename V>

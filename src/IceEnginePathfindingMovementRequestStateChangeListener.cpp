@@ -3,7 +3,7 @@
 namespace ice_engine
 {
 
-IceEnginePathfindingMovementRequestStateChangeListener::IceEnginePathfindingMovementRequestStateChangeListener(ecs::Entity entity, Scene* scene) : entity_(entity), scene_(scene)
+IceEnginePathfindingMovementRequestStateChangeListener::IceEnginePathfindingMovementRequestStateChangeListener(ecs::Entity entity) : entity_(entity)
 {
 	
 }
@@ -21,11 +21,11 @@ void IceEnginePathfindingMovementRequestStateChangeListener::update(const pathfi
 	if (entity_.hasComponent<ecs::DirtyComponent>())
 	{
 		auto dirtyComponent = entity_.component<ecs::DirtyComponent>();
-		dirtyComponent->dirty |= ecs::DirtyFlags::DIRTY_SOURCE_PATHFINDING | ecs::DirtyFlags::DIRTY_POSITION;
+		dirtyComponent->dirty |= ecs::DirtyFlags::DIRTY_SOURCE_PATHFINDING | ecs::DirtyFlags::DIRTY_MOVEMENT_REQUEST_STATE;
 	}
 	else
 	{
-		entity_.assign<ecs::DirtyComponent>(ecs::DirtyFlags::DIRTY_SOURCE_PATHFINDING | ecs::DirtyFlags::DIRTY_POSITION);
+		entity_.assign<ecs::DirtyComponent>(ecs::DirtyFlags::DIRTY_SOURCE_PATHFINDING | ecs::DirtyFlags::DIRTY_MOVEMENT_REQUEST_STATE);
 	}
 }
 

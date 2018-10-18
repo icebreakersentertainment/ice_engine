@@ -1,5 +1,5 @@
-#ifndef BONENODE_H_
-#define BONENODE_H_
+#ifndef gBONENODE_H_
+#define gBONENODE_H_
 
 #include <string>
 #include <vector>

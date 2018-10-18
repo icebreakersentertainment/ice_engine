@@ -38,6 +38,8 @@ struct RigidBodyObjectComponent
 	{
 	};
 	
+	static uint8 id()  { return 4; }
+
 	physics::CollisionShapeHandle collisionShapeHandle;
 	float32 mass = 1.0f;
 	float32 friction = 1.0f;

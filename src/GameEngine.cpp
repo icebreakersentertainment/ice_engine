@@ -24,12 +24,8 @@
 #include "ModelLoader.hpp"
 #include "graphics/model/Animate.hpp"
 
-#include "graphics/GraphicsEngineFactory.hpp"
 #include "TerrainFactory.hpp"
-#include "audio/AudioEngineFactory.hpp"
 #include "networking/NetworkingEngineFactory.hpp"
-#include "physics/PhysicsFactory.hpp"
-#include "pathfinding/PathfindingEngineFactory.hpp"
 #include "scripting/ScriptingFactory.hpp"
 
 #include "graphics/Event.hpp"
@@ -37,6 +33,8 @@
 #include "logger/Logger.hpp"
 #include "fs/FileSystem.hpp"
 #include "Image.hpp"
+
+#include "exceptions/FileNotFoundException.hpp"
 
 #include "utilities/IoUtilities.hpp"
 
@@ -168,10 +166,10 @@ void GameEngine::tick(const float32 delta)
 	std::vector<std::future<void>> futures;
 	for (auto& scene : scenes_)
 	{
-		std::function<void()> work = [&scene, delta = delta]() {
+//		std::function<void()> work = [&scene, delta = delta]() {
 			scene->tick(delta);
-		};
-		futures.push_back(foregroundThreadPool_->postWork(std::move(work)));
+//		};
+//		futures.push_back(foregroundThreadPool_->postWork(std::move(work)));
 	}
 	
 	for (auto& f : futures)
@@ -180,10 +178,10 @@ void GameEngine::tick(const float32 delta)
 		f.get();
 	}
 
-//	while (foregroundThreadPool_->getWorkQueueCount() + foregroundThreadPool_->getActiveWorkerCount() > 0)
-//	{
-//		// sleep
-//	}
+	while (foregroundThreadPool_->getWorkQueueCount() + foregroundThreadPool_->getActiveWorkerCount() > 0)
+	{
+		// sleep
+	}
 	
 	for (auto& module : modules_)
 	{
@@ -199,6 +197,11 @@ void GameEngine::tick(const float32 delta)
 	if (openGlLoader_->getWorkQueueCount() != 0u)
 	{
 		openGlLoader_->tick();
+	}
+
+	while (forgroundGraphicsThreadPool_->getWorkQueueCount() != 0u)
+	{
+		forgroundGraphicsThreadPool_->tick();
 	}
 }
 
@@ -277,21 +280,52 @@ void GameEngine::initializeSoundSubSystem()
 
 void GameEngine::initializePhysicsSubSystem()
 {
-	physicsEngine_ = physics::PhysicsFactory::createPhysicsEngine(properties_.get(), fileSystem_.get(), logger_.get());
-	
-	physicsEngine_->setPhysicsDebugRenderer(debugRenderer_.get());
+	LOG_INFO(logger_, "initializing physics." );
+
+	if (!physicsEngineFactory_)
+	{
+		auto physicsPlugin = pluginManager_->getPhysicsPlugin();
+
+		if (physicsPlugin)
+		{
+			LOG_INFO(logger_, "initializing physics plugin " + physicsPlugin->getName() + "." );
+			physicsEngineFactory_ = physicsPlugin->createFactory();
+
+			physicsEngine_ = physicsEngineFactory_->create( properties_.get(), fileSystem_.get(), logger_.get() );
+
+			physicsEngine_->setPhysicsDebugRenderer(debugRenderer_.get());
+		}
+		else
+		{
+			LOG_INFO(logger_, "physics system not initialized - no physics plugin found." );
+//			physicsEngineFactory_ = std::make_unique<physics::PhysicsEngineFactory>();
+		}
+	}
 }
 
 void GameEngine::initializePathfindingSubSystem()
 {
+	LOG_INFO(logger_, "initializing pathfinding." );
+
 	if (!pathfindingEngineFactory_)
 	{
-		pathfindingEngineFactory_ = std::make_unique<pathfinding::PathfindingEngineFactory>();
+		auto pathfindingPlugin = pluginManager_->getPathfindingPlugin();
+
+		if (pathfindingPlugin)
+		{
+			LOG_INFO(logger_, "initializing pathfinding plugin " + pathfindingPlugin->getName() + "." );
+			pathfindingEngineFactory_ = pathfindingPlugin->createFactory();
+
+			pathfindingEngine_ = pathfindingEngineFactory_->create( properties_.get(), fileSystem_.get(), logger_.get() );
+
+			pathfindingEngine_->setPathfindingDebugRenderer(debugRenderer_.get());
+		}
+		else
+		{
+			LOG_INFO(logger_, "pathfinding system not initialized - no pathfinding plugin found." );
+//			pathfindingEngineFactory_ = std::make_unique<pathfinding::PathfindingEngineFactory>();
+		}
 	}
-	
-	pathfindingEngine_ = pathfindingEngineFactory_->create( properties_.get(), fileSystem_.get(), logger_.get() );
-	
-	pathfindingEngine_->setPathfindingDebugRenderer(debugRenderer_.get());
 }
 
 void GameEngine::initializeGraphicsSubSystem()
@@ -306,18 +340,19 @@ void GameEngine::initializeGraphicsSubSystem()
 		{
 			LOG_INFO(logger_, "initializing graphics plugin " + graphicsPlugin->getName() + "." );
 			graphicsEngineFactory_ = graphicsPlugin->createFactory();
+
+			graphicsEngine_ = graphicsEngineFactory_->create( properties_.get(), fileSystem_.get(), logger_.get() );
+
+			graphicsEngine_->addEventListener(this);
+
+			debugRenderer_ = std::make_unique<DebugRenderer>(graphicsEngine_.get());
 		}
 		else
 		{
-			graphicsEngineFactory_ = std::make_unique<graphics::GraphicsEngineFactory>();
+			LOG_INFO(logger_, "graphics system not initialized - no graphics plugin found." );
+//			graphicsEngineFactory_ = std::make_unique<graphics::GraphicsEngineFactory>();
 		}
 	}
-	
-	graphicsEngine_ = graphicsEngineFactory_->create( properties_.get(), fileSystem_.get(), logger_.get() );
-	
-	graphicsEngine_->addEventListener(this);
-	
-	debugRenderer_ = std::make_unique<DebugRenderer>(graphicsEngine_.get());
 }
 
 void GameEngine::initializeTerrainSubSystem()
@@ -348,27 +383,49 @@ void GameEngine::initializeModuleSubSystem()
 void GameEngine::initializeAudioSubSystem()
 {
 	LOG_INFO(logger_, "initializing audio." );
-	
+
 	if (!audioEngineFactory_)
 	{
-		audioEngineFactory_ = std::make_unique<audio::AudioEngineFactory>();
+		auto audioPlugin = pluginManager_->getAudioPlugin();
+
+		if (audioPlugin)
+		{
+			LOG_INFO(logger_, "initializing audio plugin " + audioPlugin->getName() + "." );
+			audioEngineFactory_ = audioPlugin->createFactory();
+
+			audioEngine_ = audioEngineFactory_->create( properties_.get(), fileSystem_.get(), logger_.get() );
+		}
+		else
+		{
+			LOG_INFO(logger_, "audio system not initialized - no audio plugin found." );
+//			audioEngineFactory_ = std::make_unique<audio::AudioEngineFactory>();
+		}
 	}
-	
-	audioEngine_ = audioEngineFactory_->create( properties_.get(), fileSystem_.get(), logger_.get() );
 }
 
 void GameEngine::initializeNetworkingSubSystem()
 {
 	LOG_INFO(logger_, "initializing networking." );
-	
+
 	if (!networkingEngineFactory_)
 	{
-		networkingEngineFactory_ = std::make_unique<networking::NetworkingEngineFactory>();
+		auto networkingPlugin = pluginManager_->getNetworkingPlugin();
+
+		if (networkingPlugin)
+		{
+			LOG_INFO(logger_, "initializing networking plugin " + networkingPlugin->getName() + "." );
+			networkingEngineFactory_ = networkingPlugin->createFactory();
+
+			networkingEngine_ = networkingEngineFactory_->create( properties_.get(), fileSystem_.get(), logger_.get() );
+
+			networkingEngine_->addEventListener(this);
+		}
+		else
+		{
+			LOG_INFO(logger_, "networking system not initialized - no networking plugin found." );
+//			networkingEngineFactory_ = std::make_unique<networking::NetworkingEngineFactory>();
+		}
 	}
-	
-	networkingEngine_ = networkingEngineFactory_->create( properties_.get(), fileSystem_.get(), logger_.get() );
-	
-	networkingEngine_->addEventListener(this);
 }
 
 void GameEngine::initializeScriptingSubSystem()
@@ -407,6 +464,7 @@ void GameEngine::initializeThreadingSubSystem()
 	
 	LOG_DEBUG(logger_, "Load opengl loader..." );
 	openGlLoader_ = std::make_unique<OpenGlLoader>();
+	forgroundGraphicsThreadPool_ = std::make_unique<OpenGlLoader>();
 }
 
 void GameEngine::initializeDataStoreSubSystem()
@@ -815,31 +873,31 @@ std::shared_future<Image*> GameEngine::loadImageAsync(const std::string& name, c
 	return sharedFuture;
 }
 
-graphics::model::Model* GameEngine::loadModel(const std::string& name, const std::string& filename)
+Model* GameEngine::loadModel(const std::string& name, const std::string& filename)
 {
 	throw std::logic_error("loadModel not yet implemented.");
 }
 
-std::shared_future<graphics::model::Model*> GameEngine::loadModelAsync(const std::string& name, const std::string& filename)
+std::shared_future<Model*> GameEngine::loadModelAsync(const std::string& name, const std::string& filename)
 {
 	throw std::logic_error("loadModelAsync not yet implemented.");
 }
 
-graphics::model::Model* GameEngine::importModel(const std::string& name, const std::string& filename)
+Model* GameEngine::importModel(const std::string& name, const std::string& filename)
 {
 	if (!fileSystem_->exists(filename))
 	{
-		throw std::runtime_error("Model file '" + filename + "' does not exist.");
+		throw FileNotFoundException("Model file '" + filename + "' does not exist.");
 	}
 	
-	resourceCache_.addModel( name, model::import(filename, logger_.get(), fileSystem_.get()) );
+	resourceCache_.addModel( name, std::make_unique<Model>(filename, &resourceCache_, logger_.get(), fileSystem_.get()) );
 	
 	return resourceCache_.getModel(name);
 }
 
-std::shared_future<graphics::model::Model*> GameEngine::importModelAsync(const std::string& name, const std::string& filename)
+std::shared_future<Model*> GameEngine::importModelAsync(const std::string& name, const std::string& filename)
 {
-	auto promise = std::make_shared<std::promise<graphics::model::Model*>>();
+	auto promise = std::make_shared<std::promise<Model*>>();
 	auto sharedFuture = promise->get_future().share();
 	
 	std::function<void()> func = [=, &logger = logger_, promise = promise, sharedFuture = sharedFuture, name = name, filename = filename]() {
@@ -848,10 +906,15 @@ std::shared_future<graphics::model::Model*> GameEngine::importModelAsync(const s
 			auto model = this->importModel(name, filename);
 			promise->set_value(model);
 		}
+		catch (const Exception& e)
+		{
+			promise->set_exception(std::current_exception());
+			logger->error("Error while importing model: " + boost::diagnostic_information(e));
+		}
 		catch (const std::exception& e)
 		{
 			promise->set_exception(std::current_exception());
-			logger->error("Error while importing model: " + std::string(e.what()));
+			logger->error("Error while importing model: " + boost::diagnostic_information(e));
 		}
 	};
 	
@@ -891,24 +954,24 @@ Image* GameEngine::getImage(const std::string& name) const
 	return resourceCache_.getImage(name);
 }
 
-graphics::model::Model* GameEngine::getModel(const std::string& name) const
+Model* GameEngine::getModel(const std::string& name) const
 {
 	return resourceCache_.getModel(name);
 }
 
-ModelHandle GameEngine::loadStaticModel(const graphics::model::Model* model)
+ModelHandle GameEngine::loadStaticModel(const Model* model)
 {
-	auto meshHandle = graphicsEngine_->createStaticMesh(model->meshes[0].vertices, model->meshes[0].indices, model->meshes[0].colors, model->meshes[0].normals, model->meshes[0].textureCoordinates);
-	auto textureHandle = graphicsEngine_->createTexture2d( static_cast<const graphics::IImage*>(&model->textures[0].image) );
-	
-	staticModels_.push_back(std::make_pair(meshHandle, textureHandle));
-	
-	auto index = staticModels_.size() - 1;
-	
-	return ModelHandle(index);
+//	auto meshHandle = graphicsEngine_->createStaticMesh(model->meshes[0].vertices, model->meshes[0].indices, model->meshes[0].colors, model->meshes[0].normals, model->meshes[0].textureCoordinates);
+//	auto textureHandle = graphicsEngine_->createTexture2d( static_cast<const graphics::IImage*>(&model->textures[0].image) );
+//
+//	staticModels_.push_back(std::make_pair(meshHandle, textureHandle));
+//
+//	auto index = staticModels_.size() - 1;
+//
+	return ModelHandle();
 }
 
-std::shared_future<ModelHandle> GameEngine::loadStaticModelAsync(const graphics::model::Model* model)
+std::shared_future<ModelHandle> GameEngine::loadStaticModelAsync(const Model* model)
 {
 	auto promise = std::make_shared<std::promise<ModelHandle>>();
 	auto sharedFuture = promise->get_future().share();
@@ -1220,6 +1283,36 @@ graphics::RenderableHandle GameEngine::createRenderable(
 	return graphicsEngine_->createRenderable(renderSceneHandle, meshHandle, textureHandle, position, orientation, scale);
 }
 
+static float32 elapsedTime = 0.0f;
+void GameEngine::animateSkeleton(
+	std::vector< glm::mat4 >& transformations,
+	const graphics::MeshHandle& meshHandle,
+	const AnimationHandle& animationHandle,
+	const SkeletonHandle& skeletonHandle
+)
+{
+	const auto& mesh = meshes_[meshHandle];
+	const auto& animation = animations_[animationHandle];
+	const auto& skeleton = skeletons_[skeletonHandle];
+
+	transformations = std::vector<glm::mat4>(100, glm::mat4(1.0f));
+
+	elapsedTime += 0.001f;
+
+	ice_engine::animateSkeleton(
+		transformations,
+		skeleton.globalInverseTransformation(),
+		animation.animatedBoneNodes(),
+		skeleton.rootBoneNode(),
+		mesh.boneData(),
+		animation.duration(),
+		animation.ticksPerSecond(),
+		elapsedTime,
+		0,
+		48
+	);
+}
+
 void GameEngine::handleEvents()
 {
 	graphicsEngine_->processEvents();
@@ -1485,6 +1578,8 @@ void GameEngine::removeMessageEventListener(void* object)
 
 bool GameEngine::processEvent(const graphics::Event& event)
 {
+	bool consumed = false;
+
 	switch(event.type)
 	{
 		case graphics::QUIT:
@@ -1494,24 +1589,34 @@ bool GameEngine::processEvent(const graphics::Event& event)
 			break;
 		
 		case graphics::WINDOWEVENT:
-			std::cout << "Processing window event." << std::endl;
-			
 			for (auto listener : windowEventListeners_)
 			{
-				bool returnValue = listener->processEvent(event.window);
+				if (consumed) break;
+				consumed = listener->processEvent(event.window);
 			}
+
+			if (consumed) break;
+
 			for (const auto& data : scriptWindowEventListeners_)
 			{
+				if (consumed) break;
+
 				scripting::ParameterList arguments;
 				arguments.addRef(event.window);
 				uint8 returnValue = false;
 				
 				scriptingEngine_->execute(data.first, data.second, arguments, returnValue);
+
+				consumed = returnValue;
 			}
 			
+			if (consumed) break;
+
 			for (auto& gui : guis_)
 			{
-				gui->processEvent(event.window);
+				if (consumed) break;
+
+				consumed = gui->processEvent(event.window);
 			}
 			
 			switch(event.window.eventType)
@@ -1523,30 +1628,40 @@ bool GameEngine::processEvent(const graphics::Event& event)
 					break;
 			}
 			
-			return true;
 			break;
 		
 		case graphics::KEYDOWN:
 		case graphics::KEYUP:
-			std::cout << "Processing key event." << std::endl;
-			
+			for (auto& gui : guis_)
+			{
+				if (consumed) break;
+				consumed = gui->processEvent(event.key);
+			}
+
+			if (consumed) break;
+
 			for (auto listener : keyboardEventListeners_)
 			{
-				bool returnValue = listener->processEvent(event.key);
+				if (consumed) break;
+				consumed = listener->processEvent(event.key);
 			}
+
+			if (consumed) break;
+
 			for (const auto& data : scriptKeyboardEventListeners_)
 			{
+				if (consumed) break;
+
 				scripting::ParameterList arguments;
 				arguments.addRef(event.key);
 				uint8 returnValue = false;
 				
 				scriptingEngine_->execute(data.first, data.second, arguments, returnValue);
+
+				consumed = returnValue;
 			}
-			
-			for (auto& gui : guis_)
-			{
-				gui->processEvent(event.key);
-			}
+
+			if (consumed) break;
 			
 			if (event.key.keySym.scancode == graphics::SCANCODE_ESCAPE)
 			{
@@ -1557,67 +1672,96 @@ bool GameEngine::processEvent(const graphics::Event& event)
 			break;
 			
 		case graphics::MOUSEMOTION:
+			for (auto& gui : guis_)
+			{
+				if (consumed) break;
+				consumed = gui->processEvent(event.motion);
+			}
+
 			for (auto listener : mouseMotionEventListeners_)
 			{
-				bool returnValue = listener->processEvent(event.motion);
+				if (consumed) break;
+				consumed = listener->processEvent(event.motion);
 			}
+
 			for (const auto& data : scriptMouseMotionEventListeners_)
 			{
+				if (consumed) break;
+
 				scripting::ParameterList arguments;
 				arguments.addRef(event.motion);
 				uint8 returnValue = false;
 				
 				scriptingEngine_->execute(data.first, data.second, arguments, returnValue);
+
+				consumed = returnValue;
 			}
 			
-			for (auto& gui : guis_)
-			{
-				gui->processEvent(event.motion);
-			}
+			if (consumed) break;
 			
 			break;
 		
 		case graphics::MOUSEBUTTONDOWN:
 		case graphics::MOUSEBUTTONUP:
+			for (auto& gui : guis_)
+			{
+				if (consumed) break;
+				consumed = gui->processEvent(event.button);
+			}
+
+			if (consumed) break;
+
 			for (auto listener : mouseButtonEventListeners_)
 			{
-				bool returnValue = listener->processEvent(event.button);
+				if (consumed) break;
+				consumed = listener->processEvent(event.button);
 			}
+
+			if (consumed) break;
+
 			for (const auto& data : scriptMouseButtonEventListeners_)
 			{
+				if (consumed) break;
+
 				scripting::ParameterList arguments;
 				arguments.addRef(event.button);
 				uint8 returnValue = false;
 				
 				scriptingEngine_->execute(data.first, data.second, arguments, returnValue);
+
+				consumed = returnValue;
 			}
-			
-			for (auto& gui : guis_)
-			{
-				gui->processEvent(event.button);
-			}
-			
-			//physicsEngine_->raycast(glm::vec3(0.5, 4, 0.5), glm::vec3(0.5, -4, 0.5));
 			
 			break;
 			
 		case graphics::MOUSEWHEEL:
+			for (auto& gui : guis_)
+			{
+				if (consumed) break;
+				consumed = gui->processEvent(event.wheel);
+			}
+
+			if (consumed) break;
+
 			for (auto listener : mouseWheelEventListeners_)
 			{
-				bool returnValue = listener->processEvent(event.wheel);
+				if (consumed) break;
+				consumed = listener->processEvent(event.wheel);
 			}
+
+			if (consumed) break;
+
 			for (const auto& data : scriptMouseWheelEventListeners_)
 			{
+				if (consumed) break;
+
 				scripting::ParameterList arguments;
 				arguments.addRef(event.wheel);
 				uint8 returnValue = false;
 				
 				scriptingEngine_->execute(data.first, data.second, arguments, returnValue);
-			}
-			
-			for (auto& gui : guis_)
-			{
-				gui->processEvent(event.wheel);
+
+				consumed = returnValue;
 			}
 			
 			break;
@@ -1735,6 +1879,7 @@ void GameEngine::run()
 	float32 currentFps = 0.0f;
 	float32 tempFps = 0.0f;
 	float32 delta = 0.0f;
+	float32 cumulativeDelta = 0.0f;
 	
 	//float32 runningTime;
 	//std::vector< glm::mat4 > transformations;
@@ -1759,6 +1904,7 @@ void GameEngine::run()
 	{
 		beginFpsTime = std::chrono::high_resolution_clock::now();
 		delta = std::chrono::duration<float32>(beginFpsTime - endFpsTime).count();
+		cumulativeDelta += delta;
 		
 		tempFps++;
 		
@@ -1771,7 +1917,15 @@ void GameEngine::run()
 		
 		networkingEngine_->tick(delta);
 		
-		tick(delta);
+		const float32 updateFrequency = 1.0f / 60.0f;
+		int a = 0;
+		while (cumulativeDelta >= updateFrequency && a < 3)
+		{
+			tick(updateFrequency);
+			cumulativeDelta -= updateFrequency;
+			a++;
+		}
+//		tick(delta);
 		
 		// test animation
 		/*
