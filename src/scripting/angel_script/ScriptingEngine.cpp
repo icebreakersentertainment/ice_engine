@@ -430,8 +430,6 @@ void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptModule* m
 	auto func = getFunctionByDecl(function, module);
 	
 	callFunction(context, func);
-
-	func->Release();
 }
 
 void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptModule* module, const std::string& function, ParameterList& arguments) const
@@ -439,8 +437,6 @@ void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptModule* m
 	auto func = getFunctionByDecl(function, module);
 	
 	callFunction(context, func, arguments);
-
-	func->Release();
 }
 
 void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptFunctionHandle& scriptFunctionHandle) const
@@ -475,8 +471,6 @@ void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptObject
 	auto objectFunction = getMethod(scriptObjectHandle, function);
 	
 	callFunction(context, objectFunction, object);
-
-	objectFunction->Release();
 }
 
 void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptObjectHandle& scriptObjectHandle, const std::string& function, ParameterList& arguments) const
@@ -486,8 +480,6 @@ void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptObject
 	auto objectFunction = getMethod(scriptObjectHandle, function);
 	
 	callFunction(context, objectFunction, object, arguments);
-
-	objectFunction->Release();
 }
 
 void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptObjectHandle& scriptObjectHandle, const ScriptObjectFunctionHandle& scriptObjectFunctionHandle) const
@@ -1577,6 +1569,20 @@ void ScriptingEngine::releaseAllScriptObjects()
 	LOG_TRACE(logger_, "Releasing all script objects");
 }
 
+void ScriptingEngine::releaseScriptObjectFunction(const ScriptObjectFunctionHandle& scriptObjectFunctionHandle)
+{
+	auto object = static_cast<asIScriptFunction*>(scriptObjectFunctionHandle.get());
+
+	LOG_TRACE(logger_, "Releasing script object function: %s", object->GetObjectType()->GetName());
+
+	object->Release();
+}
+
+void ScriptingEngine::releaseAllScriptObjectFunctions()
+{
+	LOG_TRACE(logger_, "Releasing all script object functions");
+}
+
 void ScriptingEngine::releaseScriptFunction(const ScriptFunctionHandle& scriptFunctionHandle)
 {
 	auto function = static_cast<asIScriptFunction*>(scriptFunctionHandle.get());
@@ -1770,6 +1776,8 @@ ScriptObjectFunctionHandle ScriptingEngine::getScriptObjectFunction(const Script
 	
 	auto scriptFunctionObject = getFunctionByDecl(function, object);
 	
+	scriptFunctionObject->AddRef();
+
 	return ScriptObjectFunctionHandle(scriptFunctionObject);
 }
 

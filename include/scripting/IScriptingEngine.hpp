@@ -183,6 +183,9 @@ public:
 
 	virtual void releaseScriptObject(const ScriptObjectHandle& scriptObjectHandle) = 0;
 	virtual void releaseAllScriptObjects() = 0;
+
+	virtual void releaseScriptObjectFunction(const ScriptObjectFunctionHandle& scriptObjectFunctionHandle) = 0;
+	virtual void releaseAllScriptObjectFunctions() = 0;
 	
 	virtual void releaseScriptFunction(const ScriptFunctionHandle& scriptFunctionHandle) = 0;
 	virtual void releaseAllScriptFunctions() = 0;

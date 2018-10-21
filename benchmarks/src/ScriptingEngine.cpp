@@ -18,14 +18,13 @@ public:
 	{
 		fileSystem = ice_engine::fs::FileSystem();
 		properties = ice_engine::utilities::Properties();
-		logger = std::make_unique<ice_engine::logger::Logger>();
-		
+
 		scriptingEngine = std::make_unique<ice_engine::scripting::angel_script::ScriptingEngine>(&properties, &fileSystem, logger.get());
 	}
 	
 	ice_engine::fs::FileSystem fileSystem;
 	ice_engine::utilities::Properties properties;
-	std::unique_ptr<ice_engine::logger::ILogger> logger;
+	std::unique_ptr<ice_engine::logger::ILogger> logger = std::make_unique<ice_engine::logger::Logger>();
 	
 	std::unique_ptr<ice_engine::scripting::angel_script::ScriptingEngine> scriptingEngine;
 };
@@ -42,7 +41,7 @@ public:
 		
 		scriptingEngine->registerGlobalFunction(
 			"void setTestInstance(ITest@)",
-			asMETHODPR(FixtureCallback, setTestInstance, (ice_engine::scripting::ScriptObjectHandle), void),
+			asMETHODPR(FixtureCallback, setTestInstance, (void*), void),
 			asCALL_THISCALL_ASGLOBAL,
 			this
 		);
@@ -67,13 +66,32 @@ void main()
 )END";
 		moduleHandle = scriptingEngine->createModule("", {source});
 		scriptingEngine->execute(moduleHandle, std::string("void main()"));
-		
+
 		scriptObjectFunctionHandle = scriptingEngine->getScriptObjectFunction(scriptObjectHandle, std::string("void tick(const float)"));
 	}
 	
-	void setTestInstance(ice_engine::scripting::ScriptObjectHandle scriptObjectHandle)
+	virtual void tearDown() override
 	{
-		this->scriptObjectHandle = scriptObjectHandle;
+		Fixture::tearDown();
+
+		if (scriptObjectHandle)
+		{
+			scriptingEngine->releaseScriptObject(scriptObjectHandle);
+			scriptObjectHandle.invalidate();
+		}
+
+		if (scriptObjectFunctionHandle)
+		{
+			scriptingEngine->releaseScriptObjectFunction(scriptObjectFunctionHandle);
+			scriptObjectFunctionHandle.invalidate();
+		}
+	}
+
+	void setTestInstance(void* object)
+	{
+		if (scriptObjectHandle) scriptingEngine->releaseScriptObject(scriptObjectHandle);
+
+		this->scriptObjectHandle = ice_engine::scripting::ScriptObjectHandle(object);
 	}
 	
 	ice_engine::scripting::ScriptObjectHandle scriptObjectHandle;
@@ -95,6 +113,6 @@ BENCHMARK_F(ScriptingEngine, ScriptObjectTick, FixtureCallback, 0, 10000)
 {
 	ice_engine::scripting::ParameterList params;
 	params.add(0.001f);
-	
+
 	scriptingEngine->execute(scriptObjectHandle, scriptObjectFunctionHandle, params);
 }

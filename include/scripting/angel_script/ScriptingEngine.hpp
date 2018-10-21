@@ -195,6 +195,9 @@ public:
 	virtual void releaseScriptObject(const ScriptObjectHandle& scriptObjectHandle) override;
 	virtual void releaseAllScriptObjects() override;
 	
+	virtual void releaseScriptObjectFunction(const ScriptObjectFunctionHandle& scriptObjectFunctionHandle) override;
+	virtual void releaseAllScriptObjectFunctions() override;
+
 	virtual void releaseScriptFunction(const ScriptFunctionHandle& scriptFunctionHandle) override;
 	virtual void releaseAllScriptFunctions() override;
 	
