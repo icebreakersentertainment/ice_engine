@@ -11,7 +11,7 @@ find_library(CELERO_LIBRARY NAMES celero_static celero PATHS ${PROJECT_LINK_LIBR
 if(WIN32)
   configure_file(../deps/freeimage/lib/FreeImage.dll ./ COPYONLY)
   configure_file(../deps/glew/lib/glew32.dll ./ COPYONLY)
-  configure_file(../deps/assimp/lib/assimp.dll ./ COPYONLY)
+  configure_file(../deps/assimp/lib/assimp-vc140-mt.dll ./ COPYONLY)
 elseif(UNIX)
   configure_file(${FREEIMAGE_LIBRARY} ./libfreeimage.so.3 COPYONLY)
   configure_file(${BOOST_SYSTEM_LIBRARY} ./ COPYONLY)
