@@ -47,7 +47,10 @@ if isWindows:
 	staticLibraryExt = 'lib'
 	extension = 'zip'
 if isMac:
+	compiler = 'clang'
+	compilerVersion = '8'
 	platform = 'mac'
+	sharedLibraryExt = 'dylib'
 
 args = parser.parse_args()
 
@@ -90,13 +93,8 @@ if (compiler == 'msvc' and isMac):
 if (compiler == 'msvc'):
 	compilerVersion = '15'
 if (compiler == 'clang'):
-	compilerVersion = '2'
+	compilerVersion = '8'
 
-# Mac not ready yet...
-if (isMac):
-	print('Mac is not yet implemented in setup.py - sorry!')
-	exit()
-	
 # Debug not ready yet...
 if (buildType == 'debug'):
 	print('Debug build type is not ready yet - sorry!')
