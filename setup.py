@@ -118,7 +118,7 @@ dependencies['entityx'] = {'name': 'Entityx', 'version': 'master', 'extension': 
 dependencies['glew'] = {'name': 'GLEW', 'version': '2.1.0', 'extension': extension}
 dependencies['sdl'] = {'name': 'SDL', 'version': '2.0.8', 'extension': extension}
 dependencies['ctpl'] = {'name': 'CTPL', 'version': 'master', 'extension': extension}
-dependencies['freeimage'] = {'name': 'Free Image', 'version': '3.17.0', 'extension': extension}
+dependencies['freeimage'] = {'name': 'Free Image', 'version': '3.18.0', 'extension': extension}
 dependencies['celero'] = {'name': 'Celero', 'version': 'v2.1.0', 'extension': extension}
 
 def getFilename(name, version):
