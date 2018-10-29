@@ -1,26 +1,35 @@
 language: cpp
 
-services:
-  - docker
+matrix:
+  include:
+  - os: osx
+    osx_image: xcode8
+    compiler: clang
+  - os: linux
+    dist: trusty
+    sudo: required
+    services: docker
+    compiler: g++
 
-compiler:
-  - g++
+before_install: |
+  if [ "$TRAVIS_OS_NAME" == "linux" ]; then
+    docker run -d --name ubuntu-test -v $(pwd):/travis ubuntu:16.04 tail -f /dev/null
+    docker ps
+  fi
 
-dist: trusty
-sudo: required
-
-before_install:
-  - docker run -d --name ubuntu-test -v $(pwd):/travis ubuntu:16.04 tail -f /dev/null
-  - docker ps
-
-install:
-  - docker exec -t ubuntu-test bash -c "apt-get -qq update;
+install: |
+  if [ "$TRAVIS_OS_NAME" == "osx" ]; then
+    brew update
+    python setup.py
+  elif [ "$TRAVIS_OS_NAME" == "linux" ]; then
+    docker exec -t ubuntu-test bash -c "apt-get -qq update;
     apt-get install -y software-properties-common python-software-properties;
     add-apt-repository -y ppa:ubuntu-toolchain-r/test;
     apt-get -qq update;
     apt-get install -y gcc-6 g++-6 cmake;
     apt-get install -y libgl1-mesa-dev libglu1-mesa-dev"
-  - docker exec -t ubuntu-test bash -c "DEBIAN_FRONTEND=noninteractive apt-get install -y tzdata;
+    
+    docker exec -t ubuntu-test bash -c "DEBIAN_FRONTEND=noninteractive apt-get install -y tzdata;
     ln -fs /usr/share/zoneinfo/UTCyes /etc/localtime;
     dpkg-reconfigure --frontend noninteractive tzdata;
     apt-get install -yq --no-install-suggests --no-install-recommends --force-yes build-essential checkinstall;
@@ -33,10 +42,19 @@ install:
     ./configure;
     make altinstall;
     "
-  - docker exec -t ubuntu-test bash -c "cd /travis; python2.7 setup.py"
+    
+    docker exec -t ubuntu-test bash -c "cd /travis; python2.7 setup.py"
+  fi
 
-script:
-  - docker exec -t ubuntu-test bash -c "cd /travis;
+script: |
+  if [ "$TRAVIS_OS_NAME" == "osx" ]; then
+    mkdir build
+    cd build
+    cmake -DCMAKE_BUILD_TYPE=Release -DICEENGINE_BUILD_BENCHMARKS=1 -DICEENGINE_BUILD_TESTS=1 -DICEENGINE_BUILD_AS_LIBRARY=1 ..
+    make
+    ctest
+  elif [ "$TRAVIS_OS_NAME" == "linux" ]; then
+    docker exec -t ubuntu-test bash -c "cd /travis;
     ln -s /usr/bin/gcc-6 /usr/local/bin/gcc &&
     ln -s /usr/bin/g++-6 /usr/local/bin/g++ &&
     export CC=/usr/bin/gcc-6 &&
@@ -48,3 +66,4 @@ script:
     cmake -DCMAKE_BUILD_TYPE=Release -DICEENGINE_BUILD_BENCHMARKS=1 -DICEENGINE_BUILD_TESTS=1 -DICEENGINE_BUILD_AS_LIBRARY=1 .. &&
     make &&
     ctest"
+  fi
