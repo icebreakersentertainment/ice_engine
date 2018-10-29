@@ -2,6 +2,7 @@
 #define IBUTTON_H_
 
 #include <functional>
+#include <string>
 
 #include "IComponent.hpp"
 

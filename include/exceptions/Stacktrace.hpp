@@ -1,6 +1,8 @@
 #ifndef STACKTRACE_H_
 #define STACKTRACE_H_
 
+#define BOOST_STACKTRACE_GNU_SOURCE_NOT_REQUIRED
+
 #include <boost/stacktrace/stacktrace.hpp>
 #include <boost/exception/error_info.hpp>
 #include <boost/exception/exception.hpp>

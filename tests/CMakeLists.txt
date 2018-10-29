@@ -6,16 +6,24 @@ find_package(Boost 1.66.0 REQUIRED COMPONENTS unit_test_framework)
 
 find_library(BOOST_UNIT_TEST_FRAMEWORK_LIBRARY NAMES
   ${BOOST_FILENAME_PREFIX}boost_unit_test_framework${BOOST_FILENAME_POSTFIX}.so.${BOOST_VERSION}
+  ${BOOST_FILENAME_PREFIX}boost_unit_test_framework${BOOST_FILENAME_POSTFIX}.dylib
   ${BOOST_FILENAME_PREFIX}boost_unit_test_framework${BOOST_FILENAME_POSTFIX}
   PATHS ${BOOST_LIBRARY_DIRS}
 )
+
+if(APPLE)
+  find_library(BOOST_TIMER_LIBRARY NAMES
+    ${BOOST_FILENAME_PREFIX}boost_timer${BOOST_FILENAME_POSTFIX}.dylib
+    PATHS ${BOOST_LIBRARY_DIRS}
+  )
+endif()
 
 if(WIN32)
   configure_file(../deps/freeimage/lib/FreeImage.dll ./ COPYONLY)
   configure_file(../deps/glew/lib/glew32.dll ./ COPYONLY)
   configure_file(../deps/assimp/lib/assimp.dll ./ COPYONLY)
   file(COPY ../tests/fixtures DESTINATION ./)
-else()
+elseif(UNIX)
   configure_file(${FREEIMAGE_LIBRARY} ./libfreeimage.so.3 COPYONLY)
   configure_file(${BOOST_SYSTEM_LIBRARY} ./ COPYONLY)
   configure_file(${BOOST_CHRONO_LIBRARY} ./ COPYONLY)
@@ -31,6 +39,11 @@ else()
   configure_file(${ASSIMP_LIBRARY} ./ COPYONLY)
   configure_file(${ENTITYX_LIBRARY} ./ COPYONLY)
   file(COPY ../tests/fixtures DESTINATION ./)
+endif()
+
+if(APPLE)
+  configure_file(${BOOST_SERIALIZATION_LIBRARY} ./ COPYONLY)
+  configure_file(${BOOST_TIMER_LIBRARY} ./ COPYONLY)
 endif()
 
 macro(create_test TEST_NAME EXECUTABLE_NAME SOURCE)
@@ -70,9 +83,11 @@ macro(create_test TEST_NAME EXECUTABLE_NAME SOURCE)
   
   target_link_libraries(${EXECUTABLE_NAME} Threads::Threads)
   target_link_libraries(${EXECUTABLE_NAME} ${OPENGL_gl_LIBRARY})
-  target_link_libraries(${EXECUTABLE_NAME} ${X11_LIBRARIES})
-  target_link_libraries(${EXECUTABLE_NAME} ${X11_Xext_LIB})
-  target_link_libraries(${EXECUTABLE_NAME} ${X11_Xxf86vm_LIB})
+  if(UNIX AND NOT APPLE)
+    target_link_libraries(${EXECUTABLE_NAME} ${X11_LIBRARIES})
+    target_link_libraries(${EXECUTABLE_NAME} ${X11_Xext_LIB})
+    target_link_libraries(${EXECUTABLE_NAME} ${X11_Xxf86vm_LIB})
+  endif()
   target_link_libraries(${EXECUTABLE_NAME} ${CMAKE_DL_LIBS})
   
   if(WIN32)

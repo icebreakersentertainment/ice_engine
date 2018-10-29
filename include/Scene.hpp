@@ -273,7 +273,7 @@ public:
 
 		auto scriptFunctionHandleWrapper = ScriptFunctionHandleWrapper(scriptingEngine_, scriptFunctionHandle);
 
-		for (const auto entity : const_cast<ecs::EntityComponentSystem*>(entityComponentSystem_)->entities_.template entities_with_components<C ...>())
+		for (const auto entity : const_cast<ecs::EntityComponentSystem*>(entityComponentSystem_.get())->template entitiesWithComponents<C ...>())
 		{
 			scripting::ParameterList params;
 			params.add(entity);

@@ -77,7 +77,7 @@ void saveImageToFile(fs::IFile* file, const Image& image)
 	int xb= (image.width()-xa)/256;
 	int ya= image.height() % 256;
 	int yb= (image.height()-ya)/256;//assemble the header
-	unsigned char header[18]={0,0,2,0,0,0,0,0,0,0,0,0,(char)xa,(char)xb,(char)ya,(char)yb,24,0};
+	unsigned char header[18]={0,0,2,0,0,0,0,0,0,0,0,0,(unsigned char)xa,(unsigned char)xb,(unsigned char)ya,(unsigned char)yb,24,0};
 	
 	// write header and data to file
 	auto& ostream = file->getOutputStream();
@@ -121,7 +121,7 @@ void saveAlphaImageToFile(fs::IFile* file, const Image& image)
 	int xb= (image.width()-xa)/256;
 	int ya= image.height() % 256;
 	int yb= (image.height()-ya)/256;//assemble the header
-	unsigned char header[18]={0,0,2,0,0,0,0,0,0,0,0,0,(char)xa,(char)xb,(char)ya,(char)yb,24,0};
+	unsigned char header[18]={0,0,2,0,0,0,0,0,0,0,0,0,(unsigned char)xa,(unsigned char)xb,(unsigned char)ya,(unsigned char)yb,24,0};
 	
 	// write header and data to file
 	auto& ostream = file->getOutputStream();

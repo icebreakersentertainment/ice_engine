@@ -2,6 +2,7 @@
 #define AUDIO_H_
 
 #include <iterator>
+#include <istream>
 
 #include "audio/IAudio.hpp"
 
