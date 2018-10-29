@@ -10,4 +10,4 @@ endif()
 set(FREEIMAGE_INCLUDE_DIRS "${CMAKE_CURRENT_LIST_DIR}/../deps/freeimage/include")
 set(FREEIMAGE_LIBRARIES "${CMAKE_CURRENT_LIST_DIR}/../deps/freeimage/lib/${FREEIMAGE_LIBRARY_PREFIX}${FREEIMAGE_LIBRARY_NAME}.${FREEIMAGE_LIBRARY_EXTENSION}")
 
-find_library(FREEIMAGE_LIBRARY NAMES freeimage-3.17.0 FreeImage PATHS ${CMAKE_CURRENT_LIST_DIR}/../deps/freeimage/lib)
+find_library(FREEIMAGE_LIBRARY NAMES freeimage-3.18.0 FreeImage PATHS ${CMAKE_CURRENT_LIST_DIR}/../deps/freeimage/lib)
