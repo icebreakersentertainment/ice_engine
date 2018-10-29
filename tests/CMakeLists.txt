@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.1.0)
 
 project(ice_engine_tests)
 
-find_package(Boost 1.66.0 REQUIRED COMPONENTS unit_test_framework)
+find_package(Boost 1.68.0 REQUIRED COMPONENTS unit_test_framework)
 
 find_library(BOOST_UNIT_TEST_FRAMEWORK_LIBRARY NAMES
   ${BOOST_FILENAME_PREFIX}boost_unit_test_framework${BOOST_FILENAME_POSTFIX}.so.${BOOST_VERSION}

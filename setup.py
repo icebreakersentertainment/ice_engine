@@ -110,7 +110,7 @@ print('  Compiler: ' + compiler + ' (Version ' + compilerVersion + ')')
 print('')
 
 dependencies = dict()
-dependencies['boost'] = {'name': 'Boost', 'version': '1.66.0', 'extension': extension}
+dependencies['boost'] = {'name': 'Boost', 'version': '1.68.0', 'extension': extension}
 dependencies['glm'] = {'name': 'GLM', 'version': '0.9.8.3', 'extension': extension}
 dependencies['angelscript'] = {'name': 'Angelscript', 'version': '2.32.0', 'extension': extension}
 dependencies['assimp'] = {'name': 'Asset Importer', 'version': 'v3.1', 'extension': extension}

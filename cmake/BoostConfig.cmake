@@ -1,9 +1,9 @@
-set(BOOST_VERSION "1.66.0")
+set(BOOST_VERSION "1.68.0")
 set(BOOST_FILENAME_PREFIX "lib")
 set(BOOST_FILENAME_POSTFIX "")
 if(MSVC)
   set(BOOST_FILENAME_PREFIX "lib")
-  set(BOOST_FILENAME_POSTFIX "-vc141-mt-x64-1_66")
+  set(BOOST_FILENAME_POSTFIX "-vc141-mt-x64-1_68")
 endif()
 
 set(BOOST_ROOT "${CMAKE_CURRENT_LIST_DIR}/../deps/boost")
@@ -18,7 +18,7 @@ endif()
 
 set(Boost_USE_MULTITHREADED ON)
 
-find_package(Boost 1.66.0 REQUIRED COMPONENTS filesystem system atomic chrono thread program_options log log_setup date_time regex serialization)
+find_package(Boost 1.68.0 REQUIRED COMPONENTS filesystem system atomic chrono thread program_options log log_setup date_time regex serialization)
 
 find_library(BOOST_SYSTEM_LIBRARY NAMES
   ${BOOST_FILENAME_PREFIX}boost_system${BOOST_FILENAME_POSTFIX}.so.${BOOST_VERSION}
