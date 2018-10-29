@@ -114,16 +114,9 @@ dependencies['boost'] = {'name': 'Boost', 'version': '1.66.0', 'extension': exte
 dependencies['glm'] = {'name': 'GLM', 'version': '0.9.8.3', 'extension': extension}
 dependencies['angelscript'] = {'name': 'Angelscript', 'version': '2.32.0', 'extension': extension}
 dependencies['assimp'] = {'name': 'Asset Importer', 'version': 'v3.1', 'extension': extension}
-dependencies['yojimbo'] = {'name': 'Yojimbo', 'version': 'master', 'extension': extension}
-dependencies['recastnavigation'] = {'name': 'Recast Navigation', 'version': 'master', 'extension': extension}
-#dependencies['bgfx'] = {'name': 'BGFX', 'version': 'master', 'extension': extension}
-#dependencies['bx'] = {'name': 'BX', 'version': 'master', 'extension': extension}
-dependencies['bullet'] = {'name': 'Bullet', 'version': '2.85.1', 'extension': extension}
 dependencies['entityx'] = {'name': 'Entityx', 'version': 'master', 'extension': extension}
 dependencies['glew'] = {'name': 'GLEW', 'version': '2.0.0', 'extension': extension}
 dependencies['sdl'] = {'name': 'SDL', 'version': '2.0.8', 'extension': extension}
-dependencies['openalsoft'] = {'name': 'OpenAL Soft', 'version': 'openal-soft-1.18.2', 'extension': extension}
-dependencies['sqlite'] = {'name': 'SQLite', 'version': '3.16.2', 'extension': extension}
 dependencies['ctpl'] = {'name': 'CTPL', 'version': 'master', 'extension': extension}
 dependencies['freeimage'] = {'name': 'Free Image', 'version': '3.17.0', 'extension': extension}
 dependencies['celero'] = {'name': 'Celero', 'version': 'v2.1.0', 'extension': extension}
@@ -205,7 +198,6 @@ def download():
 				sys.stdout.write( "\rRead {0} / {1} KB".format(((savedSize)/1000), int(contentLength)/1000) )
 				sys.stdout.flush()
 					
-
 def extract():
 	"""Extract external library files"""
 	
@@ -228,44 +220,7 @@ def extract():
 				for f in folders:
 					os.rename(f, dependenciesDirectory+k)
 
-def build():
-	"""Build any dependencies"""
-	print('Building the CEF3 wrapper dll')
-	
-	if isLinux:
-		command = 'bash ./build_cef.sh'
-		subprocess.call( command, shell=True)
-	elif isWindows:
-		print('There is no automated CEF3 wrapper dll build script for Windows yet.  There is a pre-built library included in the CEF3 library download which will be used.')
-
-def install():
-	"""Install the downloaded libraries locally"""
-	
-	if (not os.path.exists(librariesDirectory)):
-		os.makedirs(librariesDirectory)
-
-	cef3OutputDir = '{0}cef3/libcef_dll/'.format(dependenciesDirectory)
-	if isWindows:
-		cef3OutputDir = '{0}cef3/lib/'.format(dependenciesDirectory)
-
-	#copyDirectory('{0}/libcef_dll_wrapper'.format(cef3OutputDir), './{0}/libcef_dll_wrapper'.format(librariesDirectory))	
-	copyFile('{0}libcef_dll_wrapper.{1}'.format(cef3OutputDir, staticLibraryExt), './{0}/libcef_dll_wrapper.{1}'.format(librariesDirectory, staticLibraryExt))
-	copyFile('{0}libcef.{1}'.format(cef3OutputDir, sharedLibraryExt), './{0}/libcef.{1}'.format(librariesDirectory, sharedLibraryExt))
-	
-	ffmpegsumoLibraryName = 'libffmpegsumo'
-	if isWindows:
-		ffmpegsumoLibraryName = 'ffmpegsumo'
-
-	copyFile('{0}{1}.{2}'.format(cef3OutputDir, ffmpegsumoLibraryName, sharedLibraryExt), './{0}/libffmpegsumo.{1}'.format(librariesDirectory, sharedLibraryExt))
-	
-	if isWindows:
-		copyFile('{0}libcef.{1}'.format(cef3OutputDir, staticLibraryExt), './{0}/libcef.{1}'.format(librariesDirectory, staticLibraryExt))
-
-
-
 #checkSystemDependencies()
 installSystemDependencies()
 download()
 extract()
-#build()
-install()
