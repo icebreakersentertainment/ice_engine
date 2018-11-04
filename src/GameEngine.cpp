@@ -166,10 +166,10 @@ void GameEngine::tick(const float32 delta)
 	std::vector<std::future<void>> futures;
 	for (auto& scene : scenes_)
 	{
-//		std::function<void()> work = [&scene, delta = delta]() {
+		std::function<void()> work = [&scene, delta = delta]() {
 			scene->tick(delta);
-//		};
-//		futures.push_back(foregroundThreadPool_->postWork(std::move(work)));
+		};
+		futures.push_back(foregroundThreadPool_->postWork(std::move(work)));
 	}
 	
 	for (auto& f : futures)
