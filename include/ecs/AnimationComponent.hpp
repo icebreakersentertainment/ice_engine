@@ -25,12 +25,22 @@ struct AnimationComponent
 	AnimationComponent(AnimationHandle animationHandle) : animationHandle(animationHandle)
 	{
 	};
+
+	AnimationComponent(AnimationHandle animationHandle, uint32 startFrame, uint32 endFrame)
+	:
+		animationHandle(animationHandle),
+		startFrame(startFrame),
+		endFrame(endFrame)
+	{
+	};
 	
 	static uint8 id() { return 7; }
 
 	AnimationHandle animationHandle;
 	graphics::BonesHandle bonesHandle;
 	float32 runningTime = 0.0f;
+	uint32 startFrame = 0;
+	uint32 endFrame = 0;
 	std::vector<glm::mat4> transformations;
 };
 
@@ -45,7 +55,7 @@ namespace serialization
 template<class Archive>
 void serialize(Archive& ar, ice_engine::ecs::AnimationComponent& c, const unsigned int version)
 {
-	ar & c.animationHandle & c.bonesHandle & c.runningTime & c.transformations;
+	ar & c.animationHandle & c.bonesHandle & c.runningTime & c.startFrame & c.endFrame & c.transformations;
 }
 
 }

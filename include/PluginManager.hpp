@@ -27,7 +27,7 @@ public:
 	virtual std::shared_ptr<IPhysicsPlugin> getPhysicsPlugin() const override;
 	virtual std::shared_ptr<INetworkingPlugin> getNetworkingPlugin() const override;
 	virtual const std::vector<std::shared_ptr<IModulePlugin>>& getModulePlugins() const override;
-	virtual const std::vector<std::shared_ptr<IScriptingEngineBindingPlugin>>& getScriptingEngineBindingPlugins() const override;
+	virtual const std::vector<std::shared_ptr<IScriptingEngineBindingPlugin>>& scriptingEngineBindingPlugins() const override;
 
 private:
 	utilities::Properties* properties_;

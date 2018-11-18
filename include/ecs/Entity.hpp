@@ -51,6 +51,8 @@ public:
 	{
 	}
 
+	std::string getName() const;
+
 	pathfinding::CrowdHandle createCrowd(const pathfinding::NavigationMeshHandle& navigationMeshHandle, const pathfinding::CrowdConfig& crowdConfig);
 	void destroy(const pathfinding::CrowdHandle& crowdHandle);
 
@@ -264,11 +266,7 @@ public:
 
         	entityx::ComponentHandle<C> componentHandle;
 
-        	if (entity_.has_component<C>())
-        	{
-        		auto c = entity_.component<C>();
-        		if (c->renderableHandle) sceneDelegate_.destroy(c->renderableHandle);
-        	}
+        	if (entity_.has_component<C>()) entity_.remove<C>();
 
         	std::cout << "GCGCGCGC" << std::endl;
         	componentHandle = entity_.assign<C>(std::forward<Args>(args) ...);
@@ -299,16 +297,7 @@ public:
         	if (!gc->renderableHandle) throw RuntimeException("cannot assign animation component - renderableHandle is not valid");
         	std::cout << "ACACACAC 3" << std::endl;
 
-        	if (entity_.has_component<C>())
-        	{
-        		auto c = entity_.component<C>();
-        		if (c->bonesHandle)
-				{
-        			std::cout << "ACACACAC 4" << std::endl;
-        			sceneDelegate_.detach(gc->renderableHandle, c->bonesHandle);
-        			sceneDelegate_.destroy(c->bonesHandle);
-				}
-        	}
+        	if (entity_.has_component<C>()) entity_.remove<C>();
 
         	std::cout << "ACACACAC" << std::endl;
         	componentHandle = entity_.assign<C>(std::forward<Args>(args) ...);
@@ -384,11 +373,7 @@ public:
 
         	entityx::ComponentHandle<C> componentHandle;
 
-        	if (entity_.has_component<C>())
-        	{
-        		auto c = entity_.component<C>();
-        		if (c->rigidBodyObjectHandle) sceneDelegate_.destroy(c->rigidBodyObjectHandle);
-        	}
+        	if (entity_.has_component<C>()) entity_.remove<C>();
 
         	std::cout << "PCPCPCPC" << std::endl;
         	componentHandle = entity_.assign<C>(std::forward<Args>(args) ...);
@@ -429,11 +414,7 @@ public:
 
         	entityx::ComponentHandle<C> componentHandle;
 
-        	if (entity_.has_component<C>())
-        	{
-        		auto c = entity_.component<C>();
-        		if (c->ghostObjectHandle) sceneDelegate_.destroy(c->ghostObjectHandle);
-        	}
+        	if (entity_.has_component<C>()) entity_.remove<C>();
 
         	std::cout << "GHC" << std::endl;
         	componentHandle = entity_.assign<C>(std::forward<Args>(args) ...);
@@ -471,11 +452,7 @@ public:
 
         	entityx::ComponentHandle<C> componentHandle;
 
-        	if (entity_.has_component<C>())
-        	{
-        		auto c = entity_.component<C>();
-        		if (c->crowdHandle) sceneDelegate_.destroy(c->crowdHandle);
-        	}
+        	if (entity_.has_component<C>()) entity_.remove<C>();
 
         	std::cout << "CC" << std::endl;
         	componentHandle = entity_.assign<C>(std::forward<Args>(args) ...);
@@ -504,11 +481,7 @@ public:
 
         	entityx::ComponentHandle<C> componentHandle;
 
-        	if (entity_.has_component<C>())
-        	{
-        		auto c = entity_.component<C>();
-        		if (c->agentHandle) sceneDelegate_.destroy(c->crowdHandle, c->agentHandle);
-        	}
+        	if (entity_.has_component<C>()) entity_.remove<C>();
 
         	std::cout << "PAC" << std::endl;
         	componentHandle = entity_.assign<C>(std::forward<Args>(args) ...);
@@ -547,11 +520,7 @@ public:
 
         	entityx::ComponentHandle<C> componentHandle;
 
-        	if (entity_.has_component<C>())
-        	{
-        		auto c = entity_.component<C>();
-        		if (c->obstacleHandle) sceneDelegate_.pathfindingEngine().destroy(c->polygonMeshHandle, c->obstacleHandle);
-        	}
+        	if (entity_.has_component<C>()) entity_.remove<C>();
 
         	std::cout << "POC" << std::endl;
         	componentHandle = entity_.assign<C>(std::forward<Args>(args) ...);
@@ -626,12 +595,21 @@ public:
         void destroy()
         {
           entity_.destroy();
+          scene_ = nullptr;
         }
+
+    	friend std::ostream& operator<<(std::ostream& os, const Entity& other)
+    	{
+    		os << "Entity(Entity: " << other.entity_ << ", Scene: " << other.sceneDelegate_.getName() << ")";
+    		return os;
+    	}
 
 private:
     entityx::Entity entity_;
     SceneDelegate sceneDelegate_;
     Scene* scene_ = nullptr;
+
+	entityx::ComponentHandle<ParentBoneAttachmentComponent> assignParentBoneAttachmentComponent(std::string boneName, glm::ivec4 boneIds, glm::vec4 boneWeights);
 };
 
 }

@@ -3,6 +3,7 @@
 
 #include <string>
 #include <map>
+#include <list>
 #include <chrono>
 #include <future>
 
@@ -17,11 +18,13 @@
 namespace ice_engine
 {
 
+#define COMMA ,
+
 template<class T>
 static void DefaultConstructor(T* memory) { new(memory) T(); }
 
-//template<class T, typename... Args>
-//static void InitConstructor(T* memory, Args&&... args) { new(memory) T(std::forward<Args>(args)...); }
+template<class T, typename... Args>
+static void InitConstructorNoForward(T* memory, Args... args) { new(memory) T(std::forward<Args>(args)...); }
 
 template<class T>
 static void CopyConstructor(T* memory, const T& other) { new(memory) T(other); }
@@ -254,6 +257,82 @@ void registerSharedFutureBindings(scripting::IScriptingEngine* scriptingEngine, 
 	//scriptingEngine->registerObjectMethod(name.c_str(), "future_status wait_until(chrono::system_clock::time_point) const", asFUNCTION(SharedFutureBase::wait_for), asCALL_CDECL_OBJLAST);
 }
 
+template<typename T, typename ... V>
+class VariantRegisterHelper
+{
+public:
+	static void DefaultConstructor(T* memory) { new(memory) T(); }
+	static void CopyConstructor(const T& other, T* memory) { new(memory) T(other); }
+//	static void InitConstructor(int size, T* memory) { new(memory) T(size); }
+	static void DefaultDestructor(T* memory) { ((T*)memory)->~T(); }
+
+	static T& assignmentOperator(const T& other, T* v) { (*v) = other; return *v; }
+
+	template<typename Value>
+	static T& assignmentOperatorValue(const Value& value, T* v) { (*v) = value; return *v; }
+
+//	static void assign(int count, const V& value, T* v) { v->assign(count, value); }
+	static int which(T* v) { return v->which(); }
+
+	template<typename Value>
+	static Value& get(T& v) { return boost::get<Value>(v); }
+
+//	template<typename Value>
+//	static const Value& getConst(const T& v) { return boost::get<Value>(v); }
+};
+
+
+/**
+ * Register our variant bindings.
+ */
+template<typename VariantBase, typename T>
+void registerVariantBindingsRecursive(scripting::IScriptingEngine* scriptingEngine, const std::string& name, std::list<std::string> types, asEObjTypeFlags objectTypeFlags = asOBJ_APP_CLASS_ALLINTS)
+{
+}
+
+/**
+ * Register our variant bindings.
+ */
+template<typename VariantBase, typename T, typename Value, typename ... V>
+void registerVariantBindingsRecursive(scripting::IScriptingEngine* scriptingEngine, const std::string& name, std::list<std::string> types, asEObjTypeFlags objectTypeFlags = asOBJ_APP_CLASS_ALLINTS)
+{
+	{
+		const auto& type = types.front();
+
+		scriptingEngine->registerGlobalFunction(type + "& get" + type + "(" + name + "& in)", asFUNCTION(VariantBase::get<Value>), asCALL_CDECL);
+//		scriptingEngine->registerGlobalFunction("const " + type + "& get" + type + "(const " + name + "& in)", asFUNCTION(VariantBase::getConst<Value>), asCALL_CDECL);
+
+		scriptingEngine->registerObjectMethod(name.c_str(), name + "& opAssign(const " + type + "& in)", asFUNCTION(VariantBase::assignmentOperatorValue<Value>), asCALL_CDECL_OBJLAST);
+	}
+
+	types.pop_front();
+	registerVariantBindingsRecursive<VariantBase, T, V...>(scriptingEngine, name, types, objectTypeFlags);
+}
+
+/**
+ * Register our variant bindings.
+ */
+template<typename ... V>
+void registerVariantBindings(scripting::IScriptingEngine* scriptingEngine, const std::string& name, const std::list<std::string>& types, asEObjTypeFlags objectTypeFlags = asOBJ_APP_CLASS_ALLINTS)
+{
+
+	typedef VariantRegisterHelper<boost::variant<V...>, V...> VariantBase;
+
+	scriptingEngine->registerObjectType(name.c_str(), sizeof(boost::variant<V...>), asOBJ_VALUE | objectTypeFlags | asGetTypeTraits<boost::variant<V...>>());
+
+	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(VariantBase::DefaultConstructor), asCALL_CDECL_OBJLAST);
+	auto copyConstructorString = std::string("void f(const ") + name + "& in)";
+	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, copyConstructorString.c_str(), asFUNCTION(VariantBase::CopyConstructor), asCALL_CDECL_OBJLAST);
+//	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f(int)", asFUNCTION(VariantBase::InitConstructor), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_DESTRUCT, "void f()", asFUNCTION(VariantBase::DefaultDestructor), asCALL_CDECL_OBJLAST);
+
+	scriptingEngine->registerObjectMethod(name.c_str(), name + "& opAssign(const " + name + "& in)", asFUNCTION(VariantBase::assignmentOperator), asCALL_CDECL_OBJLAST);
+
+	scriptingEngine->registerObjectMethod(name.c_str(), "int which() const", asFUNCTION(VariantBase::which), asCALL_CDECL_OBJLAST);
+
+	registerVariantBindingsRecursive<VariantBase, boost::variant<V...>, V...>(scriptingEngine, name, types, objectTypeFlags);
+}
+
 template<typename T>
 class HandleRegisterHelper
 {
@@ -332,6 +411,7 @@ void registerPointerHandleBindings(scripting::IScriptingEngine* scriptingEngine,
 	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_DESTRUCT, "void f()", asFUNCTION(HandleBase::DefaultDestructor), asCALL_CDECL_OBJFIRST);
 	scriptingEngine->registerClassMethod(name.c_str(), name + "& opAssign(const " + name + "& in)", asMETHODPR(T, operator=, (const T&), T&));
 	scriptingEngine->registerClassMethod(name.c_str(), scriptTypeName + "@+ get()", asMETHODPR(T, get, (), void*));
+	scriptingEngine->registerClassMethod(name.c_str(), "const " + scriptTypeName + "@+ get() const", asMETHODPR(T, get, () const, void*));
 	scriptingEngine->registerClassMethod(name.c_str(), "bool opImplConv() const", asMETHODPR(T, operator bool, () const, bool ));
 	scriptingEngine->registerClassMethod(name.c_str(), "bool opEquals(const " + name + "& in) const", asMETHODPR(T, operator==, (const T&) const, bool));
 }

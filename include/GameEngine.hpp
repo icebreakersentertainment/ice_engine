@@ -121,21 +121,21 @@ public:
 	 */
 	void setBootstrapScript(const std::string& filename);
 	
-	audio::IAudioEngine* getAudioEngine() const;
-	graphics::IGraphicsEngine* getGraphicsEngine() const;
-	physics::IPhysicsEngine* getPhysicsEngine() const;
-	scripting::IScriptingEngine* getScriptingEngine() const;
-	IDebugRenderer* getDebugRenderer() const;
-	pathfinding::IPathfindingEngine* getPathfindingEngine() const;
-	IThreadPool* getBackgroundThreadPool() const;
-	IThreadPool* getForegroundThreadPool() const;
-	IOpenGlLoader* getOpenGlLoader() const;
-	IOpenGlLoader* getForegroundGraphicsThreadPool() const
+	audio::IAudioEngine* audioEngine() const;
+	graphics::IGraphicsEngine* graphicsEngine() const;
+	physics::IPhysicsEngine* physicsEngine() const;
+	scripting::IScriptingEngine* scriptingEngine() const;
+	IDebugRenderer* debugRenderer() const;
+	pathfinding::IPathfindingEngine* pathfindingEngine() const;
+	IThreadPool* backgroundThreadPool() const;
+	IThreadPool* foregroundThreadPool() const;
+	IOpenGlLoader* openGlLoader() const;
+	IOpenGlLoader* foregroundGraphicsThreadPool() const
 	{
 		return forgroundGraphicsThreadPool_.get();
 	}
-	logger::ILogger* getLogger() const;
-	fs::IFileSystem* getFileSystem() const;
+	logger::ILogger* logger() const;
+	fs::IFileSystem* fileSystem() const;
 	ResourceCache& resourceCache()
 	{
 		return resourceCache_;
@@ -231,7 +231,7 @@ public:
 	void destroyShaderProgram(const std::string& name);
 	void destroyShaderProgram(const graphics::ShaderProgramHandle& shaderProgramHandle);
 	
-	Scene* createScene(const std::string& name);
+	Scene* createScene(const std::string& name, const std::vector<std::string>& scriptData = {}, const std::string& initializationFunctionName = "");
 	void destroyScene(const std::string& name);
 	void destroyScene(Scene* scene);
 	Scene* getScene(const std::string& name) const;
@@ -459,6 +459,17 @@ public:
 
 		void animateSkeleton(
 			std::vector< glm::mat4 >& transformations,
+			float32 runningTime,
+			const graphics::MeshHandle& meshHandle,
+			const AnimationHandle& animationHandle,
+			const SkeletonHandle& skeletonHandle
+		);
+
+		void animateSkeleton(
+			std::vector< glm::mat4 >& transformations,
+			float32 runningTime,
+			uint32 startFrame,
+			uint32 endFrame,
 			const graphics::MeshHandle& meshHandle,
 			const AnimationHandle& animationHandle,
 			const SkeletonHandle& skeletonHandle

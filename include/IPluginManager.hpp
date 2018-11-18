@@ -31,7 +31,7 @@ public:
 	virtual std::shared_ptr<IPhysicsPlugin> getPhysicsPlugin() const = 0;
 	virtual std::shared_ptr<INetworkingPlugin> getNetworkingPlugin() const = 0;
 	virtual const std::vector<std::shared_ptr<IModulePlugin>>& getModulePlugins() const = 0;
-	virtual const std::vector<std::shared_ptr<IScriptingEngineBindingPlugin>>& getScriptingEngineBindingPlugins() const = 0;
+	virtual const std::vector<std::shared_ptr<IScriptingEngineBindingPlugin>>& scriptingEngineBindingPlugins() const = 0;
 
 };
 

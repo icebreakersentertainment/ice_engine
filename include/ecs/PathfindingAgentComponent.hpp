@@ -41,7 +41,6 @@ struct PathfindingAgentComponent
 		movementRequestState(pathfinding::MovementRequestState::REQUESTING),
 		target(target)
 	{
-		std::cout << "high " << agentParams.radius << std::endl;
 	};
 
 	static uint8 id()  { return 11; }

@@ -41,6 +41,28 @@ glm::ivec2 proxyFunctionGetPosition(T* t)
 	return t->getPosition();
 }
 
+template<class T>
+void proxyFunctionSetDimensions(const uint32 x, const uint32 y, T* t)
+{
+	t->setDimensions(x, y);
+}
+template<class T>
+glm::ivec2 proxyFunctionGetDimensions(T* t)
+{
+	return t->getDimensions();
+}
+
+template<class T>
+void proxyFunctionSetStyle(const graphics::gui::Style& style, T* t)
+{
+	t->setStyle(style);
+}
+template<class T>
+const graphics::gui::Style& proxyFunctionGetStyle(T* t)
+{
+	return t->getStyle();
+}
+
 GraphicsEngineBindingDelegate::GraphicsEngineBindingDelegate(logger::ILogger* logger, scripting::IScriptingEngine* scriptingEngine, GameEngine* gameEngine, graphics::IGraphicsEngine* graphicsEngine)
 	:
 	logger_(logger),
@@ -611,7 +633,6 @@ void GraphicsEngineBindingDelegate::bind()
 	
 	scriptingEngine_->registerEnum("WindowFlags");
 	scriptingEngine_->registerEnumValue("WindowFlags", "ICEENGINE_TITLE_BAR", graphics::gui::ICEENGINE_TITLE_BAR);
-	scriptingEngine_->registerEnumValue("WindowFlags", "ICEENGINE_SHOW_BORDERS", graphics::gui::ICEENGINE_SHOW_BORDERS);
 	scriptingEngine_->registerEnumValue("WindowFlags", "ICEENGINE_MOVABLE", graphics::gui::ICEENGINE_MOVABLE);
 	scriptingEngine_->registerEnumValue("WindowFlags", "ICEENGINE_NO_SCROLLBAR", graphics::gui::ICEENGINE_NO_SCROLLBAR);
 	scriptingEngine_->registerEnumValue("WindowFlags", "ICEENGINE_CLOSABLE", graphics::gui::ICEENGINE_CLOSABLE);
@@ -682,6 +703,22 @@ void GraphicsEngineBindingDelegate::bind()
 	scriptingEngine_->registerObjectProperty("MouseWheelEvent", "int32 y", asOFFSET(graphics::MouseWheelEvent, y));
 	scriptingEngine_->registerObjectProperty("MouseWheelEvent", "uint32 direction", asOFFSET(graphics::MouseWheelEvent, direction));
 	
+	scriptingEngine_->registerObjectType("GraphicsColor", sizeof(graphics::Color), asOBJ_VALUE | asOBJ_APP_CLASS_ALLINTS | asGetTypeTraits<graphics::Color>());
+	scriptingEngine_->registerObjectBehaviour("GraphicsColor", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(DefaultConstructor<graphics::Color>), asCALL_CDECL_OBJFIRST);
+	scriptingEngine_->registerObjectBehaviour("GraphicsColor", asBEHAVE_CONSTRUCT, "void f(const GraphicsColor& in)", asFUNCTION(CopyConstructor<graphics::Color>), asCALL_CDECL_OBJFIRST);
+	scriptingEngine_->registerObjectBehaviour("GraphicsColor", asBEHAVE_CONSTRUCT, "void f(const uint32)", asFUNCTION(InitConstructorNoForward<graphics::Color COMMA const uint32>), asCALL_CDECL_OBJFIRST);
+	scriptingEngine_->registerObjectBehaviour("GraphicsColor", asBEHAVE_CONSTRUCT, "void f(const uint8, const uint8, const uint8, const uint8)", asFUNCTION(InitConstructorNoForward<graphics::Color COMMA const uint8 COMMA const uint8 COMMA const uint8 COMMA const uint8>), asCALL_CDECL_OBJFIRST);
+	scriptingEngine_->registerObjectBehaviour("GraphicsColor", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DefaultDestructor<graphics::Color>), asCALL_CDECL_OBJFIRST);
+	scriptingEngine_->registerClassMethod("GraphicsColor", "void setColor(const uint32)", asMETHODPR(graphics::Color, setColor, (const uint32), void));
+	scriptingEngine_->registerClassMethod("GraphicsColor", "void setColor(const uint8, const uint8, const uint8, const uint8)", asMETHODPR(graphics::Color, setColor, (const uint8, const uint8, const uint8, const uint8), void));
+	scriptingEngine_->registerClassMethod("GraphicsColor", "uint32 color() const", asMETHOD(graphics::Color, color));
+
+	scriptingEngine_->registerObjectType("Style", sizeof(graphics::gui::Style), asOBJ_VALUE | asOBJ_APP_CLASS_ALLFLOATS | asGetTypeTraits<graphics::gui::Style>());
+	scriptingEngine_->registerObjectBehaviour("Style", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(DefaultConstructor<graphics::gui::Style>), asCALL_CDECL_OBJFIRST);
+	scriptingEngine_->registerObjectBehaviour("Style", asBEHAVE_CONSTRUCT, "void f(const Style& in)", asFUNCTION(CopyConstructor<graphics::gui::Style>), asCALL_CDECL_OBJFIRST);
+	scriptingEngine_->registerObjectBehaviour("Style", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DefaultDestructor<graphics::gui::Style>), asCALL_CDECL_OBJFIRST);
+	scriptingEngine_->registerObjectProperty("Style", "float alpha", asOFFSET(graphics::gui::Style, alpha));
+
 	scriptingEngine_->registerObjectType("IMesh", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	scriptingEngine_->registerObjectType("ITexture", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	scriptingEngine_->registerObjectType("ISkeleton", 0, asOBJ_REF | asOBJ_NOCOUNT);
@@ -706,6 +743,30 @@ void GraphicsEngineBindingDelegate::bind()
 		name, \
 		"ivec2 getPosition() const", \
 		asFUNCTION(proxyFunctionGetPosition<class>), \
+		asCALL_CDECL_OBJLAST \
+	); \
+	scriptingEngine_->registerObjectMethod( \
+		name, \
+		"void setDimensions(const uint32, const uint32)", \
+		asFUNCTION(proxyFunctionSetDimensions<class>), \
+		asCALL_CDECL_OBJLAST \
+	); \
+	scriptingEngine_->registerObjectMethod( \
+		name, \
+		"ivec2 getDimensions() const", \
+		asFUNCTION(proxyFunctionGetDimensions<class>), \
+		asCALL_CDECL_OBJLAST \
+	); \
+	scriptingEngine_->registerObjectMethod( \
+		name, \
+		"void setStyle(const Style& in)", \
+		asFUNCTION(proxyFunctionSetStyle<class>), \
+		asCALL_CDECL_OBJLAST \
+	); \
+	scriptingEngine_->registerObjectMethod( \
+		name, \
+		"const Style& getStyle() const", \
+		asFUNCTION(proxyFunctionGetStyle<class>), \
 		asCALL_CDECL_OBJLAST \
 	); \
 
@@ -766,9 +827,18 @@ void GraphicsEngineBindingDelegate::bind()
 		"IMenu@ createMenu(const string& in)",
 		asMETHODPR(graphics::gui::IMenuBar, createMenu, (const std::string&), graphics::gui::IMenu*)
 	);
+	scriptingEngine_->registerObjectType("IRectangle", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	scriptingEngine_->registerObjectMethod("IRectangle", "IComponent@ opImplCast()", asFUNCTION((refCast<graphics::gui::IRectangle, graphics::gui::IComponent>)), asCALL_CDECL_OBJLAST);
+	COMPONENT_CLASS_METHODS("IRectangle", graphics::gui::IRectangle)
+	scriptingEngine_->registerClassMethod(
+		"IRectangle",
+		"void setPoints(const vec2& in, const vec2& in)",
+		asMETHOD(graphics::gui::IRectangle, setPoints)
+	);
 	scriptingEngine_->registerObjectType("IWindow", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	scriptingEngine_->registerObjectMethod("IWindow", "IComponent@ opImplCast()", asFUNCTION((refCast<graphics::gui::IWindow, graphics::gui::IComponent>)), asCALL_CDECL_OBJLAST);
 	COMPONENT_CLASS_METHODS("IWindow", graphics::gui::IWindow)
+	scriptingEngine_->registerClassMethod("IWindow", "void setBackgroundAlpha(const float)", asMETHOD(graphics::gui::IWindow, setBackgroundAlpha));
 	scriptingEngine_->registerClassMethod(
 		"IWindow",
 		"ILabel@ createLabel(const uint32, const uint32, const uint32, const uint32, const string = string())",
@@ -785,6 +855,11 @@ void GraphicsEngineBindingDelegate::bind()
 		asMETHODPR(graphics::gui::IWindow, createButton, (const uint32, const uint32, const uint32, const uint32, const std::string), graphics::gui::IButton*)
 	);
 	scriptingEngine_->registerClassMethod(
+			"IWindow",
+			"IRectangle@ createRectangle(const vec2& in, const vec2& in, const GraphicsColor& in)",
+			asMETHOD(graphics::gui::IWindow, createRectangle)
+		);
+	scriptingEngine_->registerClassMethod(
 		"IWindow",
 		"void destroy(const IButton@)",
 		asMETHODPR(graphics::gui::IWindow, destroy, (const graphics::gui::IButton*), void)
@@ -793,6 +868,11 @@ void GraphicsEngineBindingDelegate::bind()
 		"IWindow",
 		"void destroy(const ILabel@)",
 		asMETHODPR(graphics::gui::IWindow, destroy, (const graphics::gui::ILabel*), void)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IWindow",
+		"void destroy(const IRectangle@)",
+		asMETHODPR(graphics::gui::IWindow, destroy, (const graphics::gui::IRectangle*), void)
 	);
 	scriptingEngine_->registerObjectType("IGui", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	scriptingEngine_->registerClassMethod(

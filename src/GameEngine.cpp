@@ -25,7 +25,6 @@
 #include "graphics/model/Animate.hpp"
 
 #include "TerrainFactory.hpp"
-#include "networking/NetworkingEngineFactory.hpp"
 #include "scripting/ScriptingFactory.hpp"
 
 #include "graphics/Event.hpp"
@@ -437,7 +436,7 @@ void GameEngine::initializeScriptingSubSystem()
 	BindingDelegate delegate(logger_.get(), scriptingEngine_.get(), this, graphicsEngine_.get(), audioEngine_.get(), networkingEngine_.get(), physicsEngine_.get(), pathfindingEngine_.get());
 	delegate.bind();
 
-	auto scriptingEngineBindingPlugins = pluginManager_->getScriptingEngineBindingPlugins();
+	auto scriptingEngineBindingPlugins = pluginManager_->scriptingEngineBindingPlugins();
 
 	for (auto scriptingEngineBindingPlugin : scriptingEngineBindingPlugins)
 	{
@@ -586,11 +585,11 @@ void GameEngine::loadUserInterface()
 	*/
 }
 
-Scene* GameEngine::createScene(const std::string& name)
+Scene* GameEngine::createScene(const std::string& name, const std::vector<std::string>& scriptData, const std::string& initializationFunctionName)
 {
 	LOG_DEBUG(logger_, "Create Scene with name: " + name );
 	
-	auto scene = std::make_unique<Scene>(name, this, audioEngine_.get(), graphicsEngine_.get(), terrainFactory_.get(), physicsEngine_.get(), pathfindingEngine_.get(), scriptingEngine_.get(), properties_.get(), fileSystem_.get(), logger_.get(), backgroundThreadPool_.get(), openGlLoader_.get());
+	auto scene = std::make_unique<Scene>(name, scriptData, initializationFunctionName, this, terrainFactory_.get(), properties_.get(), fileSystem_.get(), logger_.get());
 
 	for (auto callback : preSerializeCallbacks_)
 	{
@@ -701,57 +700,57 @@ void GameEngine::setBootstrapScript(const std::string& filename)
 	*/
 }
 
-audio::IAudioEngine* GameEngine::getAudioEngine() const
+audio::IAudioEngine* GameEngine::audioEngine() const
 {
 	return audioEngine_.get();
 }
 
-graphics::IGraphicsEngine* GameEngine::getGraphicsEngine() const
+graphics::IGraphicsEngine* GameEngine::graphicsEngine() const
 {
 	return graphicsEngine_.get();
 }
 
-physics::IPhysicsEngine* GameEngine::getPhysicsEngine() const
+physics::IPhysicsEngine* GameEngine::physicsEngine() const
 {
 	return physicsEngine_.get();
 }
 
-scripting::IScriptingEngine* GameEngine::getScriptingEngine() const
+scripting::IScriptingEngine* GameEngine::scriptingEngine() const
 {
 	return scriptingEngine_.get();
 }
 
-IDebugRenderer* GameEngine::getDebugRenderer() const
+IDebugRenderer* GameEngine::debugRenderer() const
 {
 	return debugRenderer_.get();
 }
 
-pathfinding::IPathfindingEngine* GameEngine::getPathfindingEngine() const
+pathfinding::IPathfindingEngine* GameEngine::pathfindingEngine() const
 {
 	return pathfindingEngine_.get();
 }
 
-IThreadPool* GameEngine::getBackgroundThreadPool() const
+IThreadPool* GameEngine::backgroundThreadPool() const
 {
 	return backgroundThreadPool_.get();
 }
 
-IThreadPool* GameEngine::getForegroundThreadPool() const
+IThreadPool* GameEngine::foregroundThreadPool() const
 {
 	return foregroundThreadPool_.get();
 }
 
-IOpenGlLoader* GameEngine::getOpenGlLoader() const
+IOpenGlLoader* GameEngine::openGlLoader() const
 {
 	return openGlLoader_.get();
 }
 
-logger::ILogger* GameEngine::getLogger() const
+logger::ILogger* GameEngine::logger() const
 {
 	return logger_.get();
 }
 
-fs::IFileSystem* GameEngine::getFileSystem() const
+fs::IFileSystem* GameEngine::fileSystem() const
 {
 	return fileSystem_.get();
 }
@@ -1283,9 +1282,9 @@ graphics::RenderableHandle GameEngine::createRenderable(
 	return graphicsEngine_->createRenderable(renderSceneHandle, meshHandle, textureHandle, position, orientation, scale);
 }
 
-static float32 elapsedTime = 0.0f;
 void GameEngine::animateSkeleton(
 	std::vector< glm::mat4 >& transformations,
+	float32 runningTime,
 	const graphics::MeshHandle& meshHandle,
 	const AnimationHandle& animationHandle,
 	const SkeletonHandle& skeletonHandle
@@ -1297,7 +1296,33 @@ void GameEngine::animateSkeleton(
 
 	transformations = std::vector<glm::mat4>(100, glm::mat4(1.0f));
 
-	elapsedTime += 0.001f;
+	ice_engine::animateSkeleton(
+		transformations,
+		skeleton.globalInverseTransformation(),
+		animation.animatedBoneNodes(),
+		skeleton.rootBoneNode(),
+		mesh.boneData(),
+		animation.duration(),
+		animation.ticksPerSecond(),
+		runningTime
+	);
+}
+
+void GameEngine::animateSkeleton(
+	std::vector< glm::mat4 >& transformations,
+	float32 runningTime,
+	uint32 startFrame,
+	uint32 endFrame,
+	const graphics::MeshHandle& meshHandle,
+	const AnimationHandle& animationHandle,
+	const SkeletonHandle& skeletonHandle
+)
+{
+	const auto& mesh = meshes_[meshHandle];
+	const auto& animation = animations_[animationHandle];
+	const auto& skeleton = skeletons_[skeletonHandle];
+
+	transformations = std::vector<glm::mat4>(100, glm::mat4(1.0f));
 
 	ice_engine::animateSkeleton(
 		transformations,
@@ -1307,9 +1332,9 @@ void GameEngine::animateSkeleton(
 		mesh.boneData(),
 		animation.duration(),
 		animation.ticksPerSecond(),
-		elapsedTime,
-		0,
-		48
+		runningTime,
+		startFrame,
+		endFrame
 	);
 }
 

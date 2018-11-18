@@ -81,18 +81,13 @@ class Scene : serialization::ISerializable
 public:
 	Scene(
 		const std::string& name,
+		const std::vector<std::string>& scriptData,
+		const std::string& initializationFunctionName,
 		GameEngine* gameEngine,
-		audio::IAudioEngine* audioEngine,
-		graphics::IGraphicsEngine* graphicsEngine,
 		ITerrainFactory* terrainFactory,
-		physics::IPhysicsEngine* physicsEngine,
-		pathfinding::IPathfindingEngine* pathfindingEngine,
-		scripting::IScriptingEngine* scriptingEngine,
 		utilities::Properties* properties,
 		fs::IFileSystem* fileSystem,
-		logger::ILogger* logger,
-		IThreadPool* threadPool,
-		IOpenGlLoader* openGlLoader
+		logger::ILogger* logger
 	);
 	~Scene();
 
@@ -247,7 +242,7 @@ public:
 	
 	pathfinding::IPathfindingEngine& pathfindingEngine() const
 	{
-		return *gameEngine_->getPathfindingEngine();
+		return *gameEngine_->pathfindingEngine();
 	}
 
 	template <typename ... C>
@@ -369,11 +364,16 @@ public:
 	const SceneStatistics& getSceneStatistics() const;
 	
 	ecs::Entity createEntity();
+	std::shared_future<ecs::Entity> createEntityAsync();
 	void destroy(ecs::Entity& entity);
+	void destroyAsync(ecs::Entity& entity);
 	uint32 getNumEntities() const;
 
 	Raycast raycast(const ray::Ray& ray);
 	
+	std::vector<ecs::Entity> query(const glm::vec3& origin, const std::vector<glm::vec3>& points);
+	std::vector<ecs::Entity> query(const glm::vec3& origin, const float32 radius);
+
 private:
 	friend class boost::serialization::access;
 
@@ -409,10 +409,14 @@ private:
 	// ecs::Entity system
 	std::unique_ptr<ecs::EntityComponentSystem> entityComponentSystem_;
 	std::unique_ptr<EntityComponentSystemEventListener> entityComponentSystemEventListener_;
-	std::vector<ecs::Entity> entities_;
+	std::vector<std::unique_ptr<std::promise<ecs::Entity>>> asyncCreateEntities_;
+	std::vector<ecs::Entity> asyncDestroyEntities_;
 	
 	std::vector<std::unique_ptr<ITerrain>> terrain_;
 	
+	std::vector<std::string> scriptData_;
+	std::string initializationFunctionName_;
+
 	std::vector<std::function<void(serialization::TextOutArchive&, ecs::EntityComponentSystem&, const unsigned int)>> preSerializeCallbacks_;
 	std::vector<std::function<void(serialization::TextOutArchive&, ecs::EntityComponentSystem&, const unsigned int)>> postSerializeCallbacks_;
 	std::vector<std::function<void(serialization::TextInArchive&, ecs::EntityComponentSystem&, const unsigned int)>> preDeserializeCallbacks_;

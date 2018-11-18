@@ -20,36 +20,85 @@
 namespace ice_engine
 {
 
+namespace
+{
+class QueryVisitor :  public boost::static_visitor<>
+{
+public:
+	QueryVisitor(
+		logger::ILogger* logger,
+		physics::IPhysicsEngine& physicsEngine,
+		physics::PhysicsSceneHandle physicsSceneHandle,
+		std::vector<ecs::Entity>& entities)
+	:
+		logger_(logger),
+		physicsEngine_(physicsEngine),
+		physicsSceneHandle_(physicsSceneHandle),
+		entities_(entities)
+	{
+	}
+
+    void operator()(const physics::RigidBodyObjectHandle& rigidBodyObjectHandle)
+    {
+    	auto userData = physicsEngine_.getUserData(physicsSceneHandle_, rigidBodyObjectHandle);
+		if (userData.type() == typeid(ecs::Entity))
+		{
+			entities_.push_back(boost::any_cast<ecs::Entity>(userData));
+		}
+		else
+		{
+			LOG_WARN(logger_, "User data was empty or was not of type Entity")
+		}
+    }
+
+    void operator()(const physics::GhostObjectHandle& ghostObjectHandle)
+    {
+    	auto userData = physicsEngine_.getUserData(physicsSceneHandle_, ghostObjectHandle);
+		if (userData.type() == typeid(ecs::Entity))
+		{
+			entities_.push_back(boost::any_cast<ecs::Entity>(userData));
+		}
+		else
+		{
+			LOG_WARN(logger_, "User data was empty or was not of type Entity")
+		}
+    }
+
+private:
+    logger::ILogger* logger_;
+	physics::IPhysicsEngine& physicsEngine_;
+	physics::PhysicsSceneHandle physicsSceneHandle_;
+    std::vector<ecs::Entity>& entities_;
+};
+}
+
 Scene::Scene(
 		const std::string& name,
+		const std::vector<std::string>& scriptData,
+		const std::string& initializationFunctionName,
 		GameEngine* gameEngine,
-		audio::IAudioEngine* audioEngine,
-		graphics::IGraphicsEngine* graphicsEngine,
 		ITerrainFactory* terrainFactory,
-		physics::IPhysicsEngine* physicsEngine,
-		pathfinding::IPathfindingEngine* pathfindingEngine,
-		scripting::IScriptingEngine* scriptingEngine,
 		utilities::Properties* properties,
 		fs::IFileSystem* fileSystem,
-		logger::ILogger* logger,
-		IThreadPool* threadPool,
-		IOpenGlLoader* openGlLoader
+		logger::ILogger* logger
 	)
 	:
 		name_(name),
+		scriptData_(scriptData),
+		initializationFunctionName_(initializationFunctionName),
 		gameEngine_(gameEngine),
-		audioEngine_(audioEngine),
-		graphicsEngine_(graphicsEngine),
+		audioEngine_(gameEngine->audioEngine()),
+		graphicsEngine_(gameEngine->graphicsEngine()),
 		terrainFactory_(terrainFactory),
-		physicsEngine_(physicsEngine),
-		pathfindingEngine_(pathfindingEngine),
-		scriptingEngine_(scriptingEngine),
+		physicsEngine_(gameEngine->physicsEngine()),
+		pathfindingEngine_(gameEngine->pathfindingEngine()),
+		scriptingEngine_(gameEngine->scriptingEngine()),
 		scriptObjectHandle_(nullptr),
 		properties_(properties),
 		fileSystem_(fileSystem),
 		logger_(logger),
-		threadPool_(threadPool),
-		openGlLoader_(openGlLoader),
+		threadPool_(gameEngine->backgroundThreadPool()),
+		openGlLoader_(gameEngine->openGlLoader()),
 		entityComponentSystem_(std::make_unique<ecs::EntityComponentSystem>(this))
 {
 	initialize();
@@ -67,18 +116,15 @@ void Scene::initialize()
 	physicsSceneHandle_ = physicsEngine_->createPhysicsScene();
 	pathfindingSceneHandle_ = pathfindingEngine_->createPathfindingScene();
 	executionContextHandle_ = scriptingEngine_->createExecutionContext();
-	
-	auto filename = std::string("../data/scripts/all.as");
-	if (!fileSystem_->exists(filename))
-	{
-		throw std::runtime_error("Script file '" + filename + "' does not exist.");
-	}
 
-	auto source = fileSystem_->readAll(filename, fs::FileFlags::READ);
-
-	moduleHandle_ = scriptingEngine_->createModule(name_, {source});
+	moduleHandle_ = scriptingEngine_->createModule(name_, scriptData_);
 
 	entityComponentSystemEventListener_ = std::make_unique<EntityComponentSystemEventListener>(*this, *entityComponentSystem_);
+
+	if (!initializationFunctionName_.empty())
+	{
+		scriptingEngine_->execute(moduleHandle_, initializationFunctionName_);
+	}
 }
 
 void Scene::destroy()
@@ -190,7 +236,7 @@ void Scene::applyChangesToEntities()
 
 					pathfindingEngine_->setMovementRequestChangeListener(pathfindingSceneHandle_, pathfindingAgentComponent->crowdHandle, pathfindingAgentComponent->agentHandle, std::move(movementRequestChangeListener));
 
-					if (pathfindingAgentComponent->agentState == pathfinding::MovementRequestState::REQUESTING)
+					if (pathfindingAgentComponent->movementRequestState == pathfinding::MovementRequestState::REQUESTING)
 					{
 						pathfindingEngine_->requestMoveTarget(pathfindingSceneHandle_, pathfindingAgentComponent->crowdHandle, pathfindingAgentComponent->agentHandle, pathfindingAgentComponent->target);
 					}
@@ -323,6 +369,21 @@ void Scene::tick(const float32 delta)
 		scriptingEngine_->execute(scriptObjectHandle_, std::string("void postTick(const float)"), params, executionContextHandle_);
 	}
 
+	for (auto& promise : asyncCreateEntities_)
+	{
+		auto entity = createEntity();
+		promise->set_value(entity);
+	}
+
+	asyncCreateEntities_.clear();
+
+	for (auto& entity : asyncDestroyEntities_)
+	{
+		destroy(entity);
+	}
+
+	asyncDestroyEntities_.clear();
+
 	for (auto e : entityComponentSystem_->entitiesWithComponents<ecs::GraphicsComponent, ecs::AnimationComponent>())
 	{
 		auto graphicsComponent = e.component<ecs::GraphicsComponent>();
@@ -332,12 +393,14 @@ void Scene::tick(const float32 delta)
 		if (graphicsComponent->renderableHandle && animationComponent->animationHandle)
 		{
 			auto& transformations = animationComponent->transformations;
-//			gameEngine_->getForegroundThreadPool()->postWork([=, &transformations = animationComponent->transformations]() {
-				gameEngine_->animateSkeleton(transformations, graphicsComponent->meshHandle, animationComponent->animationHandle, skeletonComponent->skeletonHandle);
-				gameEngine_->getForegroundGraphicsThreadPool()->postWork([=]() {
+			gameEngine_->foregroundThreadPool()->postWork([=, &transformations = animationComponent->transformations]() {
+				gameEngine_->animateSkeleton(transformations, animationComponent->runningTime, animationComponent->startFrame, animationComponent->endFrame, graphicsComponent->meshHandle, animationComponent->animationHandle, skeletonComponent->skeletonHandle);
+				gameEngine_->foregroundGraphicsThreadPool()->postWork([=]() {
 					graphicsEngine_->update(renderSceneHandle_, graphicsComponent->renderableHandle, animationComponent->bonesHandle, animationComponent->transformations);
 				});
-//			});
+			});
+
+			animationComponent->runningTime += delta;
 		}
 	}
 
@@ -634,7 +697,7 @@ void Scene::destroy(const graphics::PointLightHandle& pointLightHandle)
 
 void Scene::serialize(const std::string& filename)
 {
-	logger_->info("Serializing scene " + getName() + " to file " + filename);
+	LOG_INFO(logger_, "Serializing scene %s to file %s", getName(), filename);
 
 	auto file = fileSystem_->open(filename, fs::FileFlags::WRITE);
 
@@ -645,7 +708,7 @@ void Scene::serialize(const std::string& filename)
 
 void Scene::deserialize(const std::string& filename)
 {
-	logger_->info("Deserializing scene " + getName() + " from file " + filename);
+	LOG_INFO(logger_, "Deserializing scene %s from file %s", getName(), filename);
 
 	auto file = fileSystem_->open(filename, fs::FileFlags::READ);
 
@@ -683,9 +746,24 @@ ecs::Entity Scene::createEntity()
 	return e;
 }
 
+std::shared_future<ecs::Entity> Scene::createEntityAsync()
+{
+	auto promise = std::make_unique<std::promise<ecs::Entity>>();
+	auto sharedFuture = promise->get_future().share();
+
+	asyncCreateEntities_.push_back(std::move(promise));
+
+	return sharedFuture;
+}
+
 void Scene::destroy(ecs::Entity& entity)
 {
 	entityComponentSystem_->destroy(entity.id());
+}
+
+void Scene::destroyAsync(ecs::Entity& entity)
+{
+	asyncDestroyEntities_.push_back(entity);
 }
 
 uint32 Scene::getNumEntities() const
@@ -703,22 +781,64 @@ Raycast Scene::raycast(const ray::Ray& ray)
 	result.setHitPointWorld(physicsRaycast.hitPointWorld());
 	result.setHitNormalWorld(physicsRaycast.hitNormalWorld());
 	
-	ecs::Entity entity;
-	
 	if (physicsRaycast.rigidBodyObjectHandle())
 	{
 		auto userData = physicsEngine_->getUserData(physicsSceneHandle_, physicsRaycast.rigidBodyObjectHandle());
-		entity = boost::any_cast<ecs::Entity>(userData);
+		if (userData.type() == typeid(ecs::Entity))
+		{
+			result.setEntity(boost::any_cast<ecs::Entity>(userData));
+		}
+		else
+		{
+			LOG_WARN(logger_, "User data was empty or was not of type Entity")
+		}
 	}
 	else if (physicsRaycast.ghostObjectHandle())
 	{
 		auto userData = physicsEngine_->getUserData(physicsSceneHandle_, physicsRaycast.ghostObjectHandle());
-		entity = boost::any_cast<ecs::Entity>(userData);
+		if (userData.type() == typeid(ecs::Entity))
+		{
+			result.setEntity(boost::any_cast<ecs::Entity>(userData));
+		}
+		else
+		{
+			LOG_WARN(logger_, "User data was empty or was not of type Entity")
+		}
 	}
-	
-	result.setEntity(entity);
-	
+
 	return result;
+}
+
+std::vector<ecs::Entity> Scene::query(const glm::vec3& origin, const std::vector<glm::vec3>& points)
+{
+	std::vector<ecs::Entity> results;
+
+	const auto physicsResult = physicsEngine_->query(physicsSceneHandle_, origin, points);
+
+	QueryVisitor visitor(logger_, *physicsEngine_, physicsSceneHandle_, results);
+
+	for (const auto& variant : physicsResult)
+	{
+		boost::apply_visitor(visitor, variant);
+	}
+
+	return results;
+}
+
+std::vector<ecs::Entity> Scene::query(const glm::vec3& origin, const float32 radius)
+{
+	std::vector<ecs::Entity> results;
+
+	const auto physicsResult = physicsEngine_->query(physicsSceneHandle_, origin, radius);
+
+	QueryVisitor visitor(logger_, *physicsEngine_, physicsSceneHandle_, results);
+
+	for (const auto& variant : physicsResult)
+	{
+		boost::apply_visitor(visitor, variant);
+	}
+
+	return results;
 }
 
 std::unordered_map<scripting::ScriptObjectHandle, std::string> Scene::getScriptObjectNameMap() const

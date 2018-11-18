@@ -7,7 +7,6 @@ namespace ice_engine
 
 void ScriptFunctionHandleWrapperDeleter(std::pair<scripting::IScriptingEngine*, scripting::ScriptFunctionHandle>* data)
 {
-	std::cout << "destroyed" << std::endl;
 	data->first->releaseScriptFunction(data->second);
 }
 

@@ -208,7 +208,7 @@ const std::vector<std::shared_ptr<IModulePlugin>>& PluginManager::getModulePlugi
 	return modulePlugins_;
 }
 
-const std::vector<std::shared_ptr<IScriptingEngineBindingPlugin>>& PluginManager::getScriptingEngineBindingPlugins() const
+const std::vector<std::shared_ptr<IScriptingEngineBindingPlugin>>& PluginManager::scriptingEngineBindingPlugins() const
 {
 	return scriptingEngineBindingPlugins_;
 }

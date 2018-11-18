@@ -38,6 +38,8 @@ void InitConstructor(float x, float y, float z, void* memory) { new(memory) glm:
 static glm::vec3 operator+(const glm::vec3& a, const glm::vec3& b) { return glm::vec3(a.x + b.x, a.y + b.y, a.z + b.z); }
 static glm::vec3 operator-(const glm::vec3& a, const glm::vec3& b) { return glm::vec3(a.x - b.x, a.y - b.y, a.z - b.z); }
 static glm::vec3 operator*(const glm::vec3& a, const glm::vec3& b) { return glm::vec3(a.x * b.x, a.y * b.y, a.z * b.z); }
+static glm::vec3 operator*(const float& a, const glm::vec3& b) { return b * a; }
+static glm::vec3 operator*(const glm::vec3& a, const float& b) { return b * a; }
 static glm::vec3 operator/(const glm::vec3& a, const glm::vec3& b) { return glm::vec3(a.x / b.x, a.y / b.y, a.z / b.z); }
 static bool operator==(const glm::vec3& a, const glm::vec3& b) { return (a.x == b.x && a.y == b.y && a.z == b.z); }
 
@@ -223,13 +225,15 @@ void RegisterGlmBindings(asIScriptEngine* engine)
 	r = engine->RegisterObjectMethod("vec3", "vec3 opSub_r(const vec3& in) const", asFUNCTIONPR(glmvec3::operator-, (const glm::vec3&, const glm::vec3&), glm::vec3), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 	r = engine->RegisterObjectMethod("vec3", "vec3 &opSubAssign(const vec3 &in)", asMETHODPR(glm::vec3, operator-=, (const glm::vec3 &), glm::vec3&), asCALL_THISCALL); assert( r >= 0 );
 	r = engine->RegisterObjectMethod("vec3", "vec3 opMul_r(const vec3& in) const", asFUNCTIONPR(glmvec3::operator*, (const glm::vec3&, const glm::vec3&), glm::vec3), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("vec3", "vec3 opMul(const float& in) const", asFUNCTIONPR(glmvec3::operator*, (const glm::vec3&, const float&), glm::vec3), asCALL_CDECL_OBJFIRST); assert( r >= 0 );
+	r = engine->RegisterObjectMethod("vec3", "vec3 opMul_r(const float& in) const", asFUNCTIONPR(glmvec3::operator*, (const float&, const glm::vec3&), glm::vec3), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 	r = engine->RegisterObjectMethod("vec3", "vec3 &opMulAssign(float)", asMETHODPR(glm::vec3, operator*=, (float), glm::vec3&), asCALL_THISCALL); assert( r >= 0 );
 	r = engine->RegisterObjectMethod("vec3", "vec3 opDiv_r(const vec3& in) const", asFUNCTIONPR(glmvec3::operator/, (const glm::vec3&, const glm::vec3&), glm::vec3), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 	r = engine->RegisterObjectMethod("vec3", "vec3 &opDivAssign(float)", asMETHODPR(glm::vec3, operator/=, (float), glm::vec3&), asCALL_THISCALL); assert( r >= 0 );
 	r = engine->RegisterObjectMethod("vec3", "vec3 &opPreInc()", asMETHODPR(glm::vec3, operator++, (), glm::vec3&), asCALL_THISCALL); assert( r >= 0 );
 	r = engine->RegisterObjectMethod("vec3", "vec3 &opPreDec()", asMETHODPR(glm::vec3, operator--, (), glm::vec3&), asCALL_THISCALL); assert( r >= 0 );
 	r = engine->RegisterObjectMethod("vec3", "bool opEquals(const vec3 &in) const", asFUNCTIONPR(glmvec3::operator==, (const glm::vec3&, const glm::vec3&), bool), asCALL_CDECL_OBJFIRST); assert( r >= 0 );
-	
+
 	// glm::vec4
 	r = engine->RegisterObjectType("vec4", sizeof(glm::vec4), asOBJ_VALUE | asOBJ_POD | asOBJ_APP_CLASS_ALLFLOATS | asGetTypeTraits<glm::vec4>()); assert( r >= 0 );
 	r = engine->RegisterObjectProperty("vec4", "float x", asOFFSET(glm::vec4, x)); assert( r >= 0 );
@@ -445,11 +449,17 @@ void RegisterGlmBindings(asIScriptEngine* engine)
 	// glm functions
 	r = engine->RegisterGlobalFunction("mat4 inverse(const mat4& in)", asFUNCTIONPR(glm::inverse, (const glm::mat4&), glm::mat4), asCALL_CDECL); assert( r >= 0 );
 	r = engine->RegisterGlobalFunction("vec3 normalize(const vec3& in)", asFUNCTIONPR(glm::normalize, (const glm::vec3&), glm::vec3), asCALL_CDECL); assert( r >= 0 );
+	r = engine->RegisterGlobalFunction("quat normalize(const quat& in)", asFUNCTIONPR(glm::normalize, (const glm::quat&), glm::quat), asCALL_CDECL); assert( r >= 0 );
 	r = engine->RegisterGlobalFunction("quat angleAxis(const float& in, const vec3& in)", asFUNCTIONPR(glm::angleAxis, (const float& , const glm::vec3&), glm::quat), asCALL_CDECL); assert( r >= 0 );
+	r = engine->RegisterGlobalFunction("float radians(const float)", asFUNCTIONPR(glm::radians, (const float), float), asCALL_CDECL); assert( r >= 0 );
 
 	// glm math functions
 	r = engine->RegisterGlobalFunction("float ceil(const float)", asFUNCTIONPR(glm::ceil, (const float), float), asCALL_CDECL); assert( r >= 0 );
 	r = engine->RegisterGlobalFunction("float floor(const float)", asFUNCTIONPR(glm::floor, (const float), float), asCALL_CDECL); assert( r >= 0 );
+	r = engine->RegisterGlobalFunction("float abs(const float)", asFUNCTIONPR(glm::abs, (const float), float), asCALL_CDECL); assert( r >= 0 );
+
+	// glm geometric functions
+	r = engine->RegisterGlobalFunction("float distance(const vec3& in, const vec3& in)", asFUNCTIONPR(glm::distance, (const glm::vec3&, const glm::vec3&), float), asCALL_CDECL); assert( r >= 0 );
 
 	// glm exponential functions
 	r = engine->RegisterGlobalFunction("float sqrt(const float)", asFUNCTIONPR(glm::sqrt, (const float), float), asCALL_CDECL); assert( r >= 0 );

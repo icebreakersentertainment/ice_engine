@@ -159,6 +159,7 @@ void ScriptingEngine::initialize()
 	RegisterVectorBindings<uint64>(engine_, "vectorUInt64", "uint64");
 	RegisterVectorBindings<float32>(engine_, "vectorFloat", "float");
 	RegisterVectorBindings<float64>(engine_, "vectorDouble", "double");
+	RegisterVectorBindings<std::string>(engine_, "vectorString", "string");
 	
 	RegisterGlmBindings(engine_);
 	
@@ -170,6 +171,7 @@ void ScriptingEngine::initialize()
 	RegisterVectorBindings<glm::ivec2>(engine_, "vectorIVec2", "ivec2");
 	RegisterVectorBindings<glm::ivec3>(engine_, "vectorIVec3", "ivec3");
 	RegisterVectorBindings<glm::ivec4>(engine_, "vectorIVec4", "ivec4");
+	RegisterVectorBindings<glm::quat>(engine_, "vectorMat4", "mat4");
 	RegisterVectorBindings<glm::quat>(engine_, "vectorQuat", "quat");
 	
 	r = engine_->RegisterInterface("IScriptObject");

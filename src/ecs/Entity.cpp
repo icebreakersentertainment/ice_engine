@@ -7,6 +7,11 @@ namespace ice_engine
 namespace ecs
 {
 
+std::string SceneDelegate::getName() const
+{
+	return scene_->getName();
+}
+
 pathfinding::CrowdHandle SceneDelegate::createCrowd(const pathfinding::NavigationMeshHandle& navigationMeshHandle, const pathfinding::CrowdConfig& crowdConfig)
 {
 	return scene_->createCrowd(navigationMeshHandle, crowdConfig);
@@ -231,22 +236,7 @@ entityx::ComponentHandle<ParentComponent> Entity::assign<ParentComponent, Entity
 
 	entityx::ComponentHandle<ParentComponent> componentHandle;
 
-	if (entity_.has_component<ParentComponent>())
-	{
-		auto c = entity_.component<ParentComponent>();
-		if (c->entity)
-		{
-			auto childrenComponent = c->entity.component<ChildrenComponent>();
-			childrenComponent->children.erase(
-				std::remove(
-					childrenComponent->children.begin(),
-					childrenComponent->children.end(),
-					c->entity
-				),
-				childrenComponent->children.end()
-			);
-		}
-	}
+	if (entity_.has_component<ParentComponent>()) entity_.remove<ParentComponent>();
 
 	std::cout << "PARENT C" << std::endl;
 	std::cout << "entity " << Entity(entity).id() << std::endl;
@@ -333,14 +323,7 @@ entityx::ComponentHandle<ChildrenComponent> Entity::assign<ChildrenComponent, st
 
 	entityx::ComponentHandle<ChildrenComponent> componentHandle;
 
-	if (entity_.has_component<ChildrenComponent>())
-	{
-		auto c = entity_.component<ChildrenComponent>();
-		for (auto& childEntity : c->children)
-		{
-			childEntity.remove<ChildrenComponent>();
-		}
-	}
+	if (entity_.has_component<ChildrenComponent>()) entity_.remove<ChildrenComponent>();
 
 	std::cout << "CHILDREN C" << std::endl;
 	componentHandle = entity_.assign<ChildrenComponent>(std::forward<std::vector<Entity>>(children));
@@ -401,8 +384,7 @@ entityx::ComponentHandle<ChildrenComponent> Entity::assign<ChildrenComponent>()
 	return assign<ChildrenComponent>(std::vector<Entity>());
 }
 
-template <>
-entityx::ComponentHandle<ParentBoneAttachmentComponent> Entity::assign<ParentBoneAttachmentComponent, std::string, glm::ivec4, glm::vec4>(std::string&& boneName, glm::ivec4&& boneIds, glm::vec4&& boneWeights)
+entityx::ComponentHandle<ParentBoneAttachmentComponent> Entity::assignParentBoneAttachmentComponent(std::string boneName, glm::ivec4 boneIds, glm::vec4 boneWeights)
 {
 	std::cout << entity_ << std::endl;
 
@@ -424,10 +406,7 @@ entityx::ComponentHandle<ParentBoneAttachmentComponent> Entity::assign<ParentBon
 	if (!pac) throw std::runtime_error("cannot assign parent bone attachment component - parent animation component does not exist");
 	if (!pac->bonesHandle) throw std::runtime_error("cannot assign parent bone attachment component - bonesHandle is not valid");
 
-	if (entity_.has_component<ParentBoneAttachmentComponent>())
-	{
-		scene_->detachBoneAttachment(gc->renderableHandle);
-	}
+	if (entity_.has_component<ParentBoneAttachmentComponent>()) entity_.remove<ParentBoneAttachmentComponent>();
 
 	std::cout << "P BONE ATTACHMENT C" << std::endl;
 	componentHandle = entity_.assign<ParentBoneAttachmentComponent>(
@@ -449,9 +428,15 @@ entityx::ComponentHandle<ParentBoneAttachmentComponent> Entity::assign<ParentBon
 }
 
 template <>
+entityx::ComponentHandle<ParentBoneAttachmentComponent> Entity::assign<ParentBoneAttachmentComponent, std::string, glm::ivec4, glm::vec4>(std::string&& boneName, glm::ivec4&& boneIds, glm::vec4&& boneWeights)
+{
+	return assignParentBoneAttachmentComponent(boneName, boneIds, boneWeights);
+}
+
+template <>
 entityx::ComponentHandle<ParentBoneAttachmentComponent> Entity::assign<ParentBoneAttachmentComponent, std::string&, glm::ivec4&, glm::vec4&>(std::string& boneName, glm::ivec4& boneIds, glm::vec4& boneWeights)
 {
-	return assign<ParentBoneAttachmentComponent>(boneName, boneIds, boneWeights);
+	return assignParentBoneAttachmentComponent(boneName, boneIds, boneWeights);
 }
 
 template <>

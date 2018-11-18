@@ -17,7 +17,15 @@ public:
 	void receive(const entityx::EntityDestroyedEvent& event);
 	void receive(const entityx::ComponentAddedEvent<ecs::GraphicsComponent>& event);
 	void receive(const entityx::ComponentRemovedEvent<ecs::GraphicsComponent>& event);
+	void receive(const entityx::ComponentRemovedEvent<ecs::AnimationComponent>& event);
 	void receive(const entityx::ComponentRemovedEvent<ecs::RigidBodyObjectComponent>& event);
+	void receive(const entityx::ComponentRemovedEvent<ecs::GhostObjectComponent>& event);
+	void receive(const entityx::ComponentRemovedEvent<ecs::PathfindingCrowdComponent>& event);
+	void receive(const entityx::ComponentRemovedEvent<ecs::PathfindingAgentComponent>& event);
+	void receive(const entityx::ComponentRemovedEvent<ecs::PathfindingObstacleComponent>& event);
+	void receive(const entityx::ComponentRemovedEvent<ecs::ParentComponent>& event);
+	void receive(const entityx::ComponentRemovedEvent<ecs::ChildrenComponent>& event);
+	void receive(const entityx::ComponentRemovedEvent<ecs::ParentBoneAttachmentComponent>& event);
 
 private:
 	Scene& scene_;

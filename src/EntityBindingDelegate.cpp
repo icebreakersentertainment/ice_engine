@@ -168,9 +168,16 @@ void EntityBindingDelegate::bind()
 		scriptingEngine_,
 		"AnimationComponent",
 		{
-			{"AnimationHandle animationHandle", asOFFSET(ecs::AnimationComponent, animationHandle)}
-		}
+			{"AnimationHandle animationHandle", asOFFSET(ecs::AnimationComponent, animationHandle)},
+			{"BonesHandle bonesHandle", asOFFSET(ecs::AnimationComponent, bonesHandle)},
+			{"float runningTime", asOFFSET(ecs::AnimationComponent, runningTime)},
+			{"uint32 startFrame", asOFFSET(ecs::AnimationComponent, startFrame)},
+			{"uint32 endFrame", asOFFSET(ecs::AnimationComponent, endFrame)},
+			{"vectorMat4 transformations", asOFFSET(ecs::AnimationComponent, transformations)}
+		},
+		"AnimationHandle"
 	);
+	registerEntityComponentAssignMethodNoForward<ecs::AnimationComponent, AnimationHandle, uint32, uint32>(scriptingEngine_, "AnimationComponent", "AnimationHandle, uint32, uint32");
 
 	registerComponent<ecs::SkeletonComponent, SkeletonHandle>(
 		scriptingEngine_,
@@ -206,6 +213,7 @@ void EntityBindingDelegate::bind()
 	scriptingEngine_->registerEnumValue("DirtyFlags", "DIRTY_SOURCE_SCRIPT", ecs::DirtyFlags::DIRTY_SOURCE_SCRIPT);
 	scriptingEngine_->registerEnumValue("DirtyFlags", "DIRTY_POSITION", ecs::DirtyFlags::DIRTY_POSITION);
 	scriptingEngine_->registerEnumValue("DirtyFlags", "DIRTY_ORIENTATION", ecs::DirtyFlags::DIRTY_ORIENTATION);
+	scriptingEngine_->registerEnumValue("DirtyFlags", "DIRTY_PATHFINDING_AGENT", ecs::DirtyFlags::DIRTY_PATHFINDING_AGENT);
 	registerComponent<ecs::DirtyComponent, uint16>(
 		scriptingEngine_,
 		"DirtyComponent",

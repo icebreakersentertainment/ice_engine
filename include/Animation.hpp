@@ -107,6 +107,8 @@ private:
 
 		name_ = std::string( animation->mName.C_Str() );
 
+		LOG_DEBUG(logger, "animation has name %s.", name_);
+
 		// Error check - animations with no name are not allowed
 		if (name_.compare( std::string("") ) == 0)
 		{

@@ -4,6 +4,7 @@
 #include <memory>
 
 #include <boost/any.hpp>
+#include <boost/variant/variant.hpp>
 
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
@@ -97,6 +98,9 @@ public:
 	
 	virtual Raycast raycast(const PhysicsSceneHandle& physicsSceneHandle, const ray::Ray& ray) = 0;
 	
+	virtual std::vector<boost::variant<RigidBodyObjectHandle, GhostObjectHandle>> query(const PhysicsSceneHandle& physicsSceneHandle, const glm::vec3& origin, const std::vector<glm::vec3>& points) = 0;
+	virtual std::vector<boost::variant<RigidBodyObjectHandle, GhostObjectHandle>> query(const PhysicsSceneHandle& physicsSceneHandle, const glm::vec3& origin, const float32 radius) = 0;
+
 	virtual void setMotionChangeListener(const PhysicsSceneHandle& physicsSceneHandle, const RigidBodyObjectHandle& rigidBodyObjectHandle, std::unique_ptr<IMotionChangeListener> motionStateListener) = 0;
 	
 	virtual void rotation(const PhysicsSceneHandle& physicsSceneHandle, const RigidBodyObjectHandle& rigidBodyObjectHandle, const glm::quat& orientation) = 0;

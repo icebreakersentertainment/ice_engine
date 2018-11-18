@@ -66,6 +66,7 @@ template<class Archive>
 void load(Archive& ar, ice_engine::ecs::ChildrenComponent& c, const unsigned int version)
 {
 	size_t size;
+	ar & size;
 
 	for (int i=0; i < size; ++i)
 	{

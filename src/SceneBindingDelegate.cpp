@@ -4,6 +4,8 @@
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 
+//#include <boost/variant.hpp>
+
 #include "Platform.hpp"
 #include "Types.hpp"
 
@@ -104,6 +106,14 @@ void SceneBindingDelegate::bind()
 	);
 	//scriptingEngine_->registerObjectProperty("Raycast", "vec3 from", asOFFSET(ray::Ray, from));
 	//scriptingEngine_->registerObjectProperty("Raycast", "vec3 to", asOFFSET(ray::Ray, to));
+
+//	registerVariantBindings<physics::RigidBodyObjectHandle, physics::GhostObjectHandle>(
+//		scriptingEngine_,
+//		"variantRigidBodyObjectHandleGhostObjectHandle",
+//		{"RigidBodyObjectHandle", "GhostObjectHandle"}
+//	);
+
+//	registerVectorBindings<boost::variant<physics::RigidBodyObjectHandle, physics::GhostObjectHandle>>(scriptingEngine_, "vectorVariantRigidBodyObjectHandleGhostObjectHandle", "variantRigidBodyObjectHandleGhostObjectHandle");
 
 	scriptingEngine_->registerObjectType("SceneStatistics", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	scriptingEngine_->registerObjectProperty("SceneStatistics", "float physicsTime", asOFFSET(SceneStatistics, physicsTime));
@@ -210,13 +220,12 @@ void SceneBindingDelegate::bind()
 	scriptingEngine_->registerClassMethod("Scene", "void serialize(const string& in)", asMETHODPR(Scene, serialize, (const std::string&), void));
 	scriptingEngine_->registerClassMethod("Scene", "void deserialize(const string& in)", asMETHODPR(Scene, deserialize, (const std::string&), void));
 	scriptingEngine_->registerClassMethod("Scene", "Entity createEntity()", asMETHODPR(Scene, createEntity, (), ecs::Entity));
-	scriptingEngine_->registerClassMethod("Scene", "void destroy(const Entity& in)", asMETHODPR(Scene, destroy, (ecs::Entity&), void));
+	scriptingEngine_->registerClassMethod("Scene", "void destroy(Entity& in)", asMETHODPR(Scene, destroy, (ecs::Entity&), void));
+	scriptingEngine_->registerClassMethod("Scene", "void destroyAsync(Entity& in)", asMETHOD(Scene, destroyAsync));
 	scriptingEngine_->registerClassMethod("Scene", "uint32 getNumEntities()", asMETHODPR(Scene, getNumEntities, () const, uint32));
-	scriptingEngine_->registerClassMethod(
-		"Scene",
-		"Raycast raycast(const Ray& in)",
-		asMETHODPR(Scene, raycast, (const ray::Ray&), Raycast)
-	);
+	scriptingEngine_->registerClassMethod("Scene", "Raycast raycast(const Ray& in)", asMETHOD(Scene, raycast));
+	scriptingEngine_->registerClassMethod("Scene", "vectorEntity query(const vec3& in, const vectorVec3& in)", asMETHODPR(Scene, query, (const glm::vec3&, const std::vector<glm::vec3>&), std::vector<ecs::Entity>));
+	scriptingEngine_->registerClassMethod("Scene", "vectorEntity query(const vec3& in, const float)", asMETHODPR(Scene, query, (const glm::vec3&, const float32), std::vector<ecs::Entity>));
 }
 	
 };

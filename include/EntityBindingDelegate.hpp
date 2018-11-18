@@ -64,6 +64,11 @@ void registerComponentHandle(ice_engine::scripting::IScriptingEngine* scriptingE
 		name + "& get()",
 		asMETHODPR(entityx::ComponentHandle<C>, get, (), C*)
 	);
+	scriptingEngine->registerClassMethod(
+		"ComponentHandle" + name,
+		"const " + name + "& get() const",
+		asMETHODPR(entityx::ComponentHandle<C>, get, () const, const C*)
+	);
 }
 
 
@@ -119,6 +124,11 @@ void registerEntityComponentMethods(ice_engine::scripting::IScriptingEngine* scr
 		"Entity",
 		"ComponentHandle" + name + " component" + name + "()",
 		asMETHODPR(ecs::Entity, component<C>, (), entityx::ComponentHandle<C>)
+	);
+	scriptingEngine->registerClassMethod(
+		"Entity",
+		"const ComponentHandle" + name + " component" + name + "() const",
+		asMETHODPR(ecs::Entity, component<const C>, () const, const entityx::ComponentHandle<const C COMMA const entityx::EntityManager>)
 	);
 }
 

@@ -122,7 +122,7 @@ void BindingDelegate::bind()
 	scriptingEngine_->registerObjectType("Audio", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	
 	scriptingEngine_->registerObjectType("IFileSystem", 0, asOBJ_REF | asOBJ_NOCOUNT);
-	scriptingEngine_->registerGlobalProperty("IFileSystem fileSystem", gameEngine_->getFileSystem());
+	scriptingEngine_->registerGlobalProperty("IFileSystem fileSystem", gameEngine_->fileSystem());
 	scriptingEngine_->registerClassMethod("IFileSystem", "bool exists(const string& in) const", asMETHOD(fs::IFileSystem, exists));
 	scriptingEngine_->registerClassMethod("IFileSystem", "bool isDirectory(const string& in) const", asMETHOD(fs::IFileSystem, isDirectory));
 	scriptingEngine_->registerClassMethod("IFileSystem", "void deleteFile(const string& in) const", asMETHOD(fs::IFileSystem, deleteFile));
@@ -213,6 +213,7 @@ void BindingDelegate::bind()
 	registerHandleBindings<ModelHandle>(scriptingEngine_, "ModelHandle");
 	registerHandleBindings<SkeletonHandle>(scriptingEngine_, "SkeletonHandle");
 	registerHandleBindings<AnimationHandle>(scriptingEngine_, "AnimationHandle");
+	registerHandleBindings<graphics::BonesHandle>(scriptingEngine_, "BonesHandle");
 
 	scriptingEngine_->registerObjectType("PbrMaterial", sizeof(PbrMaterial), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<PbrMaterial>());
 	//scriptingEngine_->registerObjectBehaviour("PbrMaterial", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(DefaultConstructor<PbrMaterial>), asCALL_CDECL_OBJFIRST);
@@ -406,7 +407,7 @@ void BindingDelegate::bind()
 	
 	// IDebugRenderer
 	scriptingEngine_->registerObjectType("IDebugRenderer", 0, asOBJ_REF | asOBJ_NOCOUNT);
-	scriptingEngine_->registerGlobalProperty("IDebugRenderer debugRenderer", gameEngine_->getDebugRenderer());
+	scriptingEngine_->registerGlobalProperty("IDebugRenderer debugRenderer", gameEngine_->debugRenderer());
 	scriptingEngine_->registerObjectMethod(
 		"IDebugRenderer",
 		"void pushLine(const vec3& in, const vec3& in, const vec3& in)",
@@ -428,38 +429,32 @@ void BindingDelegate::bind()
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
-		"IGraphicsEngine@ getGraphicsEngine()",
-		asMETHODPR(GameEngine, getGraphicsEngine, () const, graphics::IGraphicsEngine*),
+		"IGraphicsEngine@ graphicsEngine()",
+		asMETHODPR(GameEngine, graphicsEngine, () const, graphics::IGraphicsEngine*),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
-		"IPhysicsEngine@ getPhysicsEngine()",
-		asMETHODPR(GameEngine, getPhysicsEngine, () const, physics::IPhysicsEngine*),
+		"IPhysicsEngine@ physicsEngine()",
+		asMETHODPR(GameEngine, physicsEngine, () const, physics::IPhysicsEngine*),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
-		"IDebugRenderer@ getDebugRenderer()",
-		asMETHODPR(GameEngine, getDebugRenderer, () const, IDebugRenderer*),
+		"IThreadPool@ backgroundThreadPool()",
+		asMETHODPR(GameEngine, backgroundThreadPool, () const, IThreadPool*),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
-		"IThreadPool@ getBackgroundThreadPool()",
-		asMETHODPR(GameEngine, getBackgroundThreadPool, () const, IThreadPool*),
+		"IThreadPool@ foregroundThreadPool()",
+		asMETHODPR(GameEngine, foregroundThreadPool, () const, IThreadPool*),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
-		"IThreadPool@ getForegroundThreadPool()",
-		asMETHODPR(GameEngine, getForegroundThreadPool, () const, IThreadPool*),
-		asCALL_THISCALL_ASGLOBAL,
-		gameEngine_
-	);
-	scriptingEngine_->registerGlobalFunction(
-		"IOpenGlLoader@ getOpenGlLoader()",
-		asMETHODPR(GameEngine, getOpenGlLoader, () const, IOpenGlLoader*),
+		"IOpenGlLoader@ openGlLoader()",
+		asMETHODPR(GameEngine, openGlLoader, () const, IOpenGlLoader*),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
@@ -903,8 +898,8 @@ void BindingDelegate::bind()
 		);
 
 	scriptingEngine_->registerGlobalFunction(
-		"Scene@ createScene(const string& in)",
-		asMETHODPR(GameEngine, createScene, (const std::string&), Scene*),
+		"Scene@ createScene(const string& in, const vectorString& in = vectorString(), const string& in = \"\")",
+		asMETHODPR(GameEngine, createScene, (const std::string&, const std::vector<std::string>&, const std::string&), Scene*),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
