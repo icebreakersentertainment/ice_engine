@@ -100,6 +100,12 @@ void registerEntityComponentAssignMethodNoForward(ice_engine::scripting::IScript
 	);
 }
 
+template <class C>
+static const entityx::ComponentHandle<const C, const entityx::EntityManager> component(ecs::Entity& entity)
+{
+	return entity.component<const C>();
+}
+
 template <class C, typename ... Args>
 void registerEntityComponentMethods(ice_engine::scripting::IScriptingEngine* scriptingEngine, const std::string& name, const std::string& params = std::string())
 {
@@ -125,10 +131,11 @@ void registerEntityComponentMethods(ice_engine::scripting::IScriptingEngine* scr
 		"ComponentHandle" + name + " component" + name + "()",
 		asMETHODPR(ecs::Entity, component<C>, (), entityx::ComponentHandle<C>)
 	);
-	scriptingEngine->registerClassMethod(
+	scriptingEngine->registerObjectMethod(
 		"Entity",
 		"const ComponentHandle" + name + " component" + name + "() const",
-		asMETHODPR(ecs::Entity, component<const C>, () const, const entityx::ComponentHandle<const C COMMA const entityx::EntityManager>)
+		asFUNCTION(component<C>),
+		asCALL_CDECL_OBJFIRST
 	);
 }
 

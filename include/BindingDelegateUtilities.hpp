@@ -10,6 +10,8 @@
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 
+#include <boost/variant/get.hpp>
+
 #include "Platform.hpp"
 #include "Types.hpp"
 
@@ -299,10 +301,10 @@ void registerVariantBindingsRecursive(scripting::IScriptingEngine* scriptingEngi
 	{
 		const auto& type = types.front();
 
-		scriptingEngine->registerGlobalFunction(type + "& get" + type + "(" + name + "& in)", asFUNCTION(VariantBase::get<Value>), asCALL_CDECL);
+		scriptingEngine->registerGlobalFunction(type + "& get" + type + "(" + name + "& in)", asFUNCTION(VariantBase::template get<Value>), asCALL_CDECL);
 //		scriptingEngine->registerGlobalFunction("const " + type + "& get" + type + "(const " + name + "& in)", asFUNCTION(VariantBase::getConst<Value>), asCALL_CDECL);
 
-		scriptingEngine->registerObjectMethod(name.c_str(), name + "& opAssign(const " + type + "& in)", asFUNCTION(VariantBase::assignmentOperatorValue<Value>), asCALL_CDECL_OBJLAST);
+		scriptingEngine->registerObjectMethod(name.c_str(), name + "& opAssign(const " + type + "& in)", asFUNCTION(VariantBase::template assignmentOperatorValue<Value>), asCALL_CDECL_OBJLAST);
 	}
 
 	types.pop_front();

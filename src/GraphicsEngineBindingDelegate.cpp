@@ -63,6 +63,9 @@ const graphics::gui::Style& proxyFunctionGetStyle(T* t)
 	return t->getStyle();
 }
 
+static void InitConstructorGraphicsColor(graphics::Color* memory, const uint32 color) { new(memory) graphics::Color(color); }
+static void InitConstructorGraphicsColor(graphics::Color* memory, const uint8 r, const uint8 g, const uint8 b, const uint8 a) { new(memory) graphics::Color(r, g, b, a); }
+
 GraphicsEngineBindingDelegate::GraphicsEngineBindingDelegate(logger::ILogger* logger, scripting::IScriptingEngine* scriptingEngine, GameEngine* gameEngine, graphics::IGraphicsEngine* graphicsEngine)
 	:
 	logger_(logger),
@@ -706,8 +709,8 @@ void GraphicsEngineBindingDelegate::bind()
 	scriptingEngine_->registerObjectType("GraphicsColor", sizeof(graphics::Color), asOBJ_VALUE | asOBJ_APP_CLASS_ALLINTS | asGetTypeTraits<graphics::Color>());
 	scriptingEngine_->registerObjectBehaviour("GraphicsColor", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(DefaultConstructor<graphics::Color>), asCALL_CDECL_OBJFIRST);
 	scriptingEngine_->registerObjectBehaviour("GraphicsColor", asBEHAVE_CONSTRUCT, "void f(const GraphicsColor& in)", asFUNCTION(CopyConstructor<graphics::Color>), asCALL_CDECL_OBJFIRST);
-	scriptingEngine_->registerObjectBehaviour("GraphicsColor", asBEHAVE_CONSTRUCT, "void f(const uint32)", asFUNCTION(InitConstructorNoForward<graphics::Color COMMA const uint32>), asCALL_CDECL_OBJFIRST);
-	scriptingEngine_->registerObjectBehaviour("GraphicsColor", asBEHAVE_CONSTRUCT, "void f(const uint8, const uint8, const uint8, const uint8)", asFUNCTION(InitConstructorNoForward<graphics::Color COMMA const uint8 COMMA const uint8 COMMA const uint8 COMMA const uint8>), asCALL_CDECL_OBJFIRST);
+	scriptingEngine_->registerObjectBehaviour("GraphicsColor", asBEHAVE_CONSTRUCT, "void f(const uint32)", asFUNCTIONPR(InitConstructorGraphicsColor, (graphics::Color*, const uint32), void), asCALL_CDECL_OBJFIRST);
+	scriptingEngine_->registerObjectBehaviour("GraphicsColor", asBEHAVE_CONSTRUCT, "void f(const uint8, const uint8, const uint8, const uint8)", asFUNCTIONPR(InitConstructorGraphicsColor, (graphics::Color*, const uint8, const uint8, const uint8, const uint8), void), asCALL_CDECL_OBJFIRST);
 	scriptingEngine_->registerObjectBehaviour("GraphicsColor", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DefaultDestructor<graphics::Color>), asCALL_CDECL_OBJFIRST);
 	scriptingEngine_->registerClassMethod("GraphicsColor", "void setColor(const uint32)", asMETHODPR(graphics::Color, setColor, (const uint32), void));
 	scriptingEngine_->registerClassMethod("GraphicsColor", "void setColor(const uint8, const uint8, const uint8, const uint8)", asMETHODPR(graphics::Color, setColor, (const uint8, const uint8, const uint8, const uint8), void));
