@@ -593,14 +593,14 @@ public:
         }
 
         void destroy()
-        {
-          entity_.destroy();
-          scene_ = nullptr;
-        }
+				{
+					entity_.destroy();
+					scene_ = nullptr;
+				}
 
     	friend std::ostream& operator<<(std::ostream& os, const Entity& other)
     	{
-    		os << "Entity(Entity: " << other.entity_ << ", Scene: " << other.sceneDelegate_.getName() << ")";
+    		os << "Entity(Entity: " << other.entity_ << ", Scene: " << (other.scene_ != nullptr ? other.sceneDelegate_.getName() : "") << ")";
     		return os;
     	}
 

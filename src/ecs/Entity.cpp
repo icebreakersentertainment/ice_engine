@@ -249,7 +249,10 @@ entityx::ComponentHandle<ParentComponent> Entity::assign<ParentComponent, Entity
 
 		if (!childrenComponent) childrenComponent = componentHandle->entity.assign<ChildrenComponent>();
 
-		childrenComponent->children.push_back(*this);
+		if (std::find(childrenComponent->children.begin(), childrenComponent->children.end(), *this) == childrenComponent->children.end())
+		{
+			childrenComponent->children.push_back(*this);
+		}
 	}
 
 	return componentHandle;

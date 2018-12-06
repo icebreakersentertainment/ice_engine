@@ -132,33 +132,33 @@ public:
 	}
 
 	~EntityComponentSystem() = default;
-	
+
 	template<class T, typename Receiver>
 	void subscribe(Receiver& receiver)
 	{
 		events_.subscribe<T>(receiver);
 	}
-	
+
 	Entity create()
 	{
 		return Entity(scene_, entities_.create());
 	}
-	
-	void destroy(entityx::Entity::Id entity)
+
+	void destroy(Entity entity)
 	{
-		entities_.destroy(entity);
+		entity.destroy();
 	}
-	
+
 	bool valid(entityx::Entity::Id id) const
 	{
 		return entities_.valid(id);
 	}
-	
+
 	entityx::Entity::Id createId(uint32 index) const
 	{
 		return entities_.create_id(index);
 	}
-	
+
 	Entity get(entityx::Entity::Id id)
 	{
 		return Entity(scene_, entities_.get(id));
@@ -169,25 +169,25 @@ public:
 	{
 		return entities_.component<C>(id);
 	}
-	
+
 	template <typename C, typename = typename std::enable_if<std::is_const<C>::value>::type>
 	const entityx::ComponentHandle<C, const entityx::EntityManager> component(entityx::Entity::Id id) const
 	{
 		return entities_.component<C>(id);
 	}
-	
+
 	template <typename C>
 	bool hasComponent(entityx::Entity::Id id) const
 	{
 		return entities_.has_component<C>(id);
 	}
-	
+
 	template <typename C, typename ... Args>
 	entityx::ComponentHandle<C> assign(entityx::Entity::Id id, Args && ... args)
 	{
 		return entities_.assign<C>(id, std::forward<Args>(args) ...);
 	}
-	
+
 	template <typename ... C>
 	EcsView<false> entitiesWithComponents()
 	{
@@ -350,8 +350,14 @@ private:
 			{
 				entity.destroy();
 			}
-		} catch (const std::exception& e) {
-			std::cout << e.what() << std::endl;
+		}
+		catch(const Exception& e)
+		{
+			std::cerr << "Exception: " << boost::diagnostic_information(e) << std::endl;
+		}
+		catch(const std::exception& e)
+		{
+			std::cerr << "Exception: " << boost::diagnostic_information(e) << std::endl;
 		}
 	}
 

@@ -34,9 +34,9 @@ ScriptingEngine::ScriptingEngine(utilities::Properties* properties, fs::IFileSys
 	properties_ = properties;
 	fileSystem_ = fileSystem;
 	logger_ = logger;
-	
+
 	ctx_ = nullptr;
-	
+
 	initialize();
 }
 
@@ -58,67 +58,67 @@ void ScriptingEngine::assertNoAngelscriptError(const int32 returnCode) const
 			case asERROR:
 				throw Exception("ScriptEngine: Generic error.");
 				break;
-				
+
 			case asINVALID_ARG:
 				throw InvalidArgumentException("ScriptEngine: Argument was invalid.");
 				break;
-			
+
 			case asNOT_SUPPORTED:
 				throw Exception("ScriptEngine: Operation not supported.");
 				break;
-				
+
 			case asNO_MODULE:
 				throw Exception("ScriptEngine: Module not found.");
 				break;
-			
+
 			case asINVALID_TYPE:
 				throw Exception("ScriptEngine: The type specified is invalid.");
 				break;
-			
+
 			case asNO_GLOBAL_VAR:
 				throw Exception("ScriptEngine: No matching property was found.");
 				break;
-			
+
 			case asINVALID_DECLARATION:
 				throw Exception("ScriptEngine: The specified declaration is invalid.");
 				break;
-			
+
 			case asINVALID_NAME:
 				throw Exception("ScriptEngine: The name specified is invalid.");
 				break;
-			
+
 			case asALREADY_REGISTERED:
 				throw Exception("ScriptEngine: The specified type or name is already registered.");
 				break;
-			
+
 			case asNAME_TAKEN:
 				throw Exception("ScriptEngine: The specified name is already taken.");
 				break;
-			
+
 			case asWRONG_CALLING_CONV:
 				throw Exception("ScriptEngine: The specified calling convention is not valid or does not match the registered calling convention.");
 				break;
-			
+
 			case asWRONG_CONFIG_GROUP:
 				throw Exception("ScriptEngine: Wrong configuration group.");
 				break;
-			
+
 			case asCONFIG_GROUP_IS_IN_USE:
 				throw Exception("ScriptEngine: Configuration group already in use.");
 				break;
-			
+
 			case asILLEGAL_BEHAVIOUR_FOR_TYPE:
 				throw Exception("ScriptEngine: Illegal behaviour for type.");
 				break;
-			
+
 			case asINVALID_OBJECT:
 				throw Exception("ScriptEngine: The object does not specify a valid object type.");
 				break;
-			
+
 			case asLOWER_ARRAY_DIMENSION_NOT_REGISTERED:
 				throw Exception("ScriptEngine:  Array element must be a primitive or a registered type.");
 				break;
-			
+
 			default:
 				std::string str = std::string("ScriptEngine: Unknown error: ") + std::to_string(returnCode);
 				throw Exception(str.c_str());
@@ -130,7 +130,7 @@ void ScriptingEngine::assertNoAngelscriptError(const int32 returnCode) const
 void ScriptingEngine::initialize()
 {
 	engine_ = asCreateScriptEngine(ANGELSCRIPT_VERSION);
-	
+
 	// Set the message callback to receive information on errors in human readable form.
 	int32 r = engine_->SetMessageCallback(asMETHOD(ScriptingEngine, MessageCallback), this, asCALL_THISCALL);
 	assertNoAngelscriptError(r);
@@ -141,11 +141,11 @@ void ScriptingEngine::initialize()
 	 * necessary to implement the registration yourself if you don't want to.
 	 */
 	RegisterStdString(engine_);
-	
+
 	RegisterScriptArray(engine_, true);
-	
+
 	RegisterScriptDictionary(engine_);
-	
+
 	RegisterScriptHandle(engine_);
 
 	RegisterVectorBindings<int8>(engine_, "vectorInt8", "int8");
@@ -160,11 +160,11 @@ void ScriptingEngine::initialize()
 	RegisterVectorBindings<float32>(engine_, "vectorFloat", "float");
 	RegisterVectorBindings<float64>(engine_, "vectorDouble", "double");
 	RegisterVectorBindings<std::string>(engine_, "vectorString", "string");
-	
+
 	RegisterGlmBindings(engine_);
-	
+
 	RegisterChronoBindings(engine_);
-	
+
 	RegisterVectorBindings<glm::vec2>(engine_, "vectorVec2", "vec2");
 	RegisterVectorBindings<glm::vec3>(engine_, "vectorVec3", "vec3");
 	RegisterVectorBindings<glm::vec4>(engine_, "vectorVec4", "vec4");
@@ -173,7 +173,7 @@ void ScriptingEngine::initialize()
 	RegisterVectorBindings<glm::ivec4>(engine_, "vectorIVec4", "ivec4");
 	RegisterVectorBindings<glm::quat>(engine_, "vectorMat4", "mat4");
 	RegisterVectorBindings<glm::quat>(engine_, "vectorQuat", "quat");
-	
+
 	r = engine_->RegisterInterface("IScriptObject");
 	assertNoAngelscriptError(r);
 
@@ -188,14 +188,14 @@ void ScriptingEngine::initialize()
 	// Register the function(s) that we want the scripts to call
 	r = engine_->RegisterGlobalFunction("void print(const string &in)", asFUNCTION(scripting::angel_script::ScriptingEngine::print), asCALL_CDECL);
 	assertNoAngelscriptError(r);
-	
+
 	r = engine_->RegisterGlobalFunction("void println(const string &in)", asFUNCTION(scripting::angel_script::ScriptingEngine::println), asCALL_CDECL);
 	assertNoAngelscriptError(r);
-	
+
 	// initialize default context
 	auto handle = contextData_.create();
 	auto& contextData = contextData_[handle];
-	
+
 	contextData.context = engine_->CreateContext();
 }
 
@@ -205,14 +205,14 @@ asIScriptContext* ScriptingEngine::getContext(const ExecutionContextHandle& exec
 	{
 		throw Exception("ExecutionContextHandle is not valid");
 	}
-	
+
 	auto context = contextData_[executionContextHandle].context;
-	
+
 	if (context == nullptr)
 	{
 		throw Exception("ExecutionContextHandle is not valid");
 	}
-	
+
 	return context;
 }
 
@@ -258,7 +258,7 @@ void ScriptingEngine::destroyModule(const std::string& moduleName)
 void ScriptingEngine::setArguments(asIScriptContext* context, ParameterList& arguments) const
 {
 	int32 r = 0;
-	
+
 	for ( size_t i = 0; i < arguments.size(); i++)
 	{
 		switch (arguments[i].type())
@@ -266,60 +266,60 @@ void ScriptingEngine::setArguments(asIScriptContext* context, ParameterList& arg
 	        case ParameterType::TYPE_BOOL:
 	            r = context->SetArgByte(i, arguments[i].value<bool>());
 	            break;
-	
+
 	        case ParameterType::TYPE_INT8:
 	            r = context->SetArgByte(i, arguments[i].value<int8>());
 	            break;
-	            
+
 			case ParameterType::TYPE_UINT8:
 			    r = context->SetArgByte(i, arguments[i].value<uint8>());
 	            break;
-	            
+
 	        case ParameterType::TYPE_INT16:
 				r = context->SetArgWord(i, arguments[i].value<int16>());
 	            break;
-	            
+
 	        case ParameterType::TYPE_UINT16:
 	            r = context->SetArgWord(i, arguments[i].value<uint16>());
 	            break;
-	
+
 	        case ParameterType::TYPE_INT32:
 				r = context->SetArgDWord(i, arguments[i].value<int32>());
 	            break;
-	            
+
 	        case ParameterType::TYPE_UINT32:
 	            r = context->SetArgDWord(i, arguments[i].value<uint32>());
 	            break;
-	
+
 	        case ParameterType::TYPE_INT64:
 				r = context->SetArgQWord(i, arguments[i].value<int64>());
 	            break;
-	            
+
 	        case ParameterType::TYPE_UINT64:
 	            r = context->SetArgQWord(i, arguments[i].value<uint64>());
 	            break;
-	
+
 	        case ParameterType::TYPE_FLOAT32:
 	            r = context->SetArgFloat(i, arguments[i].value<float32>());
 	            break;
-	           
+
 	        case ParameterType::TYPE_FLOAT64:
 	            r = context->SetArgDouble(i, arguments[i].value<float64>());
 	            break;
-	           
+
 	        case ParameterType::TYPE_OBJECT_REF:
 				r = context->SetArgAddress(i, arguments[i].pointer());
 	            break;
-	            
+
 	        case ParameterType::TYPE_OBJECT_VAL:
 				r = context->SetArgObject(i, arguments[i].pointer());
 	            break;
-			
+
 	        default:
 				throw Exception("Unknown parameter type.");
 				break;
 		}
-		
+
 		assertNoAngelscriptError(r);
 	}
 }
@@ -333,21 +333,21 @@ void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptFunction*
 		int32 r = context->PushState();
 		assertNoAngelscriptError(r);
 	}
-	
+
 	int32 r = context->Prepare(function);
 	assertNoAngelscriptError(r);
-	
+
 	if (object != nullptr)
 	{
 		context->SetObject(object);
 	}
-	
+
 	r = context->Execute();
-	
+
 	if ( r != asEXECUTION_FINISHED )
 	{
 		std::string msg = std::string();
-		
+
 		// The execution didn't complete as expected. Determine what happened.
 		if ( r == asEXECUTION_EXCEPTION )
 		{
@@ -357,7 +357,7 @@ void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptFunction*
 			//msg += std::string(context->GetExceptionString());
 			throw Exception("ScriptEngine: " + msg);
 		}
-		
+
 		assertNoAngelscriptError(r);
 	}
 
@@ -369,9 +369,9 @@ void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptFunction*
 }
 
 void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptFunction* function, asIScriptObject* object, ParameterList& arguments) const
-{	
+{
 	assert(function->GetParamCount() == arguments.size());
-	
+
 	if (context->GetState() == asEContextState::asEXECUTION_ACTIVE)
 	{
 		int32 r = context->PushState();
@@ -380,23 +380,23 @@ void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptFunction*
 
 	int32 r = context->Prepare(function);
 	assertNoAngelscriptError(r);
-	
+
 	if (arguments.size() != 0)
 	{
 		setArguments(context, arguments);
 	}
-	
+
 	if (object != nullptr)
 	{
 		context->SetObject(object);
 	}
-	
+
 	r = context->Execute();
-	
+
 	if ( r != asEXECUTION_FINISHED )
 	{
 		std::string msg = std::string();
-		
+
 		// The execution didn't complete as expected. Determine what happened.
 		if ( r == asEXECUTION_EXCEPTION )
 		{
@@ -406,7 +406,7 @@ void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptFunction*
 			//msg += std::string(context->GetExceptionString());
 			throw Exception("ScriptEngine: " + msg);
 		}
-		
+
 		assertNoAngelscriptError(r);
 	}
 
@@ -430,28 +430,28 @@ void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptFunction*
 void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptModule* module, const std::string& function) const
 {
 	auto func = getFunctionByDecl(function, module);
-	
+
 	callFunction(context, func);
 }
 
 void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptModule* module, const std::string& function, ParameterList& arguments) const
 {
 	auto func = getFunctionByDecl(function, module);
-	
+
 	callFunction(context, func, arguments);
 }
 
 void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptFunctionHandle& scriptFunctionHandle) const
 {
 	auto function = static_cast<asIScriptFunction*>(scriptFunctionHandle.get());
-	
+
 	callFunction(context, function);
 }
 
 void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptFunctionHandle& scriptFunctionHandle, ParameterList& arguments) const
 {
 	auto function = static_cast<asIScriptFunction*>(scriptFunctionHandle.get());
-	
+
 	callFunction(context, function, arguments);
 }
 
@@ -471,16 +471,16 @@ void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptObject
 {
 	auto object = static_cast<asIScriptObject*>(scriptObjectHandle.get());
 	auto objectFunction = getMethod(scriptObjectHandle, function);
-	
+
 	callFunction(context, objectFunction, object);
 }
 
 void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptObjectHandle& scriptObjectHandle, const std::string& function, ParameterList& arguments) const
 {
 	auto object = static_cast<asIScriptObject*>(scriptObjectHandle.get());
-	
+
 	auto objectFunction = getMethod(scriptObjectHandle, function);
-	
+
 	callFunction(context, objectFunction, object, arguments);
 }
 
@@ -488,7 +488,7 @@ void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptObject
 {
 	auto object = static_cast<asIScriptObject*>(scriptObjectHandle.get());
 	auto objectFunction = static_cast<asIScriptFunction*>(scriptObjectFunctionHandle.get());
-	
+
 	callFunction(context, objectFunction, object);
 }
 
@@ -496,7 +496,7 @@ void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptObject
 {
 	auto object = static_cast<asIScriptObject*>(scriptObjectHandle.get());
 	auto objectFunction = static_cast<asIScriptFunction*>(scriptObjectFunctionHandle.get());
-	
+
 	callFunction(context, objectFunction, object, arguments);
 }
 
@@ -1501,12 +1501,12 @@ ExecutionContextHandle ScriptingEngine::createExecutionContext()
 	{
 		throw Exception("Maximum number of execution contexts reached.");
 	}
-	
+
 	auto handle = contextData_.create();
 	auto& contextData = contextData_[handle];
-	
+
 	contextData.context = engine_->CreateContext();
-	
+
 	return handle;
 }
 
@@ -1560,7 +1560,7 @@ void ScriptingEngine::destroyModule(const ModuleHandle& moduleHandle)
 void ScriptingEngine::releaseScriptObject(const ScriptObjectHandle& scriptObjectHandle)
 {
 	auto object = static_cast<asIScriptObject*>(scriptObjectHandle.get());
-	
+
 	LOG_TRACE(logger_, "Releasing script object: %s", object->GetObjectType()->GetName());
 
 	object->Release();
@@ -1588,7 +1588,7 @@ void ScriptingEngine::releaseAllScriptObjectFunctions()
 void ScriptingEngine::releaseScriptFunction(const ScriptFunctionHandle& scriptFunctionHandle)
 {
 	auto function = static_cast<asIScriptFunction*>(scriptFunctionHandle.get());
-	
+
 	function->Release();
 }
 
@@ -1614,7 +1614,7 @@ void ScriptingEngine::registerClass(const std::string& name)
 	registerObjectType(name.c_str(), 0, asOBJ_REF);
 }
 
-void ScriptingEngine::registerClass(const std::string& name, const std::string& classFactorySignature, const std::string& addRefSignature, const std::string& releaseRefSignature, 
+void ScriptingEngine::registerClass(const std::string& name, const std::string& classFactorySignature, const std::string& addRefSignature, const std::string& releaseRefSignature,
 	const asSFuncPtr& classFactoryFuncPointer, const asSFuncPtr& addRefFuncPointer, const asSFuncPtr& releaseRefFuncPointer)
 {
 	registerClass(name);
@@ -1622,7 +1622,7 @@ void ScriptingEngine::registerClass(const std::string& name, const std::string& 
 	registerClassAddRef(name, addRefSignature, addRefFuncPointer);
 	registerClassReleaseRef(name, releaseRefSignature, releaseRefFuncPointer);
 }
-		
+
 void ScriptingEngine::registerClassFactory(const std::string& name, const std::string& classFactorySignature, const asSFuncPtr& classFactoryFuncPointer)
 {
 	registerObjectBehaviour(name.c_str(), asBEHAVE_FACTORY, classFactorySignature.c_str(), classFactoryFuncPointer, asCALL_CDECL);
@@ -1637,7 +1637,7 @@ void ScriptingEngine::registerClassReleaseRef(const std::string& name, const std
 {
 	registerObjectBehaviour(name.c_str(), asBEHAVE_RELEASE, releaseRefSignature.c_str(), releaseRefFuncPointer, asCALL_THISCALL);
 }
-		
+
 void ScriptingEngine::registerClassMethod(const std::string& className, const std::string& methodSignature, const asSFuncPtr& funcPointer)
 {
 	registerObjectMethod(className.c_str(), methodSignature.c_str(), funcPointer, asCALL_THISCALL);
@@ -1646,7 +1646,7 @@ void ScriptingEngine::registerClassMethod(const std::string& className, const st
 void ScriptingEngine::registerFunctionDefinition(const std::string& name)
 {
 	int32 r = engine_->RegisterFuncdef(name.c_str());
-	
+
 	if (r < 0)
 	{
 		std::string msg = std::string();
@@ -1660,7 +1660,7 @@ void ScriptingEngine::registerFunctionDefinition(const std::string& name)
 			msg = std::string("Unable to register function definition: ");
 			msg += name;
 		}
-		
+
 		throw Exception("ScriptEngine: " + msg);
 	}
 }
@@ -1668,7 +1668,7 @@ void ScriptingEngine::registerFunctionDefinition(const std::string& name)
 void ScriptingEngine::registerInterface(const std::string& name)
 {
 	int32 r = engine_->RegisterInterface(name.c_str());
-	
+
 	if (r < 0)
 	{
 		std::string msg = std::string();
@@ -1682,7 +1682,7 @@ void ScriptingEngine::registerInterface(const std::string& name)
 			msg = std::string("Unable to register the interface: ");
 			msg += name;
 		}
-		
+
 		throw Exception("ScriptEngine: " + msg);
 	}
 }
@@ -1690,7 +1690,7 @@ void ScriptingEngine::registerInterface(const std::string& name)
 void ScriptingEngine::registerInterfaceMethod(const std::string& name, const std::string& declaration)
 {
 	int32 r = engine_->RegisterInterfaceMethod(name.c_str(), declaration.c_str());
-	
+
 	if (r < 0)
 	{
 		std::string msg = std::string();
@@ -1704,7 +1704,7 @@ void ScriptingEngine::registerInterfaceMethod(const std::string& name, const std
 			msg = std::string("Unable to register the interface method: ");
 			msg += declaration;
 		}
-		
+
 		throw Exception("ScriptEngine: " + msg);
 	}
 }
@@ -1712,7 +1712,7 @@ void ScriptingEngine::registerInterfaceMethod(const std::string& name, const std
 void ScriptingEngine::registerEnum(const std::string& type)
 {
 	int32 r = engine_->RegisterEnum(type.c_str());
-	
+
 	if (r < 0)
 	{
 		std::string msg = std::string();
@@ -1725,7 +1725,7 @@ void ScriptingEngine::registerEnum(const std::string& type)
 		{
 			msg = std::string("Unable to register the enum: ") + type;
 		}
-		
+
 		throw Exception("ScriptEngine: " + msg);
 	}
 }
@@ -1733,7 +1733,7 @@ void ScriptingEngine::registerEnum(const std::string& type)
 void ScriptingEngine::registerEnumValue(const std::string& type, const std::string& name, const int64 value)
 {
 	int32 r = engine_->RegisterEnumValue(type.c_str(), name.c_str(), value);
-	
+
 	if (r < 0)
 	{
 		std::string msg = std::string();
@@ -1746,7 +1746,7 @@ void ScriptingEngine::registerEnumValue(const std::string& type, const std::stri
 		{
 			msg = std::string("Unable to register the enum value: ") + type;
 		}
-		
+
 		throw Exception("ScriptEngine: " + msg);
 	}
 }
@@ -1759,25 +1759,25 @@ void ScriptingEngine::destroyAllModules()
 		LOG_TRACE(logger_, std::string("Destroying module with name ") + m.module->GetName());
 		m.module->Discard();
 	}
-	
+
 	moduleData_.clear();
 }
 
 ScriptFunctionHandle ScriptingEngine::getScriptFunction(const ModuleHandle& moduleHandle, const std::string& function)
 {
 	auto& moduleData = moduleData_[moduleHandle];
-	
+
 	auto scriptFunctionObject = getFunctionByDecl(function, moduleData.module);
-	
+
 	return ScriptFunctionHandle(scriptFunctionObject);
 }
 
 ScriptObjectFunctionHandle ScriptingEngine::getScriptObjectFunction(const ScriptObjectHandle& scriptObjectHandle, const std::string& function)
 {
 	auto object = static_cast<asIScriptObject*>(scriptObjectHandle.get());
-	
+
 	auto scriptFunctionObject = getFunctionByDecl(function, object);
-	
+
 	scriptFunctionObject->AddRef();
 
 	return ScriptObjectFunctionHandle(scriptFunctionObject);
@@ -1786,7 +1786,7 @@ ScriptObjectFunctionHandle ScriptingEngine::getScriptObjectFunction(const Script
 void ScriptingEngine::registerObjectType(const std::string& obj, int32 byteSize, asDWORD flags)
 {
 	int32 r = engine_->RegisterObjectType(obj.c_str(), byteSize, flags);
-	
+
 	if (r < 0)
 	{
 		std::string msg = std::string();
@@ -1800,7 +1800,7 @@ void ScriptingEngine::registerObjectType(const std::string& obj, int32 byteSize,
 			msg = std::string("Unable to register the object type: ");
 			msg += obj;
 		}
-		
+
 		throw Exception("ScriptEngine: " + msg);
 	}
 }
@@ -1808,7 +1808,7 @@ void ScriptingEngine::registerObjectType(const std::string& obj, int32 byteSize,
 void ScriptingEngine::registerObjectProperty(const std::string& obj, const std::string& declaration, int32 byteOffset)
 {
 	int32 r = engine_->RegisterObjectProperty(obj.c_str(), declaration.c_str(), byteOffset);
-	
+
 	if (r < 0)
 	{
 		std::string msg = std::string();
@@ -1822,7 +1822,7 @@ void ScriptingEngine::registerObjectProperty(const std::string& obj, const std::
 			msg = std::string("Unable to register the object property: ");
 			msg += obj;
 		}
-		
+
 		throw Exception("ScriptEngine: " + msg);
 	}
 }
@@ -1831,7 +1831,7 @@ void ScriptingEngine::registerObjectMethod(const std::string& obj, const std::st
 									  const asSFuncPtr& funcPointer, asDWORD callConv, void* auxiliary)
 {
 	int32 r = engine_->RegisterObjectMethod(obj.c_str(), declaration.c_str(), funcPointer, callConv, auxiliary);
-	
+
 	if (r < 0)
 	{
 		std::string msg = std::string();
@@ -1845,7 +1845,7 @@ void ScriptingEngine::registerObjectMethod(const std::string& obj, const std::st
 			msg = std::string("Unable to register the object method: ");
 			msg += obj;
 		}
-		
+
 		throw Exception("ScriptEngine: " + msg);
 	}
 }
@@ -1890,7 +1890,7 @@ void ScriptingEngine::destroy()
 
 	releaseAllScriptObjects();
 	destroyAllModules();
-	
+
 	LOG_TRACE(logger_, "Shutting down and releasing Angelscript engine");
 	engine_->ShutDownAndRelease();
 }
@@ -1898,7 +1898,7 @@ void ScriptingEngine::destroy()
 asIScriptFunction* ScriptingEngine::getFunctionByDecl(const std::string& function, const asIScriptModule* module) const
 {
 	auto func = module->GetFunctionByDecl( function.c_str() );
-	
+
 	if ( func == nullptr )
 	{
 		// The function couldn't be found. Instruct the script writer to include the expected function in the script.
@@ -1916,14 +1916,14 @@ asIScriptFunction* ScriptingEngine::getFunctionByDecl(const std::string& functio
 
 		throw Exception("ScriptEngine: " + msg);
 	}
-	
+
 	return func;
 }
 
 asIScriptFunction* ScriptingEngine::getFunctionByDecl(const std::string& function, const asIScriptObject* object) const
 {
 	auto func = object->GetObjectType()->GetMethodByDecl(function.c_str());
-	
+
 	if ( func == nullptr )
 	{
 		// The function couldn't be found. Instruct the script writer to include the expected function in the script.
@@ -1941,7 +1941,7 @@ asIScriptFunction* ScriptingEngine::getFunctionByDecl(const std::string& functio
 
 		throw Exception("ScriptEngine: " + msg);
 	}
-	
+
 	return func;
 }
 
@@ -1949,19 +1949,19 @@ asIScriptModule* ScriptingEngine::getModule(const ScriptObjectHandle& scriptObje
 {
 	/*
 	const auto scriptObjectData = scriptObjectData_[scriptObjectHandle];
-	
+
 	auto module = moduleData_[scriptObjectData.moduleHandle].module;
-	
+
 	return module;
 	*/
-	
+
 	return nullptr;
 }
 
 asITypeInfo* ScriptingEngine::getType(const ScriptObjectHandle& scriptObjectHandle) const
 {
 	auto object = static_cast<asIScriptObject*>(scriptObjectHandle.get());
-	
+
 	return object->GetObjectType();
 }
 
@@ -1969,7 +1969,7 @@ asIScriptFunction* ScriptingEngine::getMethod(const ScriptObjectHandle& scriptOb
 {
 	//auto module = getModule(scriptObjectHandle);
 	auto type = getType(scriptObjectHandle);
-	
+
 	return type->GetMethodByDecl(function.c_str());
 }
 
@@ -1992,7 +1992,7 @@ void ScriptingEngine::MessageCallback(const asSMessageInfo* msg, void* param)
 	{
 		LOG_ERROR(logger_, boost::format("%s (%d, %d) : %s") % msg->section %  msg->row %  msg->col %  msg->message );
 	}
-	
+
 	printf("%s (%d, %d) : %s : %s\n", msg->section, msg->row, msg->col, type.c_str(), msg->message);
 }
 

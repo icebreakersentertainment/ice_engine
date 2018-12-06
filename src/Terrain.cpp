@@ -22,9 +22,9 @@ namespace ice_engine
 
 void flipVertical(Image& image)
 {
-	std::vector<char> data;
+	std::vector<byte> data;
 	data.resize(image.width()*image.height()*4);
-	
+
 	int j=data.size()-image.width()*4;
 	for (int i=0; i < data.size(); i+=image.width()*4)
 	{
@@ -32,29 +32,29 @@ void flipVertical(Image& image)
 		{
 			data[i+k] = image.data()[j+k];
 		}
-		
+
 		j-=image.width()*4;
 	}
-	
+
 	image.data_ = std::move(data);
 }
 
 // Source: http://www.flashbang.se/archives/155
 void saveImageToFile(fs::IFile* file, const Image& image)
 {
-	std::vector<char> data;
+	std::vector<byte> data;
 	if (image.format() == Image::Format::FORMAT_RGBA)
 	{
 		// Convert from RGBA to RGB
 		data.resize(image.data().size()/4 * 3);
-		
+
 		int j=0;
 		for (int i=0; i < data.size(); i+=3)
 		{
 			data[i] = image.data()[j];
 			data[i+1] = image.data()[j+1];
 			data[i+2] = image.data()[j+2];
-			
+
 			j+=4;
 		}
 	}
@@ -62,23 +62,23 @@ void saveImageToFile(fs::IFile* file, const Image& image)
 	{
 		data = image.data();
 	}
-	
+
 	printf("WTF2: %i %i %i\n", image.data().size(), image.width(), image.height());
 	printf("WTF2: %i\n", data.size());
-	
+
 	/*
 	BYTE pixels [3*257*257];
 	FIBITMAP* Image = FreeImage_ConvertFromRawBits(reinterpret_cast<BYTE*>(&data[0]), image.width(), image.height(), 3*image.width(), 24, 0xFF0000, 0x00FF00, 0x0000FF, false);
 	FreeImage_Save(FIF_BMP, Image, "../assets/test.bmp", 0);
 	*/
-	
+
 	//glReadPixels(0,0,x,y, GL_BGR,GL_UNSIGNED_BYTE,data);// split x and y sizes into bytes
 	int xa= image.width() % 256;
 	int xb= (image.width()-xa)/256;
 	int ya= image.height() % 256;
 	int yb= (image.height()-ya)/256;//assemble the header
 	unsigned char header[18]={0,0,2,0,0,0,0,0,0,0,0,0,(unsigned char)xa,(unsigned char)xb,(unsigned char)ya,(unsigned char)yb,24,0};
-	
+
 	// write header and data to file
 	auto& ostream = file->getOutputStream();
 	ostream.write (reinterpret_cast<char *>(header), sizeof (char)*18);
@@ -89,19 +89,19 @@ void saveImageToFile(fs::IFile* file, const Image& image)
 
 void saveAlphaImageToFile(fs::IFile* file, const Image& image)
 {
-	std::vector<char> data;
+	std::vector<byte> data;
 	if (image.format() == Image::Format::FORMAT_RGBA)
 	{
 		// Convert from RGBA to RGB
 		data.resize(image.data().size()/4 * 3);
-		
+
 		int j=0;
 		for (int i=0; i < data.size(); i+=3)
 		{
 			data[i] = image.data()[j+3];
 			data[i+1] = image.data()[j+3];
 			data[i+2] = image.data()[j+3];
-			
+
 			j+=4;
 		}
 	}
@@ -109,20 +109,20 @@ void saveAlphaImageToFile(fs::IFile* file, const Image& image)
 	{
 		data = image.data();
 	}
-	
+
 	/*
 	BYTE pixels [3*257*257];
 	FIBITMAP* Image = FreeImage_ConvertFromRawBits(reinterpret_cast<BYTE*>(&data[0]), image.width(), image.height(), 3*image.width(), 24, 0xFF0000, 0x00FF00, 0x0000FF, false);
 	FreeImage_Save(FIF_BMP, Image, "../assets/test.bmp", 0);
 	*/
-	
+
 	//glReadPixels(0,0,x,y, GL_BGR,GL_UNSIGNED_BYTE,data);// split x and y sizes into bytes
 	int xa= image.width() % 256;
 	int xb= (image.width()-xa)/256;
 	int ya= image.height() % 256;
 	int yb= (image.height()-ya)/256;//assemble the header
 	unsigned char header[18]={0,0,2,0,0,0,0,0,0,0,0,0,(unsigned char)xa,(unsigned char)xb,(unsigned char)ya,(unsigned char)yb,24,0};
-	
+
 	// write header and data to file
 	auto& ostream = file->getOutputStream();
 	ostream.write (reinterpret_cast<char *>(header), sizeof (char)*18);
@@ -198,7 +198,7 @@ Terrain::Terrain(
 	terrainEntity_.assign<ecs::PositionComponent>(glm::vec3(-0.5f, -7.5f, -0.5f));
 	terrainEntity_.assign<ecs::RigidBodyObjectComponent>(collisionShapeHandle, 0.0f, 1.0f, 1.0f);
 	//auto rigidBodyObjectHandle = physicsEngine_->createRigidBodyObject(physicsSceneHandle_, collisionShapeHandle, glm::vec3(-0.5f, -7.5f, -0.5f), glm::quat(), 0.0f, 1.0f, 1.0f);
-	
+
 	//flipVertical(*image);
 	//if (image->format == Image::Format::FORMAT_RGB)
 	//{
@@ -221,15 +221,15 @@ Terrain::Terrain(
 		fileOut->close();
 	}
 	*/
-	
+
 	//graphics::SplatMap splatMap = generateSplatMap(*image, fileSystem);
 	//graphics::HeightMap heightMap = graphics::HeightMap(image.get());
 	//graphics::DisplacementMap displacementMap;
-	
+
 	//flipVertical(*image);
 	//terrainHandle_ = graphicsEngine->createTerrain(renderSceneHandle_, &heightMap, &splatMap, &displacementMap);
 	//terrainEntity_.assign<ecs::GraphicsTerrainComponent>(heightMap, splatMap, displacementMap);
-	
+
 	try
 	{
 //		std::vector<glm::vec3> vertices;
@@ -249,15 +249,15 @@ Terrain::Terrain(
 //			indices[i-1] = indices[i+1];
 //			indices[i+1] = temp;
 //        }
-	    
+
 	    /*
 	    vertices.clear();
-		
+
 		vertices.push_back( glm::vec3(0,0,0) );
 		vertices.push_back( glm::vec3(10,0,0) );
 		vertices.push_back( glm::vec3(0,0,10) );
 		vertices.push_back( glm::vec3(10,0,10) );
-		
+
 		indices.clear();
 		// First triangle
 		indices.push_back(0);
@@ -267,23 +267,23 @@ Terrain::Terrain(
 		indices.push_back(0);
 		indices.push_back(3);
 		indices.push_back(2);
-	    
-	    
-	    
-	    
+
+
+
+
 	    vertices.clear();
-		
+
 		vertices.push_back( glm::vec3(256,0,256) );
 		vertices.push_back( glm::vec3(256,0,0) );
 		vertices.push_back( glm::vec3(0,0,0) );
 		vertices.push_back( glm::vec3(0,0,256) );
-		
+
 		for (auto& v : vertices )
 		{
 			v.x = v.x - 128.0f;
 			v.z = v.z - 128.0f;
 		}
-		
+
 		indices.clear();
 		// First triangle
 		indices.push_back(0);
@@ -293,16 +293,16 @@ Terrain::Terrain(
 		indices.push_back(3);
 		indices.push_back(0);
 		indices.push_back(2);
-	    
+
 	    /*
-	
+
 	    vertices.clear();
-		
+
 		vertices.push_back( glm::vec3(1,0,1) );
 		vertices.push_back( glm::vec3(1,0,0) );
 		vertices.push_back( glm::vec3(0,0,0) );
 		vertices.push_back( glm::vec3(0,0,1) );
-		
+
 		indices.clear();
 		// First triangle
 		indices.push_back(0);
@@ -315,12 +315,12 @@ Terrain::Terrain(
 	    */
 	    /*
 	    vertices.clear();
-		
+
 		vertices.push_back( glm::vec3(5.5f, -1.0f,  5.5f) );
 		vertices.push_back( glm::vec3(5.5f, -1.0f, -5.5f) );
 		vertices.push_back( glm::vec3(-5.5f, -1.0f, -5.5f) );
 		vertices.push_back( glm::vec3(-5.5f, -1.0f,  5.5f) );
-		
+
 		indices.clear();
 		// First triangle
 		indices.push_back(0);
@@ -331,7 +331,7 @@ Terrain::Terrain(
 		indices.push_back(2);
 		indices.push_back(3);
 		*/
-		
+
         //Mesh mesh;
         //mesh.vertices = std::move(vertices);
         //mesh.indices = std::move(indices);
@@ -369,16 +369,16 @@ Terrain::Terrain(
 		printf("what: %s\n", e.what());
 		throw e;
 	}
-	
+
 	//terrainEntity_ = scene_->createEntity();
-	
+
 	//GraphicsComponent gc;
 	//gc.renderableHandle = renderableHandle;
 	//ecs::RigidBodyObjectComponent pc;
 	//pc.rigidBodyObjectHandle = rigidBodyObjectHandle;
 	//scene_.assign(groundEntity_, gc);
 	//scene_->assign(terrainEntity_, pc);
-	
+
 	auto crowdComponent = terrainEntity_.assign<ecs::PathfindingCrowdComponent>(pathfinding::NavigationMeshHandle(navigationMeshHandle));
 	//auto crowdHandle = pathfindingEngine->createCrowd(pathfindingSceneHandle_, navigationMeshHandle_);
 	crowdHandles_.push_back(crowdComponent->crowdHandle);
@@ -388,29 +388,29 @@ Terrain::Terrain(
 	{
 		auto file = fileSystem->open("../assets/placeholders/textures/Incense brass Metalic/incense thin_DefaultMaterial_BaseColor-small.png", fs::FileFlags::READ | fs::FileFlags::BINARY);
 		auto image = std::make_unique<Image>( file->getInputStream() );
-	
+
 		material.albedo = image.get();
 		image.release();
 	}
-	
+
 	{
 		auto file = fileSystem->open("../assets/placeholders/textures/Incense brass Metalic/incense thin_DefaultMaterial_Normal-small.png", fs::FileFlags::READ | fs::FileFlags::BINARY);
 		auto image = std::make_unique<Image>( file->getInputStream() );
-	
+
 		material.normal = image.get();
 		image.release();
 	}
 	{
 		auto file = fileSystem->open("../assets/placeholders/textures/Incense brass Metalic/incense thin_DefaultMaterial_Metallic-small.png", fs::FileFlags::READ | fs::FileFlags::BINARY);
 		auto image = std::make_unique<Image>( file->getInputStream() );
-	
+
 		material.metalness = image.get();
 		image.release();
 	}
 	{
 		auto file = fileSystem->open("../assets/placeholders/textures/Incense brass Metalic/incense thin_DefaultMaterial_Roughness-small.png", fs::FileFlags::READ | fs::FileFlags::BINARY);
 		auto image = std::make_unique<Image>( file->getInputStream() );
-	
+
 		material.roughness = image.get();
 		image.release();
 	}
@@ -419,7 +419,7 @@ Terrain::Terrain(
 	{
 		auto file = fileSystem->open("../assets/placeholders/textures/Incense brass Metalic/graniterockface1_Ambient_Occlusion-small.png", fs::FileFlags::READ | fs::FileFlags::BINARY);
 		auto image = std::make_unique<Image>( file->getInputStream() );
-	
+
 		material.ambientOcclusion = image.get();
 		image.release();
 	}
@@ -430,7 +430,7 @@ Terrain::Terrain(
 	if (material.metalness) flipVertical(*material.metalness);
 	if (material.roughness) flipVertical(*material.roughness);
 	if (material.ambientOcclusion) flipVertical(*material.ambientOcclusion);
-	
+
 	auto m = model::import("../assets/placeholders/models/Incense.obj", logger_, fileSystem_);
 	auto meshHandle = graphicsEngine->createStaticMesh(m->meshes[2]);
 	auto materialHandle = graphicsEngine->createMaterial(material);
@@ -443,12 +443,12 @@ Terrain::Terrain(
 
 Terrain::~Terrain()
 {
-	
+
 }
 
 void Terrain::tick(const float32 delta)
 {
-	
+
 }
 
 const std::vector<pathfinding::CrowdHandle>& Terrain::crowds() const

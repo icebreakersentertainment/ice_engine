@@ -111,16 +111,16 @@ public:
 	virtual ~GameEngine();
 
 	void run();
-	
+
 	const EngineStatistics& getEngineStatistics() const;
-	
+
 	void setIGameInstance(void* object);
 
 	/**
-	 * 
+	 *
 	 */
 	void setBootstrapScript(const std::string& filename);
-	
+
 	audio::IAudioEngine* audioEngine() const;
 	graphics::IGraphicsEngine* graphicsEngine() const;
 	physics::IPhysicsEngine* physicsEngine() const;
@@ -145,17 +145,17 @@ public:
 	{
 		return resourceHandleCache_;
 	}
-	
+
 	graphics::gui::IGui* createGui(const std::string& name);
 	void destroyGui(const graphics::gui::IGui* gui);
-	
+
 	void setCallback(graphics::gui::IButton* button, void* object);
 	void setCallback(graphics::gui::IMenuItem* menuItem, void* object);
-	
+
 	Audio* loadAudio(const std::string& name, const std::string& filename);
 	std::shared_future<Audio*> loadAudioAsync(const std::string& name, const std::string& filename);
 
-	Image* createImage(const std::string& name, const std::vector<char>& data, const uint32 width, const uint32 height, const Image::Format format)
+	Image* createImage(const std::string& name, const std::vector<byte>& data, const uint32 width, const uint32 height, const Image::Format format)
 	{
 		LOG_DEBUG(logger_, "Creating image: %s", name);
 
@@ -184,15 +184,15 @@ public:
 	std::shared_future<Model*> loadModelAsync(const std::string& name, const std::string& filename);
 	Model* importModel(const std::string& name, const std::string& filename);
 	std::shared_future<Model*> importModelAsync(const std::string& name, const std::string& filename);
-	
+
 	void unloadAudio(const std::string& name);
 	void unloadImage(const std::string& name);
 	void unloadModel(const std::string& name);
-	
+
 	Audio* getAudio(const std::string& name) const;
 	Image* getImage(const std::string& name) const;
 	Model* getModel(const std::string& name) const;
-	
+
 	ModelHandle loadStaticModel(const Model* model);
 	std::shared_future<ModelHandle> loadStaticModelAsync(const Model* model);
 	graphics::RenderableHandle createRenderable(
@@ -210,7 +210,7 @@ public:
 		const glm::quat& orientation,
 		const glm::vec3& scale = glm::vec3(1.0f)
 	);
-	
+
 	graphics::VertexShaderHandle createVertexShader(const std::string& name, const std::string& filename);
 	std::shared_future<graphics::VertexShaderHandle> createVertexShaderAsync(const std::string& name, const std::string& filename);
 	graphics::VertexShaderHandle createVertexShaderFromSource(const std::string& name, const std::string& data);
@@ -224,19 +224,19 @@ public:
 	void destroyShader(const std::string& name);
 	void destroyShader(const graphics::VertexShaderHandle& shaderHandle);
 	void destroyShader(const graphics::FragmentShaderHandle& shaderHandle);
-	
+
 	graphics::ShaderProgramHandle createShaderProgram(const std::string& name, const graphics::VertexShaderHandle& vertexShaderHandle, const graphics::FragmentShaderHandle& fragmentShaderHandle);
 	std::shared_future<graphics::ShaderProgramHandle> createShaderProgramAsync(const std::string& name, const graphics::VertexShaderHandle& vertexShaderHandle, const graphics::FragmentShaderHandle& fragmentShaderHandle);
 	graphics::ShaderProgramHandle getShaderProgram(const std::string& name) const;
 	void destroyShaderProgram(const std::string& name);
 	void destroyShaderProgram(const graphics::ShaderProgramHandle& shaderProgramHandle);
-	
+
 	Scene* createScene(const std::string& name, const std::vector<std::string>& scriptData = {}, const std::string& initializationFunctionName = "");
 	void destroyScene(const std::string& name);
 	void destroyScene(Scene* scene);
 	Scene* getScene(const std::string& name) const;
 	std::vector<Scene*> getAllScenes() const;
-	
+
 	void addPreSerializeCallback(std::function<void(serialization::TextOutArchive&, ecs::EntityComponentSystem&, const unsigned int)> callback)
 	{
 		preSerializeCallbacks_.push_back(callback);
@@ -290,7 +290,7 @@ public:
 	void removeMouseMotionEventListener(IMouseMotionEventListener* mouseMotionEventListener);
 	void removeMouseButtonEventListener(IMouseButtonEventListener* mouseButtonEventListener);
 	void removeMouseWheelEventListener(IMouseWheelEventListener* mouseWheelEventListener);
-	
+
 	void addWindowEventListener(void* windowEventListener);
 	void addKeyboardEventListener(void* keyboardEventListener);
 	void addMouseMotionEventListener(void* mouseMotionEventListener);
@@ -301,21 +301,21 @@ public:
 	void removeMouseMotionEventListener(void* mouseMotionEventListener);
 	void removeMouseButtonEventListener(void* mouseButtonEventListener);
 	void removeMouseWheelEventListener(void* mouseWheelEventListener);
-	
+
 	void addConnectEventListener(IConnectEventListener* connectEventListener);
 	void addDisconnectEventListener(IDisconnectEventListener* disconnectEventListener);
 	void addMessageEventListener(IMessageEventListener* messageEventListener);
 	void removeConnectEventListener(IConnectEventListener* connectEventListener);
 	void removeDisconnectEventListener(IDisconnectEventListener* disconnectEventListener);
 	void removeMessageEventListener(IMessageEventListener* messageEventListener);
-	
+
 	void addConnectEventListener(void* connectEventListener);
 	void addDisconnectEventListener(void* disconnectEventListener);
 	void addMessageEventListener(void* messageEventListener);
 	void removeConnectEventListener(void* connectEventListener);
 	void removeDisconnectEventListener(void* disconnectEventListener);
 	void removeMessageEventListener(void* messageEventListener);
-	
+
 	std::shared_future<void> postWorkToBackgroundThreadPool(void* object);
 
 	// Implements the graphics::IEventListener interface
@@ -741,7 +741,7 @@ private:
 	std::unique_ptr< utilities::Properties > properties_;
 	std::unique_ptr< logger::ILogger > logger_;
 	std::unique_ptr<fs::IFileSystem> fileSystem_;
-	
+
 	std::unique_ptr<ice_engine::IPluginManager> pluginManager_;
 	std::vector<std::unique_ptr< IScriptingEngineBinding >> scriptingEngineBindings_;
 	std::vector<std::unique_ptr< IModule >> modules_;
@@ -750,23 +750,23 @@ private:
 	std::unique_ptr<graphics::IGraphicsEngineFactory> graphicsEngineFactory_;
 	std::unique_ptr< graphics::IGraphicsEngine > graphicsEngine_;
 	std::vector<std::unique_ptr< graphics::gui::IGui >> guis_;
-	
+
 	std::unique_ptr<ITerrainFactory> terrainFactory_;
-	
+
 	std::unique_ptr<IDebugRenderer> debugRenderer_;
-	
+
 	std::unique_ptr<audio::IAudioEngineFactory> audioEngineFactory_;
 	std::unique_ptr< audio::IAudioEngine > audioEngine_;
-		
+
 	std::unique_ptr<networking::INetworkingEngineFactory> networkingEngineFactory_;
 	std::unique_ptr< networking::INetworkingEngine > networkingEngine_;
-	
+
 	std::unique_ptr<physics::IPhysicsEngineFactory> physicsEngineFactory_;
 	std::unique_ptr< physics::IPhysicsEngine > physicsEngine_;
 	std::unique_ptr<pathfinding::IPathfindingEngineFactory> pathfindingEngineFactory_;
 	std::unique_ptr< pathfinding::IPathfindingEngine > pathfindingEngine_;
 	std::unique_ptr<scripting::IScriptingEngine> scriptingEngine_;
-	
+
 	std::vector<IWindowEventListener*> windowEventListeners_;
 	std::vector<IKeyboardEventListener*> keyboardEventListeners_;
 	std::vector<IMouseMotionEventListener*> mouseMotionEventListeners_;
@@ -777,31 +777,31 @@ private:
 	std::vector<std::pair<scripting::ScriptObjectHandle, scripting::ScriptObjectFunctionHandle>> scriptMouseMotionEventListeners_;
 	std::vector<std::pair<scripting::ScriptObjectHandle, scripting::ScriptObjectFunctionHandle>> scriptMouseButtonEventListeners_;
 	std::vector<std::pair<scripting::ScriptObjectHandle, scripting::ScriptObjectFunctionHandle>> scriptMouseWheelEventListeners_;
-	
+
 	std::vector<IConnectEventListener*> connectEventListeners_;
 	std::vector<IDisconnectEventListener*> disconnectEventListeners_;
 	std::vector<IMessageEventListener*> messageEventListeners_;
 	std::vector<std::pair<scripting::ScriptObjectHandle, scripting::ScriptObjectFunctionHandle>> scriptConnectEventListeners_;
 	std::vector<std::pair<scripting::ScriptObjectHandle, scripting::ScriptObjectFunctionHandle>> scriptDisconnectEventListeners_;
 	std::vector<std::pair<scripting::ScriptObjectHandle, scripting::ScriptObjectFunctionHandle>> scriptMessageEventListeners_;
-	
+
 	std::unordered_map<graphics::MeshHandle, Mesh> meshes_;
 	handles::HandleVector<Skeleton, SkeletonHandle> skeletons_;
 	handles::HandleVector<Animation, AnimationHandle> animations_;
 
 	std::vector<std::unique_ptr<Scene>> scenes_;
-	
+
 	std::unordered_map<std::string, graphics::VertexShaderHandle> vertexShaderHandles_;
 	std::unordered_map<std::string, graphics::FragmentShaderHandle> fragmentShaderHandles_;
 	std::unordered_map<std::string, graphics::ShaderProgramHandle> shaderProgramHandles_;
-	
+
 	scripting::ModuleHandle bootstrapModuleHandle_;
 	scripting::ScriptObjectHandle scriptObjectHandle_;
-	
+
 	ResourceCache resourceCache_;
 	ResourceHandleCache resourceHandleCache_;
-	
-	bool running_;	
+
+	bool running_;
 	EngineStatistics engineStatistics_;
 
 	void tick(const float32 delta);
@@ -815,12 +815,12 @@ private:
 	static float32 rotationY;
 	static int32 mousePosX;
 	static int32 mousePosY;
-	
+
 	std::string bootstrapScriptName_;
 
 	// Testing
 	void test();
-		
+
 	// Initialization stuff
 	void initializeLoggingSubSystem();
 	void initializeFileSystemSubSystem();
@@ -837,10 +837,10 @@ private:
 	void initializeDataStoreSubSystem();
 	void initializeEntitySubSystem();
 	void initializeModuleSubSystem();
-	
+
 	void loadEssentialGameData();
 	void loadUserInterface();
-	
+
 	std::mutex temporaryExecutionContextMutex_;
 	std::queue<scripting::ExecutionContextHandle> temporaryExecutionContexts_;
 
@@ -849,7 +849,7 @@ private:
 
 	std::vector<std::pair<graphics::MeshHandle, graphics::TextureHandle>> staticModels_;
 	std::vector<graphics::TerrainHandle> staticTerrain_;
-	
+
 	std::vector<std::function<void(serialization::TextOutArchive&, ecs::EntityComponentSystem&, const unsigned int)>> preSerializeCallbacks_;
 	std::vector<std::function<void(serialization::TextOutArchive&, ecs::EntityComponentSystem&, const unsigned int)>> postSerializeCallbacks_;
 	std::vector<std::function<void(serialization::TextInArchive&, ecs::EntityComponentSystem&, const unsigned int)>> preDeserializeCallbacks_;
@@ -878,7 +878,7 @@ private:
 	std::unique_ptr<ThreadPool> foregroundThreadPool_;
 	std::unique_ptr<OpenGlLoader> openGlLoader_;
 	std::unique_ptr<OpenGlLoader> forgroundGraphicsThreadPool_;
-	
+
 	//std::unique_ptr<pyliteserializer::SqliteDataStore> dataStore_;
 };
 

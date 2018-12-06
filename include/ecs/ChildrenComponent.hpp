@@ -28,7 +28,7 @@ struct ChildrenComponent
 	ChildrenComponent(std::vector<Entity> children) : children(children)
 	{
 	};
-	
+
 	static uint8 id()  { return 14; }
 
 	std::vector<Entity> children;

@@ -12,6 +12,8 @@
 #include "graphics/IImage.hpp"
 #include "physics/IImage.hpp"
 
+#include "fs/IFile.hpp"
+
 #include "exceptions/RuntimeException.hpp"
 
 namespace ice_engine
@@ -34,14 +36,14 @@ public:
 	};
 
 	Image() = default;
-	
+
 	/**
 	 * Will load the provided image data into a proper image.
 	 *
 	 * @param data The image data to load.
 	 * @param hasAlpha Whether the image has an alpha channel or not.
 	 */
-	Image(std::vector<char> data, int width, int height, Image::Format format)
+	Image(std::vector<byte> data, int width, int height, Image::Format format)
 	{
 		data_ = std::move(data);
 		width_ = width;
@@ -52,12 +54,22 @@ public:
 	/**
 	 * Will load the provided image data into a proper image.
 	 *
+	 * @param file The file to load.
+	 * @param hasAlpha Whether the image has an alpha channel or not.
+	 */
+	Image(fs::IFile& file, bool hasAlpha = true) : Image(file.getInputStream(), hasAlpha)
+	{
+	}
+
+	/**
+	 * Will load the provided image data into a proper image.
+	 *
 	 * @param inputStream Stream from which we will load our image data.
 	 * @param hasAlpha Whether the image has an alpha channel or not.
 	 */
 	Image(std::istream& inputStream, bool hasAlpha = true)
 	{
-		std::vector<char> data;
+		std::vector<byte> data;
 
 		inputStream.seekg(0, std::ios::end);
 		auto filesize = inputStream.tellg();
@@ -65,7 +77,7 @@ public:
 
 		data.resize(filesize);
 
-		inputStream.read(&data[0], filesize);
+		inputStream.read(reinterpret_cast<char*>(&data[0]), filesize);
 
 		importImage(data, hasAlpha);
 	}
@@ -77,10 +89,10 @@ public:
 		height_ = image.height_;
 		format_ = image.format_;
 	}
-	
+
 	virtual ~Image() {}
 
-	virtual const std::vector<char>& data() const override
+	virtual const std::vector<byte>& data() const override
 	{
 		return data_;
 	}
@@ -112,7 +124,7 @@ public:
 		}
 	}
 
-	std::vector<char> data_;
+	std::vector<byte> data_;
 	int width_ = 0;
 	int height_ = 0;
 	Image::Format format_ = Image::Format::FORMAT_UNKNOWN;
@@ -122,7 +134,7 @@ private:
 	//int height_ = 0;
 	//Image::Format format_ = Image::Format::FORMAT_UNKNOWN;
 
-	void importImage(const std::vector<char>& data, bool hasAlpha = true)
+	void importImage(const std::vector<byte>& data, bool hasAlpha = true)
 	{
 		FIMEMORY* stream = nullptr;
 		FIBITMAP* bitmap = nullptr;
@@ -131,7 +143,7 @@ private:
 		{
 			FreeImage_SetOutputMessage(FreeImageErrorHandler);
 
-			stream = FreeImage_OpenMemory((BYTE*)&data[0], data.size() * sizeof(char));
+			stream = FreeImage_OpenMemory((BYTE*)&data[0], data.size() * sizeof(byte));
 			FREE_IMAGE_FORMAT format = FreeImage_GetFileTypeFromMemory(stream, 0);
 			bitmap =  FreeImage_LoadFromMemory(format, stream);
 
@@ -155,7 +167,7 @@ private:
 			int w = FreeImage_GetWidth(bitmap);
 			int h = FreeImage_GetHeight(bitmap);
 
-			char* pixels = (char*) FreeImage_GetBits(bitmap);
+			byte* pixels = FreeImage_GetBits(bitmap);
 
 			if ( pixels != nullptr )
 			{
@@ -168,7 +180,7 @@ private:
 				// FreeImage loads in BGR format, so you need to swap some bytes (Or use GL_BGR)
 				for ( int j = 0; j < w * h; j++ )
 				{
-					char swap = pixels[j * pixelSize + 2];
+					byte swap = pixels[j * pixelSize + 2];
 					pixels[j * pixelSize + 2] = pixels[j * pixelSize + 0];
 					pixels[j * pixelSize + 0] = swap;
 				}
@@ -176,7 +188,7 @@ private:
 				int imageBytesLength = pixelSize * w * h;
 
 				// Transfer raw data into a vector
-				data_ = std::vector<char>(pixels, pixels+imageBytesLength);
+				data_ = std::vector<byte>(pixels, pixels+imageBytesLength);
 
 				width_ = w;
 				height_ = h;

@@ -7,6 +7,8 @@
 #include "Platform.hpp"
 #include "Types.hpp"
 
+#include "detail/Assert.hpp"
+
 #include "ModelHandle.hpp"
 #include "Scene.hpp"
 #include "IWindowEventListener.hpp"
@@ -67,6 +69,11 @@ void pushLine(const glm::vec3& from, const glm::vec3& to, const glm::vec3& color
 }
 }
 
+void assertWrapper(const bool condition, const std::string& message)
+{
+	ASSERT(condition, message)
+}
+
 BindingDelegate::BindingDelegate(logger::ILogger* logger, scripting::IScriptingEngine* scriptingEngine, GameEngine* gameEngine, graphics::IGraphicsEngine* graphicsEngine, audio::IAudioEngine* audioEngine, networking::INetworkingEngine* networkingEngine, physics::IPhysicsEngine* physicsEngine, pathfinding::IPathfindingEngine* pathfindingEngine)
 	:
 	logger_(logger),
@@ -120,7 +127,7 @@ void BindingDelegate::bind()
 	scriptingEngine_->registerEnumValue("ImageFormat", "FORMAT_RGBA", Image::Format::FORMAT_RGBA);
 
 	scriptingEngine_->registerObjectType("Audio", 0, asOBJ_REF | asOBJ_NOCOUNT);
-	
+
 	scriptingEngine_->registerObjectType("IFileSystem", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	scriptingEngine_->registerGlobalProperty("IFileSystem fileSystem", gameEngine_->fileSystem());
 	scriptingEngine_->registerClassMethod("IFileSystem", "bool exists(const string& in) const", asMETHOD(fs::IFileSystem, exists));
@@ -157,6 +164,9 @@ void BindingDelegate::bind()
 	scriptingEngine_->registerGlobalFunction("void testFunction(const AgentParams& in)", asFUNCTION(testFunction), asCALL_CDECL);
 	scriptingEngine_->registerGlobalFunction("void testFunction2(const AgentParams)", WRAP_FN(testFunction2), asCALL_GENERIC);
 	scriptingEngine_->registerGlobalFunction("void testFunction3(AgentParams)", WRAP_FN(testFunction3), asCALL_GENERIC);
+
+	// register assert
+	scriptingEngine_->registerGlobalFunction("void ASSERT(const bool, const string& in)", asFUNCTION(assertWrapper), asCALL_CDECL);
 
 	// Register Model/Mesh/etc
 	scriptingEngine_->registerObjectType("BoneData", sizeof(BoneData), asOBJ_VALUE | asGetTypeTraits<BoneData>());
@@ -202,7 +212,7 @@ void BindingDelegate::bind()
 	scriptingEngine_->registerClassMethod("Model", "const vectorTexture& textures() const", asMETHOD(Model, textures));
 	scriptingEngine_->registerClassMethod("Model", "const Skeleton& skeleton() const", asMETHOD(Model, skeleton));
 	scriptingEngine_->registerClassMethod("Model", "const mapStringAnimation& animations() const", asMETHOD(Model, animations));
-	
+
 	// IGame
 	scriptingEngine_->registerInterface("IGame");
 	scriptingEngine_->registerInterfaceMethod("IGame", "void initialize()");
@@ -283,7 +293,7 @@ void BindingDelegate::bind()
 	scriptingEngine_->registerObjectMethod("Audio", "IAudio@ opImplCast()", asFUNCTION((refCast<Audio, audio::IAudio>)), asCALL_CDECL_OBJLAST);
 	//scriptingEngine_->registerObjectMethod("IAudio", "const Audio@ opCast()", asFUNCTION((refCast<audio::IAudio, Audio>)), asCALL_CDECL_OBJLAST);
 	//scriptingEngine_->registerObjectMethod("Audio", "const IAudio@ opImplCast()", asFUNCTION((refCast<Audio, audio::IAudio>)), asCALL_CDECL_OBJLAST);
-	
+
 	scriptingEngine_->registerObjectMethod("Image", "IImage@ opImplCast()", asFUNCTION((refCast<Image, graphics::IImage>)), asCALL_CDECL_OBJLAST);
 
 	// Register function declarations
@@ -335,7 +345,7 @@ void BindingDelegate::bind()
 		"float getValue(const float, const float) const",
 		asMETHODPR(noise::Noise, getValue, (const float32, const float32) const, float32)
 	);
-	
+
 	// ILogger bindings
 	scriptingEngine_->registerObjectType("ILogger", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	scriptingEngine_->registerGlobalProperty("ILogger logger", logger_);
@@ -400,11 +410,11 @@ void BindingDelegate::bind()
 		"int getWorkQueueCount()",
 		asMETHODPR(IOpenGlLoader, getWorkQueueCount, () const, uint32)
 	);
-		
+
 	scriptingEngine_->registerObjectType("EngineStatistics", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	scriptingEngine_->registerObjectProperty("EngineStatistics", "float fps", asOFFSET(EngineStatistics, fps));
 	scriptingEngine_->registerObjectProperty("EngineStatistics", "float renderTime", asOFFSET(EngineStatistics, renderTime));
-	
+
 	// IDebugRenderer
 	scriptingEngine_->registerObjectType("IDebugRenderer", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	scriptingEngine_->registerGlobalProperty("IDebugRenderer debugRenderer", gameEngine_->debugRenderer());
@@ -414,7 +424,7 @@ void BindingDelegate::bind()
 		asFUNCTION(idebugrenderer::pushLine),
 		asCALL_CDECL_OBJLAST
 	);
-	
+
 	// GameEngine functions available in the scripting engine
 	scriptingEngine_->registerGlobalFunction(
 		"const EngineStatistics@ getEngineStatistics()",
@@ -597,8 +607,8 @@ void BindingDelegate::bind()
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
-		"Image@ createImage(const string& in, const vectorInt8& in, const uint, const uint, const ImageFormat)",
-		asMETHODPR(GameEngine, createImage, (const std::string&, const std::vector<char>&, const uint32, const uint32, const Image::Format), Image*),
+		"Image@ createImage(const string& in, const vectorUInt8& in, const uint, const uint, const ImageFormat)",
+		asMETHODPR(GameEngine, createImage, (const std::string&, const std::vector<byte>&, const uint32, const uint32, const Image::Format), Image*),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
@@ -903,7 +913,7 @@ void BindingDelegate::bind()
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
-	
+
 	scriptingEngine_->registerGlobalFunction(
 		"Scene@ getScene(const string& in)",
 		asMETHODPR(GameEngine, getScene, (const std::string&) const, Scene*),
@@ -923,7 +933,7 @@ void BindingDelegate::bind()
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
-	
+
 	registerVectorBindings<Scene*>(scriptingEngine_, "vectorScene", "Scene@");
 	scriptingEngine_->registerGlobalFunction(
 		"vectorScene getAllScenes()",
@@ -931,10 +941,10 @@ void BindingDelegate::bind()
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
-	
+
 	// CHEATING
 	//auto pathfindingEngineBindingDelegate = PathfindingEngineBindingDelegate(logger_, scriptingEngine_, gameEngine_, pathfindingEngine_);
 	//pathfindingEngineBindingDelegate.bind();
 }
-	
+
 };

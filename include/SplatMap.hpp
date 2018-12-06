@@ -15,7 +15,7 @@ class SplatMap : public graphics::ISplatMap
 public:
 
 	SplatMap() = default;
-	
+
 	SplatMap(std::vector<PbrMaterial> materialMap, Image* terrainMap)
 	:
 		materialMap_(std::move(materialMap)),
@@ -88,7 +88,7 @@ private:
 
 	void flipVertical(Image& image)
 	{
-		std::vector<char> data;
+		std::vector<byte> data;
 		data.resize(image.width()*image.height()*4);
 
 		int j=data.size()-image.width()*4;

@@ -136,7 +136,7 @@ void Scene::destroy()
 	physicsEngine_->destroyPhysicsScene(physicsSceneHandle_);
 	pathfindingEngine_->destroyPathfindingScene(pathfindingSceneHandle_);
 	scriptingEngine_->destroyExecutionContext(executionContextHandle_);
-	
+
 	if (scriptObjectHandle_)
 	{
 		scriptingEngine_->releaseScriptObject(scriptObjectHandle_);
@@ -335,24 +335,24 @@ void Scene::tick(const float32 delta)
 {
 	scripting::ParameterList params;
 	params.add(delta);
-	
+
 	if (scriptObjectHandle_)
 	{
 		scriptingEngine_->execute(scriptObjectHandle_, std::string("void preTick(const float)"), params, executionContextHandle_);
 	}
-	
+
 	audioEngine_->render(audioSceneHandle_);
-	
+
 	auto beginPhysicsTime = std::chrono::high_resolution_clock::now();
-		
+
 	physicsEngine_->tick(physicsSceneHandle_, delta);
-	
+
 	auto endPhysicsTime = std::chrono::high_resolution_clock::now();
-	
+
 	sceneStatistics_.physicsTime = std::chrono::duration<float32>(endPhysicsTime - beginPhysicsTime).count();
-	
+
 	pathfindingEngine_->tick(pathfindingSceneHandle_, delta);
-	
+
 		for (auto e : entityComponentSystem_->entitiesWithComponents<ecs::ScriptObjectComponent>())
 		{
 			auto scriptObjectComponent = e.component<ecs::ScriptObjectComponent>();
@@ -448,7 +448,7 @@ void Scene::setSceneThingyInstance(void* object)
 void Scene::setDebugRendering(const bool enabled)
 {
 	debugRendering_ = enabled;
-	
+
 	physicsEngine_->setDebugRendering(physicsSceneHandle_, debugRendering_);
 	pathfindingEngine_->setDebugRendering(pathfindingSceneHandle_, debugRendering_);
 }
@@ -526,7 +526,7 @@ void Scene::requestMoveVelocity(
 physics::RigidBodyObjectHandle Scene::createRigidBodyObject(const physics::CollisionShapeHandle& collisionShapeHandle)
 {
 	return physicsEngine_->createRigidBodyObject(physicsSceneHandle_, collisionShapeHandle);
-} 
+}
 
 physics::RigidBodyObjectHandle Scene::createRigidBodyObject(
 	const physics::CollisionShapeHandle& collisionShapeHandle,
@@ -577,32 +577,32 @@ void Scene::destroy(const physics::GhostObjectHandle& ghostObjectHandle)
 void Scene::addMotionChangeListener(const ecs::Entity& entity)
 {
 	auto rigidBodyObjectComponent = entityComponentSystem_->component<ecs::RigidBodyObjectComponent>(entity.id());
-	
+
 	std::unique_ptr<IceEngineMotionChangeListener> motionChangeListener = std::make_unique<IceEngineMotionChangeListener>(entity, this);
-	
+
 	physicsEngine_->setMotionChangeListener(physicsSceneHandle_, rigidBodyObjectComponent->rigidBodyObjectHandle, std::move(motionChangeListener));
 }
 
 void Scene::addPathfindingAgentMotionChangeListener(const ecs::Entity& entity)
 {
 	auto pathfindingAgentComponent = entityComponentSystem_->component<ecs::PathfindingAgentComponent>(entity.id());
-	
+
 	std::unique_ptr<IceEnginePathfindingAgentMotionChangeListener> motionChangeListener = std::make_unique<IceEnginePathfindingAgentMotionChangeListener>(entity, this);
-	
+
 	pathfindingEngine_->setMotionChangeListener(pathfindingSceneHandle_, pathfindingAgentComponent->crowdHandle, pathfindingAgentComponent->agentHandle, std::move(motionChangeListener));
 }
 
 void Scene::removeMotionChangeListener(const ecs::Entity& entity)
 {
 	auto rigidBodyObjectComponent = entityComponentSystem_->component<ecs::RigidBodyObjectComponent>(entity.id());
-	
+
 	physicsEngine_->setMotionChangeListener(physicsSceneHandle_, rigidBodyObjectComponent->rigidBodyObjectHandle, nullptr);
 }
 
 void Scene::removePathfindingAgentMotionChangeListener(const ecs::Entity& entity)
 {
 	auto pathfindingAgentComponent = entityComponentSystem_->component<ecs::PathfindingAgentComponent>(entity.id());
-	
+
 	pathfindingEngine_->setMotionChangeListener(pathfindingSceneHandle_, pathfindingAgentComponent->crowdHandle, pathfindingAgentComponent->agentHandle, nullptr);
 }
 
@@ -740,9 +740,9 @@ const SceneStatistics& Scene::getSceneStatistics() const
 ecs::Entity Scene::createEntity()
 {
 	ecs::Entity e = entityComponentSystem_->create();
-	
+
 	LOG_DEBUG(logger_, "Created entity with id: " + std::to_string(e.id().id()) );
-	
+
 	return e;
 }
 
@@ -758,7 +758,7 @@ std::shared_future<ecs::Entity> Scene::createEntityAsync()
 
 void Scene::destroy(ecs::Entity& entity)
 {
-	entityComponentSystem_->destroy(entity.id());
+	entityComponentSystem_->destroy(entity);
 }
 
 void Scene::destroyAsync(ecs::Entity& entity)
@@ -774,13 +774,13 @@ uint32 Scene::getNumEntities() const
 Raycast Scene::raycast(const ray::Ray& ray)
 {
 	Raycast result;
-	
+
 	auto physicsRaycast = physicsEngine_->raycast(physicsSceneHandle_, ray);
 
 	result.setRay(physicsRaycast.ray());
 	result.setHitPointWorld(physicsRaycast.hitPointWorld());
 	result.setHitNormalWorld(physicsRaycast.hitNormalWorld());
-	
+
 	if (physicsRaycast.rigidBodyObjectHandle())
 	{
 		auto userData = physicsEngine_->getUserData(physicsSceneHandle_, physicsRaycast.rigidBodyObjectHandle());
@@ -1016,6 +1016,12 @@ void normalizeHandles(
 {
 	LOG_DEBUG(logger, "Normalizing CrowdHandles");
 
+		std::cout << "HERE normalizedMap size " << normalizedMap.size() << std::endl;
+		for (const auto& kv : normalizedMap)
+		{
+			std::cout << "KV " << kv.first << " " << kv.second << std::endl;
+		}
+
 	for (auto entity : entityComponentSystem.entitiesWithComponents<ecs::PathfindingAgentComponent>())
 	{
 		auto componentHandle = entity.component<ecs::PathfindingAgentComponent>();
@@ -1023,6 +1029,7 @@ void normalizeHandles(
 		componentHandle->agentHandle.invalidate();
 		auto component = *componentHandle;
 
+		std::cout << "find in normalized map " << component.crowdHandle << std::endl;
 		component.crowdHandle = normalizedMap.at(component.crowdHandle);
 		entity.assign<ecs::PathfindingAgentComponent>(component);
 	}
@@ -1056,33 +1063,53 @@ void normalizeHandles(
 	}
 }
 
-void normalizeParentEntities(ecs::EntityComponentSystem& entityComponentSystem,	logger::ILogger* logger)
+void normalizeParentComponentEntities(ecs::EntityComponentSystem& entityComponentSystem,	logger::ILogger* logger)
 {
 	LOG_DEBUG(logger, "Normalizing parent entities");
 
 	for (auto entity : entityComponentSystem.entitiesWithComponents<ecs::ParentComponent>())
 	{
 		auto componentHandle = entity.component<ecs::ParentComponent>();
+		componentHandle->entity = entityComponentSystem.get(entityComponentSystem.createId(componentHandle->entity.id().index()));
+	}
+}
+
+void normalizeParentComponents(ecs::EntityComponentSystem& entityComponentSystem,	logger::ILogger* logger)
+{
+	LOG_DEBUG(logger, "Normalizing parent components");
+
+	for (auto entity : entityComponentSystem.entitiesWithComponents<ecs::ParentComponent>())
+	{
+		auto componentHandle = entity.component<ecs::ParentComponent>();
 		auto component = *componentHandle;
 
-		component.entity = entityComponentSystem.get(entityComponentSystem.createId(component.entity.id().index()));
 		entity.assign<ecs::ParentComponent>(component);
 	}
 }
 
-void normalizeChildEntities(ecs::EntityComponentSystem& entityComponentSystem,	logger::ILogger* logger)
+void normalizeChildrenComponentEntities(ecs::EntityComponentSystem& entityComponentSystem,	logger::ILogger* logger)
 {
 	LOG_DEBUG(logger, "Normalizing child entities");
 
 	for (auto entity : entityComponentSystem.entitiesWithComponents<ecs::ChildrenComponent>())
 	{
 		auto componentHandle = entity.component<ecs::ChildrenComponent>();
-		auto component = *componentHandle;
 
-		for (auto& e : component.children)
+		for (auto& e : componentHandle->children)
 		{
 			e = entityComponentSystem.get(entityComponentSystem.createId(e.id().index()));
 		}
+	}
+}
+
+void normalizeChildrenComponents(ecs::EntityComponentSystem& entityComponentSystem,	logger::ILogger* logger)
+{
+	LOG_DEBUG(logger, "Normalizing children components");
+
+	for (auto entity : entityComponentSystem.entitiesWithComponents<ecs::ChildrenComponent>())
+	{
+		auto componentHandle = entity.component<ecs::ChildrenComponent>();
+		auto component = *componentHandle;
 
 		entity.assign<ecs::ChildrenComponent>(component);
 	}
@@ -1145,8 +1172,10 @@ void Scene::normalizeHandles(
 	ice_engine::normalizeHandles(*entityComponentSystem_, normalizedAnimationHandleMap, logger_);
 	ice_engine::normalizeHandles(*entityComponentSystem_, normalizedTerrainHandleMap, logger_);
 	ice_engine::normalizeHandles(*entityComponentSystem_, normalizedNavigationMeshHandleMap, normalizedCrowdHandleMap, logger_);
-	ice_engine::normalizeParentEntities(*entityComponentSystem_, logger_);
-	ice_engine::normalizeChildEntities(*entityComponentSystem_, logger_);
+	ice_engine::normalizeParentComponentEntities(*entityComponentSystem_, logger_);
+	ice_engine::normalizeChildrenComponentEntities(*entityComponentSystem_, logger_);
+	ice_engine::normalizeParentComponents(*entityComponentSystem_, logger_);
+	ice_engine::normalizeChildrenComponents(*entityComponentSystem_, logger_);
 	ice_engine::normalizeHandles(*entityComponentSystem_, scriptingEngine_, moduleHandle_, executionContextHandle_, scriptObjectHandleMap, logger_);
 	ice_engine::normalizeHandles(*entityComponentSystem_, normalizedCrowdHandleMap, logger_);
 }

@@ -102,7 +102,11 @@ void EntityComponentSystemEventListener::receive(const entityx::ComponentRemoved
 void EntityComponentSystemEventListener::receive(const entityx::ComponentRemovedEvent<ecs::ChildrenComponent>& event)
 {
 	auto children = event.component->children;
-	for (auto& entity : children) entity.destroy();
+	for (auto& entity : children)
+	{
+		entity.destroy();
+	}
+
 //	while (!event.component->children.empty())
 //	{
 //		ecs::Entity e = event.component->children.back();

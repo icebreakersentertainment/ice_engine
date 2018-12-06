@@ -15,15 +15,15 @@ class Heightfield : public physics::IHeightfield
 public:
 
 	Heightfield() = default;
-	
+
 	Heightfield(const Image& image)
 	{
 		generateHeightfield(image);
 	}
-	
+
 	virtual ~Heightfield() = default;
 
-	virtual const std::vector<char>& data() const override
+	virtual const std::vector<byte>& data() const override
 	{
 			return data_;
 	}
@@ -43,7 +43,7 @@ public:
 		}
 
 private:
-	std::vector<char> data_;
+	std::vector<byte> data_;
 	uint32 width_ = 0.0f;
 	uint32 length_ = 0.0f;
 	uint32 height_ = 0.0f;
