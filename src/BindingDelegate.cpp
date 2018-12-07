@@ -7,8 +7,6 @@
 #include "Platform.hpp"
 #include "Types.hpp"
 
-#include "detail/Assert.hpp"
-
 #include "ModelHandle.hpp"
 #include "Scene.hpp"
 #include "IWindowEventListener.hpp"
@@ -67,11 +65,6 @@ void pushLine(const glm::vec3& from, const glm::vec3& to, const glm::vec3& color
 {
 	debugRenderer->pushLine(from, to, color);
 }
-}
-
-void assertWrapper(const bool condition, const std::string& message)
-{
-	ASSERT(condition, message)
 }
 
 BindingDelegate::BindingDelegate(logger::ILogger* logger, scripting::IScriptingEngine* scriptingEngine, GameEngine* gameEngine, graphics::IGraphicsEngine* graphicsEngine, audio::IAudioEngine* audioEngine, networking::INetworkingEngine* networkingEngine, physics::IPhysicsEngine* physicsEngine, pathfinding::IPathfindingEngine* pathfindingEngine)
@@ -164,9 +157,6 @@ void BindingDelegate::bind()
 	scriptingEngine_->registerGlobalFunction("void testFunction(const AgentParams& in)", asFUNCTION(testFunction), asCALL_CDECL);
 	scriptingEngine_->registerGlobalFunction("void testFunction2(const AgentParams)", WRAP_FN(testFunction2), asCALL_GENERIC);
 	scriptingEngine_->registerGlobalFunction("void testFunction3(AgentParams)", WRAP_FN(testFunction3), asCALL_GENERIC);
-
-	// register assert
-	scriptingEngine_->registerGlobalFunction("void ASSERT(const bool, const string& in)", asFUNCTION(assertWrapper), asCALL_CDECL);
 
 	// Register Model/Mesh/etc
 	scriptingEngine_->registerObjectType("BoneData", sizeof(BoneData), asOBJ_VALUE | asGetTypeTraits<BoneData>());
