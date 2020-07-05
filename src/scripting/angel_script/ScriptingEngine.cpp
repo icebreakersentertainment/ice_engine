@@ -130,6 +130,7 @@ void ScriptingEngine::assertNoAngelscriptError(const int32 returnCode) const
 void ScriptingEngine::initialize()
 {
 	engine_ = asCreateScriptEngine(ANGELSCRIPT_VERSION);
+	engine_->SetEngineProperty(asEP_AUTO_GARBAGE_COLLECT, false);
 
 	// Set the message callback to receive information on errors in human readable form.
 	int32 r = engine_->SetMessageCallback(asMETHOD(ScriptingEngine, MessageCallback), this, asCALL_THISCALL);
@@ -218,14 +219,17 @@ asIScriptContext* ScriptingEngine::getContext(const ExecutionContextHandle& exec
 
 asIScriptModule* ScriptingEngine::createModuleFromScript(const std::string& moduleName, const std::string& scriptData)
 {
-	std::vector<std::string> scriptDataVector;
-	scriptDataVector.push_back(scriptData);
-
-	return createModuleFromScripts(moduleName, scriptDataVector);
+	return createModuleFromScripts(moduleName, {scriptData});
 }
 
 asIScriptModule* ScriptingEngine::createModuleFromScripts(const std::string& moduleName, const std::vector<std::string>& scriptData)
 {
+    const auto existingModule = engine_->GetModule(moduleName.c_str());
+    if (existingModule != nullptr)
+    {
+        throw InvalidArgumentException(std::string("Module with name '") + moduleName + "' already exists.");
+    }
+
 	CScriptBuilder builder = CScriptBuilder();
 
 #if defined(PLATFORM_WINDOWS)
@@ -1597,6 +1601,11 @@ void ScriptingEngine::releaseAllScriptFunctions()
 	LOG_TRACE(logger_, "Releasing all script functions");
 }
 
+void ScriptingEngine::tick(const float32 delta)
+{
+    engine_->GarbageCollect();
+}
+
 void ScriptingEngine::registerGlobalFunction(const std::string& name, const asSFuncPtr& funcPointer, asDWORD callConv, void* objForThiscall)
 {
 	int32 r = engine_->RegisterGlobalFunction(name.c_str(), funcPointer, callConv, objForThiscall);
@@ -1756,7 +1765,7 @@ void ScriptingEngine::destroyAllModules()
 	LOG_TRACE(logger_, "Destroying all modules");
 	for ( auto& m : moduleData_ )
 	{
-		LOG_TRACE(logger_, std::string("Destroying module with name ") + m.module->GetName());
+		LOG_TRACE(logger_, "Destroying module with name '%s'", m.module->GetName())
 		m.module->Discard();
 	}
 
@@ -1976,24 +1985,19 @@ asIScriptFunction* ScriptingEngine::getMethod(const ScriptObjectHandle& scriptOb
 // Implement a simple message callback function
 void ScriptingEngine::MessageCallback(const asSMessageInfo* msg, void* param)
 {
-	std::string type = std::string("ERR ");
-
 	if ( msg->type == asMSGTYPE_WARNING )
 	{
-		type = std::string("WARN");
 		LOG_WARN(logger_, boost::format("%s (%d, %d) : %s") % msg->section %  msg->row %  msg->col %  msg->message );
 	}
 	else if ( msg->type == asMSGTYPE_INFORMATION )
 	{
-		type = std::string("INFO");
 		LOG_INFO(logger_, boost::format("%s (%d, %d) : %s") % msg->section %  msg->row %  msg->col %  msg->message );
 	}
 	else
 	{
 		LOG_ERROR(logger_, boost::format("%s (%d, %d) : %s") % msg->section %  msg->row %  msg->col %  msg->message );
+		printf("%s (%d, %d) : %s : %s\n", msg->section, msg->row, msg->col, "ERR", msg->message);
 	}
-
-	printf("%s (%d, %d) : %s : %s\n", msg->section, msg->row, msg->col, type.c_str(), msg->message);
 }
 
 // Print the script string to the standard output stream
@@ -2011,6 +2015,28 @@ void ScriptingEngine::discardModule(const std::string& name)
 {
 	int32 r = engine_->DiscardModule( name.c_str() );
 	assertNoAngelscriptError(r);
+}
+
+void ScriptingEngine::testPrintCallstack()
+{
+    int num = 0;
+    for (auto context : contextData_)
+    {
+        printf("Context %d call stack\n", num);
+        for( asUINT n = 0; n < context.context->GetCallstackSize(); n++ )
+        {
+            asIScriptFunction *func;
+            const char *scriptSection;
+            int line, column;
+            func = context.context->GetFunction(n);
+            line = context.context->GetLineNumber(n, &column, &scriptSection);
+            printf("%s:%s:%d,%d\n", scriptSection,
+                   func->GetDeclaration(),
+                   line, column);
+        }
+
+        ++num;
+    }
 }
 
 }

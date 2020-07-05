@@ -154,5 +154,10 @@ std::ostream& File::getOutputStream()
 	return *os;
 }
 
+std::string File::path() const
+{
+    return file_;
+}
+
 }
 }

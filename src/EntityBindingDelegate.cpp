@@ -19,7 +19,7 @@
 #include "GameEngine.hpp"
 
 namespace ice_engine
-{	
+{
 
 EntityBindingDelegate::EntityBindingDelegate(logger::ILogger* logger, scripting::IScriptingEngine* scriptingEngine, GameEngine* gameEngine)
 	:
@@ -52,7 +52,7 @@ void EntityBindingDelegate::bind()
 	scriptingEngine_->registerClassMethod("Entity", "bool opImplConv() const", asMETHODPR(ecs::Entity, operator bool, () const, bool ));
 	scriptingEngine_->registerClassMethod("Entity", "bool opEquals(const Entity& in) const", asMETHODPR(ecs::Entity, operator==, (const ecs::Entity&) const, bool));
 	scriptingEngine_->registerClassMethod("Entity", "Scene@ scene() const", asMETHOD(ecs::Entity, scene));
-	
+
 	registerVectorBindings<ecs::Entity>(scriptingEngine_, "vectorEntity", "Entity");
 
 	registerComponent<ecs::PositionComponent, glm::vec3>(
@@ -198,6 +198,17 @@ void EntityBindingDelegate::bind()
 	);
 	registerEntityComponentAssignMethodNoForward<ecs::GraphicsTerrainComponent, graphics::TerrainHandle>(scriptingEngine_, "GraphicsTerrainComponent", "TerrainHandle");
 
+	registerComponent<ecs::GraphicsSkyboxComponent, graphics::SkyboxHandle, graphics::SkyboxRenderableHandle>(
+		scriptingEngine_,
+		"GraphicsSkyboxComponent",
+		{
+			{"SkyboxHandle skyboxHandle", asOFFSET(ecs::GraphicsSkyboxComponent, skyboxHandle)},
+			{"SkyboxRenderableHandle skyboxRenderableHandle", asOFFSET(ecs::GraphicsSkyboxComponent, skyboxRenderableHandle)}
+		},
+		"SkyboxHandle, SkyboxRenderableHandle"
+	);
+	registerEntityComponentAssignMethodNoForward<ecs::GraphicsSkyboxComponent, graphics::SkyboxHandle>(scriptingEngine_, "GraphicsSkyboxComponent", "SkyboxHandle");
+
 	registerComponent<ecs::ScriptObjectComponent, scripting::ScriptObjectHandle>(
 		scriptingEngine_,
 		"ScriptObjectComponent",
@@ -274,5 +285,5 @@ void EntityBindingDelegate::bind()
 //		DIRTY_PATHFINDING_AGENT			= 1 << 8,
 //	};
 }
-	
+
 };

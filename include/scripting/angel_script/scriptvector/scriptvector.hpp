@@ -13,13 +13,30 @@ template<typename T, typename V>
 class VectorRegisterHelper
 {
 public:
+	template<typename V>
+	static std::string print1(const V& value) { return ""; }
+	static std::string print1(const std::string& value) { return value; }
 	static void DefaultConstructor(T* memory) { new(memory) T(); }
 	static void CopyConstructor(const T& other, T* memory) { new(memory) T(other); }
 	static void InitConstructor(int size, T* memory) { new(memory) T(size); }
+	static void InitializerListConstructor(const asBYTE* list, T* memory)
+	{
+		const asUINT length = *(asUINT*)list;
+
+		new(memory) T();
+		memory->reserve(length);
+
+		for (int i=0; i < length; ++i)
+		{
+			const asBYTE* valuePointer = &list[i * sizeof(V) + sizeof(asUINT)];
+			const V& s = *reinterpret_cast<const V*>(valuePointer);
+			memory->push_back(s);
+		}
+	}
 	static void DefaultDestructor(T* memory) { ((T*)memory)->~T(); }
-	
+
 	static T& assignmentOperator(const T& other, T* v) { (*v) = other; return *v; }
-	
+
 	static void assign(int count, const V& value, T* v) { v->assign(count, value); }
 	static int size(T* v) { return v->size(); }
 	static void resize(int size, T* v) { v->resize(size); }
@@ -45,19 +62,21 @@ public:
 template<typename V>
 void RegisterVectorBindings(asIScriptEngine* engine, const std::string& name, const std::string& type, asEObjTypeFlags objectTypeFlags = asOBJ_APP_CLASS_ALLINTS)
 {
-	
+
 	typedef VectorRegisterHelper<std::vector<V>, V> VectorBase;
-	
+
 	int r = 0;
-	
+
 	r = engine->RegisterObjectType(name.c_str(), sizeof(std::vector<V>), asOBJ_VALUE | objectTypeFlags | asGetTypeTraits<std::vector<V>>()); assert( r >= 0 );
 
 	r = engine->RegisterObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(VectorBase::DefaultConstructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 	auto copyConstructorString = std::string("void f(const ") + name + "& in)";
 	r = engine->RegisterObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, copyConstructorString.c_str(), asFUNCTION(VectorBase::CopyConstructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 	r = engine->RegisterObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f(int)", asFUNCTION(VectorBase::InitConstructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	auto initializerListConstructor = std::string("void f(const int& in) {repeat " + type + "}");
+	r = engine->RegisterObjectBehaviour(name.c_str(), asBEHAVE_LIST_CONSTRUCT, initializerListConstructor.c_str(), asFUNCTION(VectorBase::InitializerListConstructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 	r = engine->RegisterObjectBehaviour(name.c_str(), asBEHAVE_DESTRUCT, "void f()", asFUNCTION(VectorBase::DefaultDestructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
-	
+
 	auto assignFunctionString = std::string("void assign(int, const ") + type + "& in)";
 	r = engine->RegisterObjectMethod(name.c_str(), assignFunctionString.c_str(), asFUNCTION(VectorBase::assign), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 	auto assignmentOperatorFunctionString = name + std::string("& opAssign(const ") + name + "& in)";

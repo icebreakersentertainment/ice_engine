@@ -4,6 +4,8 @@
 #include <vector>
 #include <memory>
 
+#include <boost/any.hpp>
+
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
@@ -67,14 +69,14 @@ public:
 	virtual void destroy(const PathfindingSceneHandle& pathfindingSceneHandle, const CrowdHandle& crowdHandle) = 0;
 	
 	virtual AgentHandle createAgent(
-		const PathfindingSceneHandle& pathfindingSceneHandle,
-		const CrowdHandle& crowdHandle,
-		const glm::vec3& position,
-		const AgentParams& agentParams = AgentParams(),
-		std::unique_ptr<IAgentMotionChangeListener> agentMotionChangeListener = nullptr,
-		std::unique_ptr<IAgentStateChangeListener> agentStateChangeListener = nullptr,
-		std::unique_ptr<IMovementRequestStateChangeListener> movementRequestStateChangeListener = nullptr,
-		const UserData& userData = UserData()
+            const PathfindingSceneHandle& pathfindingSceneHandle,
+            const CrowdHandle& crowdHandle,
+            const glm::vec3& position,
+            const AgentParams& agentParams = AgentParams(),
+            std::unique_ptr<IAgentMotionChangeListener> agentMotionChangeListener = nullptr,
+            std::unique_ptr<IAgentStateChangeListener> agentStateChangeListener = nullptr,
+            std::unique_ptr<IMovementRequestStateChangeListener> movementRequestStateChangeListener = nullptr,
+            const boost::any& userData = UserData()
 	) = 0;
 	virtual void destroy(const PathfindingSceneHandle& pathfindingSceneHandle, const CrowdHandle& crowdHandle, const AgentHandle& agentHandle) = 0;
 	
@@ -129,12 +131,12 @@ public:
 	) = 0;
 	
 	virtual void setUserData(
-		const PathfindingSceneHandle& pathfindingSceneHandle,
-		const CrowdHandle& crowdHandle,
-		const AgentHandle& agentHandle,
-		const UserData& userData
+        const PathfindingSceneHandle& pathfindingSceneHandle,
+        const CrowdHandle& crowdHandle,
+        const AgentHandle& agentHandle,
+        const boost::any& userData
 	) = 0;
-	virtual UserData& getUserData(
+	virtual boost::any& getUserData(
 		const PathfindingSceneHandle& pathfindingSceneHandle,
 		const CrowdHandle& crowdHandle,
 		const AgentHandle& agentHandle

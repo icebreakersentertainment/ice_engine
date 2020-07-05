@@ -1,7 +1,7 @@
 #ifndef PBRMATERIAL_H_
 #define PBRMATERIAL_H_
 
-#include "Image.hpp"
+#include "IImage.hpp"
 
 #include "graphics/IPbrMaterial.hpp"
 
@@ -12,7 +12,7 @@ class PbrMaterial : public graphics::IPbrMaterial
 {
 public:
 
-	PbrMaterial(Image* albedo = nullptr, Image* normal = nullptr, Image* metalness = nullptr, Image* roughness = nullptr, Image* ambientOcclusion = nullptr)
+	PbrMaterial(IImage* albedo = nullptr, IImage* normal = nullptr, IImage* metalness = nullptr, IImage* roughness = nullptr, IImage* ambientOcclusion = nullptr)
 	:
 		albedo_(albedo),
 		normal_(normal),
@@ -23,7 +23,7 @@ public:
 
 	}
 
-	virtual ~PbrMaterial() = default;
+	~PbrMaterial() override = default;
 
 	const graphics::IImage* albedo() const override
 	{
@@ -51,11 +51,11 @@ public:
 	}
 
 private:
-	Image* albedo_ = nullptr;
-	Image* normal_ = nullptr;
-	Image* metalness_ = nullptr;
-	Image* roughness_ = nullptr;
-	Image* ambientOcclusion_ = nullptr;
+	IImage* albedo_ = nullptr;
+	IImage* normal_ = nullptr;
+	IImage* metalness_ = nullptr;
+	IImage* roughness_ = nullptr;
+	IImage* ambientOcclusion_ = nullptr;
 };
 
 }

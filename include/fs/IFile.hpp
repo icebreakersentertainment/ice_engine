@@ -22,14 +22,12 @@ enum FileFlags : int32
 class IFile
 {
 public:
-	virtual ~IFile()
-	{
-	}
-	;
+	virtual ~IFile() = default;
 	
 	virtual bool isOpen() const = 0;
 	virtual uint64 size() const = 0;
 	virtual bool eof() const = 0;
+	virtual std::string path() const = 0;
 	virtual void close() = 0;
 	
 	virtual void write(const char* data) = 0;

@@ -28,7 +28,8 @@
 #include "GameEngine.hpp"
 
 namespace ice_engine
-{	
+{
+
 
 template<class T>
 void proxyFunctionSetPosition(const uint32 x, const uint32 y, T* t)
@@ -53,6 +54,28 @@ glm::ivec2 proxyFunctionGetDimensions(T* t)
 }
 
 template<class T>
+bool proxyFunctionVisible(T* t)
+{
+	return t->visible();
+}
+template<class T>
+void proxyFunctionSetVisible(const bool visible, T* t)
+{
+	t->setVisible(visible);
+}
+
+template<class T>
+bool proxyFunctionDisabled(T* t)
+{
+	return t->disabled();
+}
+template<class T>
+void proxyFunctionSetDisabled(const bool disabled, T* t)
+{
+	t->setDisabled(disabled);
+}
+
+template<class T>
 void proxyFunctionSetStyle(const graphics::gui::Style& style, T* t)
 {
 	t->setStyle(style);
@@ -61,6 +84,99 @@ template<class T>
 const graphics::gui::Style& proxyFunctionGetStyle(T* t)
 {
 	return t->getStyle();
+}
+template<class T>
+const void proxyFunctionAddComponent(graphics::gui::IComponent* component, T* t)
+{
+	return t->addComponent(component);
+}
+template<class T>
+const void proxyFunctionRemoveComponent(graphics::gui::IComponent* component, T* t)
+{
+	return t->removeComponent(component);
+}
+template<class T>
+const void proxyFunctionRemoveAllComponents(T* t)
+{
+	return t->removeAllComponents();
+}
+
+template<class T>
+graphics::gui::ILabel* proxyFunctionCreateLabel(const std::string label, T* t)
+{
+	return t->createLabel(label);
+}
+
+template<class T>
+graphics::gui::ILabel* proxyFunctionCreateLabel(const uint32 x, const uint32 y, const uint32 width, const uint32 height, const std::string label, T* t)
+{
+	return t->createLabel(x, y, width, height, label);
+}
+
+template<class T>
+graphics::gui::IButton* proxyFunctionCreateButton(const std::string label, T* t)
+{
+	return t->createButton(label);
+}
+
+template<class T>
+graphics::gui::IButton* proxyFunctionCreateButton(const uint32 x, const uint32 y, const uint32 width, const uint32 height, const std::string label, T* t)
+{
+	return t->createButton(x, y, width, height, label);
+}
+
+template<class T>
+graphics::gui::ITextField* proxyFunctionCreateTextField(const std::string label, T* t)
+{
+	return t->createTextField(label);
+}
+
+template<class T>
+graphics::gui::ITextField* proxyFunctionCreateTextField(const uint32 x, const uint32 y, const uint32 width, const uint32 height, const std::string label, T* t)
+{
+	return t->createTextField(x, y, width, height, label);
+}
+
+template<class T>
+graphics::gui::IComboBox* proxyFunctionCreateComboBox(T* t)
+{
+	return t->createComboBox();
+}
+
+template<class T>
+graphics::gui::ITreeView* proxyFunctionCreateTreeView(T* t)
+{
+	return t->createTreeView();
+}
+
+template<class T>
+void proxyFunctionDestroyLabel(const graphics::gui::ILabel* label, T* t)
+{
+	t->destroy(label);
+}
+
+template<class T>
+void proxyFunctionDestroyButton(const graphics::gui::IButton* button, T* t)
+{
+	t->destroy(button);
+}
+
+template<class T>
+void proxyFunctionDestroyTextField(const graphics::gui::ITextField* textField, T* t)
+{
+	t->destroy(textField);
+}
+
+template<class T>
+void proxyFunctionDestroyComboBox(const graphics::gui::IComboBox* comboBox, T* t)
+{
+	t->destroy(comboBox);
+}
+
+template<class T>
+void proxyFunctionDestroyTreeView(const graphics::gui::ITreeView* treeView, T* t)
+{
+	t->destroy(treeView);
 }
 
 static void InitConstructorGraphicsColor(graphics::Color* memory, const uint32 color) { new(memory) graphics::Color(color); }
@@ -77,20 +193,33 @@ GraphicsEngineBindingDelegate::GraphicsEngineBindingDelegate(logger::ILogger* lo
 
 void GraphicsEngineBindingDelegate::bind()
 {
-	scriptingEngine_->registerObjectType("IImage", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	scriptingEngine_->registerObjectType("GraphicsIImage", 0, asOBJ_REF | asOBJ_NOCOUNT);
+    scriptingEngine_->registerClassMethod("GraphicsIImage", "const vectorUInt8& data() const", asMETHOD(graphics::IImage, data));
+    scriptingEngine_->registerClassMethod("GraphicsIImage", "uint32 width() const", asMETHOD(graphics::IImage, width));
+    scriptingEngine_->registerClassMethod("GraphicsIImage", "uint32 height() const", asMETHOD(graphics::IImage, height));
+
 	scriptingEngine_->registerObjectType("IHeightMap", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	scriptingEngine_->registerObjectType("ISplatMap", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	scriptingEngine_->registerObjectType("IDisplacementMap", 0, asOBJ_REF | asOBJ_NOCOUNT);
+
+	scriptingEngine_->registerObjectType("IPbrMaterial", 0, asOBJ_REF | asOBJ_NOCOUNT);
+    scriptingEngine_->registerClassMethod("IPbrMaterial", "const GraphicsIImage@ albedo() const", asMETHOD(graphics::IPbrMaterial, albedo));
+    scriptingEngine_->registerClassMethod("IPbrMaterial", "const GraphicsIImage@ normal() const", asMETHOD(graphics::IPbrMaterial, normal));
+    scriptingEngine_->registerClassMethod("IPbrMaterial", "const GraphicsIImage@ metalness() const", asMETHOD(graphics::IPbrMaterial, metalness));
+    scriptingEngine_->registerClassMethod("IPbrMaterial", "const GraphicsIImage@ roughness() const", asMETHOD(graphics::IPbrMaterial, roughness));
+    scriptingEngine_->registerClassMethod("IPbrMaterial", "const GraphicsIImage@ ambientOcclusion() const", asMETHOD(graphics::IPbrMaterial, ambientOcclusion));
+
+    registerVectorBindings<graphics::IPbrMaterial*>(scriptingEngine_, "vectorIPbrMaterial", "IPbrMaterial@");
 
 	// Enums available
 	scriptingEngine_->registerEnum("TransformSpace");
 	scriptingEngine_->registerEnumValue("TransformSpace", "TS_LOCAL", graphics::TransformSpace::TS_LOCAL);
 	scriptingEngine_->registerEnumValue("TransformSpace", "TS_WORLD", graphics::TransformSpace::TS_WORLD);
-	
+
 	scriptingEngine_->registerEnum("State");
 	scriptingEngine_->registerEnumValue("State", "RELEASED", graphics::RELEASED);
 	scriptingEngine_->registerEnumValue("State", "PRESSED", graphics::PRESSED);
-	
+
 	scriptingEngine_->registerEnum("EventType");
 	scriptingEngine_->registerEnumValue("EventType", "UNKNOWN", graphics::UNKNOWN);
 	scriptingEngine_->registerEnumValue("EventType", "QUIT", graphics::QUIT);
@@ -101,7 +230,7 @@ void GraphicsEngineBindingDelegate::bind()
 	scriptingEngine_->registerEnumValue("EventType", "MOUSEBUTTONDOWN", graphics::MOUSEBUTTONDOWN);
 	scriptingEngine_->registerEnumValue("EventType", "MOUSEBUTTONUP", graphics::MOUSEBUTTONUP);
 	scriptingEngine_->registerEnumValue("EventType", "MOUSEWHEEL", graphics::MOUSEWHEEL);
-	
+
 	scriptingEngine_->registerEnum("WindowEventType");
 	scriptingEngine_->registerEnumValue("WindowEventType", "WINDOWEVENT_UNKNOWN", graphics::WINDOWEVENT_UNKNOWN);
 	scriptingEngine_->registerEnumValue("WindowEventType", "WINDOWEVENT_NONE", graphics::WINDOWEVENT_NONE);
@@ -121,8 +250,8 @@ void GraphicsEngineBindingDelegate::bind()
 	scriptingEngine_->registerEnumValue("WindowEventType", "WINDOWEVENT_CLOSE", graphics::WINDOWEVENT_CLOSE);
 	scriptingEngine_->registerEnumValue("WindowEventType", "WINDOWEVENT_TAKE_FOCUS", graphics::WINDOWEVENT_TAKE_FOCUS);
 	scriptingEngine_->registerEnumValue("WindowEventType", "WINDOWEVENT_HIT_TEST", graphics::WINDOWEVENT_HIT_TEST);
-    
-	
+
+
 	scriptingEngine_->registerEnum("ScanCode");
 	scriptingEngine_->registerEnumValue("ScanCode", "SCANCODE_UNKNOWN", graphics::SCANCODE_UNKNOWN);
 	scriptingEngine_->registerEnumValue("ScanCode", "SCANCODE_A", graphics::SCANCODE_A);
@@ -365,7 +494,7 @@ void GraphicsEngineBindingDelegate::bind()
 	scriptingEngine_->registerEnumValue("ScanCode", "SCANCODE_SLEEP", graphics::SCANCODE_SLEEP);
 	scriptingEngine_->registerEnumValue("ScanCode", "SCANCODE_APP1", graphics::SCANCODE_APP1);
 	scriptingEngine_->registerEnumValue("ScanCode", "SCANCODE_APP2", graphics::SCANCODE_APP2);
-	
+
 	scriptingEngine_->registerEnum("KeyCode");
 	scriptingEngine_->registerEnumValue("KeyCode", "KEY_UNKNOWN", graphics::KEY_UNKNOWN);
 	scriptingEngine_->registerEnumValue("KeyCode", "KEY_RETURN", graphics::KEY_RETURN);
@@ -603,11 +732,11 @@ void GraphicsEngineBindingDelegate::bind()
 	scriptingEngine_->registerEnumValue("KeyCode", "KEY_KBDILLUMUP", graphics::KEY_KBDILLUMUP);
 	scriptingEngine_->registerEnumValue("KeyCode", "KEY_EJECT", graphics::KEY_EJECT);
 	scriptingEngine_->registerEnumValue("KeyCode", "KEY_SLEEP", graphics::KEY_SLEEP);
-	
+
 	scriptingEngine_->registerEnum("KeyState");
 	scriptingEngine_->registerEnumValue("KeyState", "KEY_PRESSED", graphics::KEY_PRESSED);
 	scriptingEngine_->registerEnumValue("KeyState", "KEY_RELEASED", graphics::KEY_RELEASED);
-	
+
 	scriptingEngine_->registerEnum("KeyMod");
 	scriptingEngine_->registerEnumValue("KeyMod", "KEYMOD_NONE", graphics::KEYMOD_NONE);
 	scriptingEngine_->registerEnumValue("KeyMod", "KEYMOD_LSHIFT", graphics::KEYMOD_LSHIFT);
@@ -626,14 +755,14 @@ void GraphicsEngineBindingDelegate::bind()
 	scriptingEngine_->registerEnumValue("KeyMod", "KEYMOD_SHIFT", graphics::KEYMOD_SHIFT);
 	scriptingEngine_->registerEnumValue("KeyMod", "KEYMOD_ALT", graphics::KEYMOD_ALT);
 	scriptingEngine_->registerEnumValue("KeyMod", "KEYMOD_GUI", graphics::KEYMOD_GUI);
-	
+
 	scriptingEngine_->registerEnum("MouseButtonCode");
 	scriptingEngine_->registerEnumValue("MouseButtonCode", "BUTTON_LEFT", graphics::BUTTON_LEFT);
 	scriptingEngine_->registerEnumValue("MouseButtonCode", "BUTTON_MIDDLE", graphics::BUTTON_MIDDLE);
 	scriptingEngine_->registerEnumValue("MouseButtonCode", "BUTTON_RIGHT", graphics::BUTTON_RIGHT);
 	scriptingEngine_->registerEnumValue("MouseButtonCode", "BUTTON_X1", graphics::BUTTON_X1);
 	scriptingEngine_->registerEnumValue("MouseButtonCode", "BUTTON_X2", graphics::BUTTON_X2);
-	
+
 	scriptingEngine_->registerEnum("WindowFlags");
 	scriptingEngine_->registerEnumValue("WindowFlags", "ICEENGINE_TITLE_BAR", graphics::gui::ICEENGINE_TITLE_BAR);
 	scriptingEngine_->registerEnumValue("WindowFlags", "ICEENGINE_MOVABLE", graphics::gui::ICEENGINE_MOVABLE);
@@ -643,7 +772,7 @@ void GraphicsEngineBindingDelegate::bind()
 	scriptingEngine_->registerEnumValue("WindowFlags", "ICEENGINE_RESIZABLE", graphics::gui::ICEENGINE_RESIZABLE);
 	scriptingEngine_->registerEnumValue("WindowFlags", "ICEENGINE_MENUBAR", graphics::gui::ICEENGINE_MENUBAR);
 	scriptingEngine_->registerEnumValue("WindowFlags", "ICEENGINE_NO_INPUT", graphics::gui::ICEENGINE_NO_INPUT);
-	
+
 	registerHandleBindings<graphics::CameraHandle>(scriptingEngine_, "CameraHandle");
 	registerHandleBindings<graphics::RenderSceneHandle>(scriptingEngine_, "RenderSceneHandle");
 	registerHandleBindings<graphics::MeshHandle>(scriptingEngine_, "MeshHandle");
@@ -651,11 +780,13 @@ void GraphicsEngineBindingDelegate::bind()
 	registerHandleBindings<graphics::RenderableHandle>(scriptingEngine_, "RenderableHandle");
 	registerHandleBindings<graphics::TerrainHandle>(scriptingEngine_, "TerrainHandle");
 	registerHandleBindings<graphics::TerrainRenderableHandle>(scriptingEngine_, "TerrainRenderableHandle");
+	registerHandleBindings<graphics::SkyboxHandle>(scriptingEngine_, "SkyboxHandle");
+	registerHandleBindings<graphics::SkyboxRenderableHandle>(scriptingEngine_, "SkyboxRenderableHandle");
 	registerHandleBindings<graphics::PointLightHandle>(scriptingEngine_, "PointLightHandle");
 	registerHandleBindings<graphics::VertexShaderHandle>(scriptingEngine_, "VertexShaderHandle");
 	registerHandleBindings<graphics::FragmentShaderHandle>(scriptingEngine_, "FragmentShaderHandle");
 	registerHandleBindings<graphics::ShaderProgramHandle>(scriptingEngine_, "ShaderProgramHandle");
-	
+
 	//scriptingEngine_->registerObjectType("KeySym", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	scriptingEngine_->registerObjectType("KeySym", sizeof(graphics::KeySym), asOBJ_VALUE | asOBJ_POD | asOBJ_APP_CLASS_ALLINTS | asGetTypeTraits<graphics::KeySym>());
 	scriptingEngine_->registerObjectProperty("KeySym", "ScanCode scancode", asOFFSET(graphics::KeySym, scancode));
@@ -664,7 +795,7 @@ void GraphicsEngineBindingDelegate::bind()
 	//scriptingEngine_->registerObjectBehaviour("KeySym", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(glmKeySym::DefaultConstructor), asCALL_CDECL_OBJLAST);
 	//scriptingEngine_->registerObjectBehaviour("KeySym", asBEHAVE_CONSTRUCT, "void f(const KeySym &in)", asFUNCTION(glmKeySym::CopyConstructor), asCALL_CDECL_OBJLAST);
 	//scriptingEngine_->registerObjectBehaviour("KeySym", asBEHAVE_CONSTRUCT, "void f(float, float, float, float)", asFUNCTION(glmKeySym::InitConstructor), asCALL_CDECL_OBJLAST);
-	
+
 	scriptingEngine_->registerObjectType("WindowEvent", sizeof(graphics::WindowEvent), asOBJ_VALUE | asOBJ_POD | asOBJ_APP_CLASS_ALLINTS | asGetTypeTraits<graphics::WindowEvent>());
 	scriptingEngine_->registerObjectProperty("WindowEvent", "uint32 type", asOFFSET(graphics::WindowEvent, type));
 	scriptingEngine_->registerObjectProperty("WindowEvent", "uint32 timestamp", asOFFSET(graphics::WindowEvent, timestamp));
@@ -682,6 +813,10 @@ void GraphicsEngineBindingDelegate::bind()
 	scriptingEngine_->registerObjectProperty("KeyboardEvent", "uint8 padding2", asOFFSET(graphics::KeyboardEvent, padding2));
 	scriptingEngine_->registerObjectProperty("KeyboardEvent", "uint8 padding3", asOFFSET(graphics::KeyboardEvent, padding3));
 	scriptingEngine_->registerObjectProperty("KeyboardEvent", "KeySym keySym", asOFFSET(graphics::KeyboardEvent, keySym));
+	scriptingEngine_->registerObjectType("TextInputEvent", sizeof(graphics::TextInputEvent), asOBJ_VALUE | asOBJ_POD | asOBJ_APP_CLASS_ALLINTS | asGetTypeTraits<graphics::TextInputEvent>());
+	scriptingEngine_->registerObjectProperty("TextInputEvent", "uint32 type", asOFFSET(graphics::TextInputEvent, type));
+	scriptingEngine_->registerObjectProperty("TextInputEvent", "uint32 timestamp", asOFFSET(graphics::TextInputEvent, timestamp));
+	scriptingEngine_->registerObjectProperty("TextInputEvent", "int8[] text", asOFFSET(graphics::TextInputEvent, text));
 	scriptingEngine_->registerObjectType("MouseMotionEvent", sizeof(graphics::MouseMotionEvent), asOBJ_VALUE | asOBJ_POD | asOBJ_APP_CLASS_ALLINTS | asGetTypeTraits<graphics::MouseMotionEvent>());
 	scriptingEngine_->registerObjectProperty("MouseMotionEvent", "uint32 type", asOFFSET(graphics::MouseMotionEvent, type));
 	scriptingEngine_->registerObjectProperty("MouseMotionEvent", "uint8 state", asOFFSET(graphics::MouseMotionEvent, state));
@@ -705,7 +840,7 @@ void GraphicsEngineBindingDelegate::bind()
 	scriptingEngine_->registerObjectProperty("MouseWheelEvent", "int32 x", asOFFSET(graphics::MouseWheelEvent, x));
 	scriptingEngine_->registerObjectProperty("MouseWheelEvent", "int32 y", asOFFSET(graphics::MouseWheelEvent, y));
 	scriptingEngine_->registerObjectProperty("MouseWheelEvent", "uint32 direction", asOFFSET(graphics::MouseWheelEvent, direction));
-	
+
 	scriptingEngine_->registerObjectType("GraphicsColor", sizeof(graphics::Color), asOBJ_VALUE | asOBJ_APP_CLASS_ALLINTS | asGetTypeTraits<graphics::Color>());
 	scriptingEngine_->registerObjectBehaviour("GraphicsColor", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(DefaultConstructor<graphics::Color>), asCALL_CDECL_OBJFIRST);
 	scriptingEngine_->registerObjectBehaviour("GraphicsColor", asBEHAVE_CONSTRUCT, "void f(const GraphicsColor& in)", asFUNCTION(CopyConstructor<graphics::Color>), asCALL_CDECL_OBJFIRST);
@@ -725,15 +860,15 @@ void GraphicsEngineBindingDelegate::bind()
 	scriptingEngine_->registerObjectType("IMesh", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	scriptingEngine_->registerObjectType("ITexture", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	scriptingEngine_->registerObjectType("ISkeleton", 0, asOBJ_REF | asOBJ_NOCOUNT);
-	
+
 	registerSharedFutureBindings<graphics::VertexShaderHandle>(scriptingEngine_, "shared_futureVertexShaderHandle", "VertexShaderHandle");
 	registerSharedFutureBindings<graphics::FragmentShaderHandle>(scriptingEngine_, "shared_futureFragmentShaderHandle", "FragmentShaderHandle");
 	registerSharedFutureBindings<graphics::ShaderProgramHandle>(scriptingEngine_, "shared_futureShaderProgramHandle", "ShaderProgramHandle");
-	
+
 	// Register function declarations
 	scriptingEngine_->registerFunctionDefinition("void ButtonClickCallback()");
 	scriptingEngine_->registerFunctionDefinition("void MenuItemClickCallback()");
-	
+
 	// Gui
 #define COMPONENT_CLASS_METHODS(name, class) \
 	scriptingEngine_->registerObjectMethod( \
@@ -762,6 +897,30 @@ void GraphicsEngineBindingDelegate::bind()
 	); \
 	scriptingEngine_->registerObjectMethod( \
 		name, \
+		"bool visible() const", \
+		asFUNCTION(proxyFunctionVisible<class>), \
+		asCALL_CDECL_OBJLAST \
+	); \
+	scriptingEngine_->registerObjectMethod( \
+		name, \
+		"void setVisible(const bool)", \
+		asFUNCTION(proxyFunctionSetVisible<class>), \
+		asCALL_CDECL_OBJLAST \
+	); \
+	scriptingEngine_->registerObjectMethod( \
+		name, \
+		"bool disabled() const", \
+		asFUNCTION(proxyFunctionDisabled<class>), \
+		asCALL_CDECL_OBJLAST \
+	); \
+	scriptingEngine_->registerObjectMethod( \
+		name, \
+		"void setDisabled(const bool)", \
+		asFUNCTION(proxyFunctionSetDisabled<class>), \
+		asCALL_CDECL_OBJLAST \
+	); \
+	scriptingEngine_->registerObjectMethod( \
+		name, \
 		"void setStyle(const Style& in)", \
 		asFUNCTION(proxyFunctionSetStyle<class>), \
 		asCALL_CDECL_OBJLAST \
@@ -772,10 +931,108 @@ void GraphicsEngineBindingDelegate::bind()
 		asFUNCTION(proxyFunctionGetStyle<class>), \
 		asCALL_CDECL_OBJLAST \
 	); \
+	scriptingEngine_->registerObjectMethod( \
+		name, \
+		"void addComponent(IComponent@)", \
+		asFUNCTION(proxyFunctionAddComponent<class>), \
+		asCALL_CDECL_OBJLAST \
+	); \
+	scriptingEngine_->registerObjectMethod( \
+		name, \
+		"void removeComponent(IComponent@)", \
+		asFUNCTION(proxyFunctionRemoveComponent<class>), \
+		asCALL_CDECL_OBJLAST \
+	); \
+	scriptingEngine_->registerObjectMethod( \
+		name, \
+		"void removeAllComponents()", \
+		asFUNCTION(proxyFunctionRemoveAllComponents<class>), \
+		asCALL_CDECL_OBJLAST \
+	); \
+
+	#define GENERIC_COMPONENT_CONTAINER_CLASS_METHODS(name, class) \
+		scriptingEngine_->registerObjectMethod( \
+			name, \
+			"ILabel@ createLabel(const string = string())", \
+			asFUNCTIONPR(proxyFunctionCreateLabel<class>, (const std::string, class*), graphics::gui::ILabel*), \
+			asCALL_CDECL_OBJLAST \
+		); \
+		scriptingEngine_->registerObjectMethod( \
+			name, \
+			"ILabel@ createLabel(const uint32, const uint32, const uint32, const uint32, const string = string())", \
+			asFUNCTIONPR(proxyFunctionCreateLabel<class>, (const uint32, const uint32, const uint32, const uint32, const std::string, class*), graphics::gui::ILabel*), \
+			asCALL_CDECL_OBJLAST \
+		); \
+		scriptingEngine_->registerObjectMethod( \
+			name, \
+			"IButton@ createButton(const string = string())", \
+			asFUNCTIONPR(proxyFunctionCreateButton<class>, (const std::string, class*), graphics::gui::IButton*), \
+			asCALL_CDECL_OBJLAST \
+		); \
+		scriptingEngine_->registerObjectMethod( \
+			name, \
+			"IButton@ createButton(const uint32, const uint32, const uint32, const uint32, const string = string())", \
+			asFUNCTIONPR(proxyFunctionCreateButton<class>, (const uint32, const uint32, const uint32, const uint32, const std::string, class*), graphics::gui::IButton*), \
+			asCALL_CDECL_OBJLAST \
+		); \
+		scriptingEngine_->registerObjectMethod( \
+			name, \
+			"ITextField@ createTextField(const string = string())", \
+			asFUNCTIONPR(proxyFunctionCreateTextField<class>, (const std::string, class*), graphics::gui::ITextField*), \
+			asCALL_CDECL_OBJLAST \
+		); \
+		scriptingEngine_->registerObjectMethod( \
+			name, \
+			"ITextField@ createTextField(const uint32, const uint32, const uint32, const uint32, const string = string())", \
+			asFUNCTIONPR(proxyFunctionCreateTextField<class>, (const uint32, const uint32, const uint32, const uint32, const std::string, class*), graphics::gui::ITextField*), \
+			asCALL_CDECL_OBJLAST \
+		); \
+		scriptingEngine_->registerObjectMethod( \
+			name, \
+			"IComboBox@ createComboBox()", \
+			asFUNCTION(proxyFunctionCreateComboBox<class>), \
+			asCALL_CDECL_OBJLAST \
+		); \
+		scriptingEngine_->registerObjectMethod( \
+			name, \
+			"ITreeView@ createTreeView()", \
+			asFUNCTION(proxyFunctionCreateTreeView<class>), \
+			asCALL_CDECL_OBJLAST \
+		); \
+		scriptingEngine_->registerObjectMethod( \
+			name, \
+			"void destroy(const ILabel@)", \
+			asFUNCTION(proxyFunctionDestroyLabel<class>), \
+			asCALL_CDECL_OBJLAST \
+		); \
+		scriptingEngine_->registerObjectMethod( \
+			name, \
+			"void destroy(const IButton@)", \
+			asFUNCTION(proxyFunctionDestroyButton<class>), \
+			asCALL_CDECL_OBJLAST \
+		); \
+		scriptingEngine_->registerObjectMethod( \
+			name, \
+			"void destroy(const ITextField@)", \
+			asFUNCTION(proxyFunctionDestroyTextField<class>), \
+			asCALL_CDECL_OBJLAST \
+		); \
+		scriptingEngine_->registerObjectMethod( \
+			name, \
+			"void destroy(const IComboBox@)", \
+			asFUNCTION(proxyFunctionDestroyComboBox<class>), \
+			asCALL_CDECL_OBJLAST \
+		); \
+		scriptingEngine_->registerObjectMethod( \
+			name, \
+			"void destroy(const ITreeView@)", \
+			asFUNCTION(proxyFunctionDestroyTreeView<class>), \
+			asCALL_CDECL_OBJLAST \
+		); \
 
 	scriptingEngine_->registerObjectType("IComponent", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	COMPONENT_CLASS_METHODS("IComponent", graphics::gui::IComponent)
-	
+
 	scriptingEngine_->registerObjectType("ILabel", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	scriptingEngine_->registerObjectMethod("ILabel", "IComponent@ opImplCast()", asFUNCTION((refCast<graphics::gui::ILabel, graphics::gui::IComponent>)), asCALL_CDECL_OBJLAST);
 	COMPONENT_CLASS_METHODS("ILabel", graphics::gui::ILabel)
@@ -794,6 +1051,54 @@ void GraphicsEngineBindingDelegate::bind()
 		asCALL_THISCALL_OBJFIRST,
 		gameEngine_
 	);
+    scriptingEngine_->registerObjectType("ITextField", 0, asOBJ_REF | asOBJ_NOCOUNT);
+    scriptingEngine_->registerObjectMethod("ITextField", "IComponent@ opImplCast()", asFUNCTION((refCast<graphics::gui::ITextField, graphics::gui::IComponent>)), asCALL_CDECL_OBJLAST);
+    COMPONENT_CLASS_METHODS("ITextField", graphics::gui::ITextField)
+    scriptingEngine_->registerObjectType("IComboBoxItem", 0, asOBJ_REF | asOBJ_NOCOUNT);
+    scriptingEngine_->registerClassMethod("IComboBoxItem","const string& getLabel()", asMETHOD(graphics::gui::IComboBoxItem, getLabel));
+    scriptingEngine_->registerClassMethod("IComboBoxItem","void setLabel(const string& in)", asMETHOD(graphics::gui::IComboBoxItem, setLabel));
+    scriptingEngine_->registerFunctionDefinition("void ComboBoxSelectedCallback(IComboBoxItem@)");
+    scriptingEngine_->registerObjectType("IComboBox", 0, asOBJ_REF | asOBJ_NOCOUNT);
+    scriptingEngine_->registerObjectMethod("IComboBox", "IComponent@ opImplCast()", asFUNCTION((refCast<graphics::gui::IComboBox, graphics::gui::IComponent>)), asCALL_CDECL_OBJLAST);
+    COMPONENT_CLASS_METHODS("IComboBox", graphics::gui::IComboBox)
+    scriptingEngine_->registerObjectMethod(
+            "IComboBox",
+            "void setCallback(ComboBoxSelectedCallback@ callback)",
+            asMETHODPR(GameEngine, setCallback, (graphics::gui::IComboBox*, void*), void),
+            asCALL_THISCALL_OBJFIRST,
+            gameEngine_
+    );
+    scriptingEngine_->registerClassMethod("IComboBox", "IComboBoxItem@ createItem(const string& in)", asMETHOD(graphics::gui::IComboBox, createItem));
+    scriptingEngine_->registerClassMethod("IComboBox", "IComboBoxItem@ getItem(const string& in)", asMETHOD(graphics::gui::IComboBox, getItem));
+    scriptingEngine_->registerClassMethod("IComboBox", "void destroy(const IComboBoxItem@)", asMETHOD(graphics::gui::IComboBox, destroy));
+    scriptingEngine_->registerClassMethod("IComboBox", "void select(IComboBoxItem@)", asMETHOD(graphics::gui::IComboBox, select));
+    scriptingEngine_->registerClassMethod("IComboBox", "void unselect(const IComboBoxItem@)", asMETHOD(graphics::gui::IComboBox, unselect));
+    scriptingEngine_->registerClassMethod("IComboBox", "bool selected(const IComboBoxItem@)", asMETHOD(graphics::gui::IComboBox, selected));
+    scriptingEngine_->registerObjectType("ITreeNode", 0, asOBJ_REF | asOBJ_NOCOUNT);
+    scriptingEngine_->registerObjectMethod("ITreeNode", "IComponent@ opImplCast()", asFUNCTION((refCast<graphics::gui::ITreeNode, graphics::gui::IComponent>)), asCALL_CDECL_OBJLAST);
+    COMPONENT_CLASS_METHODS("ITreeNode", graphics::gui::ITreeNode)
+    scriptingEngine_->registerClassMethod("ITreeNode", "ITreeNode@ createNode(const string& in)", asMETHOD(graphics::gui::ITreeNode, createNode));
+    scriptingEngine_->registerClassMethod("ITreeNode", "ITreeNode@ getNode(const string& in)", asMETHOD(graphics::gui::ITreeNode, getNode));
+    scriptingEngine_->registerClassMethod("ITreeNode", "void destroy(const ITreeNode@)", asMETHOD(graphics::gui::ITreeNode, destroy));
+    scriptingEngine_->registerClassMethod("ITreeNode","const string& getLabel()", asMETHOD(graphics::gui::ITreeNode, getLabel));
+    scriptingEngine_->registerClassMethod("ITreeNode","void setLabel(const string& in)", asMETHOD(graphics::gui::ITreeNode, setLabel));
+    scriptingEngine_->registerFunctionDefinition("void TreeNodeSelectedCallback(ITreeNode@)");
+    scriptingEngine_->registerObjectType("ITreeView", 0, asOBJ_REF | asOBJ_NOCOUNT);
+    scriptingEngine_->registerObjectMethod("ITreeView", "IComponent@ opImplCast()", asFUNCTION((refCast<graphics::gui::ITreeView, graphics::gui::IComponent>)), asCALL_CDECL_OBJLAST);
+    COMPONENT_CLASS_METHODS("ITreeView", graphics::gui::ITreeView)
+    scriptingEngine_->registerObjectMethod(
+            "ITreeView",
+            "void setCallback(TreeNodeSelectedCallback@ callback)",
+            asMETHODPR(GameEngine, setCallback, (graphics::gui::ITreeView*, void*), void),
+            asCALL_THISCALL_OBJFIRST,
+            gameEngine_
+    );
+    scriptingEngine_->registerClassMethod("ITreeView", "ITreeNode@ createNode(const string& in)", asMETHOD(graphics::gui::ITreeView, createNode));
+    scriptingEngine_->registerClassMethod("ITreeView", "ITreeNode@ getNode(const string& in)", asMETHOD(graphics::gui::ITreeView, getNode));
+    scriptingEngine_->registerClassMethod("ITreeView", "void destroy(const ITreeNode@)", asMETHOD(graphics::gui::ITreeView, destroy));
+    scriptingEngine_->registerClassMethod("ITreeView", "void select(ITreeNode@)", asMETHOD(graphics::gui::ITreeView, select));
+    scriptingEngine_->registerClassMethod("ITreeView", "void unselect(const ITreeNode@)", asMETHOD(graphics::gui::ITreeView, unselect));
+    scriptingEngine_->registerClassMethod("ITreeView", "bool selected(const ITreeNode@)", asMETHOD(graphics::gui::ITreeView, selected));
 	scriptingEngine_->registerObjectType("IMenuItem", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	scriptingEngine_->registerObjectMethod("IMenuItem", "IComponent@ opImplCast()", asFUNCTION((refCast<graphics::gui::IMenuItem, graphics::gui::IComponent>)), asCALL_CDECL_OBJLAST);
 	COMPONENT_CLASS_METHODS("IMenuItem", graphics::gui::IMenuItem)
@@ -803,6 +1108,11 @@ void GraphicsEngineBindingDelegate::bind()
 		asMETHODPR(GameEngine, setCallback, (graphics::gui::IMenuItem*, void*), void),
 		asCALL_THISCALL_OBJFIRST,
 		gameEngine_
+	);
+	scriptingEngine_->registerClassMethod(
+		"IMenuItem",
+		"IMenuItem@ createMenuItem(const string& in)",
+		asMETHODPR(graphics::gui::IMenuItem, createMenuItem, (const std::string&), graphics::gui::IMenuItem*)
 	);
 	scriptingEngine_->registerObjectType("IMenu", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	scriptingEngine_->registerObjectMethod("IMenu", "IComponent@ opImplCast()", asFUNCTION((refCast<graphics::gui::IMenu, graphics::gui::IComponent>)), asCALL_CDECL_OBJLAST);
@@ -830,6 +1140,14 @@ void GraphicsEngineBindingDelegate::bind()
 		"IMenu@ createMenu(const string& in)",
 		asMETHODPR(graphics::gui::IMenuBar, createMenu, (const std::string&), graphics::gui::IMenu*)
 	);
+	scriptingEngine_->registerObjectType("IMainMenuBar", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	scriptingEngine_->registerObjectMethod("IMainMenuBar", "IComponent@ opImplCast()", asFUNCTION((refCast<graphics::gui::IMainMenuBar, graphics::gui::IComponent>)), asCALL_CDECL_OBJLAST);
+	COMPONENT_CLASS_METHODS("IMainMenuBar", graphics::gui::IMainMenuBar)
+	scriptingEngine_->registerClassMethod(
+		"IMainMenuBar",
+		"IMenu@ createMenu(const string& in)",
+		asMETHODPR(graphics::gui::IMainMenuBar, createMenu, (const std::string&), graphics::gui::IMenu*)
+	);
 	scriptingEngine_->registerObjectType("IRectangle", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	scriptingEngine_->registerObjectMethod("IRectangle", "IComponent@ opImplCast()", asFUNCTION((refCast<graphics::gui::IRectangle, graphics::gui::IComponent>)), asCALL_CDECL_OBJLAST);
 	COMPONENT_CLASS_METHODS("IRectangle", graphics::gui::IRectangle)
@@ -838,15 +1156,16 @@ void GraphicsEngineBindingDelegate::bind()
 		"void setPoints(const vec2& in, const vec2& in)",
 		asMETHOD(graphics::gui::IRectangle, setPoints)
 	);
+	scriptingEngine_->registerObjectType("IPopupModal", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	scriptingEngine_->registerObjectMethod("IPopupModal", "IComponent@ opImplCast()", asFUNCTION((refCast<graphics::gui::IPopupModal, graphics::gui::IComponent>)), asCALL_CDECL_OBJLAST);
+	COMPONENT_CLASS_METHODS("IPopupModal", graphics::gui::IPopupModal)
+	GENERIC_COMPONENT_CONTAINER_CLASS_METHODS("IPopupModal", graphics::gui::IPopupModal)
+	scriptingEngine_->registerClassMethod("IPopupModal", "void close()", asMETHOD(graphics::gui::IPopupModal, close));
 	scriptingEngine_->registerObjectType("IWindow", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	scriptingEngine_->registerObjectMethod("IWindow", "IComponent@ opImplCast()", asFUNCTION((refCast<graphics::gui::IWindow, graphics::gui::IComponent>)), asCALL_CDECL_OBJLAST);
 	COMPONENT_CLASS_METHODS("IWindow", graphics::gui::IWindow)
+	GENERIC_COMPONENT_CONTAINER_CLASS_METHODS("IWindow", graphics::gui::IWindow)
 	scriptingEngine_->registerClassMethod("IWindow", "void setBackgroundAlpha(const float)", asMETHOD(graphics::gui::IWindow, setBackgroundAlpha));
-	scriptingEngine_->registerClassMethod(
-		"IWindow",
-		"ILabel@ createLabel(const uint32, const uint32, const uint32, const uint32, const string = string())",
-		asMETHODPR(graphics::gui::IWindow, createLabel, (const uint32, const uint32, const uint32, const uint32, const std::string), graphics::gui::ILabel*)
-	);
 	scriptingEngine_->registerClassMethod(
 		"IWindow",
 		"IMenuBar@ createMenuBar()",
@@ -854,23 +1173,8 @@ void GraphicsEngineBindingDelegate::bind()
 	);
 	scriptingEngine_->registerClassMethod(
 		"IWindow",
-		"IButton@ createButton(const uint32, const uint32, const uint32, const uint32, const string = string())",
-		asMETHODPR(graphics::gui::IWindow, createButton, (const uint32, const uint32, const uint32, const uint32, const std::string), graphics::gui::IButton*)
-	);
-	scriptingEngine_->registerClassMethod(
-			"IWindow",
-			"IRectangle@ createRectangle(const vec2& in, const vec2& in, const GraphicsColor& in)",
-			asMETHOD(graphics::gui::IWindow, createRectangle)
-		);
-	scriptingEngine_->registerClassMethod(
-		"IWindow",
-		"void destroy(const IButton@)",
-		asMETHODPR(graphics::gui::IWindow, destroy, (const graphics::gui::IButton*), void)
-	);
-	scriptingEngine_->registerClassMethod(
-		"IWindow",
-		"void destroy(const ILabel@)",
-		asMETHODPR(graphics::gui::IWindow, destroy, (const graphics::gui::ILabel*), void)
+		"IRectangle@ createRectangle(const vec2& in, const vec2& in, const GraphicsColor& in)",
+		asMETHOD(graphics::gui::IWindow, createRectangle)
 	);
 	scriptingEngine_->registerClassMethod(
 		"IWindow",
@@ -878,6 +1182,16 @@ void GraphicsEngineBindingDelegate::bind()
 		asMETHODPR(graphics::gui::IWindow, destroy, (const graphics::gui::IRectangle*), void)
 	);
 	scriptingEngine_->registerObjectType("IGui", 0, asOBJ_REF | asOBJ_NOCOUNT);
+	scriptingEngine_->registerClassMethod(
+		"IGui",
+		"bool visible() const",
+		asMETHOD(graphics::gui::IGui, visible)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IGui",
+		"void setVisible(const bool)",
+		asMETHOD(graphics::gui::IGui, setVisible)
+	);
 	scriptingEngine_->registerClassMethod(
 		"IGui",
 		"IWindow@ createWindow(const uint32, const uint32, const uint32, const uint32, const string = string())",
@@ -888,7 +1202,32 @@ void GraphicsEngineBindingDelegate::bind()
 		"IWindow@ createWindow(const uint32, const uint32, const uint32, const uint32, const uint32, const string = string())",
 		asMETHODPR(graphics::gui::IGui, createWindow, (const uint32, const uint32, const uint32, const uint32, const uint32, const std::string), graphics::gui::IWindow*)
 	);
-	
+	scriptingEngine_->registerClassMethod(
+		"IGui",
+		"IMainMenuBar@ createMainMenuBar()",
+		asMETHOD(graphics::gui::IGui, createMainMenuBar)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IGui",
+		"void destroyMainMenuBar()",
+		asMETHOD(graphics::gui::IGui, destroyMainMenuBar)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IGui",
+		"IPopupModal@ createPopupModal(const string& in)",
+		asMETHOD(graphics::gui::IGui, createPopupModal)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IGui",
+		"void destroy(const IWindow@)",
+		asMETHODPR(graphics::gui::IGui, destroy, (const graphics::gui::IWindow*), void)
+	);
+	scriptingEngine_->registerClassMethod(
+		"IGui",
+		"void destroy(const IPopupModal@)",
+		asMETHODPR(graphics::gui::IGui, destroy, (const graphics::gui::IPopupModal*), void)
+	);
+
 	// IGraphicsEngine
 	scriptingEngine_->registerObjectType("IGraphicsEngine", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	scriptingEngine_->registerGlobalProperty("IGraphicsEngine graphics", graphicsEngine_);
@@ -1008,5 +1347,5 @@ void GraphicsEngineBindingDelegate::bind()
 		asMETHODPR(graphics::IGraphicsEngine, setCursorVisible, (const bool), void)
 	);
 }
-	
+
 };

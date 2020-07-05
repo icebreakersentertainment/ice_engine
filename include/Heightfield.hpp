@@ -16,31 +16,32 @@ public:
 
 	Heightfield() = default;
 
-	Heightfield(const Image& image)
+	Heightfield(const IImage& image)
 	{
 		generateHeightfield(image);
 	}
 
-	virtual ~Heightfield() = default;
+	virtual ~Heightfield() override = default;
 
 	virtual const std::vector<byte>& data() const override
 	{
-			return data_;
+        return data_;
 	}
-		virtual uint32 width() const override
-		{
-			return width_;
-		}
 
-		virtual uint32 length() const override
-		{
-			return length_;
-		}
+	virtual uint32 width() const override
+    {
+        return width_;
+    }
 
-		virtual uint32 height() const override
-		{
-			return 15.0f;
-		}
+    virtual uint32 length() const override
+    {
+        return length_;
+    }
+
+    virtual uint32 height() const override
+    {
+        return 15.0f;
+    }
 
 private:
 	std::vector<byte> data_;
@@ -48,9 +49,9 @@ private:
 	uint32 length_ = 0.0f;
 	uint32 height_ = 0.0f;
 
-	void generateHeightfield(const Image& image)
+	void generateHeightfield(const IImage& image)
 	{
-		const int32 dataSize = (image.format() == Image::Format::FORMAT_RGBA ? 4 : 3);
+		const int32 dataSize = (image.format() == IImage::Format::FORMAT_RGBA ? 4 : 3);
 
 		width_ = image.width();
 		length_ = image.height();

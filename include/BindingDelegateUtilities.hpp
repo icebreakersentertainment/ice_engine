@@ -45,9 +45,9 @@ public:
 	static void CopyConstructor(const T& other, T* memory) { new(memory) T(other); }
 	static void InitConstructor(int size, T* memory) { new(memory) T(size); }
 	static void DefaultDestructor(T* memory) { ((T*)memory)->~T(); }
-	
+
 	static T& assignmentOperator(const T& other, T* v) { (*v) = other; return *v; }
-	
+
 	static void assign(int count, const V& value, T* v) { v->assign(count, value); }
 	static int size(T* v) { return v->size(); }
 	static void resize(int size, T* v) { v->resize(size); }
@@ -73,9 +73,9 @@ public:
 template<typename V>
 void registerVectorBindings(scripting::IScriptingEngine* scriptingEngine, const std::string& name, const std::string& type, asEObjTypeFlags objectTypeFlags = asOBJ_APP_CLASS_ALLINTS)
 {
-	
+
 	typedef VectorRegisterHelper<std::vector<V>, V> VectorBase;
-	
+
 	scriptingEngine->registerObjectType(name.c_str(), sizeof(std::vector<V>), asOBJ_VALUE | objectTypeFlags | asGetTypeTraits<std::vector<V>>());
 
 	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(VectorBase::DefaultConstructor), asCALL_CDECL_OBJLAST);
@@ -83,7 +83,7 @@ void registerVectorBindings(scripting::IScriptingEngine* scriptingEngine, const 
 	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, copyConstructorString.c_str(), asFUNCTION(VectorBase::CopyConstructor), asCALL_CDECL_OBJLAST);
 	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f(int)", asFUNCTION(VectorBase::InitConstructor), asCALL_CDECL_OBJLAST);
 	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_DESTRUCT, "void f()", asFUNCTION(VectorBase::DefaultDestructor), asCALL_CDECL_OBJLAST);
-	
+
 	auto assignFunctionString = std::string("void assign(int, const ") + type + "& in)";
 	scriptingEngine->registerObjectMethod(name.c_str(), assignFunctionString.c_str(), asFUNCTION(VectorBase::assign), asCALL_CDECL_OBJLAST);
 	auto assignmentOperatorFunctionString = name + std::string("& opAssign(const ") + name + "& in)";
@@ -177,9 +177,9 @@ public:
 	//static void CopyConstructor(const T& other, T* memory) { new(memory) T(other); }
 	//static void InitConstructor(int size, T* memory) { new(memory) T(size); }
 	static void DefaultDestructor(T* memory) { ((T*)memory)->~T(); }
-	
+
 	static T& assignmentOperator(const T& other, T* v) { (*v) = std::move(const_cast<T&>(other)); return *v; }
-	
+
 	static V get(T* v) { return v->get(); }
 	static bool valid(T* v) { return v->valid(); }
 	static void wait(T* v) { v->wait(); }
@@ -193,9 +193,9 @@ public:
 template<typename V>
 void registerFutureBindings(scripting::IScriptingEngine* scriptingEngine, const std::string& name, const std::string& type, asEObjTypeFlags objectTypeFlags = asOBJ_APP_CLASS_ALLINTS)
 {
-	
+
 	typedef FutureRegisterHelper<std::future<V>, V> FutureBase;
-	
+
 	scriptingEngine->registerObjectType(name.c_str(), sizeof(std::future<V>), asOBJ_VALUE | objectTypeFlags | asGetTypeTraits<std::future<V>>());
 
 	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(FutureBase::DefaultConstructor), asCALL_CDECL_OBJLAST);
@@ -203,7 +203,7 @@ void registerFutureBindings(scripting::IScriptingEngine* scriptingEngine, const 
 	//scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, copyConstructorString.c_str(), asFUNCTION(FutureBase::CopyConstructor), asCALL_CDECL_OBJLAST);
 	//scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f(int)", asFUNCTION(FutureBase::InitConstructor), asCALL_CDECL_OBJLAST);
 	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_DESTRUCT, "void f()", asFUNCTION(FutureBase::DefaultDestructor), asCALL_CDECL_OBJLAST);
-	
+
 	auto assignmentOperatorFunctionString = name + std::string("& opAssign(const ") + name + "& in)";
 		scriptingEngine->registerObjectMethod(name.c_str(), assignmentOperatorFunctionString.c_str(), asFUNCTION(FutureBase::assignmentOperator), asCALL_CDECL_OBJLAST);
 	auto getFunctionString = type + " get()";
@@ -222,9 +222,9 @@ public:
 	static void CopyConstructor(const T& other, T* memory) { new(memory) T(other); }
 	//static void InitConstructor(int size, T* memory) { new(memory) T(size); }
 	static void DefaultDestructor(T* memory) { ((T*)memory)->~T(); }
-	
+
 	static T& assignmentOperator(const T& other, T* v) { (*v) = other; return *v; }
-	
+
 	static V get(T* v) { return v->get(); }
 	static bool valid(T* v) { return v->valid(); }
 	static void wait(T* v) { v->wait(); }
@@ -238,9 +238,9 @@ public:
 template<typename V>
 void registerSharedFutureBindings(scripting::IScriptingEngine* scriptingEngine, const std::string& name, const std::string& type, asEObjTypeFlags objectTypeFlags = asOBJ_APP_CLASS_ALLINTS)
 {
-	
+
 	typedef SharedFutureRegisterHelper<std::shared_future<V>, V> SharedFutureBase;
-	
+
 	scriptingEngine->registerObjectType(name.c_str(), sizeof(std::shared_future<V>), asOBJ_VALUE | objectTypeFlags | asGetTypeTraits<std::shared_future<V>>());
 
 	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(SharedFutureBase::DefaultConstructor), asCALL_CDECL_OBJLAST);
@@ -248,7 +248,7 @@ void registerSharedFutureBindings(scripting::IScriptingEngine* scriptingEngine, 
 	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, copyConstructorString.c_str(), asFUNCTION(SharedFutureBase::CopyConstructor), asCALL_CDECL_OBJLAST);
 	//scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f(int)", asFUNCTION(SharedFutureBase::InitConstructor), asCALL_CDECL_OBJLAST);
 	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_DESTRUCT, "void f()", asFUNCTION(SharedFutureBase::DefaultDestructor), asCALL_CDECL_OBJLAST);
-	
+
 	auto assignmentOperatorFunctionString = name + std::string("& opAssign(const ") + name + "& in)";
 	scriptingEngine->registerObjectMethod(name.c_str(), assignmentOperatorFunctionString.c_str(), asFUNCTION(SharedFutureBase::assignmentOperator), asCALL_CDECL_OBJLAST);
 	auto getFunctionString = type + " get()";
@@ -340,9 +340,9 @@ class HandleRegisterHelper
 {
 public:
 	static void DefaultConstructor(T* memory) { new(memory) T(); }
-	
+
 	static void InitConstructor(T* memory, const uint64 id) { new(memory) T(id); }
-	
+
 	static void CopyConstructor(T* memory, const T& other) { new(memory) T(other); }
 	static void DefaultDestructor(T* memory) { ((T*)memory)->~T(); }
 };
@@ -354,7 +354,7 @@ template<typename T>
 void registerHandleBindings(scripting::IScriptingEngine* scriptingEngine, const std::string& name)
 {
 	typedef HandleRegisterHelper<T> HandleBase;
-	
+
 	scriptingEngine->registerObjectType(name.c_str(), sizeof(T), asOBJ_VALUE | asOBJ_APP_CLASS_ALLINTS | asGetTypeTraits<T>());
 	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(HandleBase::DefaultConstructor), asCALL_CDECL_OBJFIRST);
 	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f(const uint64)", asFUNCTION(HandleBase::InitConstructor), asCALL_CDECL_OBJFIRST);
@@ -362,7 +362,7 @@ void registerHandleBindings(scripting::IScriptingEngine* scriptingEngine, const 
 	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_DESTRUCT, "void f()", asFUNCTION(HandleBase::DefaultDestructor), asCALL_CDECL_OBJFIRST);
 	scriptingEngine->registerClassMethod(name.c_str(), name + "& opAssign(const " + name + "& in)", asMETHODPR(T, operator=, (const T&), T&));
 	scriptingEngine->registerClassMethod(name.c_str(), "uint64 id() const", asMETHODPR(T, id, () const, uint64));
-	scriptingEngine->registerClassMethod(name.c_str(), "bool opImplConv() const", asMETHODPR(T, operator bool, () const, bool )); 
+	scriptingEngine->registerClassMethod(name.c_str(), "bool opImplConv() const", asMETHODPR(T, operator bool, () const, bool ));
 	scriptingEngine->registerClassMethod(name.c_str(), "bool opEquals(const " + name + "& in) const", asMETHODPR(T, operator==, (const T&) const, bool));
 }
 
@@ -422,7 +422,7 @@ template<class A, class B>
 B* refCast(A* a)
 {
     if (!a) return nullptr;
-    
+
     return dynamic_cast<B*>(a);
     /*
     B* b = dynamic_cast<B*>(a);
@@ -444,4 +444,3 @@ B valueCast(A& a)
 }
 
 #endif /* BINDINGDELEGATEUTILITIES_H_ */
-

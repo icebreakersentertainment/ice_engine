@@ -62,7 +62,7 @@ void SceneBindingDelegate::bind()
 	scriptingEngine_->registerObjectBehaviour("Ray", asBEHAVE_CONSTRUCT, "void f(const vec3& in, const vec3& in)", asFUNCTION(raybinding::InitConstructor), asCALL_CDECL_OBJLAST);
 	scriptingEngine_->registerObjectProperty("Ray", "vec3 from", asOFFSET(ray::Ray, from));
 	scriptingEngine_->registerObjectProperty("Ray", "vec3 to", asOFFSET(ray::Ray, to));
-	
+
 	scriptingEngine_->registerObjectType("Raycast", sizeof(Raycast), asOBJ_VALUE | asOBJ_POD | asOBJ_APP_CLASS_ALLFLOATS | asGetTypeTraits<Raycast>());
 	scriptingEngine_->registerClassMethod(
 		"Raycast",
@@ -118,7 +118,7 @@ void SceneBindingDelegate::bind()
 	scriptingEngine_->registerObjectType("SceneStatistics", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	scriptingEngine_->registerObjectProperty("SceneStatistics", "float physicsTime", asOFFSET(SceneStatistics, physicsTime));
 	scriptingEngine_->registerObjectProperty("SceneStatistics", "float renderTime", asOFFSET(SceneStatistics, renderTime));
-	
+
 	scriptingEngine_->registerFunctionDefinition("void PreSerializeCallback(Scene@)");
 	scriptingEngine_->registerFunctionDefinition("void PostSerializeCallback(Scene@)");
 	scriptingEngine_->registerFunctionDefinition("void PreDeserializeCallback(Scene@)");
@@ -128,9 +128,11 @@ void SceneBindingDelegate::bind()
 
 	// Scene
 //	scriptingEngine_->registerObjectType("Scene", 0, asOBJ_REF | asOBJ_NOCOUNT);
-	scriptingEngine_->registerClassMethod("Scene", "string getName() const", asMETHODPR(Scene, getName, () const, std::string));
+	scriptingEngine_->registerClassMethod("Scene", "const string& name() const", asMETHOD(Scene, name));
 	scriptingEngine_->registerClassMethod("Scene", "bool visible() const", asMETHOD(Scene, visible));
 	scriptingEngine_->registerClassMethod("Scene", "void setVisible(const bool)", asMETHOD(Scene, setVisible));
+	scriptingEngine_->registerClassMethod("Scene", "bool active() const", asMETHOD(Scene, active));
+	scriptingEngine_->registerClassMethod("Scene", "void setActive(const bool)", asMETHOD(Scene, setActive));
 	scriptingEngine_->registerClassMethod(
 		"Scene",
 		"const SceneStatistics@ getSceneStatistics()",
@@ -227,5 +229,5 @@ void SceneBindingDelegate::bind()
 	scriptingEngine_->registerClassMethod("Scene", "vectorEntity query(const vec3& in, const vectorVec3& in)", asMETHODPR(Scene, query, (const glm::vec3&, const std::vector<glm::vec3>&), std::vector<ecs::Entity>));
 	scriptingEngine_->registerClassMethod("Scene", "vectorEntity query(const vec3& in, const float)", asMETHODPR(Scene, query, (const glm::vec3&, const float32), std::vector<ecs::Entity>));
 }
-	
+
 };

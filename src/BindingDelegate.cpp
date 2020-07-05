@@ -11,6 +11,7 @@
 #include "Scene.hpp"
 #include "IWindowEventListener.hpp"
 #include "IKeyboardEventListener.hpp"
+#include "ITextInputEventListener.hpp"
 #include "IMouseMotionEventListener.hpp"
 #include "IMouseButtonEventListener.hpp"
 #include "IMouseWheelEventListener.hpp"
@@ -84,13 +85,15 @@ BindingDelegate::~BindingDelegate()
 {
 }
 
-static void InitConstructorPbrMaterial(PbrMaterial* memory, Image* albedo, Image* normal, Image* metalness, Image* roughness, Image* ambientOcclusion) { new(memory) PbrMaterial(albedo, normal, metalness, roughness, ambientOcclusion); }
-static void InitConstructorHeightMap(HeightMap* memory, const Image& image) { new(memory) HeightMap(image); }
-static void InitConstructorSplatMap(SplatMap* memory, std::vector<PbrMaterial> materialMap, Image* terrainMap) { new(memory) SplatMap(std::move(materialMap), terrainMap); }
-static void InitConstructorHeightfield(Heightfield* memory, const Image& image) { new(memory) Heightfield(image); }
+static void InitConstructorImage(Image* memory, const std::vector<byte>& data, const uint32 width, const uint32 height, const IImage::Format format) { new(memory) Image(data, width, height, format); }
+static void InitConstructorPbrMaterial(PbrMaterial* memory, IImage* albedo, IImage* normal, IImage* metalness, IImage* roughness, IImage* ambientOcclusion) { new(memory) PbrMaterial(albedo, normal, metalness, roughness, ambientOcclusion); }
+static void InitConstructorHeightMap(HeightMap* memory, const IImage& image) { new(memory) HeightMap(image); }
+static void InitConstructorHeightMap(HeightMap* memory, const std::vector<uint8>& imageData, const uint32 width, const uint32 height) { new(memory) HeightMap(imageData, width, height); }
+static void InitConstructorSplatMap(SplatMap* memory, std::vector<PbrMaterial> materialMap, IImage* terrainMap) { new(memory) SplatMap(std::move(materialMap), terrainMap); }
+static void InitConstructorHeightfield(Heightfield* memory, const IImage& image) { new(memory) Heightfield(image); }
 static void InitConstructorPathfindingTerrain(PathfindingTerrain* memory, const HeightMap& heightMap) { new(memory) PathfindingTerrain(heightMap); }
 static void InitConstructorMesh(Mesh* memory, std::string name, std::vector< glm::vec3 > vertices, std::vector< uint32 > indices, std::vector< glm::vec4 > colors, std::vector< glm::vec3 > normals, std::vector< glm::vec2 > textureCoordinates, VertexBoneData vertexBoneData = VertexBoneData(), BoneData boneData = BoneData()) { new(memory) Mesh(name, vertices, indices, colors, normals, textureCoordinates, vertexBoneData, boneData); }
-static void InitConstructorTexture(Texture* memory, std::string name, Image* image) { new(memory) Texture(name, image); }
+static void InitConstructorTexture(Texture* memory, std::string name, IImage* image) { new(memory) Texture(name, image); }
 
 void testFunction(const pathfinding::AgentParams& ap)
 {
@@ -107,31 +110,117 @@ void testFunction3(pathfinding::AgentParams ap)
 	std::cout << "hi mom " << ap << std::endl;
 }
 
+template<typename T, typename V>
+class UniquePtrRegisterHelper
+{
+public:
+	static void DefaultConstructor(T* memory) { new(memory) T(); }
+
+	static void InitConstructor(T* memory, const uint64 id) { new(memory) T(id); }
+
+	static void CopyConstructor(T* memory, const T& other) { new(memory) T(other); }
+	static void DefaultDestructor(T* memory) { ((T*)memory)->~T(); }
+
+	static V* get(T* u) { return u->get(); }
+};
+
+/**
+ * Register our unique_ptr bindings.
+ */
+template<typename T>
+void registerUniquePtrBindings(scripting::IScriptingEngine* scriptingEngine, const std::string& name, const std::string& scriptTypeName)
+{
+	typedef UniquePtrRegisterHelper<std::unique_ptr<T>, T> UniquePtrBase;
+
+	scriptingEngine->registerObjectType(name.c_str(), sizeof(T), asOBJ_VALUE | asOBJ_APP_CLASS_ALLINTS | asGetTypeTraits<T>());
+	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(UniquePtrBase::DefaultConstructor), asCALL_CDECL_OBJFIRST);
+//	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f(ref@)", asFUNCTION(HandleBase::InitConstructor), asCALL_CDECL_OBJFIRST);
+//	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f(const " + name + "& in)", asFUNCTION(HandleBase::CopyConstructor), asCALL_CDECL_OBJFIRST);
+	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_DESTRUCT, "void f()", asFUNCTION(UniquePtrBase::DefaultDestructor), asCALL_CDECL_OBJFIRST);
+	// scriptingEngine->registerClassMethod(name.c_str(), name + "& opAssign(const " + name + "& in)", asMETHODPR(std::unique_ptr<T>, operator=, (const std::unique_ptr<T>&), std::unique_ptr<T>&));
+	scriptingEngine->registerClassMethod(name.c_str(), name + "& opAssign(const " + name + "& in)", asMETHODPR(std::unique_ptr<T>, operator=, (std::unique_ptr<T>&&), std::unique_ptr<T>&));
+	scriptingEngine->registerObjectMethod(name.c_str(), scriptTypeName + "@ get()", asFUNCTION(UniquePtrBase::get), asCALL_CDECL_OBJFIRST);
+	// scriptingEngine->registerClassMethod(name.c_str(), "const " + scriptTypeName + "@+ get() const", asMETHODPR(T, get, () const, void*));
+	// scriptingEngine->registerClassMethod(name.c_str(), "bool opImplConv() const", asMETHODPR(T, operator bool, () const, bool ));
+	// scriptingEngine->registerClassMethod(name.c_str(), "bool opEquals(const " + name + "& in) const", asMETHODPR(T, operator==, (const T&) const, bool));
+}
+
+void mrtest(int* a, std::string* errs)
+{
+    *a = 10;
+    *errs = std::string("wtffffff");
+}
+
+const std::vector<byte>& iImageDataProxy(const IImage* image)
+{
+    return image->data();
+}
+
+uint32 iImageWidthProxy(const IImage* image)
+{
+    return image->width();
+}
+
+uint32 iImageHeightProxy(const IImage* image)
+{
+    return image->height();
+}
+
 void BindingDelegate::bind()
 {
-	scriptingEngine_->registerObjectType("Image", 0, asOBJ_REF | asOBJ_NOCOUNT);
-	scriptingEngine_->registerClassMethod("Image", "const vectorInt8& data()", asMETHOD(Image, data));
-	scriptingEngine_->registerClassMethod("Image", "uint32 width()", asMETHOD(Image, width));
-	scriptingEngine_->registerClassMethod("Image", "uint32 height()", asMETHOD(Image, height));
+    scriptingEngine_->registerGlobalFunction("void mrtest(int& out, string& out)", asFUNCTION(mrtest), asCALL_CDECL);
 
-	scriptingEngine_->registerEnum("ImageFormat");
-	scriptingEngine_->registerEnumValue("ImageFormat", "FORMAT_UNKNOWN", Image::Format::FORMAT_UNKNOWN);
-	scriptingEngine_->registerEnumValue("ImageFormat", "FORMAT_RGB", Image::Format::FORMAT_RGB);
-	scriptingEngine_->registerEnumValue("ImageFormat", "FORMAT_RGBA", Image::Format::FORMAT_RGBA);
+	scriptingEngine_->registerObjectType("IImage", 0, asOBJ_REF | asOBJ_NOCOUNT);
+    scriptingEngine_->registerObjectMethod("IImage", "const vectorUInt8& data() const", asFUNCTION(iImageDataProxy), asCALL_CDECL_OBJFIRST);
+    scriptingEngine_->registerObjectMethod("IImage", "uint32 width() const", asFUNCTION(iImageWidthProxy), asCALL_CDECL_OBJFIRST);
+    scriptingEngine_->registerObjectMethod("IImage", "uint32 height() const", asFUNCTION(iImageHeightProxy), asCALL_CDECL_OBJFIRST);
+//	scriptingEngine_->registerClassMethod("IImage", "const vectorUInt8& data() const", asMETHOD(IImage, data));
+//	scriptingEngine_->registerClassMethod("IImage", "uint32 width() const", asMETHOD(IImage, width));
+//	scriptingEngine_->registerClassMethod("IImage", "uint32 height() const", asMETHOD(IImage, height));
+
+    scriptingEngine_->registerEnum("IImageFormat");
+    scriptingEngine_->registerEnumValue("IImageFormat", "FORMAT_UNKNOWN", IImage::Format::FORMAT_UNKNOWN);
+    scriptingEngine_->registerEnumValue("IImageFormat", "FORMAT_RGB", IImage::Format::FORMAT_RGB);
+    scriptingEngine_->registerEnumValue("IImageFormat", "FORMAT_RGBA", IImage::Format::FORMAT_RGBA);
+
+    scriptingEngine_->registerObjectType("Image", sizeof(Image), asOBJ_VALUE | asGetTypeTraits<Image>());
+    scriptingEngine_->registerObjectBehaviour("Image", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(DefaultConstructor<Image>), asCALL_CDECL_OBJLAST);
+    scriptingEngine_->registerObjectBehaviour("Image", asBEHAVE_CONSTRUCT, "void f(const vectorUInt8& in, const uint32, const uint32, const IImageFormat)", asFUNCTION(InitConstructorImage), asCALL_CDECL_OBJFIRST);
+    scriptingEngine_->registerObjectBehaviour("Image", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DefaultDestructor<Image>), asCALL_CDECL_OBJLAST);
+    scriptingEngine_->registerClassMethod("Image", "Image& opAssign(const Image& in)", asMETHODPR(Image, operator=, (const Image&), Image&));
+    scriptingEngine_->registerClassMethod("Image", "const vectorUInt8& data() const", asMETHOD(Image, data));
+    scriptingEngine_->registerClassMethod("Image", "uint32 width() const", asMETHOD(Image, width));
+    scriptingEngine_->registerClassMethod("Image", "uint32 height() const", asMETHOD(Image, height));
 
 	scriptingEngine_->registerObjectType("Audio", 0, asOBJ_REF | asOBJ_NOCOUNT);
+
+    scriptingEngine_->registerEnum("FileFlags");
+    scriptingEngine_->registerEnumValue("FileFlags", "READ", fs::FileFlags::READ);
+    scriptingEngine_->registerEnumValue("FileFlags", "WRITE", fs::FileFlags::WRITE);
+    scriptingEngine_->registerEnumValue("FileFlags", "APPEND", fs::FileFlags::APPEND);
+    scriptingEngine_->registerEnumValue("FileFlags", "BINARY", fs::FileFlags::BINARY);
+
+    scriptingEngine_->registerObjectType("IFile", 0, asOBJ_REF | asOBJ_NOCOUNT);
+    scriptingEngine_->registerClassMethod("IFile", "string path()", asMETHOD(fs::IFile, path));
+    scriptingEngine_->registerClassMethod("IFile", "void close()", asMETHOD(fs::IFile, close));
+    scriptingEngine_->registerClassMethod("IFile", "void write(const string& in)", asMETHODPR(fs::IFile, write, (const std::string&), void));
+    scriptingEngine_->registerClassMethod("IFile", "string readAll()", asMETHOD(fs::IFile, readAll));
+    registerUniquePtrBindings<fs::IFile>(scriptingEngine_, "unique_ptrIFile", "IFile");
 
 	scriptingEngine_->registerObjectType("IFileSystem", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	scriptingEngine_->registerGlobalProperty("IFileSystem fileSystem", gameEngine_->fileSystem());
 	scriptingEngine_->registerClassMethod("IFileSystem", "bool exists(const string& in) const", asMETHOD(fs::IFileSystem, exists));
 	scriptingEngine_->registerClassMethod("IFileSystem", "bool isDirectory(const string& in) const", asMETHOD(fs::IFileSystem, isDirectory));
+	scriptingEngine_->registerClassMethod("IFileSystem", "vectorString list(const string& in) const", asMETHOD(fs::IFileSystem, list));
 	scriptingEngine_->registerClassMethod("IFileSystem", "void deleteFile(const string& in) const", asMETHOD(fs::IFileSystem, deleteFile));
 	scriptingEngine_->registerClassMethod("IFileSystem", "void makeDirectory(const string& in) const", asMETHOD(fs::IFileSystem, makeDirectory));
 	scriptingEngine_->registerClassMethod("IFileSystem", "string getBasePath(const string& in) const", asMETHOD(fs::IFileSystem, getBasePath));
 	scriptingEngine_->registerClassMethod("IFileSystem", "string getDirectorySeperator() const", asMETHOD(fs::IFileSystem, getDirectorySeperator));
+	scriptingEngine_->registerClassMethod("IFileSystem", "string getTempDirectory() const", asMETHOD(fs::IFileSystem, getTempDirectory));
 	scriptingEngine_->registerClassMethod("IFileSystem", "string getFilename(const string& in) const", asMETHOD(fs::IFileSystem, getFilename));
 	scriptingEngine_->registerClassMethod("IFileSystem", "string getFilenameWithoutExtension(const string& in) const", asMETHOD(fs::IFileSystem, getFilenameWithoutExtension));
 	scriptingEngine_->registerClassMethod("IFileSystem", "string readAll(const string& in) const", asMETHOD(fs::IFileSystem, readAll));
+	scriptingEngine_->registerClassMethod("IFileSystem", "unique_ptrIFile open(const string& in, const int32) const", asMETHOD(fs::IFileSystem, open));
 	scriptingEngine_->registerClassMethod("IFileSystem", "string generateTempFilename() const", asMETHOD(fs::IFileSystem, generateTempFilename));
 
 	auto audioEngineBindingDelegate = AudioEngineBindingDelegate(logger_, scriptingEngine_, gameEngine_, audioEngine_);
@@ -178,7 +267,7 @@ void BindingDelegate::bind()
 
 	scriptingEngine_->registerObjectType("Texture", sizeof(Texture), asOBJ_VALUE | asGetTypeTraits<Texture>());
 	scriptingEngine_->registerObjectBehaviour("Texture", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(DefaultConstructor<Texture>), asCALL_CDECL_OBJLAST);
-	scriptingEngine_->registerObjectBehaviour("Texture", asBEHAVE_CONSTRUCT, "void f(string, Image@)", asFUNCTION(InitConstructorTexture), asCALL_CDECL_OBJFIRST);
+	scriptingEngine_->registerObjectBehaviour("Texture", asBEHAVE_CONSTRUCT, "void f(string, IImage@)", asFUNCTION(InitConstructorTexture), asCALL_CDECL_OBJFIRST);
 	scriptingEngine_->registerObjectBehaviour("Texture", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DefaultDestructor<Texture>), asCALL_CDECL_OBJLAST);
 	scriptingEngine_->registerClassMethod("Texture", "Texture& opAssign(const Texture& in)", asMETHODPR(Texture, operator=, (const Texture&), Texture&));
 
@@ -215,49 +304,55 @@ void BindingDelegate::bind()
 	registerHandleBindings<AnimationHandle>(scriptingEngine_, "AnimationHandle");
 	registerHandleBindings<graphics::BonesHandle>(scriptingEngine_, "BonesHandle");
 
-	scriptingEngine_->registerObjectType("PbrMaterial", sizeof(PbrMaterial), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<PbrMaterial>());
+	scriptingEngine_->registerObjectType("PbrMaterial", sizeof(PbrMaterial), asOBJ_VALUE | asGetTypeTraits<PbrMaterial>());
 	//scriptingEngine_->registerObjectBehaviour("PbrMaterial", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(DefaultConstructor<PbrMaterial>), asCALL_CDECL_OBJFIRST);
-	scriptingEngine_->registerObjectBehaviour("PbrMaterial", asBEHAVE_CONSTRUCT, "void f(Image@, Image@, Image@, Image@, Image@ = null)", asFUNCTION(InitConstructorPbrMaterial), asCALL_CDECL_OBJFIRST);
+	scriptingEngine_->registerObjectBehaviour("PbrMaterial", asBEHAVE_CONSTRUCT, "void f(IImage@, IImage@, IImage@, IImage@, IImage@ = null)", asFUNCTION(InitConstructorPbrMaterial), asCALL_CDECL_OBJFIRST);
 	scriptingEngine_->registerObjectBehaviour("PbrMaterial", asBEHAVE_CONSTRUCT, "void f(const PbrMaterial& in)", asFUNCTION(CopyConstructor<PbrMaterial>), asCALL_CDECL_OBJFIRST);
 	scriptingEngine_->registerObjectBehaviour("PbrMaterial", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DefaultDestructor<PbrMaterial>), asCALL_CDECL_OBJFIRST);
 	registerVectorBindings<PbrMaterial>(scriptingEngine_, "vectorPbrMaterial", "PbrMaterial");
 
-	scriptingEngine_->registerObjectType("HeightMap", sizeof(HeightMap), asOBJ_VALUE | asOBJ_POD | asGetTypeTraits<HeightMap>());
-	//scriptingEngine_->registerObjectBehaviour("HeightMap", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(DefaultConstructor<HeightMap>), asCALL_CDECL_OBJFIRST);
-	scriptingEngine_->registerObjectBehaviour("HeightMap", asBEHAVE_CONSTRUCT, "void f(const Image& in)", asFUNCTION(InitConstructorHeightMap), asCALL_CDECL_OBJFIRST);
+	scriptingEngine_->registerObjectType("HeightMap", sizeof(HeightMap), asOBJ_VALUE | asGetTypeTraits<HeightMap>());
+	scriptingEngine_->registerObjectBehaviour("HeightMap", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(DefaultConstructor<HeightMap>), asCALL_CDECL_OBJFIRST);
+	scriptingEngine_->registerObjectBehaviour("HeightMap", asBEHAVE_CONSTRUCT, "void f(const IImage& in)", asFUNCTIONPR(InitConstructorHeightMap, (HeightMap*, const IImage&), void), asCALL_CDECL_OBJFIRST);
+	scriptingEngine_->registerObjectBehaviour("HeightMap",asBEHAVE_CONSTRUCT, "void f(const vectorUInt8& in, const uint32, const uint32)", asFUNCTIONPR(InitConstructorHeightMap, (HeightMap*, const std::vector<uint8>&, const uint32, const uint32), void), asCALL_CDECL_OBJFIRST);
 	scriptingEngine_->registerObjectBehaviour("HeightMap", asBEHAVE_CONSTRUCT, "void f(const HeightMap& in)", asFUNCTION(CopyConstructor<HeightMap>), asCALL_CDECL_OBJFIRST);
 	scriptingEngine_->registerObjectBehaviour("HeightMap", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DefaultDestructor<HeightMap>), asCALL_CDECL_OBJFIRST);
+    scriptingEngine_->registerClassMethod("HeightMap", "HeightMap& opAssign(const HeightMap& in)", asMETHOD(HeightMap, operator=));
 	scriptingEngine_->registerClassMethod(
 		"HeightMap",
-		"Image@ image()",
-		asMETHODPR(HeightMap, image, (), Image*)
+		"IImage@ image()",
+		asMETHODPR(HeightMap, image, (), IImage*)
 	);
 
 	scriptingEngine_->registerObjectType("SplatMap", sizeof(SplatMap), asOBJ_VALUE | asGetTypeTraits<SplatMap>());
-	//scriptingEngine_->registerObjectBehaviour("SplatMap", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(DefaultConstructor<SplatMap>), asCALL_CDECL_OBJFIRST);
-	scriptingEngine_->registerObjectBehaviour("SplatMap", asBEHAVE_CONSTRUCT, "void f(vectorPbrMaterial, Image@)", asFUNCTION(InitConstructorSplatMap), asCALL_CDECL_OBJFIRST);
+	scriptingEngine_->registerObjectBehaviour("SplatMap", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(DefaultConstructor<SplatMap>), asCALL_CDECL_OBJFIRST);
+	scriptingEngine_->registerObjectBehaviour("SplatMap", asBEHAVE_CONSTRUCT, "void f(vectorPbrMaterial, IImage@)", asFUNCTION(InitConstructorSplatMap), asCALL_CDECL_OBJFIRST);
 	scriptingEngine_->registerObjectBehaviour("SplatMap", asBEHAVE_CONSTRUCT, "void f(const SplatMap& in)", asFUNCTION(CopyConstructor<SplatMap>), asCALL_CDECL_OBJFIRST);
 	scriptingEngine_->registerObjectBehaviour("SplatMap", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DefaultDestructor<SplatMap>), asCALL_CDECL_OBJFIRST);
+    scriptingEngine_->registerClassMethod("SplatMap", "SplatMap& opAssign(const SplatMap& in)", asMETHOD(SplatMap, operator=));
+    scriptingEngine_->registerClassMethod("SplatMap", "const vectorIPbrMaterial& materialMap() const", asMETHOD(SplatMap, materialMap));
 
 	scriptingEngine_->registerObjectType("DisplacementMap", sizeof(DisplacementMap), asOBJ_VALUE | asGetTypeTraits<DisplacementMap>());
 	scriptingEngine_->registerObjectBehaviour("DisplacementMap", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(DefaultConstructor<DisplacementMap>), asCALL_CDECL_OBJFIRST);
-	//scriptingEngine_->registerObjectBehaviour("DisplacementMap", asBEHAVE_CONSTRUCT, "void f(const Image& in, vectorPbrMaterial in)", asFUNCTION(InitConstructorDisplacementMap), asCALL_CDECL_OBJFIRST);
+	//scriptingEngine_->registerObjectBehaviour("DisplacementMap", asBEHAVE_CONSTRUCT, "void f(const IImage& in, vectorPbrMaterial in)", asFUNCTION(InitConstructorDisplacementMap), asCALL_CDECL_OBJFIRST);
 	scriptingEngine_->registerObjectBehaviour("DisplacementMap", asBEHAVE_CONSTRUCT, "void f(const DisplacementMap& in)", asFUNCTION(CopyConstructor<DisplacementMap>), asCALL_CDECL_OBJFIRST);
 	scriptingEngine_->registerObjectBehaviour("DisplacementMap", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DefaultDestructor<DisplacementMap>), asCALL_CDECL_OBJFIRST);
 
 	scriptingEngine_->registerObjectType("Heightfield", sizeof(Heightfield), asOBJ_VALUE | asGetTypeTraits<Heightfield>());
 	scriptingEngine_->registerObjectBehaviour("Heightfield", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(DefaultConstructor<Heightfield>), asCALL_CDECL_OBJFIRST);
-	scriptingEngine_->registerObjectBehaviour("Heightfield", asBEHAVE_CONSTRUCT, "void f(const Image& in)", asFUNCTION(InitConstructorHeightfield), asCALL_CDECL_OBJFIRST);
+	scriptingEngine_->registerObjectBehaviour("Heightfield", asBEHAVE_CONSTRUCT, "void f(const IImage& in)", asFUNCTION(InitConstructorHeightfield), asCALL_CDECL_OBJFIRST);
 	scriptingEngine_->registerObjectBehaviour("Heightfield", asBEHAVE_CONSTRUCT, "void f(const Heightfield& in)", asFUNCTION(CopyConstructor<Heightfield>), asCALL_CDECL_OBJFIRST);
 	scriptingEngine_->registerObjectBehaviour("Heightfield", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DefaultDestructor<Heightfield>), asCALL_CDECL_OBJFIRST);
+    scriptingEngine_->registerClassMethod("Heightfield", "Heightfield& opAssign(const Heightfield& in)", asMETHOD(Heightfield, operator=));
 
 	scriptingEngine_->registerObjectType("PathfindingTerrain", sizeof(PathfindingTerrain), asOBJ_VALUE | asGetTypeTraits<PathfindingTerrain>());
 	scriptingEngine_->registerObjectBehaviour("PathfindingTerrain", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(DefaultConstructor<PathfindingTerrain>), asCALL_CDECL_OBJFIRST);
 	scriptingEngine_->registerObjectBehaviour("PathfindingTerrain", asBEHAVE_CONSTRUCT, "void f(const HeightMap& in)", asFUNCTION(InitConstructorPathfindingTerrain), asCALL_CDECL_OBJFIRST);
 	scriptingEngine_->registerObjectBehaviour("PathfindingTerrain", asBEHAVE_CONSTRUCT, "void f(const PathfindingTerrain& in)", asFUNCTION(CopyConstructor<PathfindingTerrain>), asCALL_CDECL_OBJFIRST);
 	scriptingEngine_->registerObjectBehaviour("PathfindingTerrain", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DefaultDestructor<PathfindingTerrain>), asCALL_CDECL_OBJFIRST);
+    scriptingEngine_->registerClassMethod("PathfindingTerrain", "PathfindingTerrain& opAssign(const PathfindingTerrain& in)", asMETHOD(PathfindingTerrain, operator=));
 
-	registerSharedFutureBindings<Image*>(scriptingEngine_, "shared_futureImage", "Image@");
+	registerSharedFutureBindings<IImage*>(scriptingEngine_, "shared_futureImage", "IImage@");
 	registerSharedFutureBindings<Audio*>(scriptingEngine_, "shared_futureAudio", "Audio@");
 	registerSharedFutureBindings<Model*>(scriptingEngine_, "shared_futureModel", "Model@");
 	registerSharedFutureBindings<ModelHandle>(scriptingEngine_, "shared_futureModelHandle", "ModelHandle");
@@ -284,7 +379,8 @@ void BindingDelegate::bind()
 	//scriptingEngine_->registerObjectMethod("IAudio", "const Audio@ opCast()", asFUNCTION((refCast<audio::IAudio, Audio>)), asCALL_CDECL_OBJLAST);
 	//scriptingEngine_->registerObjectMethod("Audio", "const IAudio@ opImplCast()", asFUNCTION((refCast<Audio, audio::IAudio>)), asCALL_CDECL_OBJLAST);
 
-	scriptingEngine_->registerObjectMethod("Image", "IImage@ opImplCast()", asFUNCTION((refCast<Image, graphics::IImage>)), asCALL_CDECL_OBJLAST);
+	scriptingEngine_->registerObjectMethod("Image", "IImage@ opImplCast()", asFUNCTION((refCast<Image, IImage>)), asCALL_CDECL_OBJLAST);
+	scriptingEngine_->registerObjectMethod("Image", "GraphicsIImage@ opImplCast()", asFUNCTION((refCast<Image, graphics::IImage>)), asCALL_CDECL_OBJLAST);
 
 	// Register function declarations
 	scriptingEngine_->registerFunctionDefinition("void WorkFunction()");
@@ -294,6 +390,8 @@ void BindingDelegate::bind()
 	scriptingEngine_->registerInterfaceMethod("IWindowEventListener", "bool processEvent(const WindowEvent& in)");
 	scriptingEngine_->registerInterface("IKeyboardEventListener");
 	scriptingEngine_->registerInterfaceMethod("IKeyboardEventListener", "bool processEvent(const KeyboardEvent& in)");
+	scriptingEngine_->registerInterface("ITextInputEventListener");
+	scriptingEngine_->registerInterfaceMethod("ITextInputEventListener", "bool processEvent(const TextInputEvent& in)");
 	scriptingEngine_->registerInterface("IMouseMotionEventListener");
 	scriptingEngine_->registerInterfaceMethod("IMouseMotionEventListener", "bool processEvent(const MouseMotionEvent& in)");
 	scriptingEngine_->registerInterface("IMouseButtonEventListener");
@@ -483,6 +581,12 @@ void BindingDelegate::bind()
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
+		"void addTextInputEventListener(ITextInputEventListener@)",
+		asMETHODPR(GameEngine, addTextInputEventListener, (void*), void),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
 		"void addMouseMotionEventListener(IMouseMotionEventListener@)",
 		asMETHODPR(GameEngine, addMouseMotionEventListener, (void*), void),
 		asCALL_THISCALL_ASGLOBAL,
@@ -509,6 +613,12 @@ void BindingDelegate::bind()
 	scriptingEngine_->registerGlobalFunction(
 		"void removeKeyboardEventListener(IKeyboardEventListener@)",
 		asMETHODPR(GameEngine, removeKeyboardEventListener, (void*), void),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
+		"void removeTextInputEventListener(ITextInputEventListener@)",
+		asMETHODPR(GameEngine, removeTextInputEventListener, (void*), void),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
@@ -567,86 +677,98 @@ void BindingDelegate::bind()
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
+		"shared_futureVoid postWorkToForegroundThreadPool(WorkFunction@)",
+		asMETHODPR(GameEngine, postWorkToForegroundThreadPool, (void*), std::shared_future<void>),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
 		"shared_futureVoid postWorkToBackgroundThreadPool(WorkFunction@)",
 		asMETHODPR(GameEngine, postWorkToBackgroundThreadPool, (void*), std::shared_future<void>),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
+    scriptingEngine_->registerGlobalFunction(
+            "shared_futureVoid postWorkToOpenGlWorker(WorkFunction@)",
+            asMETHODPR(GameEngine, postWorkToOpenGlWorker, (void*), std::shared_future<void>),
+            asCALL_THISCALL_ASGLOBAL,
+            gameEngine_
+    );
 	scriptingEngine_->registerGlobalFunction(
 		"Model@ importModel(const string& in, const string& in)",
-		asMETHODPR(GameEngine, importModel, (const std::string&, const std::string&), Model*),
+		asMETHOD(GameEngine, importModel),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
 		"shared_futureModel importModelAsync(const string& in, const string& in)",
-		asMETHODPR(GameEngine, importModelAsync, (const std::string&, const std::string&), std::shared_future<Model*>),
+		asMETHOD(GameEngine, importModelAsync),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
 		"Audio@ loadAudio(const string& in, const string& in)",
-		asMETHODPR(GameEngine, loadAudio, (const std::string&, const std::string&), Audio*),
+		asMETHOD(GameEngine, loadAudio),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
 		"shared_futureAudio loadAudioAsync(const string& in, const string& in)",
-		asMETHODPR(GameEngine, loadAudioAsync, (const std::string&, const std::string&), std::shared_future<Audio*>),
+		asMETHOD(GameEngine, loadAudioAsync),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
-		"Image@ createImage(const string& in, const vectorUInt8& in, const uint, const uint, const ImageFormat)",
-		asMETHODPR(GameEngine, createImage, (const std::string&, const std::vector<byte>&, const uint32, const uint32, const Image::Format), Image*),
+		"IImage@ createImage(const string& in, const vectorUInt8& in, const uint, const uint, const IImageFormat)",
+		asMETHOD(GameEngine, createImage),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
-		"Image@ loadImage(const string& in, const string& in)",
-		asMETHODPR(GameEngine, loadImage, (const std::string&, const std::string&), Image*),
+		"IImage@ loadImage(const string& in, const string& in)",
+		asMETHOD(GameEngine, loadImage),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
 		"shared_futureImage loadImageAsync(const string& in, const string& in)",
-		asMETHODPR(GameEngine, loadImageAsync, (const std::string&, const std::string&), std::shared_future<Image*>),
+		asMETHOD(GameEngine, loadImageAsync),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
 		"Model@ getModel(const string& in)",
-		asMETHODPR(GameEngine, getModel, (const std::string&) const, Model*),
+		asMETHOD(GameEngine, getModel),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
 		"Audio@ getAudio(const string& in)",
-		asMETHODPR(GameEngine, getAudio, (const std::string&) const, Audio*),
+		asMETHOD(GameEngine, getAudio),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
-		"Image@ getImage(const string& in)",
-		asMETHODPR(GameEngine, getImage, (const std::string&) const, Image*),
+		"IImage@ getImage(const string& in)",
+		asMETHOD(GameEngine, getImage),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
 		"void unloadModel(const string& in)",
-		asMETHODPR(GameEngine, unloadModel, (const std::string&), void),
+		asMETHOD(GameEngine, unloadModel),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
 		"void unloadAudio(const string& in)",
-		asMETHODPR(GameEngine, unloadAudio, (const std::string&), void),
+		asMETHOD(GameEngine, unloadAudio),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
 		"void unloadImage(const string& in)",
-		asMETHODPR(GameEngine, unloadImage, (const std::string&), void),
+		asMETHOD(GameEngine, unloadImage),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
@@ -778,6 +900,12 @@ void BindingDelegate::bind()
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
+		"CollisionShapeHandle createStaticSphereShape(const string& in, const float)",
+		asMETHODPR(GameEngine, createStaticSphereShape, (const std::string&, const float32), physics::CollisionShapeHandle),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
+	scriptingEngine_->registerGlobalFunction(
 			"CollisionShapeHandle getStaticShape(const string& in)",
 			asMETHODPR(GameEngine, getStaticShape, (const std::string&) const, physics::CollisionShapeHandle),
 			asCALL_THISCALL_ASGLOBAL,
@@ -874,6 +1002,18 @@ void BindingDelegate::bind()
 	scriptingEngine_->registerGlobalFunction(
 			"TerrainHandle getStaticTerrain(const string& in)",
 			asMETHODPR(GameEngine, getStaticTerrain, (const std::string&) const, graphics::TerrainHandle),
+			asCALL_THISCALL_ASGLOBAL,
+			gameEngine_
+		);
+	scriptingEngine_->registerGlobalFunction(
+			"SkyboxHandle createStaticSkybox(const string& in, const IImage& in, const IImage& in, const IImage& in, const IImage& in, const IImage& in, const IImage& in)",
+			asMETHODPR(GameEngine, createStaticSkybox, (const std::string&, const IImage&, const IImage&, const IImage&, const IImage&, const IImage&, const IImage&), graphics::SkyboxHandle),
+			asCALL_THISCALL_ASGLOBAL,
+			gameEngine_
+		);
+	scriptingEngine_->registerGlobalFunction(
+			"SkyboxHandle getStaticSkybox(const string& in)",
+			asMETHODPR(GameEngine, getStaticSkybox, (const std::string&) const, graphics::SkyboxHandle),
 			asCALL_THISCALL_ASGLOBAL,
 			gameEngine_
 		);

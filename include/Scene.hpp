@@ -93,20 +93,20 @@ public:
 
 	void tick(const float32 delta);
 	void render();
-	
+
 	void setSceneThingyInstance(void* object);
-	
+
 	void setDebugRendering(const bool enabled);
-	
+
 	void createResources(const ecs::Entity& entity);
 	void destroyResources(const ecs::Entity& entity);
 
 	pathfinding::CrowdHandle createCrowd(const pathfinding::NavigationMeshHandle& navigationMeshHandle, const pathfinding::CrowdConfig& crowdConfig);
 	void destroy(const pathfinding::CrowdHandle& crowdHandle);
-	
+
 	pathfinding::AgentHandle createAgent(const pathfinding::CrowdHandle& crowdHandle, const glm::vec3& position, const pathfinding::AgentParams& agentParams = pathfinding::AgentParams());
 	void destroy(const pathfinding::CrowdHandle& crowdHandle, const pathfinding::AgentHandle& agentHandle);
-	
+
 	void requestMoveTarget(
 		const pathfinding::CrowdHandle& crowdHandle,
 		const pathfinding::AgentHandle& agentHandle,
@@ -117,13 +117,13 @@ public:
 	{
 		pathfindingEngine_->resetMoveTarget(pathfindingSceneHandle_, crowdHandle, agentHandle);
 	}
-	
+
 	void requestMoveVelocity(
 		const pathfinding::CrowdHandle& crowdHandle,
 		const pathfinding::AgentHandle& agentHandle,
 		const glm::vec3& velocity
 	);
-	
+
 	physics::RigidBodyObjectHandle createRigidBodyObject(const physics::CollisionShapeHandle& collisionShapeHandle);
 	physics::RigidBodyObjectHandle createRigidBodyObject(
 		const physics::CollisionShapeHandle& collisionShapeHandle,
@@ -149,7 +149,7 @@ public:
 		const glm::quat& orientation
 	);
 	void destroy(const physics::GhostObjectHandle& ghostObjectHandle);
-	
+
 	graphics::RenderableHandle createRenderable(
 		const ModelHandle& modelHandle,
 		const glm::vec3& position,
@@ -164,12 +164,12 @@ public:
 		const glm::vec3& scale = glm::vec3(1.0f)
 	);
 	void destroy(const graphics::RenderableHandle& renderableHandle);
-	
+
 	audio::SoundSourceHandle play(const audio::SoundHandle& soundHandle, const glm::vec3& position);
-	
+
 	graphics::PointLightHandle createPointLight(const glm::vec3& position);
 	void destroy(const graphics::PointLightHandle& pointLightHandle);
-	
+
 	graphics::BonesHandle createBones(const uint32 maxNumberOfBones)
 	{
 		return graphicsEngine_->createBones(maxNumberOfBones);
@@ -217,17 +217,17 @@ public:
 	{
 		graphicsEngine_->detachBoneAttachment(renderSceneHandle_, renderableHandle);
 	}
-	
+
 	graphics::TerrainRenderableHandle createTerrainRenderable(const graphics::TerrainHandle terrainHandle)
 	{
 		return graphicsEngine_->createTerrainRenderable(renderSceneHandle_, terrainHandle);
 	}
-	
+
 	void destroy(const graphics::TerrainRenderableHandle& terrainRenderableHandle)
 	{
 		graphicsEngine_->destroy(renderSceneHandle_, terrainRenderableHandle);
 	}
-	
+
 	ITerrain* testCreateTerrain(HeightMap heightMap, SplatMap splatMap, DisplacementMap displacementMap, physics::CollisionShapeHandle collisionShapeHandle, pathfinding::PolygonMeshHandle polygonMeshHandle,
 			pathfinding::NavigationMeshHandle navigationMeshHandle)
 	{
@@ -239,7 +239,17 @@ public:
 
 		return terrainPtr;
 	}
-	
+
+	graphics::SkyboxRenderableHandle createSkyboxRenderable(const graphics::SkyboxHandle skyboxHandle)
+	{
+		return graphicsEngine_->createSkyboxRenderable(renderSceneHandle_, skyboxHandle);
+	}
+
+	void destroy(const graphics::SkyboxRenderableHandle& skyboxRenderableHandle)
+	{
+		graphicsEngine_->destroy(renderSceneHandle_, skyboxRenderableHandle);
+	}
+
 	pathfinding::IPathfindingEngine& pathfindingEngine() const
 	{
 		return *gameEngine_->pathfindingEngine();
@@ -356,13 +366,16 @@ public:
 		scriptPostDeserializeCallbacks_.push_back(scriptFunctionHandleWrapper);
 	}
 
-	std::string getName() const;
+	const std::string& name() const;
 
 	void setVisible(const bool visible);
 	bool visible() const;
-	
-	const SceneStatistics& getSceneStatistics() const;
-	
+
+    void setActive(const bool active);
+    bool active() const;
+
+    const SceneStatistics& getSceneStatistics() const;
+
 	ecs::Entity createEntity();
 	std::shared_future<ecs::Entity> createEntityAsync();
 	void destroy(ecs::Entity& entity);
@@ -370,7 +383,7 @@ public:
 	uint32 getNumEntities() const;
 
 	Raycast raycast(const ray::Ray& ray);
-	
+
 	std::vector<ecs::Entity> query(const glm::vec3& origin, const std::vector<glm::vec3>& points);
 	std::vector<ecs::Entity> query(const glm::vec3& origin, const float32 radius);
 
@@ -379,6 +392,7 @@ private:
 
 	std::string name_;
 	bool visible_ = true;
+	bool active_ = true;
 
 	GameEngine* gameEngine_;
 	audio::IAudioEngine* audioEngine_;
@@ -392,28 +406,28 @@ private:
 	logger::ILogger* logger_;
 	IThreadPool* threadPool_;
 	IOpenGlLoader* openGlLoader_;
-	
+
 	bool debugRendering_ = false;
-	
+
 	audio::AudioSceneHandle audioSceneHandle_;
 	graphics::RenderSceneHandle renderSceneHandle_;
 	physics::PhysicsSceneHandle physicsSceneHandle_;
 	pathfinding::PathfindingSceneHandle pathfindingSceneHandle_;
 	scripting::ExecutionContextHandle executionContextHandle_;
 	scripting::ModuleHandle moduleHandle_;
-	
+
 	scripting::ScriptObjectHandle scriptObjectHandle_;
-	
+
 	SceneStatistics sceneStatistics_;
-	
+
 	// ecs::Entity system
 	std::unique_ptr<ecs::EntityComponentSystem> entityComponentSystem_;
 	std::unique_ptr<EntityComponentSystemEventListener> entityComponentSystemEventListener_;
 	std::vector<std::unique_ptr<std::promise<ecs::Entity>>> asyncCreateEntities_;
 	std::vector<ecs::Entity> asyncDestroyEntities_;
-	
+
 	std::vector<std::unique_ptr<ITerrain>> terrain_;
-	
+
 	std::vector<std::string> scriptData_;
 	std::string initializationFunctionName_;
 
@@ -446,7 +460,17 @@ private:
 
 	void initialize();
 	void destroy();
-	
+
+    void tickPhysics(const float32 delta);
+    void tickAudio(const float32 delta);
+    void tickPathfinding(const float32 delta);
+    void tickScriptObjects(const float32 delta);
+    void tickAnimations(const float32 delta);
+
+    void handleAsyncEntityCreation();
+    void handleAsyncEntityDeletion();
+    void handleParentComponentChanges();
+
 	void applyChangesToEntities();
 
 	void addMotionChangeListener(const ecs::Entity& entity);
@@ -571,6 +595,7 @@ private:
 
 		saveMappings(ar, version);
 
+		ar & name_ & visible_ & active_;
 		ar & *entityComponentSystem_;
 
 		LOG_DEBUG(logger_, "Calling post serialize callbacks");
@@ -652,6 +677,16 @@ private:
 			{
 				std::cout << "KV " << kv.first.get() << " " << kv.second << std::endl;
 			}
+
+		ar & name_;
+
+		bool visible = true;
+        ar & visible;
+        setVisible(visible);
+
+        bool active = true;
+        ar & active;
+        setActive(active);
 
 		ar & *entityComponentSystem_;
 

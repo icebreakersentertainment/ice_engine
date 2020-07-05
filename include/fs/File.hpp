@@ -14,20 +14,23 @@ class File : public IFile
 {
 public:
 	File(const std::string& file, int32 flags);
-	virtual ~File();
+	~File() override;
 	
-	virtual bool isOpen() const override;
-	virtual uint64 size() const override;
-	virtual bool eof() const override;
-	virtual void close() override;
+	bool isOpen() const override;
+	uint64 size() const override;
+	bool eof() const override;
+
+    std::string path() const override;
+
+    void close() override;
 	
-	virtual void write(const char* data) override;
-	virtual void write(const std::string& file) override;
-	virtual std::string read(uint32 length = 256) override;
-	virtual std::string readAll() override;
+	void write(const char* data) override;
+	void write(const std::string& file) override;
+	std::string read(uint32 length = 256) override;
+	std::string readAll() override;
 	
-	virtual std::istream& getInputStream() override;
-	virtual std::ostream& getOutputStream() override;
+	std::istream& getInputStream() override;
+	std::ostream& getOutputStream() override;
 
 private:
 	std::string file_;

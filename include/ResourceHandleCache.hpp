@@ -16,6 +16,7 @@
 #include "graphics/MeshHandle.hpp"
 #include "graphics/TextureHandle.hpp"
 #include "graphics/TerrainHandle.hpp"
+#include "graphics/SkyboxHandle.hpp"
 
 #include "physics/CollisionShapeHandle.hpp"
 
@@ -310,6 +311,46 @@ public:
 			return graphics::TerrainHandle();
 		}
 
+	void addSkyboxHandle(const std::string& name, const graphics::SkyboxHandle& handle)
+	{
+		std::unique_lock<boost::shared_mutex> lock(skyboxHandleMutex_);
+
+		if (skyboxHandleMap_.find(name) != skyboxHandleMap_.end())
+		{
+			throw std::runtime_error("Resource with name already exists.");
+		}
+
+		skyboxHandleMap_[name] = handle;
+	}
+
+	void removeSkyboxHandle(const std::string& name)
+	{
+		std::unique_lock<boost::shared_mutex> lock(skyboxHandleMutex_);
+
+		auto it = skyboxHandleMap_.find(name);
+		if (it != skyboxHandleMap_.end())
+		{
+			skyboxHandleMap_.erase(it);
+		}
+	}
+
+	void removeAllSkyboxHandles()
+	{
+		std::unique_lock<boost::shared_mutex> lock(skyboxHandleMutex_);
+
+		skyboxHandleMap_.clear();
+	}
+
+	graphics::SkyboxHandle getSkyboxHandle(const std::string& name) const
+	{
+		boost::shared_lock_guard<boost::shared_mutex> lock(skyboxHandleMutex_);
+
+		auto it = skyboxHandleMap_.find(name);
+		if (it != skyboxHandleMap_.end()) return it->second;
+
+		return graphics::SkyboxHandle();
+	}
+
 	void addPolygonMeshHandle(const std::string& name, const pathfinding::PolygonMeshHandle& handle)
 	{
 		std::unique_lock<boost::shared_mutex> lock(polygonMeshHandleMutex_);
@@ -439,6 +480,13 @@ public:
 			return terrainHandleMap_;
 		}
 
+	std::unordered_map<std::string, graphics::SkyboxHandle> skyboxHandleMap()
+		{
+		boost::shared_lock_guard<boost::shared_mutex> lock(skyboxHandleMutex_);
+
+			return skyboxHandleMap_;
+		}
+
 	std::unordered_map<std::string, pathfinding::PolygonMeshHandle> polygonMeshHandleMap()
 		{
 		boost::shared_lock_guard<boost::shared_mutex> lock(polygonMeshHandleMutex_);
@@ -461,6 +509,7 @@ private:
 	mutable boost::shared_mutex meshHandleMutex_;
 	mutable boost::shared_mutex textureHandleMutex_;
 	mutable boost::shared_mutex terrainHandleMutex_;
+	mutable boost::shared_mutex skyboxHandleMutex_;
 	mutable boost::shared_mutex polygonMeshHandleMutex_;
 	mutable boost::shared_mutex navigationMeshHandleMutex_;
 
@@ -471,6 +520,7 @@ private:
 	std::unordered_map<std::string, graphics::MeshHandle> meshHandleMap_;
 	std::unordered_map<std::string, graphics::TextureHandle> textureHandleMap_;
 	std::unordered_map<std::string, graphics::TerrainHandle> terrainHandleMap_;
+	std::unordered_map<std::string, graphics::SkyboxHandle> skyboxHandleMap_;
 	std::unordered_map<std::string, pathfinding::PolygonMeshHandle> polygonMeshHandleMap_;
 	std::unordered_map<std::string, pathfinding::NavigationMeshHandle> navigationMeshHandleMap_;
 };

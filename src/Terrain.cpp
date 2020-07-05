@@ -20,30 +20,30 @@
 namespace ice_engine
 {
 
-void flipVertical(Image& image)
-{
-	std::vector<byte> data;
-	data.resize(image.width()*image.height()*4);
-
-	int j=data.size()-image.width()*4;
-	for (int i=0; i < data.size(); i+=image.width()*4)
-	{
-		for (int k=0; k < image.width()*4; ++k)
-		{
-			data[i+k] = image.data()[j+k];
-		}
-
-		j-=image.width()*4;
-	}
-
-	image.data_ = std::move(data);
-}
+//void flipVertical(Image& image)
+//{
+//	std::vector<byte> data;
+//	data.resize(image.width()*image.height()*4);
+//
+//	int j=data.size()-image.width()*4;
+//	for (int i=0; i < data.size(); i+=image.width()*4)
+//	{
+//		for (int k=0; k < image.width()*4; ++k)
+//		{
+//			data[i+k] = image.data()[j+k];
+//		}
+//
+//		j-=image.width()*4;
+//	}
+//
+//	image.data_ = std::move(data);
+//}
 
 // Source: http://www.flashbang.se/archives/155
 void saveImageToFile(fs::IFile* file, const Image& image)
 {
 	std::vector<byte> data;
-	if (image.format() == Image::Format::FORMAT_RGBA)
+	if (image.format() == IImage::Format::FORMAT_RGBA)
 	{
 		// Convert from RGBA to RGB
 		data.resize(image.data().size()/4 * 3);
@@ -90,7 +90,7 @@ void saveImageToFile(fs::IFile* file, const Image& image)
 void saveAlphaImageToFile(fs::IFile* file, const Image& image)
 {
 	std::vector<byte> data;
-	if (image.format() == Image::Format::FORMAT_RGBA)
+	if (image.format() == IImage::Format::FORMAT_RGBA)
 	{
 		// Convert from RGBA to RGB
 		data.resize(image.data().size()/4 * 3);
@@ -178,7 +178,7 @@ Terrain::Terrain(
 	//scene_.assign(groundEntity_, gc);
 	//scene_->assign(terrainEntity_, pc);
 //
-//	int32 dataSize = (heightMap.image()->format() == Image::Format::FORMAT_RGBA ? 4 : 3);
+//	int32 dataSize = (heightMap.image()->format() == IImage::Format::FORMAT_RGBA ? 4 : 3);
 //
 //	std::vector<char> heightMapData;
 //	heightMapData.resize(heightMap.image()->width() * heightMap.image()->height());
@@ -200,7 +200,7 @@ Terrain::Terrain(
 	//auto rigidBodyObjectHandle = physicsEngine_->createRigidBodyObject(physicsSceneHandle_, collisionShapeHandle, glm::vec3(-0.5f, -7.5f, -0.5f), glm::quat(), 0.0f, 1.0f, 1.0f);
 
 	//flipVertical(*image);
-	//if (image->format == Image::Format::FORMAT_RGB)
+	//if (image->format == IImage::Format::FORMAT_RGB)
 	//{
 	//	image = generateFormattedHeightmap(*image);
 	//}

@@ -14,6 +14,7 @@
 
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
+#include <graphics/exceptions/GraphicsException.hpp>
 
 #include "Platform.hpp"
 #include "Types.hpp"
@@ -26,6 +27,7 @@
 //#include "Scene.hpp"
 #include "IWindowEventListener.hpp"
 #include "IKeyboardEventListener.hpp"
+#include "ITextInputEventListener.hpp"
 #include "IMouseMotionEventListener.hpp"
 #include "IMouseButtonEventListener.hpp"
 #include "IMouseWheelEventListener.hpp"
@@ -151,11 +153,13 @@ public:
 
 	void setCallback(graphics::gui::IButton* button, void* object);
 	void setCallback(graphics::gui::IMenuItem* menuItem, void* object);
+	void setCallback(graphics::gui::IComboBox* comboBox, void* object);
+	void setCallback(graphics::gui::ITreeView* treeView, void* object);
 
 	Audio* loadAudio(const std::string& name, const std::string& filename);
 	std::shared_future<Audio*> loadAudioAsync(const std::string& name, const std::string& filename);
 
-	Image* createImage(const std::string& name, const std::vector<byte>& data, const uint32 width, const uint32 height, const Image::Format format)
+	IImage* createImage(const std::string& name, const std::vector<byte>& data, const uint32 width, const uint32 height, const IImage::Format format)
 	{
 		LOG_DEBUG(logger_, "Creating image: %s", name);
 
@@ -167,7 +171,7 @@ public:
 	}
 
 //	template <typename ... Args>
-//	Image* createImage(const std::string& name, const Args ... args)
+//	IImage* createImage(const std::string& name, const Args ... args)
 //	{
 //		LOG_DEBUG(logger_, "Creating image: " + name);
 //
@@ -178,8 +182,8 @@ public:
 //			return resourceCache_.getImage(name);
 //	}
 
-	Image* loadImage(const std::string& name, const std::string& filename);
-	std::shared_future<Image*> loadImageAsync(const std::string& name, const std::string& filename);
+	IImage* loadImage(const std::string& name, const std::string& filename);
+	std::shared_future<IImage*> loadImageAsync(const std::string& name, const std::string& filename);
 	Model* loadModel(const std::string& name, const std::string& filename);
 	std::shared_future<Model*> loadModelAsync(const std::string& name, const std::string& filename);
 	Model* importModel(const std::string& name, const std::string& filename);
@@ -190,7 +194,7 @@ public:
 	void unloadModel(const std::string& name);
 
 	Audio* getAudio(const std::string& name) const;
-	Image* getImage(const std::string& name) const;
+	IImage* getImage(const std::string& name) const;
 	Model* getModel(const std::string& name) const;
 
 	ModelHandle loadStaticModel(const Model* model);
@@ -282,22 +286,26 @@ public:
 
 	void addWindowEventListener(IWindowEventListener* windowEventListener);
 	void addKeyboardEventListener(IKeyboardEventListener* keyboardEventListener);
+	void addTextInputEventListener(ITextInputEventListener* textInputEventListener);
 	void addMouseMotionEventListener(IMouseMotionEventListener* mouseMotionEventListener);
 	void addMouseButtonEventListener(IMouseButtonEventListener* mouseButtonEventListener);
 	void addMouseWheelEventListener(IMouseWheelEventListener* mouseWheelEventListener);
 	void removeWindowEventListener(IWindowEventListener* windowEventListener);
 	void removeKeyboardEventListener(IKeyboardEventListener* keyboardEventListener);
+    void removeTextInputEventListener(ITextInputEventListener* textInputEventListener);
 	void removeMouseMotionEventListener(IMouseMotionEventListener* mouseMotionEventListener);
 	void removeMouseButtonEventListener(IMouseButtonEventListener* mouseButtonEventListener);
 	void removeMouseWheelEventListener(IMouseWheelEventListener* mouseWheelEventListener);
 
 	void addWindowEventListener(void* windowEventListener);
 	void addKeyboardEventListener(void* keyboardEventListener);
+	void addTextInputEventListener(void* textInputEventListener);
 	void addMouseMotionEventListener(void* mouseMotionEventListener);
 	void addMouseButtonEventListener(void* mouseButtonEventListener);
 	void addMouseWheelEventListener(void* mouseWheelEventListener);
 	void removeWindowEventListener(void* windowEventListener);
 	void removeKeyboardEventListener(void* keyboardEventListener);
+	void removeTextInputEventListener(void* textInputEventListener);
 	void removeMouseMotionEventListener(void* mouseMotionEventListener);
 	void removeMouseButtonEventListener(void* mouseButtonEventListener);
 	void removeMouseWheelEventListener(void* mouseWheelEventListener);
@@ -317,6 +325,8 @@ public:
 	void removeMessageEventListener(void* messageEventListener);
 
 	std::shared_future<void> postWorkToBackgroundThreadPool(void* object);
+	std::shared_future<void> postWorkToForegroundThreadPool(void* object);
+	std::shared_future<void> postWorkToOpenGlWorker(void* object);
 
 	// Implements the graphics::IEventListener interface
 	virtual bool processEvent(const graphics::Event& event) override;
@@ -339,6 +349,16 @@ public:
 	physics::CollisionShapeHandle createStaticBoxShape(const std::string& name, const Args ... args)
 	{
 		auto handle = physicsEngine_->createStaticBoxShape(args ...);
+
+		resourceHandleCache_.addCollisionShapeHandle(name, handle);
+
+		return handle;
+	}
+
+	template <typename ... Args>
+	physics::CollisionShapeHandle createStaticSphereShape(const std::string& name, const Args ... args)
+	{
+		auto handle = physicsEngine_->createStaticSphereShape(args ...);
 
 		resourceHandleCache_.addCollisionShapeHandle(name, handle);
 
@@ -661,6 +681,38 @@ public:
 			return resourceHandleCache_.getTerrainHandle(name);
 		}
 
+		graphics::SkyboxHandle createStaticSkybox(const std::string& name, const IImage& back, const IImage& down, const IImage& front, const IImage& left, const IImage& right, const IImage& up)
+		{
+            auto handle = graphicsEngine_->createStaticSkybox(back, down, front, left, right, up);
+
+			resourceHandleCache_.addSkyboxHandle(name, handle);
+
+			return handle;
+		}
+
+		void destroyStaticSkybox(const std::string& name)
+		{
+			auto handle = resourceHandleCache_.getSkyboxHandle(name);
+			if (handle)
+			{
+				resourceHandleCache_.removeSkyboxHandle(name);
+
+				graphicsEngine_->destroy(handle);
+			}
+		}
+
+		void destroyAllStaticSkyboxes()
+		{
+			resourceHandleCache_.removeAllSkyboxHandles();
+
+			//graphicsEngine_->destroyAllStaticSkyboxes();
+		}
+
+		graphics::SkyboxHandle getStaticSkybox(const std::string& name) const
+		{
+			return resourceHandleCache_.getSkyboxHandle(name);
+		}
+
 	template <typename ... Args>
 	pathfinding::PolygonMeshHandle createPolygonMesh(const std::string& name, const Args ... args)
 	{
@@ -769,11 +821,13 @@ private:
 
 	std::vector<IWindowEventListener*> windowEventListeners_;
 	std::vector<IKeyboardEventListener*> keyboardEventListeners_;
+	std::vector<ITextInputEventListener*> textInputEventListeners_;
 	std::vector<IMouseMotionEventListener*> mouseMotionEventListeners_;
 	std::vector<IMouseButtonEventListener*> mouseButtonEventListeners_;
 	std::vector<IMouseWheelEventListener*> mouseWheelEventListeners_;
 	std::vector<std::pair<scripting::ScriptObjectHandle, scripting::ScriptObjectFunctionHandle>> scriptWindowEventListeners_;
 	std::vector<std::pair<scripting::ScriptObjectHandle, scripting::ScriptObjectFunctionHandle>> scriptKeyboardEventListeners_;
+	std::vector<std::pair<scripting::ScriptObjectHandle, scripting::ScriptObjectFunctionHandle>> scriptTextInputEventListeners_;
 	std::vector<std::pair<scripting::ScriptObjectHandle, scripting::ScriptObjectFunctionHandle>> scriptMouseMotionEventListeners_;
 	std::vector<std::pair<scripting::ScriptObjectHandle, scripting::ScriptObjectFunctionHandle>> scriptMouseButtonEventListeners_;
 	std::vector<std::pair<scripting::ScriptObjectHandle, scripting::ScriptObjectFunctionHandle>> scriptMouseWheelEventListeners_;

@@ -41,6 +41,13 @@ void ScriptingEngineBindingDelegate::bind()
 	scriptingEngine_->registerInterface("SceneThingy");
 	scriptingEngine_->registerInterfaceMethod("SceneThingy", "void preTick(const float)");
 	scriptingEngine_->registerInterfaceMethod("SceneThingy", "void postTick(const float)");
+
+    scriptingEngine_->registerGlobalFunction(
+            "void testPrintCallstack()",
+            asMETHOD(scripting::IScriptingEngine, testPrintCallstack),
+            asCALL_THISCALL_ASGLOBAL,
+            scriptingEngine_
+    );
 }
 	
 };

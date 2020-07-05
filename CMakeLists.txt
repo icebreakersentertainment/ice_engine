@@ -65,7 +65,7 @@ find_package(OpenGL REQUIRED)
 
 if(UNIX AND NOT APPLE)
   find_package(X11 REQUIRED)
-elseif(APPLE)  
+elseif(APPLE)
   find_library(QUARTZCORE_LIBRARY QuartzCore REQUIRED)
   find_library(METAL_LIBRARY Metal REQUIRED)
   find_library(APPKIT_LIBRARY AppKit REQUIRED)
@@ -101,6 +101,7 @@ else()
 endif()
 
 set(ICEENGINE_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include" CACHE STRING "Where the Ice Engine include directory can be found")
+set(ICEENGINE_BASE_DIR "${CMAKE_CURRENT_SOURCE_DIR}" CACHE STRING "")
 
 # Set our runtime library locations
 set(CMAKE_BUILD_WITH_INSTALL_RPATH TRUE)

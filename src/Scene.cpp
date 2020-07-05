@@ -2,6 +2,10 @@
 #include <fstream>
 #include <sstream>
 
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
+
 #include "exceptions/Throw.hpp"
 #include <boost/archive/text_oarchive.hpp>
 
@@ -117,7 +121,9 @@ void Scene::initialize()
 	pathfindingSceneHandle_ = pathfindingEngine_->createPathfindingScene();
 	executionContextHandle_ = scriptingEngine_->createExecutionContext();
 
-	moduleHandle_ = scriptingEngine_->createModule(name_, scriptData_);
+	// We don't want our module names to collide even if the scene name is the same
+	const std::string moduleName = name_ + "_" + boost::uuids::to_string( boost::uuids::random_generator()() );
+	moduleHandle_ = scriptingEngine_->createModule(moduleName, scriptData_);
 
 	entityComponentSystemEventListener_ = std::make_unique<EntityComponentSystemEventListener>(*this, *entityComponentSystem_);
 
@@ -333,6 +339,15 @@ void Scene::applyChangesToEntities()
 
 void Scene::tick(const float32 delta)
 {
+    if (!active())
+    {
+        handleAsyncEntityCreation();
+        handleAsyncEntityDeletion();
+        handleParentComponentChanges();
+        applyChangesToEntities();
+        return;
+    }
+
 	scripting::ParameterList params;
 	params.add(delta);
 
@@ -341,103 +356,146 @@ void Scene::tick(const float32 delta)
 		scriptingEngine_->execute(scriptObjectHandle_, std::string("void preTick(const float)"), params, executionContextHandle_);
 	}
 
-	audioEngine_->render(audioSceneHandle_);
-
-	auto beginPhysicsTime = std::chrono::high_resolution_clock::now();
-
-	physicsEngine_->tick(physicsSceneHandle_, delta);
-
-	auto endPhysicsTime = std::chrono::high_resolution_clock::now();
-
-	sceneStatistics_.physicsTime = std::chrono::duration<float32>(endPhysicsTime - beginPhysicsTime).count();
-
-	pathfindingEngine_->tick(pathfindingSceneHandle_, delta);
-
-		for (auto e : entityComponentSystem_->entitiesWithComponents<ecs::ScriptObjectComponent>())
-		{
-			auto scriptObjectComponent = e.component<ecs::ScriptObjectComponent>();
-
-			if (scriptObjectComponent && scriptObjectComponent->scriptObjectHandle)
-			{
-				scriptingEngine_->execute(scriptObjectComponent->scriptObjectHandle, std::string("void tick(const float)"), params, executionContextHandle_);
-			}
-
-		}
+	tickAudio(delta);
+	tickPhysics(delta);
+	tickPathfinding(delta);
+	tickScriptObjects(delta);
 
 	if (scriptObjectHandle_)
 	{
 		scriptingEngine_->execute(scriptObjectHandle_, std::string("void postTick(const float)"), params, executionContextHandle_);
 	}
 
-	for (auto& promise : asyncCreateEntities_)
-	{
-		auto entity = createEntity();
-		promise->set_value(entity);
-	}
+	handleAsyncEntityCreation();
+	handleAsyncEntityDeletion();
 
-	asyncCreateEntities_.clear();
+	tickAnimations(delta);
 
-	for (auto& entity : asyncDestroyEntities_)
-	{
-		destroy(entity);
-	}
-
-	asyncDestroyEntities_.clear();
-
-	for (auto e : entityComponentSystem_->entitiesWithComponents<ecs::GraphicsComponent, ecs::AnimationComponent>())
-	{
-		auto graphicsComponent = e.component<ecs::GraphicsComponent>();
-		auto skeletonComponent = e.component<ecs::SkeletonComponent>();
-		auto animationComponent = e.component<ecs::AnimationComponent>();
-
-		if (graphicsComponent->renderableHandle && animationComponent->animationHandle)
-		{
-			auto& transformations = animationComponent->transformations;
-			gameEngine_->foregroundThreadPool()->postWork([=, &transformations = animationComponent->transformations]() {
-				gameEngine_->animateSkeleton(transformations, animationComponent->runningTime, animationComponent->startFrame, animationComponent->endFrame, graphicsComponent->meshHandle, animationComponent->animationHandle, skeletonComponent->skeletonHandle);
-				gameEngine_->foregroundGraphicsThreadPool()->postWork([=]() {
-					graphicsEngine_->update(renderSceneHandle_, graphicsComponent->renderableHandle, animationComponent->bonesHandle, animationComponent->transformations);
-				});
-			});
-
-			animationComponent->runningTime += delta;
-		}
-	}
-
-	for (auto e : entityComponentSystem_->entitiesWithComponents<ecs::ParentComponent>())
-	{
-		auto parentComponent = e.component<ecs::ParentComponent>();
-
-		auto parentPositionComponent = parentComponent->entity.component<ecs::PositionComponent>();
-		auto parentOrientationComponent = parentComponent->entity.component<ecs::OrientationComponent>();
-
-		auto positionComponent = e.component<ecs::PositionComponent>();
-		auto orientationComponent = e.component<ecs::OrientationComponent>();
-		auto graphicsComponent = e.component<ecs::GraphicsComponent>();
-
-		if (graphicsComponent->renderableHandle)
-		{
-			positionComponent->position = parentPositionComponent->position;
-			orientationComponent->orientation = parentOrientationComponent->orientation;
-
-			if (e.hasComponent<ecs::DirtyComponent>())
-			{
-				auto dirtyComponent = e.component<ecs::DirtyComponent>();
-				dirtyComponent->dirty |= ecs::DirtyFlags::DIRTY_SOURCE_SCRIPT | ecs::DirtyFlags::DIRTY_POSITION | ecs::DirtyFlags::DIRTY_ORIENTATION;
-			}
-			else
-			{
-				e.assign<ecs::DirtyComponent>(ecs::DirtyFlags::DIRTY_SOURCE_SCRIPT | ecs::DirtyFlags::DIRTY_POSITION | ecs::DirtyFlags::DIRTY_ORIENTATION);
-			}
-		}
-	}
+	handleParentComponentChanges();
 
 	applyChangesToEntities();
 }
 
+void Scene::tickPhysics(const float32 delta)
+{
+    auto beginPhysicsTime = std::chrono::high_resolution_clock::now();
+
+    physicsEngine_->tick(physicsSceneHandle_, delta);
+
+    auto endPhysicsTime = std::chrono::high_resolution_clock::now();
+
+    sceneStatistics_.physicsTime = std::chrono::duration<float32>(endPhysicsTime - beginPhysicsTime).count();
+}
+
+void Scene::tickAudio(const float32 delta)
+{
+    audioEngine_->render(audioSceneHandle_);
+}
+
+void Scene::tickPathfinding(const float32 delta)
+{
+    pathfindingEngine_->tick(pathfindingSceneHandle_, delta);
+}
+
+void Scene::tickScriptObjects(const float32 delta)
+{
+    scripting::ParameterList params;
+    params.add(delta);
+
+    for (auto e : entityComponentSystem_->entitiesWithComponents<ecs::ScriptObjectComponent>())
+    {
+        auto scriptObjectComponent = e.component<ecs::ScriptObjectComponent>();
+
+        if (scriptObjectComponent && scriptObjectComponent->scriptObjectHandle)
+        {
+            scriptingEngine_->execute(scriptObjectComponent->scriptObjectHandle, std::string("void tick(const float)"), params, executionContextHandle_);
+        }
+
+    }
+}
+
+void Scene::tickAnimations(const float32 delta)
+{
+    for (auto e : entityComponentSystem_->entitiesWithComponents<ecs::GraphicsComponent, ecs::AnimationComponent>())
+    {
+        auto graphicsComponent = e.component<ecs::GraphicsComponent>();
+        auto skeletonComponent = e.component<ecs::SkeletonComponent>();
+        auto animationComponent = e.component<ecs::AnimationComponent>();
+
+        if (graphicsComponent->renderableHandle && animationComponent->animationHandle)
+        {
+            auto& transformations = animationComponent->transformations;
+            gameEngine_->foregroundThreadPool()->postWork([=, &transformations = animationComponent->transformations]() {
+                gameEngine_->animateSkeleton(transformations, animationComponent->runningTime, animationComponent->startFrame, animationComponent->endFrame, graphicsComponent->meshHandle, animationComponent->animationHandle, skeletonComponent->skeletonHandle);
+                gameEngine_->foregroundGraphicsThreadPool()->postWork([=]() {
+                    graphicsEngine_->update(renderSceneHandle_, graphicsComponent->renderableHandle, animationComponent->bonesHandle, animationComponent->transformations);
+                });
+            });
+
+            animationComponent->runningTime += delta;
+        }
+    }
+}
+
+void Scene::handleAsyncEntityCreation()
+{
+    for (auto& promise : asyncCreateEntities_)
+    {
+        auto entity = createEntity();
+        promise->set_value(entity);
+    }
+
+    asyncCreateEntities_.clear();
+}
+
+void Scene::handleAsyncEntityDeletion()
+{
+    for (auto& entity : asyncDestroyEntities_)
+    {
+        destroy(entity);
+    }
+
+    asyncDestroyEntities_.clear();
+}
+
+void Scene::handleParentComponentChanges()
+{
+    for (auto e : entityComponentSystem_->entitiesWithComponents<ecs::ParentComponent>())
+    {
+        auto parentComponent = e.component<ecs::ParentComponent>();
+
+        auto parentPositionComponent = parentComponent->entity.component<ecs::PositionComponent>();
+        auto parentOrientationComponent = parentComponent->entity.component<ecs::OrientationComponent>();
+
+        auto positionComponent = e.component<ecs::PositionComponent>();
+        auto orientationComponent = e.component<ecs::OrientationComponent>();
+        auto graphicsComponent = e.component<ecs::GraphicsComponent>();
+
+        if (graphicsComponent->renderableHandle)
+        {
+            positionComponent->position = parentPositionComponent->position;
+            orientationComponent->orientation = parentOrientationComponent->orientation;
+
+            if (e.hasComponent<ecs::DirtyComponent>())
+            {
+                auto dirtyComponent = e.component<ecs::DirtyComponent>();
+                dirtyComponent->dirty |= ecs::DirtyFlags::DIRTY_SOURCE_SCRIPT | ecs::DirtyFlags::DIRTY_POSITION | ecs::DirtyFlags::DIRTY_ORIENTATION;
+            }
+            else
+            {
+                e.assign<ecs::DirtyComponent>(ecs::DirtyFlags::DIRTY_SOURCE_SCRIPT | ecs::DirtyFlags::DIRTY_POSITION | ecs::DirtyFlags::DIRTY_ORIENTATION);
+            }
+        }
+    }
+}
+
 void Scene::render()
 {
-	if (visible()) graphicsEngine_->render(renderSceneHandle_);
+	if (visible())
+    {
+	    graphicsEngine_->render(renderSceneHandle_);
+	    physicsEngine_->renderDebug(physicsSceneHandle_);
+    }
 }
 
 void Scene::setSceneThingyInstance(void* object)
@@ -634,9 +692,7 @@ void Scene::addUserData(const ecs::Entity& entity, const ecs::GhostObjectCompone
 
 void Scene::addUserData(const ecs::Entity& entity, const ecs::PathfindingAgentComponent& pathfindingAgentComponent)
 {
-	pathfinding::UserData userData;
-	userData.value(entity);
-	pathfindingEngine_->setUserData(pathfindingSceneHandle_, pathfindingAgentComponent.crowdHandle, pathfindingAgentComponent.agentHandle, userData);
+	pathfindingEngine_->setUserData(pathfindingSceneHandle_, pathfindingAgentComponent.crowdHandle, pathfindingAgentComponent.agentHandle, boost::any(entity));
 }
 
 void Scene::removeUserData(const ecs::Entity& entity, const ecs::RigidBodyObjectComponent& rigidBodyObjectComponent)
@@ -651,7 +707,7 @@ void Scene::removeUserData(const ecs::Entity& entity, const ecs::GhostObjectComp
 
 void Scene::removeUserData(const ecs::Entity& entity, const ecs::PathfindingAgentComponent& pathfindingAgentComponent)
 {
-	pathfindingEngine_->setUserData(pathfindingSceneHandle_, pathfindingAgentComponent.crowdHandle, pathfindingAgentComponent.agentHandle, pathfinding::UserData());
+	pathfindingEngine_->setUserData(pathfindingSceneHandle_, pathfindingAgentComponent.crowdHandle, pathfindingAgentComponent.agentHandle, boost::any());
 }
 
 graphics::RenderableHandle Scene::createRenderable(
@@ -697,7 +753,7 @@ void Scene::destroy(const graphics::PointLightHandle& pointLightHandle)
 
 void Scene::serialize(const std::string& filename)
 {
-	LOG_INFO(logger_, "Serializing scene %s to file %s", getName(), filename);
+	LOG_INFO(logger_, "Serializing scene %s to file %s", name(), filename);
 
 	auto file = fileSystem_->open(filename, fs::FileFlags::WRITE);
 
@@ -708,7 +764,7 @@ void Scene::serialize(const std::string& filename)
 
 void Scene::deserialize(const std::string& filename)
 {
-	LOG_INFO(logger_, "Deserializing scene %s from file %s", getName(), filename);
+	LOG_INFO(logger_, "Deserializing scene %s from file %s", name(), filename);
 
 	auto file = fileSystem_->open(filename, fs::FileFlags::READ);
 
@@ -717,7 +773,7 @@ void Scene::deserialize(const std::string& filename)
 	ar & *this;
 }
 
-std::string Scene::getName() const
+const std::string& Scene::name() const
 {
 	return name_;
 }
@@ -1178,6 +1234,14 @@ void Scene::normalizeHandles(
 	ice_engine::normalizeChildrenComponents(*entityComponentSystem_, logger_);
 	ice_engine::normalizeHandles(*entityComponentSystem_, scriptingEngine_, moduleHandle_, executionContextHandle_, scriptObjectHandleMap, logger_);
 	ice_engine::normalizeHandles(*entityComponentSystem_, normalizedCrowdHandleMap, logger_);
+}
+
+bool Scene::active() const {
+    return active_;
+}
+
+void Scene::setActive(const bool active) {
+    active_ = active;
 }
 
 /*

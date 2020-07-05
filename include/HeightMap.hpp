@@ -20,21 +20,33 @@ public:
 
 	HeightMap() = default;
 
-	HeightMap(const Image& image)
+	HeightMap(const std::vector<byte>& data, const uint32 width, const uint32 height)
+	{
+		image_ = generateFormattedHeightmap(data, width, height);
+	}
+
+	HeightMap(const IImage& image)
 	{
 		image_ = generateFormattedHeightmap(image);
 	}
 
 	HeightMap(const HeightMap& other)
 	{
-		image_ = std::make_unique<Image>(*other.image_);
+        if (other.image_)
+        {
+            image_ = std::make_unique<Image>(other.image_->data(), other.image_->width(), other.image_->height(), parseFormat(other.image_->format()));
+        }
 	}
 
-	virtual ~HeightMap() = default;
+	~HeightMap() override = default;
 
 	HeightMap& operator=(const HeightMap& other)
 	{
-		image_ = std::make_unique<Image>(*other.image_);
+	    if (other.image_)
+        {
+            image_ = std::make_unique<Image>(other.image_->data(), other.image_->width(), other.image_->height(), parseFormat(other.image_->format()));
+        }
+
 		return *this;
 	}
 
@@ -48,7 +60,7 @@ public:
 		return image_->data()[z*image_->width()*4 + x*4 + 3];
 	}
 
-	Image* image()
+	IImage* image()
 	{
 		return image_.get();
 	}
@@ -59,7 +71,23 @@ public:
 	}
 
 private:
-	std::unique_ptr<Image> image_;
+	std::unique_ptr<IImage> image_;
+
+    IImage::Format parseFormat(const int32 format) const
+    {
+        switch (format)
+        {
+            case IImage::Format::FORMAT_RGB:
+                return IImage::Format::FORMAT_RGB;
+
+            case IImage::Format::FORMAT_RGBA:
+                return IImage::Format::FORMAT_RGBA;
+
+            case IImage::Format::FORMAT_UNKNOWN:
+            default:
+                return IImage::Format::FORMAT_UNKNOWN;
+        }
+    }
 
 	// Source:
 	// https://stackoverflow.com/questions/2368728/can-normal-maps-be-generated-from-a-texture
@@ -121,43 +149,45 @@ private:
 	    }
 	}
 
-	std::unique_ptr<Image> generateFormattedHeightmap(const Image& image)
+	std::unique_ptr<Image> generateFormattedHeightmap(const IImage& image)
+    {
+        return generateFormattedHeightmap(image.data(), image.width(), image.height(), image.format());
+    }
+
+	std::unique_ptr<Image> generateFormattedHeightmap(const std::vector<byte>& imageData, const uint32 width, const uint32 height, const int32 format = IImage::Format::FORMAT_RGB)
 	{
 		std::vector<byte> data;
-		int width = image.width();
-		int height = image.height();
-
 		data.resize(width*height*4);
 
 		std::unique_ptr<Image> newImage;
 
-		if (image.format() == Image::Format::FORMAT_RGB)
+		if (format == IImage::Format::FORMAT_RGB)
 		{
 			int j=0;
 			for (int i=0; i < data.size(); i+=4)
 			{
-				data[i] = image.data()[j];
-				data[i+1] = image.data()[j+1];
-				data[i+2] = image.data()[j+2];
-				data[i+3] = (image.data()[j] + image.data()[j+1] + image.data()[j+2]) / 3;
+				data[i] = imageData[j];
+				data[i+1] = imageData[j+1];
+				data[i+2] = imageData[j+2];
+				data[i+3] = (imageData[j] + imageData[j+1] + imageData[j+2]) / 3;
 
 				j+=3;
 			}
 		}
-		else if (image.format() == Image::Format::FORMAT_RGBA)
+		else if (format == IImage::Format::FORMAT_RGBA)
 		{
-			for (int i=0; i < image.data().size(); i+=4)
+			for (int i=0; i < imageData.size(); i+=4)
 			{
-				data[i] = image.data()[i];
-				data[i+1] = image.data()[i+1];
-				data[i+2] = image.data()[i+2];
-				data[i+3] = (image.data()[i] + image.data()[i+1] + image.data()[i+2]) / 3;
+				data[i] = imageData[i];
+				data[i+1] = imageData[i+1];
+				data[i+2] = imageData[i+2];
+				data[i+3] = (imageData[i] + imageData[i+1] + imageData[i+2]) / 3;
 			}
 		}
 
 		calculateNormals(data, width, height);
 
-		return std::make_unique<Image>(data, width, height, Image::Format::FORMAT_RGBA);
+		return std::make_unique<Image>(data, width, height, IImage::Format::FORMAT_RGBA);
 	}
 };
 

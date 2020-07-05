@@ -189,6 +189,8 @@ public:
 	
 	virtual void releaseScriptFunction(const ScriptFunctionHandle& scriptFunctionHandle) = 0;
 	virtual void releaseAllScriptFunctions() = 0;
+
+    virtual void tick(const float32 delta) = 0;
 	
 	virtual void registerGlobalFunction(const std::string& name, const asSFuncPtr& funcPointer, asDWORD callConv, void* objForThiscall = nullptr) = 0;
 	virtual void registerGlobalProperty(const std::string& declaration, void* pointer) = 0;
@@ -221,6 +223,8 @@ public:
 	virtual void registerObjectBehaviour(const std::string& obj, asEBehaviours behaviour, const std::string& declaration, const asSFuncPtr& funcPointer, asDWORD callConv) = 0;
 
 	virtual void MessageCallback(const asSMessageInfo* msg, void* param) = 0;
+
+	virtual void testPrintCallstack() = 0;
 
 };
 

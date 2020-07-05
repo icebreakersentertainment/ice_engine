@@ -9,8 +9,7 @@
 
 #include <FreeImage.h>
 
-#include "graphics/IImage.hpp"
-#include "physics/IImage.hpp"
+#include "IImage.hpp"
 
 #include "fs/IFile.hpp"
 
@@ -25,16 +24,9 @@ inline void FreeImageErrorHandler(FREE_IMAGE_FORMAT fif, const char *message)
 	//throw std::runtime_error(message);
 }
 
-class Image : public graphics::IImage, public physics::IImage
+class Image : public IImage
 {
 public:
-	enum Format
-	{
-		FORMAT_UNKNOWN = -1,
-		FORMAT_RGB,
-		FORMAT_RGBA
-	};
-
 	Image() = default;
 
 	/**
@@ -43,7 +35,7 @@ public:
 	 * @param data The image data to load.
 	 * @param hasAlpha Whether the image has an alpha channel or not.
 	 */
-	Image(std::vector<byte> data, int width, int height, Image::Format format)
+	Image(std::vector<byte> data, int width, int height, IImage::Format format)
 	{
 		data_ = std::move(data);
 		width_ = width;
@@ -90,24 +82,24 @@ public:
 		format_ = image.format_;
 	}
 
-	virtual ~Image() {}
+	~Image() override = default;
 
-	virtual const std::vector<byte>& data() const override
+	const std::vector<byte>& data() const override
 	{
 		return data_;
 	}
 
-	virtual uint32 width() const override
+	uint32 width() const override
 	{
 		return width_;
 	}
 
-	virtual uint32 height() const override
+	uint32 height() const override
 	{
 		return height_;
 	}
 
-	virtual int32 format() const override
+	int32 format() const override
 	{
 		//return format_;
 		switch (format_)
@@ -124,15 +116,19 @@ public:
 		}
 	}
 
-	std::vector<byte> data_;
-	int width_ = 0;
-	int height_ = 0;
-	Image::Format format_ = Image::Format::FORMAT_UNKNOWN;
+//	std::vector<byte> data_;
+//	int width_ = 0;
+//	int height_ = 0;
+//	IImage::Format format_ = IImage::Format::FORMAT_UNKNOWN;
 private:
 	//std::vector<char> data_;
 	//int width_ = 0;
 	//int height_ = 0;
-	//Image::Format format_ = Image::Format::FORMAT_UNKNOWN;
+	//IImage::Format format_ = IImage::Format::FORMAT_UNKNOWN;
+    std::vector<byte> data_;
+    int width_ = 0;
+    int height_ = 0;
+    IImage::Format format_ = IImage::Format::FORMAT_UNKNOWN;
 
 	void importImage(const std::vector<byte>& data, bool hasAlpha = true)
 	{
@@ -194,11 +190,11 @@ private:
 				height_ = h;
 				if (hasAlpha)
 				{
-					format_ = FORMAT_RGBA;
+					format_ = IImage::Format::FORMAT_RGBA;
 				}
 				else
 				{
-					format_ = FORMAT_RGB;
+					format_ = IImage::Format::FORMAT_RGB;
 				}
 			}
 

@@ -7,9 +7,9 @@ namespace ice_engine
 namespace ecs
 {
 
-std::string SceneDelegate::getName() const
+const std::string& SceneDelegate::name() const
 {
-	return scene_->getName();
+	return scene_->name();
 }
 
 pathfinding::CrowdHandle SceneDelegate::createCrowd(const pathfinding::NavigationMeshHandle& navigationMeshHandle, const pathfinding::CrowdConfig& crowdConfig)
@@ -217,6 +217,16 @@ graphics::TerrainRenderableHandle SceneDelegate::createTerrainRenderable(const g
 void SceneDelegate::destroy(const graphics::TerrainRenderableHandle& terrainRenderableHandle)
 {
 	scene_->destroy(terrainRenderableHandle);
+}
+
+graphics::SkyboxRenderableHandle SceneDelegate::createSkyboxRenderable(const graphics::SkyboxHandle skyboxHandle)
+{
+	return scene_->createSkyboxRenderable(skyboxHandle);
+}
+
+void SceneDelegate::destroy(const graphics::SkyboxRenderableHandle& skyboxRenderableHandle)
+{
+	scene_->destroy(skyboxRenderableHandle);
 }
 
 

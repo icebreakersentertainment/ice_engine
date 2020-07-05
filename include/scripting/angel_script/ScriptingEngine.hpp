@@ -200,8 +200,10 @@ public:
 
 	virtual void releaseScriptFunction(const ScriptFunctionHandle& scriptFunctionHandle) override;
 	virtual void releaseAllScriptFunctions() override;
-	
-	virtual void registerGlobalFunction(const std::string& name, const asSFuncPtr& funcPointer, asDWORD callConv, void* objForThiscall = nullptr) override;
+
+    void tick(const float32 delta) override;
+
+    virtual void registerGlobalFunction(const std::string& name, const asSFuncPtr& funcPointer, asDWORD callConv, void* objForThiscall = nullptr) override;
 	virtual void registerGlobalProperty(const std::string& declaration, void* pointer) override;
 	
 	virtual void registerClass(const std::string& name) override;
@@ -232,7 +234,10 @@ public:
 	virtual void registerObjectBehaviour(const std::string& obj, asEBehaviours behaviour, const std::string& declaration, const asSFuncPtr& funcPointer, asDWORD callConv) override;
 
 	virtual void MessageCallback(const asSMessageInfo* msg, void* param) override;
-	static void print(const std::string& msg);
+
+    void testPrintCallstack() override;
+
+    static void print(const std::string& msg);
 	static void println(const std::string& msg);
 
 private:

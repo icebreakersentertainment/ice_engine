@@ -14,6 +14,7 @@
 #include "ecs/AnimationComponent.hpp"
 #include "ecs/SkeletonComponent.hpp"
 #include "ecs/GraphicsTerrainComponent.hpp"
+#include "ecs/GraphicsSkyboxComponent.hpp"
 #include "ecs/RigidBodyObjectComponent.hpp"
 #include "ecs/GhostObjectComponent.hpp"
 #include "ecs/PositionComponent.hpp"
@@ -51,7 +52,7 @@ public:
 	{
 	}
 
-	std::string getName() const;
+	const std::string& name() const;
 
 	pathfinding::CrowdHandle createCrowd(const pathfinding::NavigationMeshHandle& navigationMeshHandle, const pathfinding::CrowdConfig& crowdConfig);
 	void destroy(const pathfinding::CrowdHandle& crowdHandle);
@@ -128,6 +129,9 @@ public:
 	graphics::TerrainRenderableHandle createTerrainRenderable(const graphics::TerrainHandle terrainHandle);
 	void destroy(const graphics::TerrainRenderableHandle& terrainRenderableHandle);
 
+	graphics::SkyboxRenderableHandle createSkyboxRenderable(const graphics::SkyboxHandle skyboxHandle);
+	void destroy(const graphics::SkyboxRenderableHandle& skyboxRenderableHandle);
+
 	pathfinding::IPathfindingEngine& pathfindingEngine() const;
 
 private:
@@ -195,6 +199,7 @@ public:
 			&& !std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<AnimationComponent>>::value
 			&& !std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<PointLightComponent>>::value
 			&& !std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<GraphicsTerrainComponent>>::value
+			&& !std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<GraphicsSkyboxComponent>>::value
 			&& !std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<RigidBodyObjectComponent>>::value
 			&& !std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<GhostObjectComponent>>::value
 			&& !std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<PathfindingCrowdComponent>>::value
@@ -359,6 +364,34 @@ public:
         		auto pc = entity_.component<PositionComponent>();
         		componentHandle->terrainRenderableHandle = sceneDelegate_.createTerrainRenderable(
         			componentHandle->terrainHandle
+				);
+        	}
+
+        	return componentHandle;
+        }
+
+				template <typename C, typename ... Args>
+        typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<GraphicsSkyboxComponent>>::value, entityx::ComponentHandle<C>>::type
+        assign(Args && ... args)
+		{
+        	std::cout << entity_ << std::endl;
+
+        	entityx::ComponentHandle<C> componentHandle;
+
+        	if (entity_.has_component<C>())
+        	{
+        		auto c = entity_.component<C>();
+        		if (c->skyboxRenderableHandle) sceneDelegate_.destroy(c->skyboxRenderableHandle);
+        	}
+
+        	std::cout << "GSC" << std::endl;
+        	componentHandle = entity_.assign<C>(std::forward<Args>(args) ...);
+
+        	if (!componentHandle->skyboxRenderableHandle)
+        	{
+        		// auto pc = entity_.component<PositionComponent>();
+        		componentHandle->skyboxRenderableHandle = sceneDelegate_.createSkyboxRenderable(
+        			componentHandle->skyboxHandle
 				);
         	}
 
@@ -600,7 +633,7 @@ public:
 
     	friend std::ostream& operator<<(std::ostream& os, const Entity& other)
     	{
-    		os << "Entity(Entity: " << other.entity_ << ", Scene: " << (other.scene_ != nullptr ? other.sceneDelegate_.getName() : "") << ")";
+    		os << "Entity(Entity: " << other.entity_ << ", Scene: " << (other.scene_ != nullptr ? other.sceneDelegate_.name() : "") << ")";
     		return os;
     	}
 

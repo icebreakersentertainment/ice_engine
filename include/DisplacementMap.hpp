@@ -9,13 +9,7 @@ namespace ice_engine
 class DisplacementMap : public graphics::IDisplacementMap
 {
 public:
-
-	DisplacementMap()
-	{
-
-	}
-
-	virtual ~DisplacementMap() = default;
+	~DisplacementMap() override = default;
 
 private:
 

@@ -31,7 +31,7 @@ public:
 	
 	Texture(
 		std::string name,
-		Image* image
+		IImage* image
 	)
 	:
 		name_(std::move(name)),
@@ -51,7 +51,7 @@ public:
 		return name_;
 	}
 
-	Image* image()
+	IImage* image()
 	{
 		return image_;
 	}
@@ -63,7 +63,7 @@ public:
 
 private:
 	std::string name_;
-	Image* image_ = nullptr;
+	IImage* image_ = nullptr;
 
 	void import(const std::string& name, const std::string& filename, const uint32 index, const aiMaterial* material, IResourceCache* resourceCache, logger::ILogger* logger, fs::IFileSystem* fileSystem);
 };

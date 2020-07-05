@@ -16,7 +16,7 @@ public:
 
 	SplatMap() = default;
 
-	SplatMap(std::vector<PbrMaterial> materialMap, Image* terrainMap)
+	SplatMap(std::vector<PbrMaterial> materialMap, IImage* terrainMap)
 	:
 		materialMap_(std::move(materialMap)),
 		terrainMap_(terrainMap)
@@ -27,17 +27,17 @@ public:
 		/*
 		for (auto material : materialMap_)
 		{
-			if (material.albedo) flipVertical(*static_cast<Image*>(material.albedo));
-			if (material.normal) flipVertical(*static_cast<Image*>(material.normal));
-			if (material.metalness) flipVertical(*static_cast<Image*>(material.metalness));
-			if (material.roughness) flipVertical(*static_cast<Image*>(material.roughness));
-			if (material.ambientOcclusion) flipVertical(*static_cast<Image*>(material.ambientOcclusion));
+			if (material.albedo) flipVertical(*static_cast<IImage*>(material.albedo));
+			if (material.normal) flipVertical(*static_cast<IImage*>(material.normal));
+			if (material.metalness) flipVertical(*static_cast<IImage*>(material.metalness));
+			if (material.roughness) flipVertical(*static_cast<IImage*>(material.roughness));
+			if (material.ambientOcclusion) flipVertical(*static_cast<IImage*>(material.ambientOcclusion));
 		}
-		flipVertical(*static_cast<Image*>(terrainMap_.get()));
+		flipVertical(*static_cast<IImage*>(terrainMap_.get()));
 		*/
 	}
 /*
-	SplatMap(const Image& heightMap, fs::IFileSystem* fileSystem)
+	SplatMap(const IImage& heightMap, fs::IFileSystem* fileSystem)
 	{
 		//terrainMap_ = generateTerrainMap(heightMap, fileSystem);
 		materialMap_ = generateMaterialMap(heightMap, fileSystem);
@@ -50,13 +50,13 @@ public:
 		/*
 		for (auto material : materialMap_)
 		{
-			if (material.albedo) flipVertical(*static_cast<Image*>(material.albedo));
-			if (material.normal) flipVertical(*static_cast<Image*>(material.normal));
-			if (material.metalness) flipVertical(*static_cast<Image*>(material.metalness));
-			if (material.roughness) flipVertical(*static_cast<Image*>(material.roughness));
-			if (material.ambientOcclusion) flipVertical(*static_cast<Image*>(material.ambientOcclusion));
+			if (material.albedo) flipVertical(*static_cast<IImage*>(material.albedo));
+			if (material.normal) flipVertical(*static_cast<IImage*>(material.normal));
+			if (material.metalness) flipVertical(*static_cast<IImage*>(material.metalness));
+			if (material.roughness) flipVertical(*static_cast<IImage*>(material.roughness));
+			if (material.ambientOcclusion) flipVertical(*static_cast<IImage*>(material.ambientOcclusion));
 		}
-		flipVertical(*static_cast<Image*>(terrainMap_.get()));
+		flipVertical(*static_cast<IImage*>(terrainMap_.get()));
 		*/
 	/*}*/
 
@@ -68,7 +68,17 @@ public:
 		for (auto& material : materialMap_) materialMapPointers_.push_back(&material);
 	}
 
-	virtual ~SplatMap() = default;
+    SplatMap& operator=(const SplatMap& other)
+    {
+        terrainMap_ = other.terrainMap_;
+        materialMap_ = other.materialMap_;
+
+        for (auto& material : materialMap_) materialMapPointers_.push_back(&material);
+
+        return *this;
+    }
+
+	~SplatMap() override = default;
 
 	const std::vector<graphics::IPbrMaterial*>& materialMap() const override
 	{
@@ -82,36 +92,36 @@ public:
 
 
 private:
-	Image* terrainMap_;
+	IImage* terrainMap_;
 	std::vector<PbrMaterial> materialMap_;
 	std::vector<graphics::IPbrMaterial*> materialMapPointers_;
 
-	void flipVertical(Image& image)
-	{
-		std::vector<byte> data;
-		data.resize(image.width()*image.height()*4);
-
-		int j=data.size()-image.width()*4;
-		for (int i=0; i < data.size(); i+=image.width()*4)
-		{
-			for (int k=0; k < image.width()*4; ++k)
-			{
-				data[i+k] = image.data()[j+k];
-			}
-
-			j-=image.width()*4;
-		}
-
-		image.data_ = std::move(data);
-	}
+//	void flipVertical(Image& image)
+//	{
+//		std::vector<byte> data;
+//		data.resize(image.width()*image.height()*4);
 //
-//	std::unique_ptr<Image> generateTerrainMap(const Image& heightMap)
+//		int j=data.size()-image.width()*4;
+//		for (int i=0; i < data.size(); i+=image.width()*4)
+//		{
+//			for (int k=0; k < image.width()*4; ++k)
+//			{
+//				data[i+k] = image.data()[j+k];
+//			}
+//
+//			j-=image.width()*4;
+//		}
+//
+//		image.data_ = std::move(data);
+//	}
+//
+//	std::unique_ptr<IImage> generateTerrainMap(const IImage& heightMap)
 //	{
 //		std::vector<char> data = std::vector<char>();
 //		data.resize(heightMap.width()*heightMap.height()*4);
 //		int width = heightMap.width();
 //		int height = heightMap.height();
-//		Image::Format format = Image::Format::FORMAT_RGBA;
+//		IImage::Format format = IImage::Format::FORMAT_RGBA;
 //
 //		for (int i=0; i < heightMap.data().size(); i+=4)
 //		{
