@@ -93,7 +93,7 @@ private:
 	// https://stackoverflow.com/questions/2368728/can-normal-maps-be-generated-from-a-texture
 	// and
 	// http://www.catalinzima.com/2008/01/converting-displacement-maps-into-normal-maps/
-	float32 height(const std::vector<byte>& data, const int width, const int height, uint32 x, uint32 z)
+	float32 height(const std::vector<byte>& data, const uint32 width, const uint32 height, uint32 x, uint32 z)
 	{
 		if (x >= width)  x %= width;
 		while (x < 0)    x += width;
@@ -108,7 +108,7 @@ private:
 	    return static_cast<byte>((value + 1.0f) * (255.0f / 2.0f));
 	}
 
-	glm::vec3 calculateNormal(const std::vector<byte>& data, const int width, const int height, uint32 x, uint32 z)
+	glm::vec3 calculateNormal(const std::vector<byte>& data, const uint32 width, const uint32 height, const uint32 x, const uint32 z)
 	{
 		const float32 strength = 8.0f;
 
@@ -123,9 +123,9 @@ private:
 		float32 br = this->height(data, width, height, x+1, z-1); // bottom right
 
 		// sobel filter
-		const float32 dX = (tr + 2.0 * r + br) - (tl + 2.0 * l + bl);
-		const float32 dY = (bl + 2.0 * b + br) - (tl + 2.0 * t + tr);
-		const float32 dZ = 1.0 / strength;
+		const float32 dX = (tr + 2.0f * r + br) - (tl + 2.0f * l + bl);
+		const float32 dY = (bl + 2.0f * b + br) - (tl + 2.0f * t + tr);
+		const float32 dZ = 1.0f / strength;
 
 		glm::vec3 n(dX, dY, dZ);
 		n = glm::normalize(n);
@@ -133,11 +133,11 @@ private:
 		return n;
 	}
 
-	void calculateNormals(std::vector<byte>& data, const int width, const int height)
+	void calculateNormals(std::vector<byte>& data, const uint32 width, const uint32 height)
 	{
-	    for (int i = 0; i < width; ++i)
+	    for (uint32 i = 0; i < width; ++i)
 	    {
-	        for (int j = 0; j < height; ++j)
+	        for (uint32 j = 0; j < height; ++j)
 	        {
 	           const glm::vec3 n = calculateNormal(data, width, height, i, j);
 

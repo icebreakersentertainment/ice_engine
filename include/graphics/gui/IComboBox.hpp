@@ -17,10 +17,7 @@ namespace gui
 class IComboBox : public virtual IComponent
 {
 public:
-    virtual ~IComboBox()
-    {
-    }
-    ;
+    virtual ~IComboBox() = default;
 
     virtual IComboBoxItem* createItem(const std::string& label) = 0;
     virtual IComboBoxItem* getItem(const std::string& label) const = 0;

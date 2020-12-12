@@ -7,10 +7,7 @@ namespace ice_engine
 class IScriptingEngineBinding
 {
 public:
-		virtual ~IScriptingEngineBinding()
-		{
-		}
-		;
+		virtual ~IScriptingEngineBinding() = default;
 
 		virtual void bind() = 0;
 };

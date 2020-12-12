@@ -38,8 +38,8 @@ void AudioEngineBindingDelegate::bind()
 	scriptingEngine_->registerGlobalProperty("IAudioEngine audio", audioEngine_);
 	scriptingEngine_->registerClassMethod(
 		"IAudioEngine",
-		"SoundHandle createSound(const IAudio@)",
-		asMETHODPR(audio::IAudioEngine, createSound, (const audio::IAudio*), audio::SoundHandle)
+		"SoundHandle createSound(const IAudio& in)",
+		asMETHODPR(audio::IAudioEngine, createSound, (const audio::IAudio&), audio::SoundHandle)
 	);
 }
 	

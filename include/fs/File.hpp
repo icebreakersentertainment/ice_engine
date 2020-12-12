@@ -25,8 +25,8 @@ public:
     void close() override;
 	
 	void write(const char* data) override;
-	void write(const std::string& file) override;
-	std::string read(uint32 length = 256) override;
+	void write(const std::string& data) override;
+	std::string read(const uint32 length = 256) override;
 	std::string readAll() override;
 	
 	std::istream& getInputStream() override;
@@ -35,6 +35,9 @@ public:
 private:
 	std::string file_;
 	int32 flags_;
+
+	static constexpr uint32 DEFAULT_BUFFER_SIZE = 1024;
+    std::vector<char> buffer_;
 	
 	std::ifstream inputFileStream_;
 	std::ofstream outputFileStream_;

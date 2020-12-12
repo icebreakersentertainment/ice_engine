@@ -593,7 +593,7 @@ struct KeySym
 {
 	ScanCode scancode;
 	KeyCode sym;
-	KeyMod mod;
+	uint16 mod;
 };
 
 }

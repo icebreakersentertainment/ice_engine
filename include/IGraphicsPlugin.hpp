@@ -13,13 +13,9 @@ namespace ice_engine
 class IGraphicsPlugin : public virtual IPlugin
 {
 public:
-	virtual ~IGraphicsPlugin()
-	{
-	}
-	;
+	virtual ~IGraphicsPlugin() = default;
 
 	virtual std::unique_ptr<graphics::IGraphicsEngineFactory> createFactory() const = 0;
-
 };
 
 }

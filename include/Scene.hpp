@@ -8,6 +8,8 @@
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 
+#include <boost/optional.hpp>
+
 #include "Types.hpp"
 
 #include "exceptions/Exception.hpp"
@@ -82,6 +84,16 @@ public:
 	Scene(
 		const std::string& name,
 		const std::vector<std::string>& scriptData,
+		const std::string& initializationFunctionName,
+		GameEngine* gameEngine,
+		ITerrainFactory* terrainFactory,
+		utilities::Properties* properties,
+		fs::IFileSystem* fileSystem,
+		logger::ILogger* logger
+	);
+	Scene(
+		const std::string& name,
+        const scripting::ModuleHandle moduleHandle,
 		const std::string& initializationFunctionName,
 		GameEngine* gameEngine,
 		ITerrainFactory* terrainFactory,
@@ -287,8 +299,8 @@ public:
 		}
 	}
 
-	virtual void serialize(const std::string& filename) override;
-	virtual void deserialize(const std::string& filename) override;
+	void serialize(const std::string& filename) override;
+	void deserialize(const std::string& filename) override;
 
 	void addPreSerializeCallback(std::function<void(serialization::TextOutArchive&, ecs::EntityComponentSystem&, const unsigned int)> callback)
 	{
@@ -380,7 +392,7 @@ public:
 	std::shared_future<ecs::Entity> createEntityAsync();
 	void destroy(ecs::Entity& entity);
 	void destroyAsync(ecs::Entity& entity);
-	uint32 getNumEntities() const;
+    size_t getNumEntities() const;
 
 	Raycast raycast(const ray::Ray& ray);
 
@@ -428,7 +440,7 @@ private:
 
 	std::vector<std::unique_ptr<ITerrain>> terrain_;
 
-	std::vector<std::string> scriptData_;
+    boost::optional<std::vector<std::string>> scriptData_;
 	std::string initializationFunctionName_;
 
 	std::vector<std::function<void(serialization::TextOutArchive&, ecs::EntityComponentSystem&, const unsigned int)>> preSerializeCallbacks_;
@@ -510,12 +522,6 @@ private:
 		ar & gameEngine_->resourceHandleCache().navigationMeshHandleMap();
 		auto map = getScriptObjectNameMap();
 		ar & map;
-
-		std::cout << "SAVE scriptObjectHandleMap size " << map.size() << std::endl;
-		for (const auto& kv : map)
-			{
-				std::cout << "KV " << kv.first.get() << " " << kv.second << std::endl;
-			}
 	}
 
 	template<class Archive>
@@ -637,12 +643,6 @@ private:
 		std::unordered_map<std::string, physics::CollisionShapeHandle> collisionShapeHandleMap;
 		ar & collisionShapeHandleMap;
 
-//		std::cout << "collisionShapeHandleMap size " << collisionShapeHandleMap.size() << std::endl;
-//		for (const auto& kv : collisionShapeHandleMap)
-//		{
-//			std::cout << "collisionShapeHandleMap KV " << kv.first << " " << kv.second << std::endl;
-//		}
-
 		std::unordered_map<std::string, ModelHandle> modelHandleMap;
 		ar & modelHandleMap;
 
@@ -671,12 +671,6 @@ private:
 		ar & scriptObjectHandleMap;
 
 		std::unordered_map<pathfinding::CrowdHandle, pathfinding::CrowdHandle> normalizedCrowdHandleMap;
-
-		std::cout << "LOAD scriptObjectHandleMap size " << scriptObjectHandleMap.size() << std::endl;
-		for (const auto& kv : scriptObjectHandleMap)
-			{
-				std::cout << "KV " << kv.first.get() << " " << kv.second << std::endl;
-			}
 
 		ar & name_;
 

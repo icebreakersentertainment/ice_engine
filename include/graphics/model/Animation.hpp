@@ -1,7 +1,7 @@
 #ifndef GANIMATION_H_
 #define GANIMATION_H_
 
-#include <map>
+#include <unordered_map>
 #include <string>
 
 #include "Types.hpp"
@@ -23,7 +23,7 @@ struct Animation
 		std::string name,
 		float64 duration,
 		float64 ticksPerSecond,
-		std::map< std::string, AnimatedBoneNode > animatedBoneNodes
+		std::unordered_map< std::string, AnimatedBoneNode > animatedBoneNodes
 	)
 	:
 		name(name),
@@ -37,7 +37,7 @@ struct Animation
 	std::string name;
 	float64 duration;
 	float64 ticksPerSecond;
-	std::map< std::string, AnimatedBoneNode > animatedBoneNodes;
+	std::unordered_map< std::string, AnimatedBoneNode > animatedBoneNodes;
 };
 
 }

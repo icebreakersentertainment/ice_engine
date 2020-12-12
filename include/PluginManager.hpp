@@ -18,16 +18,16 @@ public:
 		fs::IFileSystem* fileSystem,
 		logger::ILogger* logger
 	);
-	virtual ~PluginManager();
+	~PluginManager() override = default;
 
-	virtual const std::vector<std::shared_ptr<IGuiPlugin>>& getGuiPlugins() const override;
-	virtual std::shared_ptr<IGraphicsPlugin> getGraphicsPlugin() const override;
-	virtual std::shared_ptr<IAudioPlugin> getAudioPlugin() const override;
-	virtual std::shared_ptr<IPathfindingPlugin> getPathfindingPlugin() const override;
-	virtual std::shared_ptr<IPhysicsPlugin> getPhysicsPlugin() const override;
-	virtual std::shared_ptr<INetworkingPlugin> getNetworkingPlugin() const override;
-	virtual const std::vector<std::shared_ptr<IModulePlugin>>& getModulePlugins() const override;
-	virtual const std::vector<std::shared_ptr<IScriptingEngineBindingPlugin>>& scriptingEngineBindingPlugins() const override;
+	const std::vector<std::shared_ptr<IGuiPlugin>>& getGuiPlugins() const override;
+	std::shared_ptr<IGraphicsPlugin> getGraphicsPlugin() const override;
+	std::shared_ptr<IAudioPlugin> getAudioPlugin() const override;
+	std::shared_ptr<IPathfindingPlugin> getPathfindingPlugin() const override;
+	std::shared_ptr<IPhysicsPlugin> getPhysicsPlugin() const override;
+	std::shared_ptr<INetworkingPlugin> getNetworkingPlugin() const override;
+	const std::vector<std::shared_ptr<IModulePlugin>>& getModulePlugins() const override;
+	const std::vector<std::shared_ptr<IScriptingEngineBindingPlugin>>& scriptingEngineBindingPlugins() const override;
 
 private:
 	utilities::Properties* properties_;

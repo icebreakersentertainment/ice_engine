@@ -9,9 +9,9 @@ inline std::tuple<std::vector<glm::vec3>, std::vector<uint32>> generateGrid(cons
 	std::vector<glm::vec3> vertices;
 	std::vector<uint32> indices;
 	
-    for (int j=0; j <= width; ++j)
+    for (uint32 j=0; j <= width; ++j)
     {
-        for (int i=0; i <= height; ++i)
+        for (uint32 i=0; i <= height; ++i)
         {
             float32 x = ((float32)i / (float32)resolution) + offset.x;
             float32 y = 0.0f;
@@ -20,12 +20,12 @@ inline std::tuple<std::vector<glm::vec3>, std::vector<uint32>> generateGrid(cons
         }
     }
 
-    for (int j=0; j < width; ++j)
+    for (uint32 j=0; j < width; ++j)
     {
-        for (int i=0; i < height; ++i)
+        for (uint32 i=0; i < height; ++i)
         {
-            int row1 = j * (height+1);
-            int row2 = (j+1) * (height+1);
+            const uint32 row1 = j * (height+1);
+            const uint32 row2 = (j+1) * (height+1);
 
             // triangle 1
             indices.push_back(row1+i);

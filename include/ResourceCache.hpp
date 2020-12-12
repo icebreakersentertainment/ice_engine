@@ -1,7 +1,7 @@
 #ifndef RESOURCECACHE_H_
 #define RESOURCECACHE_H_
 
-#include <map>
+#include <unordered_map>
 #include <mutex>
 
 #include "IResourceCache.hpp"
@@ -12,25 +12,24 @@ namespace ice_engine
 class ResourceCache : public IResourceCache
 {
 public:
-	ResourceCache();
-	virtual ~ResourceCache();
+	~ResourceCache() override = default;
 
-	virtual void addAudio(const std::string& name, std::unique_ptr<Audio> audio) override;
-	virtual void addImage(const std::string& name, std::unique_ptr<Image> image) override;
-	virtual void addModel(const std::string& name, std::unique_ptr<Model> model) override;
+	void addAudio(const std::string& name, std::unique_ptr<Audio> audio) override;
+	void addImage(const std::string& name, std::unique_ptr<Image> image) override;
+	void addModel(const std::string& name, std::unique_ptr<Model> model) override;
 	
-	virtual void removeAudio(const std::string& name) override;
-	virtual void removeImage(const std::string& name) override;
-	virtual void removeModel(const std::string& name) override;
+	void removeAudio(const std::string& name) override;
+	void removeImage(const std::string& name) override;
+	void removeModel(const std::string& name) override;
 	
-	virtual Audio* getAudio(const std::string& name) const override;
-	virtual Image* getImage(const std::string& name) const override;
-	virtual Model* getModel(const std::string& name) const override;
+	Audio* getAudio(const std::string& name) const override;
+	Image* getImage(const std::string& name) const override;
+	Model* getModel(const std::string& name) const override;
 
 private:
-	std::map<std::string, std::unique_ptr<Model>> models_;
-	std::map<std::string, std::unique_ptr<Audio>> audios_;
-	std::map<std::string, std::unique_ptr<Image>> images_;
+	std::unordered_map<std::string, std::unique_ptr<Model>> models_;
+	std::unordered_map<std::string, std::unique_ptr<Audio>> audios_;
+	std::unordered_map<std::string, std::unique_ptr<Image>> images_;
 	std::unique_ptr<Image> imagesTest_;
 	
 	mutable std::recursive_mutex audioMutex_;

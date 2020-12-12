@@ -39,6 +39,11 @@ namespace raybinding
 void InitConstructor(const glm::vec3& from, const glm::vec3& to, void* memory) { new(memory) ray::Ray(from, to); }
 }
 
+uint64 sceneGetNumEntitiesProxy(const Scene* scene)
+{
+    return static_cast<uint64>(scene->getNumEntities());
+}
+
 SceneBindingDelegate::SceneBindingDelegate(logger::ILogger* logger, scripting::IScriptingEngine* scriptingEngine, GameEngine* gameEngine, graphics::IGraphicsEngine* graphicsEngine, audio::IAudioEngine* audioEngine, networking::INetworkingEngine* networkingEngine, physics::IPhysicsEngine* physicsEngine, pathfinding::IPathfindingEngine* pathfindingEngine)
 	:
 	logger_(logger),
@@ -49,10 +54,6 @@ SceneBindingDelegate::SceneBindingDelegate(logger::ILogger* logger, scripting::I
 	networkingEngine_(networkingEngine),
 	physicsEngine_(physicsEngine),
 	pathfindingEngine_(pathfindingEngine)
-{
-}
-
-SceneBindingDelegate::~SceneBindingDelegate()
 {
 }
 
@@ -224,7 +225,7 @@ void SceneBindingDelegate::bind()
 	scriptingEngine_->registerClassMethod("Scene", "Entity createEntity()", asMETHODPR(Scene, createEntity, (), ecs::Entity));
 	scriptingEngine_->registerClassMethod("Scene", "void destroy(Entity& in)", asMETHODPR(Scene, destroy, (ecs::Entity&), void));
 	scriptingEngine_->registerClassMethod("Scene", "void destroyAsync(Entity& in)", asMETHOD(Scene, destroyAsync));
-	scriptingEngine_->registerClassMethod("Scene", "uint32 getNumEntities()", asMETHODPR(Scene, getNumEntities, () const, uint32));
+	scriptingEngine_->registerObjectMethod("Scene", "uint64 getNumEntities() const", asFUNCTION(sceneGetNumEntitiesProxy), asCALL_CDECL_OBJFIRST);
 	scriptingEngine_->registerClassMethod("Scene", "Raycast raycast(const Ray& in)", asMETHOD(Scene, raycast));
 	scriptingEngine_->registerClassMethod("Scene", "vectorEntity query(const vec3& in, const vectorVec3& in)", asMETHODPR(Scene, query, (const glm::vec3&, const std::vector<glm::vec3>&), std::vector<ecs::Entity>));
 	scriptingEngine_->registerClassMethod("Scene", "vectorEntity query(const vec3& in, const float)", asMETHODPR(Scene, query, (const glm::vec3&, const float32), std::vector<ecs::Entity>));

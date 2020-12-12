@@ -39,7 +39,7 @@ void proxyFunctionSetPosition(const uint32 x, const uint32 y, T* t)
 template<class T>
 glm::ivec2 proxyFunctionGetPosition(T* t)
 {
-	return t->getPosition();
+	return t->position();
 }
 
 template<class T>
@@ -50,7 +50,7 @@ void proxyFunctionSetDimensions(const uint32 x, const uint32 y, T* t)
 template<class T>
 glm::ivec2 proxyFunctionGetDimensions(T* t)
 {
-	return t->getDimensions();
+	return t->dimensions();
 }
 
 template<class T>
@@ -83,7 +83,7 @@ void proxyFunctionSetStyle(const graphics::gui::Style& style, T* t)
 template<class T>
 const graphics::gui::Style& proxyFunctionGetStyle(T* t)
 {
-	return t->getStyle();
+	return t->style();
 }
 template<class T>
 const void proxyFunctionAddComponent(graphics::gui::IComponent* component, T* t)
@@ -138,6 +138,18 @@ graphics::gui::ITextField* proxyFunctionCreateTextField(const uint32 x, const ui
 }
 
 template<class T>
+graphics::gui::ITextArea* proxyFunctionCreateTextArea(const std::string label, T* t)
+{
+	return t->createTextArea(label);
+}
+
+template<class T>
+graphics::gui::ITextArea* proxyFunctionCreateTextArea(const uint32 x, const uint32 y, const uint32 width, const uint32 height, const std::string label, T* t)
+{
+	return t->createTextArea(x, y, width, height, label);
+}
+
+template<class T>
 graphics::gui::IComboBox* proxyFunctionCreateComboBox(T* t)
 {
 	return t->createComboBox();
@@ -165,6 +177,12 @@ template<class T>
 void proxyFunctionDestroyTextField(const graphics::gui::ITextField* textField, T* t)
 {
 	t->destroy(textField);
+}
+
+template<class T>
+void proxyFunctionDestroyTextArea(const graphics::gui::ITextArea* textArea, T* t)
+{
+	t->destroy(textArea);
 }
 
 template<class T>
@@ -791,7 +809,7 @@ void GraphicsEngineBindingDelegate::bind()
 	scriptingEngine_->registerObjectType("KeySym", sizeof(graphics::KeySym), asOBJ_VALUE | asOBJ_POD | asOBJ_APP_CLASS_ALLINTS | asGetTypeTraits<graphics::KeySym>());
 	scriptingEngine_->registerObjectProperty("KeySym", "ScanCode scancode", asOFFSET(graphics::KeySym, scancode));
 	scriptingEngine_->registerObjectProperty("KeySym", "KeyCode sym", asOFFSET(graphics::KeySym, sym));
-	scriptingEngine_->registerObjectProperty("KeySym", "KeyMod mod", asOFFSET(graphics::KeySym, mod));
+	scriptingEngine_->registerObjectProperty("KeySym", "uint16 mod", asOFFSET(graphics::KeySym, mod));
 	//scriptingEngine_->registerObjectBehaviour("KeySym", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(glmKeySym::DefaultConstructor), asCALL_CDECL_OBJLAST);
 	//scriptingEngine_->registerObjectBehaviour("KeySym", asBEHAVE_CONSTRUCT, "void f(const KeySym &in)", asFUNCTION(glmKeySym::CopyConstructor), asCALL_CDECL_OBJLAST);
 	//scriptingEngine_->registerObjectBehaviour("KeySym", asBEHAVE_CONSTRUCT, "void f(float, float, float, float)", asFUNCTION(glmKeySym::InitConstructor), asCALL_CDECL_OBJLAST);
@@ -868,88 +886,10 @@ void GraphicsEngineBindingDelegate::bind()
 	// Register function declarations
 	scriptingEngine_->registerFunctionDefinition("void ButtonClickCallback()");
 	scriptingEngine_->registerFunctionDefinition("void MenuItemClickCallback()");
+	scriptingEngine_->registerFunctionDefinition("void TextFieldOnChangeCallback()");
+	scriptingEngine_->registerFunctionDefinition("void TextAreaOnChangeCallback()");
 
 	// Gui
-#define COMPONENT_CLASS_METHODS(name, class) \
-	scriptingEngine_->registerObjectMethod( \
-		name, \
-		"void setPosition(const uint32, const uint32)", \
-		asFUNCTION(proxyFunctionSetPosition<class>), \
-		asCALL_CDECL_OBJLAST \
-	); \
-	scriptingEngine_->registerObjectMethod( \
-		name, \
-		"ivec2 getPosition() const", \
-		asFUNCTION(proxyFunctionGetPosition<class>), \
-		asCALL_CDECL_OBJLAST \
-	); \
-	scriptingEngine_->registerObjectMethod( \
-		name, \
-		"void setDimensions(const uint32, const uint32)", \
-		asFUNCTION(proxyFunctionSetDimensions<class>), \
-		asCALL_CDECL_OBJLAST \
-	); \
-	scriptingEngine_->registerObjectMethod( \
-		name, \
-		"ivec2 getDimensions() const", \
-		asFUNCTION(proxyFunctionGetDimensions<class>), \
-		asCALL_CDECL_OBJLAST \
-	); \
-	scriptingEngine_->registerObjectMethod( \
-		name, \
-		"bool visible() const", \
-		asFUNCTION(proxyFunctionVisible<class>), \
-		asCALL_CDECL_OBJLAST \
-	); \
-	scriptingEngine_->registerObjectMethod( \
-		name, \
-		"void setVisible(const bool)", \
-		asFUNCTION(proxyFunctionSetVisible<class>), \
-		asCALL_CDECL_OBJLAST \
-	); \
-	scriptingEngine_->registerObjectMethod( \
-		name, \
-		"bool disabled() const", \
-		asFUNCTION(proxyFunctionDisabled<class>), \
-		asCALL_CDECL_OBJLAST \
-	); \
-	scriptingEngine_->registerObjectMethod( \
-		name, \
-		"void setDisabled(const bool)", \
-		asFUNCTION(proxyFunctionSetDisabled<class>), \
-		asCALL_CDECL_OBJLAST \
-	); \
-	scriptingEngine_->registerObjectMethod( \
-		name, \
-		"void setStyle(const Style& in)", \
-		asFUNCTION(proxyFunctionSetStyle<class>), \
-		asCALL_CDECL_OBJLAST \
-	); \
-	scriptingEngine_->registerObjectMethod( \
-		name, \
-		"const Style& getStyle() const", \
-		asFUNCTION(proxyFunctionGetStyle<class>), \
-		asCALL_CDECL_OBJLAST \
-	); \
-	scriptingEngine_->registerObjectMethod( \
-		name, \
-		"void addComponent(IComponent@)", \
-		asFUNCTION(proxyFunctionAddComponent<class>), \
-		asCALL_CDECL_OBJLAST \
-	); \
-	scriptingEngine_->registerObjectMethod( \
-		name, \
-		"void removeComponent(IComponent@)", \
-		asFUNCTION(proxyFunctionRemoveComponent<class>), \
-		asCALL_CDECL_OBJLAST \
-	); \
-	scriptingEngine_->registerObjectMethod( \
-		name, \
-		"void removeAllComponents()", \
-		asFUNCTION(proxyFunctionRemoveAllComponents<class>), \
-		asCALL_CDECL_OBJLAST \
-	); \
-
 	#define GENERIC_COMPONENT_CONTAINER_CLASS_METHODS(name, class) \
 		scriptingEngine_->registerObjectMethod( \
 			name, \
@@ -989,6 +929,18 @@ void GraphicsEngineBindingDelegate::bind()
 		); \
 		scriptingEngine_->registerObjectMethod( \
 			name, \
+			"ITextArea@ createTextArea(const string = string())", \
+			asFUNCTIONPR(proxyFunctionCreateTextArea<class>, (const std::string, class*), graphics::gui::ITextArea*), \
+			asCALL_CDECL_OBJLAST \
+		); \
+		scriptingEngine_->registerObjectMethod( \
+			name, \
+			"ITextArea@ createTextArea(const uint32, const uint32, const uint32, const uint32, const string = string())", \
+			asFUNCTIONPR(proxyFunctionCreateTextArea<class>, (const uint32, const uint32, const uint32, const uint32, const std::string, class*), graphics::gui::ITextArea*), \
+			asCALL_CDECL_OBJLAST \
+		); \
+		scriptingEngine_->registerObjectMethod( \
+			name, \
 			"IComboBox@ createComboBox()", \
 			asFUNCTION(proxyFunctionCreateComboBox<class>), \
 			asCALL_CDECL_OBJLAST \
@@ -1015,6 +967,12 @@ void GraphicsEngineBindingDelegate::bind()
 			name, \
 			"void destroy(const ITextField@)", \
 			asFUNCTION(proxyFunctionDestroyTextField<class>), \
+			asCALL_CDECL_OBJLAST \
+		); \
+		scriptingEngine_->registerObjectMethod( \
+			name, \
+			"void destroy(const ITextArea@)", \
+			asFUNCTION(proxyFunctionDestroyTextArea<class>), \
 			asCALL_CDECL_OBJLAST \
 		); \
 		scriptingEngine_->registerObjectMethod( \
@@ -1053,9 +1011,35 @@ void GraphicsEngineBindingDelegate::bind()
 	);
     scriptingEngine_->registerObjectType("ITextField", 0, asOBJ_REF | asOBJ_NOCOUNT);
     scriptingEngine_->registerObjectMethod("ITextField", "IComponent@ opImplCast()", asFUNCTION((refCast<graphics::gui::ITextField, graphics::gui::IComponent>)), asCALL_CDECL_OBJLAST);
+    scriptingEngine_->registerClassMethod("ITextField", "const string& text() const",
+                                          asMETHOD(graphics::gui::ITextField, text));
+    scriptingEngine_->registerClassMethod("ITextField", "void setText(const string& in)",
+                                          asMETHOD(graphics::gui::ITextField, setText));
     COMPONENT_CLASS_METHODS("ITextField", graphics::gui::ITextField)
+    scriptingEngine_->registerObjectMethod(
+            "ITextField",
+            "void setOnChangeCallback(TextFieldOnChangeCallback@ callback)",
+            asMETHODPR(GameEngine, setOnChangeCallback, (graphics::gui::ITextField*, void*), void),
+            asCALL_THISCALL_OBJFIRST,
+            gameEngine_
+    );
+    scriptingEngine_->registerObjectType("ITextArea", 0, asOBJ_REF | asOBJ_NOCOUNT);
+    scriptingEngine_->registerObjectMethod("ITextArea", "IComponent@ opImplCast()", asFUNCTION((refCast<graphics::gui::ITextArea, graphics::gui::IComponent>)), asCALL_CDECL_OBJLAST);
+    scriptingEngine_->registerClassMethod("ITextArea", "const string& text() const",
+                                          asMETHOD(graphics::gui::ITextArea, text));
+    scriptingEngine_->registerClassMethod("ITextArea", "void setText(const string& in)",
+                                          asMETHOD(graphics::gui::ITextArea, setText));
+    COMPONENT_CLASS_METHODS("ITextArea", graphics::gui::ITextArea)
+    scriptingEngine_->registerObjectMethod(
+            "ITextArea",
+            "void setOnChangeCallback(TextAreaOnChangeCallback@ callback)",
+            asMETHODPR(GameEngine, setOnChangeCallback, (graphics::gui::ITextArea*, void*), void),
+            asCALL_THISCALL_OBJFIRST,
+            gameEngine_
+    );
     scriptingEngine_->registerObjectType("IComboBoxItem", 0, asOBJ_REF | asOBJ_NOCOUNT);
-    scriptingEngine_->registerClassMethod("IComboBoxItem","const string& getLabel()", asMETHOD(graphics::gui::IComboBoxItem, getLabel));
+    scriptingEngine_->registerClassMethod("IComboBoxItem", "const string& label()",
+                                          asMETHOD(graphics::gui::IComboBoxItem, label));
     scriptingEngine_->registerClassMethod("IComboBoxItem","void setLabel(const string& in)", asMETHOD(graphics::gui::IComboBoxItem, setLabel));
     scriptingEngine_->registerFunctionDefinition("void ComboBoxSelectedCallback(IComboBoxItem@)");
     scriptingEngine_->registerObjectType("IComboBox", 0, asOBJ_REF | asOBJ_NOCOUNT);
@@ -1080,7 +1064,8 @@ void GraphicsEngineBindingDelegate::bind()
     scriptingEngine_->registerClassMethod("ITreeNode", "ITreeNode@ createNode(const string& in)", asMETHOD(graphics::gui::ITreeNode, createNode));
     scriptingEngine_->registerClassMethod("ITreeNode", "ITreeNode@ getNode(const string& in)", asMETHOD(graphics::gui::ITreeNode, getNode));
     scriptingEngine_->registerClassMethod("ITreeNode", "void destroy(const ITreeNode@)", asMETHOD(graphics::gui::ITreeNode, destroy));
-    scriptingEngine_->registerClassMethod("ITreeNode","const string& getLabel()", asMETHOD(graphics::gui::ITreeNode, getLabel));
+    scriptingEngine_->registerClassMethod("ITreeNode", "const string& label()",
+                                          asMETHOD(graphics::gui::ITreeNode, label));
     scriptingEngine_->registerClassMethod("ITreeNode","void setLabel(const string& in)", asMETHOD(graphics::gui::ITreeNode, setLabel));
     scriptingEngine_->registerFunctionDefinition("void TreeNodeSelectedCallback(ITreeNode@)");
     scriptingEngine_->registerObjectType("ITreeView", 0, asOBJ_REF | asOBJ_NOCOUNT);

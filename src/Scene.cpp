@@ -108,6 +108,38 @@ Scene::Scene(
 	initialize();
 }
 
+Scene::Scene(
+		const std::string& name,
+        const scripting::ModuleHandle moduleHandle,
+		const std::string& initializationFunctionName,
+		GameEngine* gameEngine,
+		ITerrainFactory* terrainFactory,
+		utilities::Properties* properties,
+		fs::IFileSystem* fileSystem,
+		logger::ILogger* logger
+	)
+	:
+		name_(name),
+        moduleHandle_(moduleHandle),
+		initializationFunctionName_(initializationFunctionName),
+		gameEngine_(gameEngine),
+		audioEngine_(gameEngine->audioEngine()),
+		graphicsEngine_(gameEngine->graphicsEngine()),
+		terrainFactory_(terrainFactory),
+		physicsEngine_(gameEngine->physicsEngine()),
+		pathfindingEngine_(gameEngine->pathfindingEngine()),
+		scriptingEngine_(gameEngine->scriptingEngine()),
+		scriptObjectHandle_(nullptr),
+		properties_(properties),
+		fileSystem_(fileSystem),
+		logger_(logger),
+		threadPool_(gameEngine->backgroundThreadPool()),
+		openGlLoader_(gameEngine->openGlLoader()),
+		entityComponentSystem_(std::make_unique<ecs::EntityComponentSystem>(this))
+{
+	initialize();
+}
+
 Scene::~Scene()
 {
 	destroy();
@@ -121,9 +153,12 @@ void Scene::initialize()
 	pathfindingSceneHandle_ = pathfindingEngine_->createPathfindingScene();
 	executionContextHandle_ = scriptingEngine_->createExecutionContext();
 
-	// We don't want our module names to collide even if the scene name is the same
-	const std::string moduleName = name_ + "_" + boost::uuids::to_string( boost::uuids::random_generator()() );
-	moduleHandle_ = scriptingEngine_->createModule(moduleName, scriptData_);
+	if (scriptData_)
+    {
+        // We don't want our module names to collide even if the scene name is the same
+        const std::string moduleName = name_ + "_" + boost::uuids::to_string(boost::uuids::random_generator()());
+        moduleHandle_ = scriptingEngine_->createModule(moduleName, *scriptData_);
+    }
 
 	entityComponentSystemEventListener_ = std::make_unique<EntityComponentSystemEventListener>(*this, *entityComponentSystem_);
 
@@ -158,7 +193,8 @@ void Scene::destroy()
 		}
 	}
 
-	scriptingEngine_->destroyModule(moduleHandle_);
+	// We only destroy the module if we created the module
+	if (scriptData_) scriptingEngine_->destroyModule(moduleHandle_);
 }
 
 void Scene::applyChangesToEntities()
@@ -389,7 +425,7 @@ void Scene::tickPhysics(const float32 delta)
 
 void Scene::tickAudio(const float32 delta)
 {
-    audioEngine_->render(audioSceneHandle_);
+    audioEngine_->tick(audioSceneHandle_, delta);
 }
 
 void Scene::tickPathfinding(const float32 delta)
@@ -432,7 +468,7 @@ void Scene::tickAnimations(const float32 delta)
                 });
             });
 
-            animationComponent->runningTime += delta;
+            animationComponent->runningTime += delta * animationComponent->speed;
         }
     }
 }
@@ -495,6 +531,9 @@ void Scene::render()
     {
 	    graphicsEngine_->render(renderSceneHandle_);
 	    physicsEngine_->renderDebug(physicsSceneHandle_);
+	    pathfindingEngine_->renderDebug(pathfindingSceneHandle_);
+
+        audioEngine_->render(audioSceneHandle_);
     }
 }
 
@@ -822,7 +861,7 @@ void Scene::destroyAsync(ecs::Entity& entity)
 	asyncDestroyEntities_.push_back(entity);
 }
 
-uint32 Scene::getNumEntities() const
+size_t Scene::getNumEntities() const
 {
 	return entityComponentSystem_->numEntities();
 }
@@ -918,11 +957,6 @@ void normalizeHandles(
 )
 {
 	LOG_DEBUG(logger, "Normalizing CollisionShapeHandles");
-//	std::cout << "normalizedMap size " << normalizedMap.size() << std::endl;
-//	for (const auto& kv : normalizedMap)
-//		{
-//			std::cout << "KV " << kv.first << " " << kv.second << std::endl;
-//		}
 
 	for (auto entity : entityComponentSystem.entitiesWithComponents<ecs::RigidBodyObjectComponent>())
 	{
@@ -930,7 +964,6 @@ void normalizeHandles(
 		componentHandle->rigidBodyObjectHandle.invalidate();
 
 		auto component = *componentHandle;
-//		std::cout << "find in normalized map " << component.collisionShapeHandle << std::endl;
 		component.collisionShapeHandle = normalizedMap.at(component.collisionShapeHandle);
 		entity.assign<ecs::RigidBodyObjectComponent>(component);
 	}
@@ -954,11 +987,6 @@ void normalizeHandles(
 )
 {
 	LOG_DEBUG(logger, "Normalizing MeshHandles and TextureHandles");
-//	std::cout << "normalizedMeshHandleMap size " << normalizedMeshHandleMap.size() << std::endl;
-//	for (const auto& kv : normalizedMeshHandleMap)
-//		{
-//			std::cout << "KV " << kv.first << " " << kv.second << std::endl;
-//		}
 
 	for (auto entity : entityComponentSystem.entitiesWithComponents<ecs::GraphicsComponent>())
 	{
@@ -966,13 +994,12 @@ void normalizeHandles(
 		componentHandle->renderableHandle.invalidate();
 
 		auto component = *componentHandle;
-//		std::cout << "find in normalized map " << component.meshHandle << std::endl;
 
 		try
 		{
 			component.meshHandle = normalizedMeshHandleMap.at(component.meshHandle);
 		}
-		catch (const std::out_of_range& e)
+		catch (const std::out_of_range&)
 		{
 			throw Exception("Unable to find mesh handle " + std::to_string(component.meshHandle.id()));
 		}
@@ -981,7 +1008,7 @@ void normalizeHandles(
 		{
 			component.textureHandle = normalizedTextureHandleMap.at(component.textureHandle);
 		}
-		catch (const std::out_of_range& e)
+		catch (const std::out_of_range&)
 		{
 			throw Exception("Unable to find texture handle " + std::to_string(component.textureHandle.id()));
 		}
@@ -997,18 +1024,12 @@ void normalizeHandles(
 )
 {
 	LOG_DEBUG(logger, "Normalizing SkeletonHandles");
-//	std::cout << "normalizedMap size " << normalizedMap.size() << std::endl;
-//	for (const auto& kv : normalizedMap)
-//		{
-//			std::cout << "KV " << kv.first << " " << kv.second << std::endl;
-//		}
 
 	for (auto entity : entityComponentSystem.entitiesWithComponents<ecs::SkeletonComponent>())
 	{
 		auto componentHandle = entity.component<ecs::SkeletonComponent>();
 
 		auto component = *componentHandle;
-//		std::cout << "find in normalized map " << component.modelHandle << std::endl;
 		component.skeletonHandle = normalizedSkeletonHandleMap.at(component.skeletonHandle);
 		entity.assign<ecs::SkeletonComponent>(component);
 	}
@@ -1021,11 +1042,6 @@ void normalizeHandles(
 )
 {
 	LOG_DEBUG(logger, "Normalizing AnimationHandles");
-//	std::cout << "normalizedMap size " << normalizedMap.size() << std::endl;
-//	for (const auto& kv : normalizedMap)
-//		{
-//			std::cout << "KV " << kv.first << " " << kv.second << std::endl;
-//		}
 
 	for (auto entity : entityComponentSystem.entitiesWithComponents<ecs::AnimationComponent>())
 	{
@@ -1033,7 +1049,6 @@ void normalizeHandles(
 		componentHandle->bonesHandle.invalidate();
 
 		auto component = *componentHandle;
-//		std::cout << "find in normalized map " << component.modelHandle << std::endl;
 		component.animationHandle = normalizedAnimationHandleMap.at(component.animationHandle);
 		entity.assign<ecs::AnimationComponent>(component);
 	}
@@ -1046,11 +1061,6 @@ void normalizeHandles(
 )
 {
 	LOG_DEBUG(logger, "Normalizing TerrainHandles");
-//	std::cout << "normalizedMap size " << normalizedMap.size() << std::endl;
-//	for (const auto& kv : normalizedMap)
-//		{
-//			std::cout << "KV " << kv.first << " " << kv.second << std::endl;
-//		}
 
 	for (auto entity : entityComponentSystem.entitiesWithComponents<ecs::GraphicsTerrainComponent>())
 	{
@@ -1058,7 +1068,6 @@ void normalizeHandles(
 		componentHandle->terrainRenderableHandle.invalidate();
 
 		auto component = *componentHandle;
-//		std::cout << "find in normalized map " << component.terrainHandle << std::endl;
 		component.terrainHandle = normalizedMap.at(component.terrainHandle);
 		entity.assign<ecs::GraphicsTerrainComponent>(component);
 	}
@@ -1070,13 +1079,7 @@ void normalizeHandles(
 	logger::ILogger* logger
 )
 {
-	LOG_DEBUG(logger, "Normalizing CrowdHandles");
-
-		std::cout << "HERE normalizedMap size " << normalizedMap.size() << std::endl;
-		for (const auto& kv : normalizedMap)
-		{
-			std::cout << "KV " << kv.first << " " << kv.second << std::endl;
-		}
+	LOG_DEBUG(logger, "Normalizing AgentHandles");
 
 	for (auto entity : entityComponentSystem.entitiesWithComponents<ecs::PathfindingAgentComponent>())
 	{
@@ -1085,7 +1088,6 @@ void normalizeHandles(
 		componentHandle->agentHandle.invalidate();
 		auto component = *componentHandle;
 
-		std::cout << "find in normalized map " << component.crowdHandle << std::endl;
 		component.crowdHandle = normalizedMap.at(component.crowdHandle);
 		entity.assign<ecs::PathfindingAgentComponent>(component);
 	}
@@ -1094,11 +1096,11 @@ void normalizeHandles(
 void normalizeHandles(
 	ecs::EntityComponentSystem& entityComponentSystem,
 	const std::unordered_map<pathfinding::NavigationMeshHandle, pathfinding::NavigationMeshHandle>& normalizedMap,
-	std::unordered_map<pathfinding::CrowdHandle, pathfinding::CrowdHandle>& normalizedCrowdHandleMap,
+	std::unordered_map<pathfinding::CrowdHandle, pathfinding::CrowdHandle>& crowdHandleMap,
 	logger::ILogger* logger
 )
 {
-	LOG_DEBUG(logger, "Normalizing NavigationMashHandles");
+	LOG_DEBUG(logger, "Normalizing CrowdHandles");
 
 	for (auto entity : entityComponentSystem.entitiesWithComponents<ecs::PathfindingCrowdComponent>())
 	{
@@ -1113,7 +1115,7 @@ void normalizeHandles(
 
 		auto newCrowdHandle = entity.component<ecs::PathfindingCrowdComponent>()->crowdHandle;
 
-		normalizedCrowdHandleMap[oldCrowdHandle] = newCrowdHandle;
+        crowdHandleMap[oldCrowdHandle] = newCrowdHandle;
 		// update all of the pathfinding agents with the new crowd
 //		updateHandles(entityComponentSystem, oldCrowdHandle, newCrowdHandle, logger);
 	}
@@ -1182,16 +1184,9 @@ void normalizeHandles(
 {
 	LOG_DEBUG(logger, "Re-creating script objects");
 
-//	std::cout << "scriptObjectHandleMap size " << scriptObjectHandleMap.size() << std::endl;
-//	for (const auto& kv : scriptObjectHandleMap)
-//		{
-//			std::cout << "KV " << kv.first.get() << " " << kv.second << std::endl;
-//		}
-
 	for (auto entity : entityComponentSystem.entitiesWithComponents<ecs::ScriptObjectComponent>())
 	{
 		auto componentHandle = entity.component<ecs::ScriptObjectComponent>();
-//		std::cout << "find in normalized map " << componentHandle->scriptObjectHandle.get() << std::endl;
 
 		auto scriptObjectName = scriptObjectHandleMap.at(componentHandle->scriptObjectHandle);
 
@@ -1216,7 +1211,7 @@ void Scene::normalizeHandles(
 	const std::unordered_map<std::string, pathfinding::PolygonMeshHandle>& polygonMeshHandleMap,
 	const std::unordered_map<pathfinding::NavigationMeshHandle, pathfinding::NavigationMeshHandle>& normalizedNavigationMeshHandleMap,
 	const std::unordered_map<scripting::ScriptObjectHandle, std::string>& scriptObjectHandleMap,
-	std::unordered_map<pathfinding::CrowdHandle, pathfinding::CrowdHandle>& normalizedCrowdHandleMap
+	std::unordered_map<pathfinding::CrowdHandle, pathfinding::CrowdHandle>& crowdHandleMap
 	)
 {
 	LOG_DEBUG(logger_, "Normalizing handles");
@@ -1227,13 +1222,13 @@ void Scene::normalizeHandles(
 	ice_engine::normalizeHandles(*entityComponentSystem_, normalizedSkeletonHandleMap, logger_);
 	ice_engine::normalizeHandles(*entityComponentSystem_, normalizedAnimationHandleMap, logger_);
 	ice_engine::normalizeHandles(*entityComponentSystem_, normalizedTerrainHandleMap, logger_);
-	ice_engine::normalizeHandles(*entityComponentSystem_, normalizedNavigationMeshHandleMap, normalizedCrowdHandleMap, logger_);
+	ice_engine::normalizeHandles(*entityComponentSystem_, normalizedNavigationMeshHandleMap, crowdHandleMap, logger_);
 	ice_engine::normalizeParentComponentEntities(*entityComponentSystem_, logger_);
 	ice_engine::normalizeChildrenComponentEntities(*entityComponentSystem_, logger_);
 	ice_engine::normalizeParentComponents(*entityComponentSystem_, logger_);
 	ice_engine::normalizeChildrenComponents(*entityComponentSystem_, logger_);
 	ice_engine::normalizeHandles(*entityComponentSystem_, scriptingEngine_, moduleHandle_, executionContextHandle_, scriptObjectHandleMap, logger_);
-	ice_engine::normalizeHandles(*entityComponentSystem_, normalizedCrowdHandleMap, logger_);
+	ice_engine::normalizeHandles(*entityComponentSystem_, crowdHandleMap, logger_);
 }
 
 bool Scene::active() const {

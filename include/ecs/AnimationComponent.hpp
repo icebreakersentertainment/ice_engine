@@ -39,6 +39,7 @@ struct AnimationComponent
 	AnimationHandle animationHandle;
 	graphics::BonesHandle bonesHandle;
 	float32 runningTime = 0.0f;
+	float32 speed = 1.0f;
 	uint32 startFrame = 0;
 	uint32 endFrame = 0;
 	std::vector<glm::mat4> transformations;
@@ -55,7 +56,7 @@ namespace serialization
 template<class Archive>
 void serialize(Archive& ar, ice_engine::ecs::AnimationComponent& c, const unsigned int version)
 {
-	ar & c.animationHandle & c.bonesHandle & c.runningTime & c.startFrame & c.endFrame & c.transformations;
+	ar & c.animationHandle & c.bonesHandle & c.runningTime & c.speed & c.startFrame & c.endFrame & c.transformations;
 }
 
 }

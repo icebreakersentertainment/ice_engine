@@ -13,10 +13,7 @@ namespace physics
 class IHeightfield
 {
 public:
-	virtual ~IHeightfield()
-	{
-	}
-	;
+	virtual ~IHeightfield() = default;
 
 	virtual const std::vector<byte>& data() const = 0;
 	virtual uint32 width() const = 0;

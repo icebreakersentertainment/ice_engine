@@ -1,7 +1,7 @@
 #ifndef ANIMATIONSET_H_
 #define ANIMATIONSET_H_
 
-#include <map>
+#include <unordered_map>
 #include <string>
 
 #define GLM_FORCE_RADIANS
@@ -22,7 +22,7 @@ struct AnimationSet
 	std::string name;
 	
 	BoneNode rootBoneNode;
-	std::map< std::string, Animation > animations;
+	std::unordered_map< std::string, Animation > animations;
 	glm::mat4 globalInverseTransformation;
 };
 

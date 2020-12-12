@@ -17,10 +17,7 @@ namespace gui
 class ITreeView : public virtual IComponent
 {
 public:
-    virtual ~ITreeView()
-    {
-    }
-    ;
+    virtual ~ITreeView() = default;
 
     virtual ITreeNode* createNode(const std::string& label) = 0;
     virtual ITreeNode* getNode(const std::string& label) = 0;

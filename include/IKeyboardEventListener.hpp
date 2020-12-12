@@ -9,10 +9,7 @@ namespace ice_engine
 class IKeyboardEventListener
 {
 public:
-	virtual ~IKeyboardEventListener()
-	{
-	}
-	;
+	virtual ~IKeyboardEventListener() = default;
 	
 	virtual bool processEvent(const graphics::KeyboardEvent& event) = 0;
 };

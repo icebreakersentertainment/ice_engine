@@ -61,9 +61,9 @@ void PathfindingEngineBindingDelegate::bind()
 	scriptingEngine_->registerObjectBehaviour("NavigationMeshConfig", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(DefaultConstructor<pathfinding::NavigationMeshConfig>), asCALL_CDECL_OBJFIRST);
 	scriptingEngine_->registerObjectBehaviour("NavigationMeshConfig", asBEHAVE_CONSTRUCT, "void f(const NavigationMeshConfig& in)", asFUNCTION(CopyConstructor<pathfinding::NavigationMeshConfig>), asCALL_CDECL_OBJFIRST);
 	scriptingEngine_->registerObjectBehaviour("NavigationMeshConfig", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DefaultDestructor<pathfinding::NavigationMeshConfig>), asCALL_CDECL_OBJFIRST);
-	scriptingEngine_->registerObjectProperty("NavigationMeshConfig", "float walkableHeight", asOFFSET(pathfinding::NavigationMeshConfig, walkableHeight));
-	scriptingEngine_->registerObjectProperty("NavigationMeshConfig", "float walkableClimb", asOFFSET(pathfinding::NavigationMeshConfig, walkableClimb));
-	scriptingEngine_->registerObjectProperty("NavigationMeshConfig", "float walkableRadius", asOFFSET(pathfinding::NavigationMeshConfig, walkableRadius));
+	scriptingEngine_->registerObjectProperty("NavigationMeshConfig", "int walkableHeight", asOFFSET(pathfinding::NavigationMeshConfig, walkableHeight));
+	scriptingEngine_->registerObjectProperty("NavigationMeshConfig", "int walkableClimb", asOFFSET(pathfinding::NavigationMeshConfig, walkableClimb));
+	scriptingEngine_->registerObjectProperty("NavigationMeshConfig", "int walkableRadius", asOFFSET(pathfinding::NavigationMeshConfig, walkableRadius));
 
 	scriptingEngine_->registerObjectType("CrowdConfig", sizeof(pathfinding::CrowdConfig), asOBJ_VALUE | asOBJ_APP_CLASS_ALLINTS | asGetTypeTraits<pathfinding::CrowdConfig>());
 	scriptingEngine_->registerObjectBehaviour("CrowdConfig", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(DefaultConstructor<pathfinding::CrowdConfig>), asCALL_CDECL_OBJFIRST);

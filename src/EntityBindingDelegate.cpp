@@ -32,6 +32,7 @@ EntityBindingDelegate::EntityBindingDelegate(logger::ILogger* logger, scripting:
 void EntityBindingDelegate::bind()
 {
 	scriptingEngine_->registerObjectType("Id", sizeof(entityx::Entity::Id), asOBJ_VALUE | asOBJ_POD | asOBJ_APP_CLASS_ALLINTS | asGetTypeTraits<entityx::Entity::Id>());
+    scriptingEngine_->debugger()->registerToStringCallback("Id", scriptingEngineDebuggerToStringCallback<entityx::Entity::Id>());
 //	scriptingEngine_->registerObjectBehaviour("Id", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(DefaultConstructor<entityx::Entity::Id>), asCALL_CDECL_OBJFIRST);
 //	scriptingEngine_->registerObjectBehaviour("Id", asBEHAVE_CONSTRUCT, "void f(const Id& in)", asFUNCTION(CopyConstructor<entityx::Entity::Id>), asCALL_CDECL_OBJFIRST);
 //	scriptingEngine_->registerObjectBehaviour("Id", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DefaultDestructor<entityx::Entity::Id>), asCALL_CDECL_OBJFIRST);
@@ -42,6 +43,7 @@ void EntityBindingDelegate::bind()
 
 	// Entity
 	scriptingEngine_->registerObjectType("Entity", sizeof(ecs::Entity), asOBJ_VALUE | asOBJ_APP_CLASS_ALLINTS | asGetTypeTraits<ecs::Entity>());
+	scriptingEngine_->debugger()->registerToStringCallback("Entity", scriptingEngineDebuggerToStringCallback<ecs::Entity>());
 	scriptingEngine_->registerObjectBehaviour("Entity", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(DefaultConstructor<ecs::Entity>), asCALL_CDECL_OBJFIRST);
 	//scriptingEngine_->registerObjectBehaviour("Entity", asBEHAVE_CONSTRUCT, "void f(const uint64)", asFUNCTION(InitConstructor<T>), asCALL_CDECL_OBJFIRST);
 	scriptingEngine_->registerObjectBehaviour("Entity", asBEHAVE_CONSTRUCT, "void f(const Entity& in)", asFUNCTION(CopyConstructor<ecs::Entity>), asCALL_CDECL_OBJFIRST);
@@ -171,6 +173,7 @@ void EntityBindingDelegate::bind()
 			{"AnimationHandle animationHandle", asOFFSET(ecs::AnimationComponent, animationHandle)},
 			{"BonesHandle bonesHandle", asOFFSET(ecs::AnimationComponent, bonesHandle)},
 			{"float runningTime", asOFFSET(ecs::AnimationComponent, runningTime)},
+			{"float speed", asOFFSET(ecs::AnimationComponent, speed)},
 			{"uint32 startFrame", asOFFSET(ecs::AnimationComponent, startFrame)},
 			{"uint32 endFrame", asOFFSET(ecs::AnimationComponent, endFrame)},
 			{"vectorMat4 transformations", asOFFSET(ecs::AnimationComponent, transformations)}
@@ -264,6 +267,15 @@ void EntityBindingDelegate::bind()
 			"string, ivec4, vec4"
 		);
 	registerEntityComponentAssignMethodNoForward<ecs::ParentBoneAttachmentComponent, std::string>(scriptingEngine_, "ParentBoneAttachmentComponent", "string");
+
+    registerComponent<ecs::PropertiesComponent, std::unordered_map<std::string, std::string>>(
+            scriptingEngine_,
+            "PropertiesComponent",
+            {
+                    {"unordered_mapStringString properties", asOFFSET(ecs::PropertiesComponent, properties)}
+            },
+            "unordered_mapStringString"
+    );
 
 	registerComponent<ecs::PersistableComponent>(
 		scriptingEngine_,

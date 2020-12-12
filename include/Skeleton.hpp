@@ -86,9 +86,9 @@ private:
 
 	void import(const std::string& name, const std::string& filename, const aiScene* scene, logger::ILogger* logger, fs::IFileSystem* fileSystem)
 	{
-		assert( scene != nullptr );
+		assert(scene != nullptr);
 
-		logger->debug("importing skeleton.");
+        LOG_DEBUG(logger, "Importing skeleton for mesh '%s' for model '%s'." , filename, name);
 
 		globalInverseTransformation_ = glm::inverse( detail::convertAssImpMatrix( &(scene->mRootNode->mTransformation) ) );
 
@@ -97,7 +97,7 @@ private:
 
 		rootBoneNode_ = importBoneNode( assImpRootNode );
 
-		logger->debug( "done importing skeleton." );
+        LOG_DEBUG(logger, "Done importing skeleton for mesh '%s' for model '%s'." , filename, name);
 	}
 };
 

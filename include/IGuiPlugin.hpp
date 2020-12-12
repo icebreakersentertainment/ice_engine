@@ -13,10 +13,7 @@ namespace ice_engine
 class IGuiPlugin : public IPlugin
 {
 public:
-	virtual ~IGuiPlugin()
-	{
-	}
-	;
+	virtual ~IGuiPlugin() = default;
 
 	virtual std::unique_ptr<graphics::gui::IGuiFactory> createFactory() const = 0;
 

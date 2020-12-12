@@ -26,6 +26,7 @@
 //#include "ecs/ScriptObjectComponent.hpp"
 #include "ecs/DirtyComponent.hpp"
 #include "ecs/ParentBoneAttachmentComponent.hpp"
+#include "ecs/PropertiesComponent.hpp"
 
 #include "ModelHandle.hpp"
 
@@ -33,6 +34,17 @@
 #include "serialization/SplitMember.hpp"
 
 #include "exceptions/RuntimeException.hpp"
+
+namespace entityx
+{
+template<typename C>
+inline std::ostream& operator<<(std::ostream& os, const ComponentHandle<C>& data)
+{
+    os << "ComponentHandle(" << *(data.get()) << ")";
+
+    return os;
+}
+}
 
 namespace ice_engine
 {
@@ -42,8 +54,8 @@ class Scene;
 namespace ecs
 {
 
-class ParentComponent;
-class ChildrenComponent;
+struct ParentComponent;
+struct ChildrenComponent;
 
 class SceneDelegate
 {
@@ -211,7 +223,6 @@ public:
 			, entityx::ComponentHandle<C>>::type
         assign(Args && ... args)
 		{
-        	//std::cout << entity_ << std::endl;
           return entity_.assign<C>(std::forward<Args>(args) ...);
         }
 
@@ -267,13 +278,10 @@ public:
         typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<GraphicsComponent>>::value, entityx::ComponentHandle<C>>::type
         assign(Args && ... args)
 		{
-        	std::cout << entity_ << std::endl;
-
         	entityx::ComponentHandle<C> componentHandle;
 
         	if (entity_.has_component<C>()) entity_.remove<C>();
 
-        	std::cout << "GCGCGCGC" << std::endl;
         	componentHandle = entity_.assign<C>(std::forward<Args>(args) ...);
 
         	if (!componentHandle->renderableHandle)
@@ -290,21 +298,15 @@ public:
         typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<AnimationComponent>>::value, entityx::ComponentHandle<C>>::type
         assign(Args && ... args)
 		{
-        	std::cout << entity_ << std::endl;
-
         	entityx::ComponentHandle<C> componentHandle;
 
         	auto gc = entity_.component<ecs::GraphicsComponent>();
 
-        	std::cout << "ACACACAC 1" << std::endl;
         	if (!gc) throw RuntimeException("cannot assign animation component - graphics component does not exist");
-        	std::cout << "ACACACAC 2" << std::endl;
         	if (!gc->renderableHandle) throw RuntimeException("cannot assign animation component - renderableHandle is not valid");
-        	std::cout << "ACACACAC 3" << std::endl;
 
         	if (entity_.has_component<C>()) entity_.remove<C>();
 
-        	std::cout << "ACACACAC" << std::endl;
         	componentHandle = entity_.assign<C>(std::forward<Args>(args) ...);
 
         	if (!componentHandle->bonesHandle)
@@ -320,8 +322,6 @@ public:
         typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<PointLightComponent>>::value, entityx::ComponentHandle<C>>::type
         assign(Args && ... args)
 		{
-        	std::cout << entity_ << std::endl;
-
         	entityx::ComponentHandle<C> componentHandle;
 
         	if (entity_.has_component<C>())
@@ -330,7 +330,6 @@ public:
         		if (c->pointLightHandle) sceneDelegate_.destroy(c->pointLightHandle);
         	}
 
-        	std::cout << "PL" << std::endl;
         	componentHandle = entity_.assign<C>(std::forward<Args>(args) ...);
 
         	if (!componentHandle->pointLightHandle)
@@ -346,8 +345,6 @@ public:
         typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<GraphicsTerrainComponent>>::value, entityx::ComponentHandle<C>>::type
         assign(Args && ... args)
 		{
-        	std::cout << entity_ << std::endl;
-
         	entityx::ComponentHandle<C> componentHandle;
 
         	if (entity_.has_component<C>())
@@ -356,7 +353,6 @@ public:
         		if (c->terrainRenderableHandle) sceneDelegate_.destroy(c->terrainRenderableHandle);
         	}
 
-        	std::cout << "GTC" << std::endl;
         	componentHandle = entity_.assign<C>(std::forward<Args>(args) ...);
 
         	if (!componentHandle->terrainRenderableHandle)
@@ -374,8 +370,6 @@ public:
         typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<GraphicsSkyboxComponent>>::value, entityx::ComponentHandle<C>>::type
         assign(Args && ... args)
 		{
-        	std::cout << entity_ << std::endl;
-
         	entityx::ComponentHandle<C> componentHandle;
 
         	if (entity_.has_component<C>())
@@ -384,7 +378,6 @@ public:
         		if (c->skyboxRenderableHandle) sceneDelegate_.destroy(c->skyboxRenderableHandle);
         	}
 
-        	std::cout << "GSC" << std::endl;
         	componentHandle = entity_.assign<C>(std::forward<Args>(args) ...);
 
         	if (!componentHandle->skyboxRenderableHandle)
@@ -402,13 +395,10 @@ public:
         typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<RigidBodyObjectComponent>>::value, entityx::ComponentHandle<C>>::type
         assign(Args && ... args)
 		{
-        		std::cout << entity_ << std::endl;
-
         	entityx::ComponentHandle<C> componentHandle;
 
         	if (entity_.has_component<C>()) entity_.remove<C>();
 
-        	std::cout << "PCPCPCPC" << std::endl;
         	componentHandle = entity_.assign<C>(std::forward<Args>(args) ...);
 
         	if (!componentHandle->rigidBodyObjectHandle)
@@ -443,13 +433,10 @@ public:
         typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<GhostObjectComponent>>::value, entityx::ComponentHandle<C>>::type
         assign(Args && ... args)
 		{
-        		std::cout << entity_ << std::endl;
-
         	entityx::ComponentHandle<C> componentHandle;
 
         	if (entity_.has_component<C>()) entity_.remove<C>();
 
-        	std::cout << "GHC" << std::endl;
         	componentHandle = entity_.assign<C>(std::forward<Args>(args) ...);
 
         	if (!componentHandle->ghostObjectHandle)
@@ -481,19 +468,14 @@ public:
         typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<PathfindingCrowdComponent>>::value, entityx::ComponentHandle<C>>::type
         assign(Args && ... args)
 		{
-        		std::cout << entity_ << std::endl;
-
         	entityx::ComponentHandle<C> componentHandle;
 
         	if (entity_.has_component<C>()) entity_.remove<C>();
 
-        	std::cout << "CC" << std::endl;
         	componentHandle = entity_.assign<C>(std::forward<Args>(args) ...);
 
         	if (!componentHandle->crowdHandle)
         	{
-        		std::cout << "e: "<< componentHandle->crowdConfig.maxAgents << std::endl;
-
         		auto pc = entity_.component<PositionComponent>();
 				auto oc = entity_.component<OrientationComponent>();
 
@@ -510,13 +492,10 @@ public:
         typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<PathfindingAgentComponent>>::value, entityx::ComponentHandle<C>>::type
         assign(Args && ... args)
 		{
-        		std::cout << entity_ << std::endl;
-
         	entityx::ComponentHandle<C> componentHandle;
 
         	if (entity_.has_component<C>()) entity_.remove<C>();
 
-        	std::cout << "PAC" << std::endl;
         	componentHandle = entity_.assign<C>(std::forward<Args>(args) ...);
 
         	if (!componentHandle->agentHandle)
@@ -524,13 +503,12 @@ public:
         		auto pc = entity_.component<PositionComponent>();
 				auto oc = entity_.component<OrientationComponent>();
 
-				std::cout << "PAC: " << glm::to_string(pc->position) << std::endl;
         		componentHandle->agentHandle = sceneDelegate_.createAgent(
 					componentHandle->crowdHandle,
 					pc->position,
 					componentHandle->agentParams
 				);
-        		std::cout << "PAC: " << glm::to_string(pc->position) << std::endl;
+
         		if (entity_.has_component<DirtyComponent>())
         		{
         			auto dirtyComponent = entity_.component<DirtyComponent>();
@@ -549,13 +527,10 @@ public:
         typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<PathfindingObstacleComponent>>::value, entityx::ComponentHandle<C>>::type
         assign(Args && ... args)
 		{
-        		std::cout << entity_ << std::endl;
-
         	entityx::ComponentHandle<C> componentHandle;
 
         	if (entity_.has_component<C>()) entity_.remove<C>();
 
-        	std::cout << "POC" << std::endl;
         	componentHandle = entity_.assign<C>(std::forward<Args>(args) ...);
 
         	if (!componentHandle->obstacleHandle)

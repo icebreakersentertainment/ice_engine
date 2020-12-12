@@ -14,10 +14,7 @@ namespace ice_engine
 class IResourceCache
 {
 public:
-	virtual ~IResourceCache()
-	{
-	}
-	;
+	virtual ~IResourceCache() = default;
 
 	virtual void addAudio(const std::string& name, std::unique_ptr<Audio> audio) = 0;
 	virtual void addImage(const std::string& name, std::unique_ptr<Image> image) = 0;

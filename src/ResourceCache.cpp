@@ -3,14 +3,6 @@
 namespace ice_engine
 {
 
-ResourceCache::ResourceCache()
-{
-}
-
-ResourceCache::~ResourceCache()
-{
-}
-
 void ResourceCache::addAudio(const std::string& name, std::unique_ptr<Audio> audio)
 {
 	std::lock_guard<std::recursive_mutex> lock(audioMutex_);

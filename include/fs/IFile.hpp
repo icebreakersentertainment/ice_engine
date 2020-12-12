@@ -31,8 +31,8 @@ public:
 	virtual void close() = 0;
 	
 	virtual void write(const char* data) = 0;
-	virtual void write(const std::string& file) = 0;
-	virtual std::string read(uint32 length = 256) = 0;
+	virtual void write(const std::string& data) = 0;
+	virtual std::string read(const uint32 length = 256) = 0;
 	virtual std::string readAll() = 0;
 	
 	virtual std::istream& getInputStream() = 0;

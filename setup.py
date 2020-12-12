@@ -91,7 +91,7 @@ if (compiler == 'msvc' and isMac):
 	exit()
 
 if (compiler == 'msvc'):
-	compilerVersion = '15'
+	compilerVersion = '16'
 if (compiler == 'clang'):
 	compilerVersion = '8'
 
@@ -111,7 +111,7 @@ dependencies = dict()
 dependencies['boost'] = {'name': 'Boost', 'version': '1.68.0', 'extension': extension}
 dependencies['glm'] = {'name': 'GLM', 'version': '0.9.8.3', 'extension': extension}
 dependencies['angelscript'] = {'name': 'Angelscript', 'version': '2.32.0', 'extension': extension}
-dependencies['assimp'] = {'name': 'Asset Importer', 'version': 'v3.3.1', 'extension': extension}
+dependencies['assimp'] = {'name': 'Asset Importer', 'version': 'v5.0.1', 'extension': extension}
 dependencies['entityx'] = {'name': 'Entityx', 'version': 'master', 'extension': extension}
 dependencies['glew'] = {'name': 'GLEW', 'version': '2.1.0', 'extension': extension}
 dependencies['sdl'] = {'name': 'SDL', 'version': '2.0.8', 'extension': extension}

@@ -16,13 +16,10 @@ namespace gui
 class IComboBoxItem
 {
 public:
-    virtual ~IComboBoxItem()
-    {
-    }
-    ;
+    virtual ~IComboBoxItem() = default;
 
     virtual void setLabel(const std::string& label) = 0;
-    virtual const std::string& getLabel() const = 0;
+    virtual const std::string& label() const = 0;
 };
 
 }

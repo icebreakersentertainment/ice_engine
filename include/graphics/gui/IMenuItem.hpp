@@ -16,13 +16,10 @@ namespace gui
 class IMenuItem : public virtual IComponent
 {
 public:
-	virtual ~IMenuItem()
-	{
-	}
-	;
+	virtual ~IMenuItem() = default;
 
 	virtual void setLabel(const std::string& label) = 0;
-	virtual const std::string& getLabel() const  = 0;
+	virtual const std::string& label() const  = 0;
 
 	virtual void setCallback(std::function<void()>& callback) = 0;
 

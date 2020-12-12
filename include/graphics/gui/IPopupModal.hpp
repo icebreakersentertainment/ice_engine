@@ -17,10 +17,7 @@ namespace gui
 class IPopupModal : public virtual IGenericComponentContainer, public virtual IComponent
 {
 public:
-	virtual ~IPopupModal()
-	{
-	}
-	;
+	virtual ~IPopupModal() = default;
 
 	virtual void close() = 0;
 

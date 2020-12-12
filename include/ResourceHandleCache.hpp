@@ -18,10 +18,14 @@
 #include "graphics/TerrainHandle.hpp"
 #include "graphics/SkyboxHandle.hpp"
 
+#include "audio/SoundHandle.hpp"
+
 #include "physics/CollisionShapeHandle.hpp"
 
 #include "pathfinding/PolygonMeshHandle.hpp"
 #include "pathfinding/NavigationMeshHandle.hpp"
+
+#include "exceptions/Exception.hpp"
 
 #include "Types.hpp"
 
@@ -37,7 +41,7 @@ public:
 
 		if (collisionShapeHandleMap_.find(name) != collisionShapeHandleMap_.end())
 		{
-			throw std::runtime_error("Resource with name already exists.");
+			throw Exception(std::string("Resource with name '") + name + "' already exists.");
 		}
 
 		collisionShapeHandleMap_[name] = handle;
@@ -65,251 +69,251 @@ public:
 	{
 		boost::shared_lock_guard<boost::shared_mutex> lock(collisionShapeHandleMutex_);
 
-		auto it = collisionShapeHandleMap_.find(name);
+        const auto it = collisionShapeHandleMap_.find(name);
 		if (it != collisionShapeHandleMap_.end()) return it->second;
 
 		return physics::CollisionShapeHandle();
 	}
 
 	void addModelHandle(const std::string& name, const ModelHandle& handle)
-		{
-			std::unique_lock<boost::shared_mutex> lock(modelHandleMutex_);
+    {
+        std::unique_lock<boost::shared_mutex> lock(modelHandleMutex_);
 
-			if (modelHandleMap_.find(name) != modelHandleMap_.end())
-			{
-				throw std::runtime_error("Resource with name already exists.");
-			}
+        if (modelHandleMap_.find(name) != modelHandleMap_.end())
+        {
+            throw Exception(std::string("Resource with name '") + name + "' already exists.");
+        }
 
-			modelHandleMap_[name] = handle;
-		}
+        modelHandleMap_[name] = handle;
+    }
 
-		void removeModelHandle(const std::string& name)
-		{
-			std::unique_lock<boost::shared_mutex> lock(modelHandleMutex_);
+    void removeModelHandle(const std::string& name)
+    {
+        std::unique_lock<boost::shared_mutex> lock(modelHandleMutex_);
 
-			auto it = modelHandleMap_.find(name);
-			if (it != modelHandleMap_.end())
-			{
-				modelHandleMap_.erase(it);
-			}
-		}
+        auto it = modelHandleMap_.find(name);
+        if (it != modelHandleMap_.end())
+        {
+            modelHandleMap_.erase(it);
+        }
+    }
 
-		void removeAllModelHandles()
-		{
-			std::unique_lock<boost::shared_mutex> lock(modelHandleMutex_);
+    void removeAllModelHandles()
+    {
+        std::unique_lock<boost::shared_mutex> lock(modelHandleMutex_);
 
-			modelHandleMap_.clear();
-		}
+        modelHandleMap_.clear();
+    }
 
-		ModelHandle getModelHandle(const std::string& name) const
-		{
-			boost::shared_lock_guard<boost::shared_mutex> lock(modelHandleMutex_);
+    ModelHandle getModelHandle(const std::string& name) const
+    {
+        boost::shared_lock_guard<boost::shared_mutex> lock(modelHandleMutex_);
 
-			auto it = modelHandleMap_.find(name);
-			if (it != modelHandleMap_.end()) return it->second;
+        const auto it = modelHandleMap_.find(name);
+        if (it != modelHandleMap_.end()) return it->second;
 
-			return ModelHandle();
-		}
+        return ModelHandle();
+    }
 
 	void addSkeletonHandle(const std::string& name, const SkeletonHandle& handle)
-		{
-			std::unique_lock<boost::shared_mutex> lock(skeletonHandleMutex_);
+    {
+        std::unique_lock<boost::shared_mutex> lock(skeletonHandleMutex_);
 
-			if (skeletonHandleMap_.find(name) != skeletonHandleMap_.end())
-			{
-				throw std::runtime_error("Resource with name already exists.");
-			}
+        if (skeletonHandleMap_.find(name) != skeletonHandleMap_.end())
+        {
+            throw Exception(std::string("Resource with name '") + name + "' already exists.");
+        }
 
-			skeletonHandleMap_[name] = handle;
-		}
+        skeletonHandleMap_[name] = handle;
+    }
 
-		void removeSkeletonHandle(const std::string& name)
-		{
-			std::unique_lock<boost::shared_mutex> lock(skeletonHandleMutex_);
+    void removeSkeletonHandle(const std::string& name)
+    {
+        std::unique_lock<boost::shared_mutex> lock(skeletonHandleMutex_);
 
-			auto it = skeletonHandleMap_.find(name);
-			if (it != skeletonHandleMap_.end())
-			{
-				skeletonHandleMap_.erase(it);
-			}
-		}
+        auto it = skeletonHandleMap_.find(name);
+        if (it != skeletonHandleMap_.end())
+        {
+            skeletonHandleMap_.erase(it);
+        }
+    }
 
-		void removeAllSkeletonHandles()
-		{
-			std::unique_lock<boost::shared_mutex> lock(skeletonHandleMutex_);
+    void removeAllSkeletonHandles()
+    {
+        std::unique_lock<boost::shared_mutex> lock(skeletonHandleMutex_);
 
-			skeletonHandleMap_.clear();
-		}
+        skeletonHandleMap_.clear();
+    }
 
-		SkeletonHandle getSkeletonHandle(const std::string& name) const
-		{
-			boost::shared_lock_guard<boost::shared_mutex> lock(skeletonHandleMutex_);
+    SkeletonHandle getSkeletonHandle(const std::string& name) const
+    {
+        boost::shared_lock_guard<boost::shared_mutex> lock(skeletonHandleMutex_);
 
-			auto it = skeletonHandleMap_.find(name);
-			if (it != skeletonHandleMap_.end()) return it->second;
+        const auto it = skeletonHandleMap_.find(name);
+        if (it != skeletonHandleMap_.end()) return it->second;
 
-			return SkeletonHandle();
-		}
+        return SkeletonHandle();
+    }
 
 	void addAnimationHandle(const std::string& name, const AnimationHandle& handle)
-		{
-			std::unique_lock<boost::shared_mutex> lock(animationHandleMutex_);
+    {
+        std::unique_lock<boost::shared_mutex> lock(animationHandleMutex_);
 
-			if (animationHandleMap_.find(name) != animationHandleMap_.end())
-			{
-				throw std::runtime_error("Resource with name already exists.");
-			}
+        if (animationHandleMap_.find(name) != animationHandleMap_.end())
+        {
+            throw Exception(std::string("Resource with name '") + name + "' already exists.");
+        }
 
-			animationHandleMap_[name] = handle;
-		}
+        animationHandleMap_[name] = handle;
+    }
 
-		void removeAnimationHandle(const std::string& name)
-		{
-			std::unique_lock<boost::shared_mutex> lock(animationHandleMutex_);
+    void removeAnimationHandle(const std::string& name)
+    {
+        std::unique_lock<boost::shared_mutex> lock(animationHandleMutex_);
 
-			auto it = animationHandleMap_.find(name);
-			if (it != animationHandleMap_.end())
-			{
-				animationHandleMap_.erase(it);
-			}
-		}
+        auto it = animationHandleMap_.find(name);
+        if (it != animationHandleMap_.end())
+        {
+            animationHandleMap_.erase(it);
+        }
+    }
 
-		void removeAllAnimationHandles()
-		{
-			std::unique_lock<boost::shared_mutex> lock(animationHandleMutex_);
+    void removeAllAnimationHandles()
+    {
+        std::unique_lock<boost::shared_mutex> lock(animationHandleMutex_);
 
-			animationHandleMap_.clear();
-		}
+        animationHandleMap_.clear();
+    }
 
-		AnimationHandle getAnimationHandle(const std::string& name) const
-		{
-			boost::shared_lock_guard<boost::shared_mutex> lock(animationHandleMutex_);
+    AnimationHandle getAnimationHandle(const std::string& name) const
+    {
+        boost::shared_lock_guard<boost::shared_mutex> lock(animationHandleMutex_);
 
-			auto it = animationHandleMap_.find(name);
-			if (it != animationHandleMap_.end()) return it->second;
+        const auto it = animationHandleMap_.find(name);
+        if (it != animationHandleMap_.end()) return it->second;
 
-			return AnimationHandle();
-		}
+        return AnimationHandle();
+    }
 
 	void addMeshHandle(const std::string& name, const graphics::MeshHandle& handle)
-		{
-			std::unique_lock<boost::shared_mutex> lock(meshHandleMutex_);
+    {
+        std::unique_lock<boost::shared_mutex> lock(meshHandleMutex_);
 
-			if (meshHandleMap_.find(name) != meshHandleMap_.end())
-			{
-				throw std::runtime_error("Resource with name already exists.");
-			}
+        if (meshHandleMap_.find(name) != meshHandleMap_.end())
+        {
+            throw Exception(std::string("Resource with name '") + name + "' already exists.");
+        }
 
-			meshHandleMap_[name] = handle;
-		}
+        meshHandleMap_[name] = handle;
+    }
 
-		void removeMeshHandle(const std::string& name)
-		{
-			std::unique_lock<boost::shared_mutex> lock(meshHandleMutex_);
+    void removeMeshHandle(const std::string& name)
+    {
+        std::unique_lock<boost::shared_mutex> lock(meshHandleMutex_);
 
-			auto it = meshHandleMap_.find(name);
-			if (it != meshHandleMap_.end())
-			{
-				meshHandleMap_.erase(it);
-			}
-		}
+        auto it = meshHandleMap_.find(name);
+        if (it != meshHandleMap_.end())
+        {
+            meshHandleMap_.erase(it);
+        }
+    }
 
-		void removeAllMeshHandles()
-		{
-			std::unique_lock<boost::shared_mutex> lock(meshHandleMutex_);
+    void removeAllMeshHandles()
+    {
+        std::unique_lock<boost::shared_mutex> lock(meshHandleMutex_);
 
-			meshHandleMap_.clear();
-		}
+        meshHandleMap_.clear();
+    }
 
-		graphics::MeshHandle getMeshHandle(const std::string& name) const
-		{
-			boost::shared_lock_guard<boost::shared_mutex> lock(meshHandleMutex_);
+    graphics::MeshHandle getMeshHandle(const std::string& name) const
+    {
+        boost::shared_lock_guard<boost::shared_mutex> lock(meshHandleMutex_);
 
-			auto it = meshHandleMap_.find(name);
-			if (it != meshHandleMap_.end()) return it->second;
+        const auto it = meshHandleMap_.find(name);
+        if (it != meshHandleMap_.end()) return it->second;
 
-			return graphics::MeshHandle();
-		}
+        return graphics::MeshHandle();
+    }
 
 	void addTextureHandle(const std::string& name, const graphics::TextureHandle& handle)
-		{
-			std::unique_lock<boost::shared_mutex> lock(textureHandleMutex_);
+    {
+        std::unique_lock<boost::shared_mutex> lock(textureHandleMutex_);
 
-			if (textureHandleMap_.find(name) != textureHandleMap_.end())
-			{
-				throw std::runtime_error("Resource with name already exists.");
-			}
+        if (textureHandleMap_.find(name) != textureHandleMap_.end())
+        {
+            throw Exception(std::string("Resource with name '") + name + "' already exists.");
+        }
 
-			textureHandleMap_[name] = handle;
-		}
+        textureHandleMap_[name] = handle;
+    }
 
-		void removeTextureHandle(const std::string& name)
-		{
-			std::unique_lock<boost::shared_mutex> lock(textureHandleMutex_);
+    void removeTextureHandle(const std::string& name)
+    {
+        std::unique_lock<boost::shared_mutex> lock(textureHandleMutex_);
 
-			auto it = textureHandleMap_.find(name);
-			if (it != textureHandleMap_.end())
-			{
-				textureHandleMap_.erase(it);
-			}
-		}
+        auto it = textureHandleMap_.find(name);
+        if (it != textureHandleMap_.end())
+        {
+            textureHandleMap_.erase(it);
+        }
+    }
 
-		void removeAllTextureHandles()
-		{
-			std::unique_lock<boost::shared_mutex> lock(textureHandleMutex_);
+    void removeAllTextureHandles()
+    {
+        std::unique_lock<boost::shared_mutex> lock(textureHandleMutex_);
 
-			textureHandleMap_.clear();
-		}
+        textureHandleMap_.clear();
+    }
 
-		graphics::TextureHandle getTextureHandle(const std::string& name) const
-		{
-			boost::shared_lock_guard<boost::shared_mutex> lock(textureHandleMutex_);
+    graphics::TextureHandle getTextureHandle(const std::string& name) const
+    {
+        boost::shared_lock_guard<boost::shared_mutex> lock(textureHandleMutex_);
 
-			auto it = textureHandleMap_.find(name);
-			if (it != textureHandleMap_.end()) return it->second;
+        const auto it = textureHandleMap_.find(name);
+        if (it != textureHandleMap_.end()) return it->second;
 
-			return graphics::TextureHandle();
-		}
+        return graphics::TextureHandle();
+    }
 
 	void addTerrainHandle(const std::string& name, const graphics::TerrainHandle& handle)
-		{
-			std::unique_lock<boost::shared_mutex> lock(terrainHandleMutex_);
+    {
+        std::unique_lock<boost::shared_mutex> lock(terrainHandleMutex_);
 
-			if (terrainHandleMap_.find(name) != terrainHandleMap_.end())
-			{
-				throw std::runtime_error("Resource with name already exists.");
-			}
+        if (terrainHandleMap_.find(name) != terrainHandleMap_.end())
+        {
+            throw Exception(std::string("Resource with name '") + name + "' already exists.");
+        }
 
-			terrainHandleMap_[name] = handle;
-		}
+        terrainHandleMap_[name] = handle;
+    }
 
-		void removeTerrainHandle(const std::string& name)
-		{
-			std::unique_lock<boost::shared_mutex> lock(terrainHandleMutex_);
+    void removeTerrainHandle(const std::string& name)
+    {
+        std::unique_lock<boost::shared_mutex> lock(terrainHandleMutex_);
 
-			auto it = terrainHandleMap_.find(name);
-			if (it != terrainHandleMap_.end())
-			{
-				terrainHandleMap_.erase(it);
-			}
-		}
+        auto it = terrainHandleMap_.find(name);
+        if (it != terrainHandleMap_.end())
+        {
+            terrainHandleMap_.erase(it);
+        }
+    }
 
-		void removeAllTerrainHandles()
-		{
-			std::unique_lock<boost::shared_mutex> lock(terrainHandleMutex_);
+    void removeAllTerrainHandles()
+    {
+        std::unique_lock<boost::shared_mutex> lock(terrainHandleMutex_);
 
-			terrainHandleMap_.clear();
-		}
+        terrainHandleMap_.clear();
+    }
 
-		graphics::TerrainHandle getTerrainHandle(const std::string& name) const
-		{
-			boost::shared_lock_guard<boost::shared_mutex> lock(terrainHandleMutex_);
+    graphics::TerrainHandle getTerrainHandle(const std::string& name) const
+    {
+        boost::shared_lock_guard<boost::shared_mutex> lock(terrainHandleMutex_);
 
-			auto it = terrainHandleMap_.find(name);
-			if (it != terrainHandleMap_.end()) return it->second;
+        const auto it = terrainHandleMap_.find(name);
+        if (it != terrainHandleMap_.end()) return it->second;
 
-			return graphics::TerrainHandle();
-		}
+        return graphics::TerrainHandle();
+    }
 
 	void addSkyboxHandle(const std::string& name, const graphics::SkyboxHandle& handle)
 	{
@@ -317,7 +321,7 @@ public:
 
 		if (skyboxHandleMap_.find(name) != skyboxHandleMap_.end())
 		{
-			throw std::runtime_error("Resource with name already exists.");
+			throw Exception(std::string("Resource with name '") + name + "' already exists.");
 		}
 
 		skyboxHandleMap_[name] = handle;
@@ -345,10 +349,50 @@ public:
 	{
 		boost::shared_lock_guard<boost::shared_mutex> lock(skyboxHandleMutex_);
 
-		auto it = skyboxHandleMap_.find(name);
+        const auto it = skyboxHandleMap_.find(name);
 		if (it != skyboxHandleMap_.end()) return it->second;
 
 		return graphics::SkyboxHandle();
+	}
+
+	void addSoundHandle(const std::string& name, const audio::SoundHandle& handle)
+	{
+		std::unique_lock<boost::shared_mutex> lock(soundHandleMutex_);
+
+		if (soundHandleMap_.find(name) != soundHandleMap_.end())
+		{
+			throw Exception(std::string("Resource with name '") + name + "' already exists.");
+		}
+
+		soundHandleMap_[name] = handle;
+	}
+
+	void removeSoundHandle(const std::string& name)
+	{
+		std::unique_lock<boost::shared_mutex> lock(soundHandleMutex_);
+
+		auto it = soundHandleMap_.find(name);
+		if (it != soundHandleMap_.end())
+		{
+			soundHandleMap_.erase(it);
+		}
+	}
+
+	void removeAllSoundHandles()
+	{
+		std::unique_lock<boost::shared_mutex> lock(soundHandleMutex_);
+
+		soundHandleMap_.clear();
+	}
+
+    audio::SoundHandle getSoundHandle(const std::string& name) const
+	{
+		boost::shared_lock_guard<boost::shared_mutex> lock(soundHandleMutex_);
+
+		const auto it = soundHandleMap_.find(name);
+		if (it != soundHandleMap_.end()) return it->second;
+
+		return audio::SoundHandle();
 	}
 
 	void addPolygonMeshHandle(const std::string& name, const pathfinding::PolygonMeshHandle& handle)
@@ -357,7 +401,7 @@ public:
 
 		if (polygonMeshHandleMap_.find(name) != polygonMeshHandleMap_.end())
 		{
-			throw std::runtime_error("Resource with name already exists.");
+			throw Exception(std::string("Resource with name '") + name + "' already exists.");
 		}
 
 		polygonMeshHandleMap_[name] = handle;
@@ -385,7 +429,7 @@ public:
 	{
 		boost::shared_lock_guard<boost::shared_mutex> lock(polygonMeshHandleMutex_);
 
-		auto it = polygonMeshHandleMap_.find(name);
+        const auto it = polygonMeshHandleMap_.find(name);
 		if (it != polygonMeshHandleMap_.end()) return it->second;
 
 		return pathfinding::PolygonMeshHandle();
@@ -397,7 +441,7 @@ public:
 
 		if (navigationMeshHandleMap_.find(name) != navigationMeshHandleMap_.end())
 		{
-			throw std::runtime_error("Resource with name already exists.");
+			throw Exception(std::string("Resource with name '") + name + "' already exists.");
 		}
 
 		navigationMeshHandleMap_[name] = handle;
@@ -425,81 +469,88 @@ public:
 	{
 		boost::shared_lock_guard<boost::shared_mutex> lock(navigationMeshHandleMutex_);
 
-		auto it = navigationMeshHandleMap_.find(name);
+		const auto it = navigationMeshHandleMap_.find(name);
 		if (it != navigationMeshHandleMap_.end()) return it->second;
 
 		return pathfinding::NavigationMeshHandle();
 	}
 
 	std::unordered_map<std::string, physics::CollisionShapeHandle> collisionShapeHandleMap()
-		{
+    {
 		boost::shared_lock_guard<boost::shared_mutex> lock(collisionShapeHandleMutex_);
 
-			return collisionShapeHandleMap_;
-		}
+        return collisionShapeHandleMap_;
+    }
 
 	std::unordered_map<std::string, ModelHandle> modelHandleMap()
-		{
+    {
 		boost::shared_lock_guard<boost::shared_mutex> lock(modelHandleMutex_);
 
-			return modelHandleMap_;
-		}
+        return modelHandleMap_;
+    }
 
 	std::unordered_map<std::string, SkeletonHandle> skeletonHandleMap()
-		{
+    {
 		boost::shared_lock_guard<boost::shared_mutex> lock(skeletonHandleMutex_);
 
-			return skeletonHandleMap_;
-		}
+        return skeletonHandleMap_;
+    }
 
 	std::unordered_map<std::string, AnimationHandle> animationHandleMap()
-		{
+    {
 		boost::shared_lock_guard<boost::shared_mutex> lock(animationHandleMutex_);
 
-			return animationHandleMap_;
-		}
+        return animationHandleMap_;
+    }
 
 	std::unordered_map<std::string, graphics::MeshHandle> meshHandleMap()
-		{
+    {
 		boost::shared_lock_guard<boost::shared_mutex> lock(meshHandleMutex_);
 
-			return meshHandleMap_;
-		}
+        return meshHandleMap_;
+    }
 
 	std::unordered_map<std::string, graphics::TextureHandle> textureHandleMap()
-		{
+    {
 		boost::shared_lock_guard<boost::shared_mutex> lock(textureHandleMutex_);
 
-			return textureHandleMap_;
-		}
+        return textureHandleMap_;
+    }
 
 	std::unordered_map<std::string, graphics::TerrainHandle> terrainHandleMap()
-		{
+    {
 		boost::shared_lock_guard<boost::shared_mutex> lock(terrainHandleMutex_);
 
-			return terrainHandleMap_;
-		}
+        return terrainHandleMap_;
+    }
 
 	std::unordered_map<std::string, graphics::SkyboxHandle> skyboxHandleMap()
-		{
+    {
 		boost::shared_lock_guard<boost::shared_mutex> lock(skyboxHandleMutex_);
 
 			return skyboxHandleMap_;
-		}
+    }
+
+    std::unordered_map<std::string, audio::SoundHandle> soundHandleMap()
+    {
+		boost::shared_lock_guard<boost::shared_mutex> lock(soundHandleMutex_);
+
+        return soundHandleMap_;
+    }
 
 	std::unordered_map<std::string, pathfinding::PolygonMeshHandle> polygonMeshHandleMap()
-		{
-		boost::shared_lock_guard<boost::shared_mutex> lock(polygonMeshHandleMutex_);
+    {
+        boost::shared_lock_guard<boost::shared_mutex> lock(polygonMeshHandleMutex_);
 
-		 return polygonMeshHandleMap_;
-		}
+         return polygonMeshHandleMap_;
+    }
 
 	std::unordered_map<std::string, pathfinding::NavigationMeshHandle> navigationMeshHandleMap()
-		{
-			boost::shared_lock_guard<boost::shared_mutex> lock(navigationMeshHandleMutex_);
+    {
+        boost::shared_lock_guard<boost::shared_mutex> lock(navigationMeshHandleMutex_);
 
-			return navigationMeshHandleMap_;
-		}
+        return navigationMeshHandleMap_;
+    }
 
 private:
 	mutable boost::shared_mutex collisionShapeHandleMutex_;
@@ -510,6 +561,7 @@ private:
 	mutable boost::shared_mutex textureHandleMutex_;
 	mutable boost::shared_mutex terrainHandleMutex_;
 	mutable boost::shared_mutex skyboxHandleMutex_;
+	mutable boost::shared_mutex soundHandleMutex_;
 	mutable boost::shared_mutex polygonMeshHandleMutex_;
 	mutable boost::shared_mutex navigationMeshHandleMutex_;
 
@@ -521,9 +573,67 @@ private:
 	std::unordered_map<std::string, graphics::TextureHandle> textureHandleMap_;
 	std::unordered_map<std::string, graphics::TerrainHandle> terrainHandleMap_;
 	std::unordered_map<std::string, graphics::SkyboxHandle> skyboxHandleMap_;
+	std::unordered_map<std::string, audio::SoundHandle> soundHandleMap_;
 	std::unordered_map<std::string, pathfinding::PolygonMeshHandle> polygonMeshHandleMap_;
 	std::unordered_map<std::string, pathfinding::NavigationMeshHandle> navigationMeshHandleMap_;
 };
+
+//template <typename T>
+//class ResourceCache
+//{
+//public:
+//    void add(const std::string& name, const T resource)
+//    {
+//        std::unique_lock<boost::shared_mutex> lock(mutex_);
+//
+//        if (resourceMap_.find(name) != resourceMap_.end())
+//        {
+//            throw Exception(std::string("Resource with name '") + name + "' already exists.");
+//        }
+//
+//        resourceMap_[name] = resource;
+//    }
+//
+//    void remove(const std::string& name)
+//    {
+//        std::unique_lock<boost::shared_mutex> lock(mutex_);
+//
+//        auto it = resourceMap_.find(name);
+//        if (it != resourceMap_.end())
+//        {
+//            resourceMap_.erase(it);
+//        }
+//    }
+//
+//    void removeAll()
+//    {
+//        std::unique_lock<boost::shared_mutex> lock(mutex_);
+//
+//        resourceMap_.clear();
+//    }
+//
+//    T get(const std::string& name) const
+//    {
+//        boost::shared_lock_guard<boost::shared_mutex> lock(mutex_);
+//
+//        const auto it = resourceMap_.find(name);
+//        if (it != resourceMap_.end()) return it->second;
+//
+//        return T();
+//    }
+//
+//    std::unordered_map<std::string, T> resourceMap() const
+//    {
+//        boost::shared_lock_guard<boost::shared_mutex> lock(mutex_);
+//
+//        return resourceMap_;
+//    }
+//
+//private:
+//    mutable boost::shared_mutex mutex_;
+//
+//    std::unordered_map<std::string, T> resourceMap_;
+//};
 
 }
 

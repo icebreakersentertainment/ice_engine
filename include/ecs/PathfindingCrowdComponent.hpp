@@ -26,7 +26,7 @@ struct PathfindingCrowdComponent
 		crowdConfig(crowdConfig),
 		crowdHandle(crowdHandle)
 	{
-		std::cout << "e a: "<< crowdConfig.maxAgents << std::endl;
+
 	};
 
 	static uint8 id()  { return 10; }
@@ -47,7 +47,7 @@ namespace serialization
 template<class Archive>
 void serialize(Archive& ar, ice_engine::ecs::PathfindingCrowdComponent& c, const unsigned int version)
 {
-	ar & c.navigationMeshHandle & c.crowdHandle;
+	ar & c.navigationMeshHandle & c.crowdConfig & c.crowdHandle;
 }
 
 }

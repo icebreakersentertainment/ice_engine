@@ -17,6 +17,7 @@ public:
 
 	static std::unique_ptr<GameEngine> createGameEngine(
 		std::unique_ptr<utilities::Properties> properties,
+        std::unique_ptr<fs::IFileSystem> fileSystem,
 		std::unique_ptr<ice_engine::IPluginManager> pluginManager,
 		std::unique_ptr<ice_engine::logger::ILogger> logger
 	);

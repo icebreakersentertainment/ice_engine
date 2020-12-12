@@ -6,6 +6,7 @@
 #include "handles/Handle.hpp"
 #include "handles/PointerHandle.hpp"
 
+#include "pathfinding/CrowdConfig.hpp"
 #include "pathfinding/AgentParams.hpp"
 #include "pathfinding/AgentState.hpp"
 #include "pathfinding/MovementRequestState.hpp"
@@ -76,6 +77,12 @@ void serialize(Archive& ar, ice_engine::pathfinding::AgentParams& agentParams, c
 		& agentParams.pathOptimizationRange
 		& agentParams.separationWeight
 	;
+}
+
+template<class Archive>
+void serialize(Archive& ar, ice_engine::pathfinding::CrowdConfig& crowdConfig, const unsigned int version)
+{
+	ar & crowdConfig.maxAgents & crowdConfig.maxAgentRadius;
 }
 
 }

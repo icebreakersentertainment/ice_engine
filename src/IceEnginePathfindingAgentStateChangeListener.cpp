@@ -14,7 +14,6 @@ IceEnginePathfindingAgentStateChangeListener::~IceEnginePathfindingAgentStateCha
 
 void IceEnginePathfindingAgentStateChangeListener::update(const pathfinding::AgentState& agentState)
 {
-	std::cout << "ASDF " << agentState  << std::endl;
 	auto pac = entity_.component<ecs::PathfindingAgentComponent>();
 
 	pac->agentState = agentState;

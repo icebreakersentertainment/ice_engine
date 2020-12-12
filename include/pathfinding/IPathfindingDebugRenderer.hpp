@@ -15,9 +15,7 @@ namespace pathfinding
 class IPathfindingDebugRenderer
 {
 public:
-	virtual ~IPathfindingDebugRenderer()
-	{
-	}
+	virtual ~IPathfindingDebugRenderer() = default;
 	
 	virtual void pushLine(const glm::vec3& from, const glm::vec3& to, const glm::vec3& color) = 0;
 	virtual void pushLines(const std::vector<std::tuple<glm::vec3, glm::vec3, glm::vec3>>& lineData) = 0;

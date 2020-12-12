@@ -2,7 +2,7 @@
 #define gANIMATE_H_
 
 #include <vector>
-#include <map>
+#include <unordered_map>
 #include <string>
 
 #define GLM_FORCE_RADIANS
@@ -24,30 +24,28 @@ namespace model
 void animateSkeleton(
 	std::vector< glm::mat4 >& transformations,
 	const glm::mat4& globalInverseTransformation,
-	const std::map< std::string,
-	AnimatedBoneNode >& animatedBoneNodes,
+	const std::unordered_map< std::string, AnimatedBoneNode >& animatedBoneNodes,
 	const BoneNode& rootBoneNode,
 	const BoneData& boneData,
-	float64 duration,
-	float64 ticksPerSecond,
-	float32 runningTime,
-	uint32 startFrame = 0,
-	uint32 endFrame = 0
+    const float64 duration,
+    const float64 ticksPerSecond,
+    const float32 runningTime,
+    const uint32 startFrame = 0,
+    const uint32 endFrame = 0
 );
 
 void animateSkeleton(
 	std::vector< glm::mat4 >& transformations,
 	const glm::mat4& globalInverseTransformation,
-	const std::map< std::string,
-	AnimatedBoneNode >& animatedBoneNodes,
+	const std::unordered_map< std::string, AnimatedBoneNode >& animatedBoneNodes,
 	const BoneNode& rootBoneNode,
 	const BoneData& boneData,
-	float64 duration,
-	float64 ticksPerSecond,
-	float32 runningTime,
+    const float64 duration,
+    const float64 ticksPerSecond,
+    const float32 runningTime,
 	std::vector<uint32>& indexCache,
-	uint32 startFrame = 0,
-	uint32 endFrame = 0
+    const uint32 startFrame = 0,
+    const uint32 endFrame = 0
 );
 
 }

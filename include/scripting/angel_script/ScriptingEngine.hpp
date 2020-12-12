@@ -5,7 +5,10 @@
 
 #include "scripting/IScriptingEngine.hpp"
 
+#include "scripting/angel_script/AngelscriptDebugger.hpp"
+
 #include "scripting/angel_script/scriptbuilder/scriptbuilder.h"
+#include "scripting/angel_script/scripthandle/scripthandle.h"
 
 #include "handles/HandleVector.hpp"
 #include "utilities/Properties.hpp"
@@ -19,28 +22,32 @@ namespace scripting
 namespace angel_script
 {
 
+namespace
+{
 struct ScriptContextData
 {
-	asIScriptContext* context;
+    asIScriptContext* context;
 };
 
 struct ScriptModuleData
 {
-	asIScriptModule* module;
+    asIScriptModule* module;
 };
 
 struct ScriptObjectData
 {
-	ModuleHandle moduleHandle;
-	std::string className;
-	asIScriptObject* object;
+    ModuleHandle moduleHandle;
+    std::string className;
+    asIScriptObject* object;
 };
+}
 
 class ScriptingEngine : public IScriptingEngine
 {
 public:
 	ScriptingEngine(utilities::Properties* properties, fs::IFileSystem* fileSystem, logger::ILogger* logger);
-	virtual ~ScriptingEngine();
+    ScriptingEngine(const ScriptingEngine& other) = delete;
+	virtual ~ScriptingEngine() override;
 	
 	virtual void run(const std::string& filename, const std::string& function, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) override;
 	virtual void run(const std::string& filename, const std::string& function, ParameterList& arguments, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) override;
@@ -188,7 +195,8 @@ public:
 
 	virtual ScriptObjectHandle createUninitializedScriptObject(const ModuleHandle& moduleHandle, const std::string& name) override;
 
-	virtual ModuleHandle createModule(const std::string& name, const std::vector<std::string>& scriptData) override;
+	virtual ModuleHandle createModule(const std::string& name, const std::vector<std::string>& scriptData, const std::unordered_map<std::string, std::string>& includeOverrides = {}) override;
+	virtual ModuleHandle getModule(const std::string& name) const override;
 	virtual void destroyModule(const ModuleHandle& moduleHandle) override;
 	virtual void destroyAllModules() override;
 
@@ -233,6 +241,8 @@ public:
 	virtual void registerObjectProperty(const std::string& obj, const std::string& declaration, int32 byteOffset) override;
 	virtual void registerObjectBehaviour(const std::string& obj, asEBehaviours behaviour, const std::string& declaration, const asSFuncPtr& funcPointer, asDWORD callConv) override;
 
+    virtual IScriptingEngineDebugger* debugger() override;
+
 	virtual void MessageCallback(const asSMessageInfo* msg, void* param) override;
 
     void testPrintCallstack() override;
@@ -241,8 +251,6 @@ public:
 	static void println(const std::string& msg);
 
 private:
-	ScriptingEngine(const ScriptingEngine& other);
-		
 	utilities::Properties* properties_;
 	fs::IFileSystem* fileSystem_;
 	logger::ILogger* logger_;
@@ -258,6 +266,8 @@ private:
 	asIScriptEngine* engine_;
 	handles::HandleVector<ScriptContextData, ExecutionContextHandle> contextData_;
 	handles::HandleVector<ScriptModuleData, ModuleHandle> moduleData_;
+
+    std::unique_ptr<AngelscriptDebugger> debugger_;
 	
 	asIScriptModule* getModule(const ScriptObjectHandle& scriptObjectHandle) const;
 	asIScriptFunction* getMethod(const ScriptObjectHandle& scriptObjectHandle, const std::string& function) const;
@@ -265,28 +275,31 @@ private:
 	
 	asIScriptContext* getContext(const ExecutionContextHandle& executionContextHandle) const;
 	asIScriptModule* createModuleFromScript(const std::string& moduleName, const std::string& scriptData);
-	asIScriptModule* createModuleFromScripts(const std::string& moduleName, const std::vector<std::string>& scriptData);
+	asIScriptModule* createModuleFromScripts(const std::string& moduleName, const std::vector<std::string>& scriptData, const std::unordered_map<std::string, std::string>& includeOverrides = {});
 	void destroyModule(const std::string& moduleName);
-	
+
+	CScriptHandle createScriptObjectReturnAsScriptHandle(const ModuleHandle& moduleHandle, const std::string& objectName, const std::string& factoryName, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0));
+	asIScriptObject* createScriptObject(const ModuleHandle& moduleHandle, const std::string& objectName, const std::string& factoryName, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0));
+
 	void setArguments(asIScriptContext* context, ParameterList& arguments) const;
-	
-	void callFunction(asIScriptContext* context, asIScriptFunction* function, asIScriptObject* object) const;
-	void callFunction(asIScriptContext* context, asIScriptFunction* function, asIScriptObject* object, ParameterList& arguments) const;
-	void callFunction(asIScriptContext* context, asIScriptFunction* function) const;
-	void callFunction(asIScriptContext* context, asIScriptFunction* function, ParameterList& arguments) const;
-	void callFunction(asIScriptContext* context, asIScriptModule* module, const std::string& function) const;
-	void callFunction(asIScriptContext* context, asIScriptModule* module, const std::string& function, ParameterList& arguments) const;
-	void callFunction(asIScriptContext* context, const ScriptFunctionHandle& scriptFunctionHandle) const;
-	void callFunction(asIScriptContext* context, const ScriptFunctionHandle& scriptFunctionHandle, ParameterList& arguments) const;
-	void callFunction(asIScriptContext* context, const ModuleHandle& moduleHandle, const std::string& function) const;
-	void callFunction(asIScriptContext* context, const ModuleHandle& moduleHandle, const std::string& function, ParameterList& arguments) const;
-	void callFunction(asIScriptContext* context, const ScriptObjectHandle& scriptObjectHandle, const std::string& function) const;
-	void callFunction(asIScriptContext* context, const ScriptObjectHandle& scriptObjectHandle, const std::string& function, ParameterList& arguments) const;
-	void callFunction(asIScriptContext* context, const ScriptObjectHandle& scriptObjectHandle, const ScriptObjectFunctionHandle& scriptObjectFunctionHandle) const;
-	void callFunction(asIScriptContext* context, const ScriptObjectHandle& scriptObjectHandle, const ScriptObjectFunctionHandle& scriptObjectFunctionHandle, ParameterList& arguments) const;
-	
-	void assertNoAngelscriptError(const int32 returnCode) const;
-	
+
+    asIScriptObject* callFunctionWithReturnValue(asIScriptContext* context, asIScriptFunction* function);
+
+	void callFunction(asIScriptContext* context, asIScriptFunction* function, asIScriptObject* object);
+	void callFunction(asIScriptContext* context, asIScriptFunction* function, asIScriptObject* object, ParameterList& arguments);
+	void callFunction(asIScriptContext* context, asIScriptFunction* function);
+	void callFunction(asIScriptContext* context, asIScriptFunction* function, ParameterList& arguments);
+	void callFunction(asIScriptContext* context, asIScriptModule* module, const std::string& function);
+	void callFunction(asIScriptContext* context, asIScriptModule* module, const std::string& function, ParameterList& arguments);
+	void callFunction(asIScriptContext* context, const ScriptFunctionHandle& scriptFunctionHandle);
+	void callFunction(asIScriptContext* context, const ScriptFunctionHandle& scriptFunctionHandle, ParameterList& arguments);
+	void callFunction(asIScriptContext* context, const ModuleHandle& moduleHandle, const std::string& function);
+	void callFunction(asIScriptContext* context, const ModuleHandle& moduleHandle, const std::string& function, ParameterList& arguments);
+	void callFunction(asIScriptContext* context, const ScriptObjectHandle& scriptObjectHandle, const std::string& function);
+	void callFunction(asIScriptContext* context, const ScriptObjectHandle& scriptObjectHandle, const std::string& function, ParameterList& arguments);
+	void callFunction(asIScriptContext* context, const ScriptObjectHandle& scriptObjectHandle, const ScriptObjectFunctionHandle& scriptObjectFunctionHandle);
+	void callFunction(asIScriptContext* context, const ScriptObjectHandle& scriptObjectHandle, const ScriptObjectFunctionHandle& scriptObjectFunctionHandle, ParameterList& arguments);
+
 	asIScriptFunction* getFunctionByDecl(const std::string& function, const asIScriptModule* module) const;
 	asIScriptFunction* getFunctionByDecl(const std::string& function, const asIScriptObject* object) const;
 	

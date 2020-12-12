@@ -63,8 +63,8 @@ void saveImageToFile(fs::IFile* file, const Image& image)
 		data = image.data();
 	}
 
-	printf("WTF2: %i %i %i\n", image.data().size(), image.width(), image.height());
-	printf("WTF2: %i\n", data.size());
+	printf("WTF2: %u %u %u\n", image.data().size(), image.width(), image.height());
+	printf("WTF2: %u\n", data.size());
 
 	/*
 	BYTE pixels [3*257*257];

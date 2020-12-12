@@ -210,7 +210,7 @@ public:
 		entities_.remove<C>(id);
 	}
 
-	uint32 numEntities() const
+    size_t numEntities() const
 	{
 		return entities_.size();
 	}
@@ -243,6 +243,7 @@ private:
 		if (entity.hasComponent<ice_engine::ecs::ParentComponent>())				mask.set(ice_engine::ecs::ParentComponent::id());
 		if (entity.hasComponent<ice_engine::ecs::ChildrenComponent>())				mask.set(ice_engine::ecs::ChildrenComponent::id());
 		if (entity.hasComponent<ice_engine::ecs::ParentBoneAttachmentComponent>())	mask.set(ice_engine::ecs::ParentBoneAttachmentComponent::id());
+		if (entity.hasComponent<ice_engine::ecs::PropertiesComponent>())	        mask.set(ice_engine::ecs::PropertiesComponent::id());
 
 		return mask;
 	}
@@ -279,6 +280,7 @@ private:
 		if (entity.hasComponent<ice_engine::ecs::ParentComponent>()) saveComponent<Archive, ice_engine::ecs::ParentComponent>(ar, entity, version);
 		if (entity.hasComponent<ice_engine::ecs::ChildrenComponent>()) saveComponent<Archive, ice_engine::ecs::ChildrenComponent>(ar, entity, version);
 		if (entity.hasComponent<ice_engine::ecs::ParentBoneAttachmentComponent>()) saveComponent<Archive, ice_engine::ecs::ParentBoneAttachmentComponent>(ar, entity, version);
+		if (entity.hasComponent<ice_engine::ecs::PropertiesComponent>()) saveComponent<Archive, ice_engine::ecs::PropertiesComponent>(ar, entity, version);
 	}
 
 	template<class Archive>
@@ -320,6 +322,7 @@ private:
 		if (mask.test(ice_engine::ecs::ParentComponent::id())) loadComponent<Archive, ice_engine::ecs::ParentComponent>(ar, entity, version);
 		if (mask.test(ice_engine::ecs::ChildrenComponent::id())) loadComponent<Archive, ice_engine::ecs::ChildrenComponent>(ar, entity, version);
 		if (mask.test(ice_engine::ecs::ParentBoneAttachmentComponent::id())) loadComponent<Archive, ice_engine::ecs::ParentBoneAttachmentComponent>(ar, entity, version);
+		if (mask.test(ice_engine::ecs::PropertiesComponent::id())) loadComponent<Archive, ice_engine::ecs::PropertiesComponent>(ar, entity, version);
 
 		entity.assign<ice_engine::ecs::PersistableComponent>();
 	}
@@ -332,9 +335,9 @@ private:
 			for (int i=0; i < numEntities; ++i)
 			{
 				ice_engine::uint32 oldIndex;
-						entityx::EntityManager::ComponentMask mask;
+                entityx::EntityManager::ComponentMask mask;
 
-						ar & oldIndex & mask;
+                ar & oldIndex & mask;
 
 				auto entity = create();
 				while (entity.id().index() < oldIndex)

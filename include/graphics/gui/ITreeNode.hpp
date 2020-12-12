@@ -15,17 +15,14 @@ namespace gui
 class ITreeNode : public virtual IComponent
 {
 public:
-    virtual ~ITreeNode()
-    {
-    }
-    ;
+    virtual ~ITreeNode() = default;
 
     virtual ITreeNode* createNode(const std::string& label) = 0;
     virtual ITreeNode* getNode(const std::string& label) = 0;
     virtual void destroy(const ITreeNode* treeNode) = 0;
 
     virtual void setLabel(const std::string& label) = 0;
-    virtual const std::string& getLabel() const = 0;
+    virtual const std::string& label() const = 0;
 };
 
 }

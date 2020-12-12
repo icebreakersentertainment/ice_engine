@@ -81,10 +81,6 @@ BindingDelegate::BindingDelegate(logger::ILogger* logger, scripting::IScriptingE
 {
 }
 
-BindingDelegate::~BindingDelegate()
-{
-}
-
 static void InitConstructorImage(Image* memory, const std::vector<byte>& data, const uint32 width, const uint32 height, const IImage::Format format) { new(memory) Image(data, width, height, format); }
 static void InitConstructorPbrMaterial(PbrMaterial* memory, IImage* albedo, IImage* normal, IImage* metalness, IImage* roughness, IImage* ambientOcclusion) { new(memory) PbrMaterial(albedo, normal, metalness, roughness, ambientOcclusion); }
 static void InitConstructorHeightMap(HeightMap* memory, const IImage& image) { new(memory) HeightMap(image); }
@@ -171,6 +167,7 @@ void BindingDelegate::bind()
     scriptingEngine_->registerGlobalFunction("void mrtest(int& out, string& out)", asFUNCTION(mrtest), asCALL_CDECL);
 
 	scriptingEngine_->registerObjectType("IImage", 0, asOBJ_REF | asOBJ_NOCOUNT);
+
     scriptingEngine_->registerObjectMethod("IImage", "const vectorUInt8& data() const", asFUNCTION(iImageDataProxy), asCALL_CDECL_OBJFIRST);
     scriptingEngine_->registerObjectMethod("IImage", "uint32 width() const", asFUNCTION(iImageWidthProxy), asCALL_CDECL_OBJFIRST);
     scriptingEngine_->registerObjectMethod("IImage", "uint32 height() const", asFUNCTION(iImageHeightProxy), asCALL_CDECL_OBJFIRST);
@@ -276,21 +273,38 @@ void BindingDelegate::bind()
 	scriptingEngine_->registerObjectBehaviour("Skeleton", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DefaultDestructor<Skeleton>), asCALL_CDECL_OBJLAST);
 	scriptingEngine_->registerClassMethod("Skeleton", "Skeleton& opAssign(const Skeleton& in)", asMETHODPR(Skeleton, operator=, (const Skeleton&), Skeleton&));
 
+	scriptingEngine_->registerObjectType("AnimatedBoneNode", sizeof(AnimatedBoneNode), asOBJ_VALUE | asGetTypeTraits<AnimatedBoneNode>());
+    scriptingEngine_->registerObjectBehaviour("AnimatedBoneNode", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(DefaultConstructor<AnimatedBoneNode>), asCALL_CDECL_OBJLAST);
+    scriptingEngine_->registerObjectBehaviour("AnimatedBoneNode", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DefaultDestructor<AnimatedBoneNode>), asCALL_CDECL_OBJLAST);
+    scriptingEngine_->registerClassMethod("AnimatedBoneNode", "AnimatedBoneNode& opAssign(const AnimatedBoneNode& in)", asMETHODPR(AnimatedBoneNode, operator=, (const AnimatedBoneNode&), AnimatedBoneNode&));
+    scriptingEngine_->registerObjectProperty("AnimatedBoneNode", "string name", asOFFSET(AnimatedBoneNode, name));
+    scriptingEngine_->registerObjectProperty("AnimatedBoneNode", "vectorDouble positionTimes", asOFFSET(AnimatedBoneNode, positionTimes));
+    scriptingEngine_->registerObjectProperty("AnimatedBoneNode", "vectorDouble rotationTimes", asOFFSET(AnimatedBoneNode, rotationTimes));
+    scriptingEngine_->registerObjectProperty("AnimatedBoneNode", "vectorDouble scalingTimes", asOFFSET(AnimatedBoneNode, scalingTimes));
+    scriptingEngine_->registerObjectProperty("AnimatedBoneNode", "vectorVec3 positions", asOFFSET(AnimatedBoneNode, positions));
+    scriptingEngine_->registerObjectProperty("AnimatedBoneNode", "vectorQuat rotations", asOFFSET(AnimatedBoneNode, rotations));
+    scriptingEngine_->registerObjectProperty("AnimatedBoneNode", "vectorVec3 scalings", asOFFSET(AnimatedBoneNode, scalings));
+
+    registerUnorderedMapBindings<std::string, AnimatedBoneNode>(scriptingEngine_, "unordered_mapStringAnimatedBoneNode", "string", "AnimatedBoneNode");
+
 	scriptingEngine_->registerObjectType("Animation", sizeof(Animation), asOBJ_VALUE | asGetTypeTraits<Animation>());
 	scriptingEngine_->registerObjectBehaviour("Animation", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(DefaultConstructor<Animation>), asCALL_CDECL_OBJLAST);
 	scriptingEngine_->registerObjectBehaviour("Animation", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DefaultDestructor<Animation>), asCALL_CDECL_OBJLAST);
 	scriptingEngine_->registerClassMethod("Animation", "Animation& opAssign(const Animation& in)", asMETHODPR(Animation, operator=, (const Animation&), Animation&));
 	scriptingEngine_->registerClassMethod("Animation", "const string& name() const", asMETHOD(Animation, name));
+	scriptingEngine_->registerClassMethod("Animation", "double duration() const", asMETHOD(Animation, duration));
+	scriptingEngine_->registerClassMethod("Animation", "double ticksPerSecond() const", asMETHOD(Animation, ticksPerSecond));
+	scriptingEngine_->registerClassMethod("Animation", "const unordered_mapStringAnimatedBoneNode& animatedBoneNodes() const", asMETHOD(Animation, animatedBoneNodes));
 
 	registerVectorBindings<Mesh>(scriptingEngine_, "vectorMesh", "Mesh");
 	registerVectorBindings<Texture>(scriptingEngine_, "vectorTexture", "Texture");
-	registerMapBindings<std::string, Animation>(scriptingEngine_, "mapStringAnimation", "string", "Animation");
+    registerUnorderedMapBindings<std::string, Animation>(scriptingEngine_, "unordered_mapStringAnimation", "string", "Animation");
 
 	scriptingEngine_->registerObjectType("Model", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	scriptingEngine_->registerClassMethod("Model", "const vectorMesh& meshes() const", asMETHOD(Model, meshes));
 	scriptingEngine_->registerClassMethod("Model", "const vectorTexture& textures() const", asMETHOD(Model, textures));
 	scriptingEngine_->registerClassMethod("Model", "const Skeleton& skeleton() const", asMETHOD(Model, skeleton));
-	scriptingEngine_->registerClassMethod("Model", "const mapStringAnimation& animations() const", asMETHOD(Model, animations));
+	scriptingEngine_->registerClassMethod("Model", "const unordered_mapStringAnimation& animations() const", asMETHOD(Model, animations));
 
 	// IGame
 	scriptingEngine_->registerInterface("IGame");
@@ -406,6 +420,9 @@ void BindingDelegate::bind()
 	scriptingEngine_->registerInterface("IMessageEventListener");
 	scriptingEngine_->registerInterfaceMethod("IMessageEventListener", "bool processEvent(const MessageEvent& in)");
 
+    scriptingEngine_->registerInterface("IScriptingEngineDebugHandler");
+    scriptingEngine_->registerInterfaceMethod("IScriptingEngineDebugHandler", "void tick(const float)");
+
 //	scriptingEngine_->registerInterface("ScriptObject");
 
 	scriptingEngine_->registerGlobalFunction(
@@ -413,6 +430,8 @@ void BindingDelegate::bind()
 		asFUNCTIONPR(createScriptObjectHandle, (void*), scripting::ScriptObjectHandle),
 		asCALL_CDECL
 	);
+
+//    registerUnorderedMapBindings<std::string, std::string>(scriptingEngine_, "unordered_mapStringString", "string", "string");
 
 	scriptingEngine_->registerObjectType("Scene", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	auto entityBindingDelegate = EntityBindingDelegate(logger_, scriptingEngine_, gameEngine_);
@@ -676,6 +695,18 @@ void BindingDelegate::bind()
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
+    scriptingEngine_->registerGlobalFunction(
+            "void addScriptingEngineDebugHandler(IScriptingEngineDebugHandler@)",
+            asMETHODPR(GameEngine, addScriptingEngineDebugHandler, (void*), void),
+            asCALL_THISCALL_ASGLOBAL,
+            gameEngine_
+    );
+    scriptingEngine_->registerGlobalFunction(
+            "void removeScriptingEngineDebugHandler(IScriptingEngineDebugHandler@)",
+            asMETHODPR(GameEngine, removeScriptingEngineDebugHandler, (const void*), void),
+            asCALL_THISCALL_ASGLOBAL,
+            gameEngine_
+    );
 	scriptingEngine_->registerGlobalFunction(
 		"shared_futureVoid postWorkToForegroundThreadPool(WorkFunction@)",
 		asMETHODPR(GameEngine, postWorkToForegroundThreadPool, (void*), std::shared_future<void>),
@@ -1018,6 +1049,18 @@ void BindingDelegate::bind()
 			gameEngine_
 		);
 	scriptingEngine_->registerGlobalFunction(
+			"SoundHandle createSound(const string& in, const Audio& in)",
+			asMETHOD(GameEngine, createSound),
+			asCALL_THISCALL_ASGLOBAL,
+			gameEngine_
+		);
+	scriptingEngine_->registerGlobalFunction(
+			"SoundHandle getSound(const string& in)",
+			asMETHOD(GameEngine, getSound),
+			asCALL_THISCALL_ASGLOBAL,
+			gameEngine_
+		);
+	scriptingEngine_->registerGlobalFunction(
 			"PolygonMeshHandle createPolygonMesh(const string& in, const PathfindingTerrain& in, const PolygonMeshConfig& in)",
 			asMETHODPR(GameEngine, createPolygonMesh, (const std::string&, const PathfindingTerrain& in, const pathfinding::PolygonMeshConfig&), pathfinding::PolygonMeshHandle),
 			asCALL_THISCALL_ASGLOBAL,
@@ -1043,6 +1086,12 @@ void BindingDelegate::bind()
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
+	scriptingEngine_->registerGlobalFunction(
+		"Scene@ createScene(const string& in, const ModuleHandle, const string& in = \"\")",
+		asMETHODPR(GameEngine, createScene, (const std::string&, const scripting::ModuleHandle, const std::string&), Scene*),
+		asCALL_THISCALL_ASGLOBAL,
+		gameEngine_
+	);
 
 	scriptingEngine_->registerGlobalFunction(
 		"Scene@ getScene(const string& in)",
@@ -1058,8 +1107,8 @@ void BindingDelegate::bind()
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
-		"void destroyScene(Scene@)",
-		asMETHODPR(GameEngine, destroyScene, (Scene* scene), void),
+		"void destroyScene(const Scene@)",
+		asMETHODPR(GameEngine, destroyScene, (const Scene*), void),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);

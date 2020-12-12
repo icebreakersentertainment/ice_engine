@@ -44,7 +44,7 @@ public:
 	//	std::vector<Material> materials,
 		std::vector<Texture> textures,
 		Skeleton skeleton,
-		std::map<std::string, Animation> animations
+		std::unordered_map<std::string, Animation> animations
 	)
 	:
 		name_(std::move(name)),
@@ -80,7 +80,7 @@ public:
 		return skeleton_;
 	}
 
-	const std::map<std::string, Animation>& animations() const
+	const std::unordered_map<std::string, Animation>& animations() const
 	{
 		return animations_;
 	}
@@ -91,7 +91,7 @@ private:
 //	std::vector<Material> materials_;
 	std::vector<Texture> textures_;
 	Skeleton skeleton_;
-	std::map<std::string, Animation> animations_;
+	std::unordered_map<std::string, Animation> animations_;
 
 /*
 	Material importMaterial(const std::string& name, const std::string& filename, uint32 index, const aiMaterial* material, logger::ILogger* logger, fs::IFileSystem* fileSystem)

@@ -1,7 +1,10 @@
 #include <iostream>
 #include <stdio.h>
 
+#include <glm/gtx/string_cast.hpp>
+
 #include <boost/format.hpp>
+#include <boost/exception/diagnostic_information.hpp>
 
 #include "scripting/angel_script/ScriptingEngine.hpp"
 
@@ -10,13 +13,12 @@
 #include "scripting/angel_script/scriptstdstring/scriptstdstring.h"
 //#include "scripting/angel_script/glm_bindings/Vec3.h"
 #include "scripting/angel_script/scriptdictionary/scriptdictionary.h"
-#include "scripting/angel_script/scripthandle/scripthandle.h"
+//#include "scripting/angel_script/scripthandle/scripthandle.h"
 #include "scripting/angel_script/scriptvector/scriptvector.hpp"
 #include "scripting/angel_script/scriptglm/scriptglm.hpp"
 #include "scripting/angel_script/scriptchrono/scriptchrono.hpp"
 
-#include "exceptions/Exception.hpp"
-#include "exceptions/InvalidArgumentException.hpp"
+#include "scripting/angel_script/AngelscriptCPreProcessor.hpp"
 
 #include "Platform.hpp"
 
@@ -27,21 +29,236 @@ namespace scripting
 namespace angel_script
 {
 
+namespace
+{
+
+void translateException(asIScriptContext *ctx, void* /*userParam*/)
+{
+    try
+    {
+        // Retrow the original exception so we can catch it again
+        throw;
+    }
+    catch (const std::exception& e)
+    {
+        // Tell the VM the type of exception that occurred
+        const auto diagnosticInformation = boost::diagnostic_information(e);
+        ctx->SetException(diagnosticInformation.c_str());
+    }
+    catch (...)
+    {
+        // The callback must not allow any exception to be thrown, but it is not necessary
+        // to explicitly set an exception string if the default exception string is sufficient
+    }
+}
+
+/*
+class IceEngineScriptBuilder : public CScriptBuilder
+{
+public:
+    IceEngineScriptBuilder(fs::IFileSystem* fileSystem) : fileSystem_(fileSystem)
+    {
+
+    }
+
+protected:
+    // Returns 1 if the section was included
+    // Returns 0 if the section was not included because it had already been included before
+    // Returns <0 if there was an error
+    int AddSectionFromFile(const char *filename) override
+    {
+        // The file name stored in the set should be the fully resolved name because
+        // it is possible to name the same file in multiple ways using relative paths.
+//        string fullpath = GetAbsolutePath(filename);
+        const std::string fullpath = fileSystem_->getCanonicalPath(filename);
+
+        if( IncludeIfNotAlreadyIncluded(fullpath.c_str()) )
+        {
+//            int r = LoadScriptSection(fullpath.c_str());
+            int r = LoadScriptSection(filename);
+            if( r < 0 )
+                return r;
+            else
+                return 1;
+        }
+
+        return 0;
+    }
+
+    int LoadScriptSection(const char *filename) override
+    {
+        // Open the script file
+//        string scriptFile = filename;
+//#if _MSC_VER >= 1500 && !defined(__S3E__)
+//        FILE *f = 0;
+//        fopen_s(&f, scriptFile.c_str(), "rb");
+//#else
+//        FILE *f = fopen(scriptFile.c_str(), "rb");
+//#endif
+
+        try
+        {
+            const auto code = fileSystem_->readAll(filename);
+
+            // Process the script section even if it is zero length so that the name is registered
+            return ProcessScriptSection(code.c_str(), (unsigned int)(code.length()), filename, 0);
+        }
+        catch (const std::exception& e)
+        {
+            std::string msg = std::string("Failed to open script file '") + filename + "': " + e.what();
+            engine->WriteMessage(filename, 0, 0, asMSGTYPE_ERROR, msg.c_str());
+
+            // TODO: Write the file where this one was included from
+
+            return -1;
+        }
+
+
+//        if( f == 0 )
+//        {
+//            // Write a message to the engine's message callback
+//            string msg = "Failed to open script file '" + GetAbsolutePath(scriptFile) + "'";
+//            engine->WriteMessage(filename, 0, 0, asMSGTYPE_ERROR, msg.c_str());
+//
+//            // TODO: Write the file where this one was included from
+//
+//            return -1;
+//        }
+
+        // Determine size of the file
+//        fseek(f, 0, SEEK_END);
+//        int len = ftell(f);
+//        fseek(f, 0, SEEK_SET);
+
+        // On Win32 it is possible to do the following instead
+        // int len = _filelength(_fileno(f));
+
+        // Read the entire file
+//        string code;
+//        size_t c = 0;
+//        if( len > 0 )
+//        {
+//            code.resize(len);
+//            c = fread(&code[0], len, 1, f);
+//        }
+//
+//        fclose(f);
+//
+//        if( c == 0 && len > 0 )
+//        {
+//            // Write a message to the engine's message callback
+//            string msg = "Failed to load script file '" + GetAbsolutePath(scriptFile) + "'";
+//            engine->WriteMessage(filename, 0, 0, asMSGTYPE_ERROR, msg.c_str());
+//            return -1;
+//        }
+    }
+
+private:
+    fs::IFileSystem* fileSystem_;
+};
+*/
+
+template<typename T>
+class HandleRegisterHelper
+{
+public:
+    static void DefaultConstructor(T* memory) { new(memory) T(); }
+
+    static void InitConstructor(T* memory, const uint64 id) { new(memory) T(id); }
+
+    static void CopyConstructor(T* memory, const T& other) { new(memory) T(other); }
+    static void DefaultDestructor(T* memory) { ((T*)memory)->~T(); }
+};
+
+/**
+ * Register our Handle bindings.
+ */
+template<typename T>
+void registerHandleBindings(scripting::IScriptingEngine* scriptingEngine, const std::string& name)
+{
+    typedef HandleRegisterHelper<T> HandleBase;
+
+    scriptingEngine->registerObjectType(name.c_str(), sizeof(T), asOBJ_VALUE | asOBJ_APP_CLASS_ALLINTS | asGetTypeTraits<T>());
+    scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(HandleBase::DefaultConstructor), asCALL_CDECL_OBJFIRST);
+    scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f(const uint64)", asFUNCTION(HandleBase::InitConstructor), asCALL_CDECL_OBJFIRST);
+    scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f(const " + name + "& in)", asFUNCTION(HandleBase::CopyConstructor), asCALL_CDECL_OBJFIRST);
+    scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_DESTRUCT, "void f()", asFUNCTION(HandleBase::DefaultDestructor), asCALL_CDECL_OBJFIRST);
+    scriptingEngine->registerClassMethod(name.c_str(), name + "& opAssign(const " + name + "& in)", asMETHODPR(T, operator=, (const T&), T&));
+    scriptingEngine->registerClassMethod(name.c_str(), "uint64 id() const", asMETHODPR(T, id, () const, uint64));
+    scriptingEngine->registerClassMethod(name.c_str(), "uint32 index() const", asMETHODPR(T, index, () const, uint32));
+    scriptingEngine->registerClassMethod(name.c_str(), "uint32 version() const", asMETHODPR(T, version, () const, uint32));
+    scriptingEngine->registerClassMethod(name.c_str(), "bool opImplConv() const", asMETHODPR(T, operator bool, () const, bool ));
+    scriptingEngine->registerClassMethod(name.c_str(), "bool opEquals(const " + name + "& in) const", asMETHODPR(T, operator==, (const T&) const, bool));
+}
+
+template<typename T, typename K, typename V>
+class UnorderedMapRegisterHelper
+{
+public:
+    static void DefaultConstructor(T* memory) { new(memory) T(); }
+    static void CopyConstructor(const T& other, T* memory) { new(memory) T(other); }
+    static void DefaultDestructor(T* memory) { ((T*)memory)->~T(); }
+
+    static T& assignmentOperator(const T& other, T* m) { (*m) = other; return *m; }
+
+    static uint64 size(T* m) { return static_cast<uint64>(m->size()); }
+    static V& at(const K& k, T* m) { return m->at(k); }
+    static V& index(const K& k, T* m) { return (*m)[k]; }
+    static void clear(T* m) { m->clear(); }
+    static bool empty(T* m) { return m->empty(); }
+    static uint64 max_size(T* m) { return static_cast<uint64>(m->max_size()); }
+};
+
+/**
+ * Register our map bindings.
+ */
+template<typename K, typename V>
+void registerUnorderedMapBindings(scripting::IScriptingEngine* scriptingEngine, const std::string& name, const std::string& keyType, const std::string& valueType, asEObjTypeFlags objectTypeFlags = asOBJ_APP_CLASS_ALLINTS)
+{
+
+    typedef UnorderedMapRegisterHelper<std::unordered_map<K, V>, K, V> UnorderedMapBase;
+
+    scriptingEngine->registerObjectType(name.c_str(), sizeof(std::unordered_map<K, V>), asOBJ_VALUE | objectTypeFlags | asGetTypeTraits<std::unordered_map<K, V>>());
+
+    scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(UnorderedMapBase::DefaultConstructor), asCALL_CDECL_OBJLAST);
+    auto copyConstructorString = std::string("void f(const ") + name + "& in)";
+    scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, copyConstructorString.c_str(), asFUNCTION(UnorderedMapBase::CopyConstructor), asCALL_CDECL_OBJLAST);
+    scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_DESTRUCT, "void f()", asFUNCTION(UnorderedMapBase::DefaultDestructor), asCALL_CDECL_OBJLAST);
+
+    auto assignmentOperatorFunctionString = name + std::string("& opAssign(const ") + name + "& in)";
+    scriptingEngine->registerObjectMethod(name.c_str(), assignmentOperatorFunctionString.c_str(), asFUNCTION(UnorderedMapBase::assignmentOperator), asCALL_CDECL_OBJLAST);
+    scriptingEngine->registerObjectMethod(name.c_str(), "uint64 size() const", asFUNCTION(UnorderedMapBase::size), asCALL_CDECL_OBJLAST);
+    auto atFunctionString = valueType + "& at(" + keyType + ")";
+    scriptingEngine->registerObjectMethod(name.c_str(), atFunctionString.c_str(), asFUNCTION(UnorderedMapBase::at), asCALL_CDECL_OBJLAST);
+    auto atConstFunctionString = std::string("const ") + valueType + "& at(" + keyType + ") const";
+    scriptingEngine->registerObjectMethod(name.c_str(), atConstFunctionString.c_str(), asFUNCTION(UnorderedMapBase::at), asCALL_CDECL_OBJLAST);
+    auto indexFunctionString = valueType + "& opIndex(" + keyType + ")";
+    scriptingEngine->registerObjectMethod(name.c_str(), indexFunctionString.c_str(), asFUNCTION(UnorderedMapBase::index), asCALL_CDECL_OBJLAST);
+    auto indexConstFunctionString = std::string("const ") + valueType + "& opIndex(" + keyType + ") const";
+    scriptingEngine->registerObjectMethod(name.c_str(), indexConstFunctionString.c_str(), asFUNCTION(UnorderedMapBase::index), asCALL_CDECL_OBJLAST);
+    scriptingEngine->registerObjectMethod(name.c_str(), "void clear()", asFUNCTION(UnorderedMapBase::clear), asCALL_CDECL_OBJLAST);
+    scriptingEngine->registerObjectMethod(name.c_str(), "bool empty() const", asFUNCTION(UnorderedMapBase::empty), asCALL_CDECL_OBJLAST);
+    scriptingEngine->registerObjectMethod(name.c_str(), "uint64 max_size() const", asFUNCTION(UnorderedMapBase::max_size), asCALL_CDECL_OBJLAST);
+}
+
+template<typename T>
+std::function<std::string(void*)> scriptingEngineDebuggerToStringCallback()
+{
+    return [](void* value) {
+        std::stringstream ss;
+        ss << *static_cast<T*>(value);
+        return ss.str();
+    };
+}
+}
+
 const std::string ScriptingEngine::ONE_TIME_RUN_SCRIPT_MODULE_NAME = std::string("ONE_TIME_RUN_SCRIPT_MODULE_NAME");
 
 ScriptingEngine::ScriptingEngine(utilities::Properties* properties, fs::IFileSystem* fileSystem, logger::ILogger* logger)
+:
+properties_(properties), fileSystem_(fileSystem), logger_(logger), debugger_(std::make_unique<AngelscriptDebugger>(logger_)), ctx_(nullptr)
 {
-	properties_ = properties;
-	fileSystem_ = fileSystem;
-	logger_ = logger;
-
-	ctx_ = nullptr;
-
 	initialize();
-}
-
-ScriptingEngine::ScriptingEngine(const ScriptingEngine& other)
-{
 }
 
 ScriptingEngine::~ScriptingEngine()
@@ -49,88 +266,12 @@ ScriptingEngine::~ScriptingEngine()
 	destroy();
 }
 
-void ScriptingEngine::assertNoAngelscriptError(const int32 returnCode) const
-{
-	if (returnCode < 0)
-	{
-		switch(returnCode)
-		{
-			case asERROR:
-				throw Exception("ScriptEngine: Generic error.");
-				break;
-
-			case asINVALID_ARG:
-				throw InvalidArgumentException("ScriptEngine: Argument was invalid.");
-				break;
-
-			case asNOT_SUPPORTED:
-				throw Exception("ScriptEngine: Operation not supported.");
-				break;
-
-			case asNO_MODULE:
-				throw Exception("ScriptEngine: Module not found.");
-				break;
-
-			case asINVALID_TYPE:
-				throw Exception("ScriptEngine: The type specified is invalid.");
-				break;
-
-			case asNO_GLOBAL_VAR:
-				throw Exception("ScriptEngine: No matching property was found.");
-				break;
-
-			case asINVALID_DECLARATION:
-				throw Exception("ScriptEngine: The specified declaration is invalid.");
-				break;
-
-			case asINVALID_NAME:
-				throw Exception("ScriptEngine: The name specified is invalid.");
-				break;
-
-			case asALREADY_REGISTERED:
-				throw Exception("ScriptEngine: The specified type or name is already registered.");
-				break;
-
-			case asNAME_TAKEN:
-				throw Exception("ScriptEngine: The specified name is already taken.");
-				break;
-
-			case asWRONG_CALLING_CONV:
-				throw Exception("ScriptEngine: The specified calling convention is not valid or does not match the registered calling convention.");
-				break;
-
-			case asWRONG_CONFIG_GROUP:
-				throw Exception("ScriptEngine: Wrong configuration group.");
-				break;
-
-			case asCONFIG_GROUP_IS_IN_USE:
-				throw Exception("ScriptEngine: Configuration group already in use.");
-				break;
-
-			case asILLEGAL_BEHAVIOUR_FOR_TYPE:
-				throw Exception("ScriptEngine: Illegal behaviour for type.");
-				break;
-
-			case asINVALID_OBJECT:
-				throw Exception("ScriptEngine: The object does not specify a valid object type.");
-				break;
-
-			case asLOWER_ARRAY_DIMENSION_NOT_REGISTERED:
-				throw Exception("ScriptEngine:  Array element must be a primitive or a registered type.");
-				break;
-
-			default:
-				std::string str = std::string("ScriptEngine: Unknown error: ") + std::to_string(returnCode);
-				throw Exception(str.c_str());
-				break;
-		}
-	}
-}
-
 void ScriptingEngine::initialize()
 {
 	engine_ = asCreateScriptEngine(ANGELSCRIPT_VERSION);
 	engine_->SetEngineProperty(asEP_AUTO_GARBAGE_COLLECT, false);
+
+    engine_->SetTranslateAppExceptionCallback(asFUNCTION(translateException), 0, asCALL_CDECL);
 
 	// Set the message callback to receive information on errors in human readable form.
 	int32 r = engine_->SetMessageCallback(asMETHOD(ScriptingEngine, MessageCallback), this, asCALL_THISCALL);
@@ -142,6 +283,10 @@ void ScriptingEngine::initialize()
 	 * necessary to implement the registration yourself if you don't want to.
 	 */
 	RegisterStdString(engine_);
+
+    RegisterExceptionRoutines(engine_);
+
+    debugger_->registerToStringCallback("string", scriptingEngineDebuggerToStringCallback<std::string>());
 
 	RegisterScriptArray(engine_, true);
 
@@ -163,6 +308,7 @@ void ScriptingEngine::initialize()
 	RegisterVectorBindings<std::string>(engine_, "vectorString", "string");
 
 	RegisterGlmBindings(engine_);
+    debugger_->registerToStringCallback("vec3", [](void* value) { return glm::to_string(*static_cast<glm::vec3*>(value)); });
 
 	RegisterChronoBindings(engine_);
 
@@ -193,6 +339,37 @@ void ScriptingEngine::initialize()
 	r = engine_->RegisterGlobalFunction("void println(const string &in)", asFUNCTION(scripting::angel_script::ScriptingEngine::println), asCALL_CDECL);
 	assertNoAngelscriptError(r);
 
+	// TEST
+    registerHandleBindings<ExecutionContextHandle>(this, "ExecutionContextHandle");
+    registerHandleBindings<ModuleHandle>(this, "ModuleHandle");
+
+    registerUnorderedMapBindings<std::string, std::string>(this, "unordered_mapStringString", "string", "string");
+
+    registerGlobalFunction(
+        "ModuleHandle createModule(const string& in, const vectorString& in, const unordered_mapStringString& in = unordered_mapStringString())",
+        asMETHOD(ScriptingEngine, createModule),
+        asCALL_THISCALL_ASGLOBAL,
+        this
+    );
+    registerGlobalFunction(
+        "ModuleHandle getModule(const string& in)",
+        asMETHODPR(ScriptingEngine, getModule, (const std::string&) const, ModuleHandle),
+        asCALL_THISCALL_ASGLOBAL,
+        this
+    );
+    registerGlobalFunction(
+        "void destroyModule(const ModuleHandle& in)",
+        asMETHODPR(ScriptingEngine, destroyModule, (const ModuleHandle&), void),
+        asCALL_THISCALL_ASGLOBAL,
+        this
+    );
+    registerGlobalFunction(
+        "ref@ createScriptObject(const ModuleHandle& in, const string& in, const string& in, const ExecutionContextHandle& in =  ExecutionContextHandle(0))",
+        asMETHOD(ScriptingEngine, createScriptObjectReturnAsScriptHandle),
+        asCALL_THISCALL_ASGLOBAL,
+        this
+    );
+
 	// initialize default context
 	auto handle = contextData_.create();
 	auto& contextData = contextData_[handle];
@@ -222,7 +399,7 @@ asIScriptModule* ScriptingEngine::createModuleFromScript(const std::string& modu
 	return createModuleFromScripts(moduleName, {scriptData});
 }
 
-asIScriptModule* ScriptingEngine::createModuleFromScripts(const std::string& moduleName, const std::vector<std::string>& scriptData)
+asIScriptModule* ScriptingEngine::createModuleFromScripts(const std::string& moduleName, const std::vector<std::string>& scriptData, const std::unordered_map<std::string, std::string>& includeOverrides)
 {
     const auto existingModule = engine_->GetModule(moduleName.c_str());
     if (existingModule != nullptr)
@@ -230,25 +407,105 @@ asIScriptModule* ScriptingEngine::createModuleFromScripts(const std::string& mod
         throw InvalidArgumentException(std::string("Module with name '") + moduleName + "' already exists.");
     }
 
-	CScriptBuilder builder = CScriptBuilder();
+//		auto testData = fileSystem->readAll("bootstrap.as", ice_engine::fs::FileFlags::READ);
 
+    AngelscriptCPreProcessor cpp{fileSystem_, logger_, includeOverrides};
+
+    std::stringstream ss;
+    for (const auto& data : scriptData)
+    {
+        ss << data << std::endl;
+    }
+
+    const auto source = ss.str();
+
+//    std::cout << "BEFORE " << std::endl;
+//    std::cout << source << std::endl;
+
+    const std::unordered_map<std::string, std::string> defineMap = {
 #if defined(PLATFORM_WINDOWS)
-	builder.DefineWord("PLATFORM_WINDOWS");
+            {"PLATFORM_WINDOWS", "1"}
 #elif defined(PLATFORM_MAC)
-	builder.DefineWord("PLATFORM_MAC");
-	#define PLATFORM_MAC
+            {"PLATFORM_MAC", "1"}
 #elif defined(PLATFORM_LINUX)
-	builder.DefineWord("PLATFORM_LINUX");
+            {"PLATFORM_LINUX", "1"}
 #endif
+    };
+    const auto result = cpp.process(source, defineMap, true, true);
+    const auto processedFileSources = cpp.getProcessedFileSources();
+//
+////    std::cout << "AFTER" << std::endl;
+////    std::cout << result << std::endl;
+    {
+//        auto ofs = std::ofstream("source." + moduleName + ".tmp");
+//        ofs << result;
+//        ofs.close();
+    }
+
+//    exit(0);
+
+	CScriptBuilder builder = CScriptBuilder();
+//    IceEngineScriptBuilder builder = IceEngineScriptBuilder(fileSystem_);
+
+//#if defined(PLATFORM_WINDOWS)
+//	builder.DefineWord("PLATFORM_WINDOWS");
+//#elif defined(PLATFORM_MAC)
+//	builder.DefineWord("PLATFORM_MAC");
+//	#define PLATFORM_MAC
+//#elif defined(PLATFORM_LINUX)
+//	builder.DefineWord("PLATFORM_LINUX");
+//#endif
 
 	builder.StartNewModule(engine_, moduleName.c_str());
 
-	for (const auto& data : scriptData)
+//	for (const auto& data : scriptData)
+//	{
+//		builder.AddSectionFromMemory("", data.c_str(), data.length());
+//	}
+
+    int a = 0;
+//    auto ofs2 = std::ofstream("source.ALL.tmp");
+	for (const auto& processedFileSource : processedFileSources)
 	{
-		builder.AddSectionFromMemory("", data.c_str(), data.length());
+	    ++a;
+//	    if (a > 100 || a == 40) continue;
+//        std::cout << "AddSectionFromMemory (" << a << " / " << processedFileSources.size() << ") " << processedFileSource.second.size() << ": " << processedFileSource.first << std::endl;
+
+//        auto n = boost::filesystem::path(processedFileSource.first).filename().string();
+//        auto ofs = std::ofstream("source." + n + ".tmp");
+////        ofs << "// " << processedFileSource.first << std::endl;
+//        ofs2 << "//" << processedFileSource.first << std::endl;
+//        ofs << processedFileSource.second << std::endl;
+//        ofs2 << processedFileSource.second << std::endl;
+//        ofs.close();
+
+        if (processedFileSource.second.empty())
+        {
+//            std::cout << "processedFileSource.second" << std::endl;
+            continue;
+        }
+
+//        if (processedFileSource.first == testFilename)
+//        {
+//            std::cout << "processedFileSource.first: " << processedFileSource.first << std::endl;
+//        }
+
+        const int32 r = builder.AddSectionFromMemory(processedFileSource.first.c_str(), processedFileSource.second.c_str(), static_cast<uint32>(processedFileSource.second.length()));
+//        const int32 r = builder.AddSectionFromMemory("", processedFileSource.second.c_str(), processedFileSource.second.length());
+//        std::cout << "AddSectionFromMemory done " << r << std::endl;
+        assertNoAngelscriptError(r);
 	}
 
+//    builder.AddSectionFromMemory(processedFileSources[0].first.c_str(), processedFileSources[0].second.c_str(), processedFileSource[0].second.length());
+
+//    if (!result.empty())
+//    {
+//        builder.AddSectionFromMemory("", result.c_str(), result.length());
+//    }
+
+//    std::cout << "BuildModule" << std::endl;
 	int32 r = builder.BuildModule();
+//    std::cout << "BuildModule done " << r << std::endl;
 	assertNoAngelscriptError(r);
 	return builder.GetModule();
 }
@@ -259,64 +516,100 @@ void ScriptingEngine::destroyModule(const std::string& moduleName)
 	assertNoAngelscriptError(r);
 }
 
+CScriptHandle ScriptingEngine::createScriptObjectReturnAsScriptHandle(const ModuleHandle& moduleHandle, const std::string& objectName, const std::string& factoryName, const ExecutionContextHandle& executionContextHandle)
+{
+    CScriptHandle handle = CScriptHandle();
+
+    asIScriptObject* object = createScriptObject(moduleHandle, objectName, factoryName, executionContextHandle);
+
+    handle.Set(object, object->GetObjectType());
+
+    object->Release();
+
+    return handle;
+}
+
+asIScriptObject* ScriptingEngine::createScriptObject(const ModuleHandle& moduleHandle, const std::string& objectName, const std::string& factoryName, const ExecutionContextHandle& executionContextHandle)
+{
+    auto module = moduleData_[moduleHandle].module;
+
+    asITypeInfo* type = module->GetTypeInfoByDecl(objectName.c_str());
+    if (type == nullptr)
+    {
+        throw InvalidArgumentException(std::string("Object type with name '") + objectName + "' doesn't exist.");
+    }
+
+    asIScriptFunction* factory = type->GetFactoryByDecl(factoryName.c_str());
+    if (type == nullptr)
+    {
+        throw InvalidArgumentException(std::string("Factory with name '") + factoryName + "' doesn't exist for object type with name '" + objectName + "'.");
+    }
+
+    auto context = getContext(executionContextHandle);
+
+    asIScriptObject* obj = callFunctionWithReturnValue(context, factory);
+
+    return obj;
+}
+
 void ScriptingEngine::setArguments(asIScriptContext* context, ParameterList& arguments) const
 {
 	int32 r = 0;
 
-	for ( size_t i = 0; i < arguments.size(); i++)
+	for ( size_t i = 0; i < arguments.size(); ++i)
 	{
 		switch (arguments[i].type())
 	    {
 	        case ParameterType::TYPE_BOOL:
-	            r = context->SetArgByte(i, arguments[i].value<bool>());
+	            r = context->SetArgByte(static_cast<asUINT>(i), arguments[i].value<bool>());
 	            break;
 
 	        case ParameterType::TYPE_INT8:
-	            r = context->SetArgByte(i, arguments[i].value<int8>());
+	            r = context->SetArgByte(static_cast<asUINT>(i), arguments[i].value<int8>());
 	            break;
 
 			case ParameterType::TYPE_UINT8:
-			    r = context->SetArgByte(i, arguments[i].value<uint8>());
+			    r = context->SetArgByte(static_cast<asUINT>(i), arguments[i].value<uint8>());
 	            break;
 
 	        case ParameterType::TYPE_INT16:
-				r = context->SetArgWord(i, arguments[i].value<int16>());
+				r = context->SetArgWord(static_cast<asUINT>(i), arguments[i].value<int16>());
 	            break;
 
 	        case ParameterType::TYPE_UINT16:
-	            r = context->SetArgWord(i, arguments[i].value<uint16>());
+	            r = context->SetArgWord(static_cast<asUINT>(i), arguments[i].value<uint16>());
 	            break;
 
 	        case ParameterType::TYPE_INT32:
-				r = context->SetArgDWord(i, arguments[i].value<int32>());
+				r = context->SetArgDWord(static_cast<asUINT>(i), arguments[i].value<int32>());
 	            break;
 
 	        case ParameterType::TYPE_UINT32:
-	            r = context->SetArgDWord(i, arguments[i].value<uint32>());
+	            r = context->SetArgDWord(static_cast<asUINT>(i), arguments[i].value<uint32>());
 	            break;
 
 	        case ParameterType::TYPE_INT64:
-				r = context->SetArgQWord(i, arguments[i].value<int64>());
+				r = context->SetArgQWord(static_cast<asUINT>(i), arguments[i].value<int64>());
 	            break;
 
 	        case ParameterType::TYPE_UINT64:
-	            r = context->SetArgQWord(i, arguments[i].value<uint64>());
+	            r = context->SetArgQWord(static_cast<asUINT>(i), arguments[i].value<uint64>());
 	            break;
 
 	        case ParameterType::TYPE_FLOAT32:
-	            r = context->SetArgFloat(i, arguments[i].value<float32>());
+	            r = context->SetArgFloat(static_cast<asUINT>(i), arguments[i].value<float32>());
 	            break;
 
 	        case ParameterType::TYPE_FLOAT64:
-	            r = context->SetArgDouble(i, arguments[i].value<float64>());
+	            r = context->SetArgDouble(static_cast<asUINT>(i), arguments[i].value<float64>());
 	            break;
 
 	        case ParameterType::TYPE_OBJECT_REF:
-				r = context->SetArgAddress(i, arguments[i].pointer());
+				r = context->SetArgAddress(static_cast<asUINT>(i), arguments[i].pointer());
 	            break;
 
 	        case ParameterType::TYPE_OBJECT_VAL:
-				r = context->SetArgObject(i, arguments[i].pointer());
+				r = context->SetArgObject(static_cast<asUINT>(i), arguments[i].pointer());
 	            break;
 
 	        default:
@@ -328,7 +621,54 @@ void ScriptingEngine::setArguments(asIScriptContext* context, ParameterList& arg
 	}
 }
 
-void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptFunction* function, asIScriptObject* object) const
+asIScriptObject* ScriptingEngine::callFunctionWithReturnValue(asIScriptContext* context, asIScriptFunction* function)
+{
+    assert(function->GetParamCount() == 0);
+
+    if (context->GetState() == asEContextState::asEXECUTION_ACTIVE)
+    {
+        int32 r = context->PushState();
+        assertNoAngelscriptError(r);
+    }
+
+    int32 r = context->Prepare(function);
+    assertNoAngelscriptError(r);
+
+    debugger_->prepare(context);
+
+    r = context->Execute();
+
+    if ( r != asEXECUTION_FINISHED )
+    {
+        std::string msg = std::string();
+
+        // The execution didn't complete as expected. Determine what happened.
+        if ( r == asEXECUTION_EXCEPTION )
+        {
+            // An exception occurred, let the script writer know what happened so it can be corrected.
+            msg = std::string("An exception occurred: ");
+            msg += GetExceptionInfo(context, true);
+            //msg += std::string(context->GetExceptionString());
+            throw Exception("ScriptEngine: " + msg);
+        }
+
+        assertNoAngelscriptError(r);
+    }
+
+    asIScriptObject* obj = *(asIScriptObject**)context->GetAddressOfReturnValue();
+
+    obj->AddRef();
+
+    if (context->IsNested())
+    {
+        int32 r = context->PopState();
+        assertNoAngelscriptError(r);
+    }
+
+    return obj;
+}
+
+void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptFunction* function, asIScriptObject* object)
 {
 	assert(function->GetParamCount() == 0);
 
@@ -340,6 +680,8 @@ void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptFunction*
 
 	int32 r = context->Prepare(function);
 	assertNoAngelscriptError(r);
+
+    debugger_->prepare(context);
 
 	if (object != nullptr)
 	{
@@ -372,7 +714,7 @@ void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptFunction*
 	}
 }
 
-void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptFunction* function, asIScriptObject* object, ParameterList& arguments) const
+void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptFunction* function, asIScriptObject* object, ParameterList& arguments)
 {
 	assert(function->GetParamCount() == arguments.size());
 
@@ -384,6 +726,8 @@ void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptFunction*
 
 	int32 r = context->Prepare(function);
 	assertNoAngelscriptError(r);
+
+    debugger_->prepare(context);
 
 	if (arguments.size() != 0)
 	{
@@ -421,57 +765,57 @@ void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptFunction*
 	}
 }
 
-void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptFunction* function) const
+void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptFunction* function)
 {
 	callFunction(context, function, nullptr);
 }
 
-void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptFunction* function, ParameterList& arguments) const
+void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptFunction* function, ParameterList& arguments)
 {
 	callFunction(context, function, nullptr, arguments);
 }
 
-void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptModule* module, const std::string& function) const
+void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptModule* module, const std::string& function)
 {
 	auto func = getFunctionByDecl(function, module);
 
 	callFunction(context, func);
 }
 
-void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptModule* module, const std::string& function, ParameterList& arguments) const
+void ScriptingEngine::callFunction(asIScriptContext* context, asIScriptModule* module, const std::string& function, ParameterList& arguments)
 {
 	auto func = getFunctionByDecl(function, module);
 
 	callFunction(context, func, arguments);
 }
 
-void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptFunctionHandle& scriptFunctionHandle) const
+void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptFunctionHandle& scriptFunctionHandle)
 {
 	auto function = static_cast<asIScriptFunction*>(scriptFunctionHandle.get());
 
 	callFunction(context, function);
 }
 
-void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptFunctionHandle& scriptFunctionHandle, ParameterList& arguments) const
+void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptFunctionHandle& scriptFunctionHandle, ParameterList& arguments)
 {
 	auto function = static_cast<asIScriptFunction*>(scriptFunctionHandle.get());
 
 	callFunction(context, function, arguments);
 }
 
-void ScriptingEngine::callFunction(asIScriptContext* context, const ModuleHandle& moduleHandle, const std::string& function) const
+void ScriptingEngine::callFunction(asIScriptContext* context, const ModuleHandle& moduleHandle, const std::string& function)
 {
 	auto module = moduleData_[moduleHandle].module;
 	callFunction(context, module, function);
 }
 
-void ScriptingEngine::callFunction(asIScriptContext* context, const ModuleHandle& moduleHandle, const std::string& function, ParameterList& arguments) const
+void ScriptingEngine::callFunction(asIScriptContext* context, const ModuleHandle& moduleHandle, const std::string& function, ParameterList& arguments)
 {
 	auto module = moduleData_[moduleHandle].module;
 	callFunction(context, module, function, arguments);
 }
 
-void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptObjectHandle& scriptObjectHandle, const std::string& function) const
+void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptObjectHandle& scriptObjectHandle, const std::string& function)
 {
 	auto object = static_cast<asIScriptObject*>(scriptObjectHandle.get());
 	auto objectFunction = getMethod(scriptObjectHandle, function);
@@ -479,7 +823,7 @@ void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptObject
 	callFunction(context, objectFunction, object);
 }
 
-void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptObjectHandle& scriptObjectHandle, const std::string& function, ParameterList& arguments) const
+void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptObjectHandle& scriptObjectHandle, const std::string& function, ParameterList& arguments)
 {
 	auto object = static_cast<asIScriptObject*>(scriptObjectHandle.get());
 
@@ -488,7 +832,7 @@ void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptObject
 	callFunction(context, objectFunction, object, arguments);
 }
 
-void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptObjectHandle& scriptObjectHandle, const ScriptObjectFunctionHandle& scriptObjectFunctionHandle) const
+void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptObjectHandle& scriptObjectHandle, const ScriptObjectFunctionHandle& scriptObjectFunctionHandle)
 {
 	auto object = static_cast<asIScriptObject*>(scriptObjectHandle.get());
 	auto objectFunction = static_cast<asIScriptFunction*>(scriptObjectFunctionHandle.get());
@@ -496,7 +840,7 @@ void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptObject
 	callFunction(context, objectFunction, object);
 }
 
-void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptObjectHandle& scriptObjectHandle, const ScriptObjectFunctionHandle& scriptObjectFunctionHandle, ParameterList& arguments) const
+void ScriptingEngine::callFunction(asIScriptContext* context, const ScriptObjectHandle& scriptObjectHandle, const ScriptObjectFunctionHandle& scriptObjectFunctionHandle, ParameterList& arguments)
 {
 	auto object = static_cast<asIScriptObject*>(scriptObjectHandle.get());
 	auto objectFunction = static_cast<asIScriptFunction*>(scriptObjectFunctionHandle.get());
@@ -1516,17 +1860,35 @@ ExecutionContextHandle ScriptingEngine::createExecutionContext()
 
 void ScriptingEngine::destroyExecutionContext(const ExecutionContextHandle& executionContextHandle)
 {
+    auto& contextData = contextData_[executionContextHandle];
+
+    contextData.context->Release();
+
 	contextData_.destroy(executionContextHandle);
 }
 
-ModuleHandle ScriptingEngine::createModule(const std::string& name, const std::vector<std::string>& scriptData)
+ModuleHandle ScriptingEngine::createModule(const std::string& name, const std::vector<std::string>& scriptData, const std::unordered_map<std::string, std::string>& includeOverrides)
 {
-	auto handle = moduleData_.create();
-	auto& moduleData = moduleData_[handle];
+	auto module = createModuleFromScripts(name, scriptData, includeOverrides);
 
-	moduleData.module = createModuleFromScripts(name, scriptData);
+    auto handle = moduleData_.create();
+    auto& moduleData = moduleData_[handle];
+    moduleData.module = module;
 
 	return handle;
+}
+
+ModuleHandle ScriptingEngine::getModule(const std::string& name) const
+{
+    for (auto it = moduleData_.begin(); it != moduleData_.end(); it++)
+    {
+        if (name.compare(it->module->GetName()) == 0)
+        {
+            return it.handle();
+        }
+    }
+
+    return ModuleHandle();
 }
 
 std::string ScriptingEngine::getScriptObjectName(const ScriptObjectHandle& scriptObjectHandle) const
@@ -1544,7 +1906,7 @@ ScriptObjectHandle ScriptingEngine::createUninitializedScriptObject(const Module
 
 	if (!type)
 	{
-		throw std::runtime_error("Type with name " + name + " not found.");
+		throw Exception("Type with name " + name + " not found.");
 	}
 
 	return ScriptObjectHandle(engine_->CreateUninitializedScriptObject(type));
@@ -1980,6 +2342,11 @@ asIScriptFunction* ScriptingEngine::getMethod(const ScriptObjectHandle& scriptOb
 	auto type = getType(scriptObjectHandle);
 
 	return type->GetMethodByDecl(function.c_str());
+}
+
+IScriptingEngineDebugger* ScriptingEngine::debugger()
+{
+    return debugger_.get();
 }
 
 // Implement a simple message callback function

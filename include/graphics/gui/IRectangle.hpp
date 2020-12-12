@@ -21,11 +21,11 @@ public:
 	virtual ~IRectangle() = default;
 	
 	virtual void setPoints(const glm::vec2& start, const glm::vec2& end) = 0;
-	virtual const glm::vec2& getStartPoint() const  = 0;
-	virtual const glm::vec2& getEndPoint() const  = 0;
+	virtual const glm::vec2& startPoint() const  = 0;
+	virtual const glm::vec2& endPoint() const  = 0;
 
 	virtual void setColor(const Color& color) = 0;
-	virtual const Color& getColor() const  = 0;
+	virtual const Color& color() const  = 0;
 };
 
 }

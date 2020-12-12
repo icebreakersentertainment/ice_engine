@@ -30,6 +30,7 @@ public:
 	virtual std::string getTempDirectory() const = 0;
 	virtual std::string getFilename(const std::string& filename) const = 0;
 	virtual std::string getFilenameWithoutExtension(const std::string& filename) const = 0;
+	virtual std::string getCanonicalPath(const std::string& filename) const = 0;
 
 	virtual std::string readAll(const std::string& file, const bool isBinary = false) const = 0;
 

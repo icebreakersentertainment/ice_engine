@@ -20,7 +20,7 @@ public:
 	Audio(const std::vector<uint8>& data)
 	{
 		importAudio(data);
-	};
+	}
 
 	/**
 	 * Will load the provided audio data into a proper audio.
@@ -34,32 +34,37 @@ public:
 		importAudio(data);
 	}
 
-	virtual ~Audio() override = default;
+	~Audio() override = default;
 	
-	virtual const std::vector<uint8>& data() const override
+	const std::vector<uint8>& data() const override
 	{
 		return buffer_;
 	}
 
-	virtual uint32 length() const override
+	uint32 length() const override
 	{
 		return length_;
 	}
 
-	virtual uint32 frequency() const override
+	uint32 frequency() const override
 	{
 		return frequency_;
 	}
 
-	virtual uint8 channels() const override
+	uint8 channels() const override
 	{
 		return channels_;
 	}
 
-	virtual uint16 bitsPerSample() const override
+	uint16 bitsPerSample() const override
 	{
 		return bitsPerSample_;
 	}
+
+    int32 format() const override
+    {
+        return format_;
+    }
 
 private:
 	uint32 length_ = 0;
@@ -67,6 +72,7 @@ private:
 	int frequency_ = 0;
 	uint8 channels_ = 0;
 	uint16 bitsPerSample_ = 0;
+    int32 format_ = Format::FORMAT_UNKNOWN;
 
 	void importAudio(const std::vector<uint8>& data);
 };

@@ -18,7 +18,7 @@ endif()
 
 set(Boost_USE_MULTITHREADED ON)
 
-find_package(Boost 1.68.0 REQUIRED COMPONENTS filesystem system atomic chrono thread program_options log log_setup date_time regex serialization)
+find_package(Boost 1.68.0 REQUIRED COMPONENTS filesystem system atomic chrono thread program_options log log_setup date_time regex serialization wave)
 
 find_library(BOOST_SYSTEM_LIBRARY NAMES
   ${BOOST_FILENAME_PREFIX}boost_system${BOOST_FILENAME_POSTFIX}.so.${BOOST_VERSION}
@@ -161,5 +161,11 @@ find_library(BOOST_SERIALIZATION_LIBRARY NAMES
   ${BOOST_FILENAME_PREFIX}boost_serialization${BOOST_FILENAME_POSTFIX}.so.${BOOST_VERSION}
   ${BOOST_FILENAME_PREFIX}boost_serialization${BOOST_FILENAME_POSTFIX}.dylib
   ${BOOST_FILENAME_PREFIX}boost_serialization${BOOST_FILENAME_POSTFIX}
+  PATHS ${BOOST_LIBRARY_DIRS}
+)
+find_library(BOOST_WAVE_LIBRARY NAMES
+  ${BOOST_FILENAME_PREFIX}boost_wave${BOOST_FILENAME_POSTFIX}.so.${BOOST_VERSION}
+  ${BOOST_FILENAME_PREFIX}boost_wave${BOOST_FILENAME_POSTFIX}.dylib
+  ${BOOST_FILENAME_PREFIX}boost_wave${BOOST_FILENAME_POSTFIX}
   PATHS ${BOOST_LIBRARY_DIRS}
 )

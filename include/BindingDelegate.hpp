@@ -39,7 +39,6 @@ class  BindingDelegate
 {
 public:
 	BindingDelegate(logger::ILogger* logger, scripting::IScriptingEngine* scriptingEngine, GameEngine* gameEngine, graphics::IGraphicsEngine* graphicsEngine, audio::IAudioEngine* audioEngine, networking::INetworkingEngine* networkingEngine, physics::IPhysicsEngine* physicsEngine, pathfinding::IPathfindingEngine* pathfindingEngine);
-	virtual ~BindingDelegate();
 
 	void bind();
 	

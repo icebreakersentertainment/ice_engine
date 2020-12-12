@@ -17,10 +17,7 @@ namespace graphics
 class IGraphicsEngineFactory
 {
 public:
-	virtual ~IGraphicsEngineFactory()
-	{
-	}
-	;
+	virtual ~IGraphicsEngineFactory() = default;
 	
 	virtual std::unique_ptr<IGraphicsEngine> create(
 		utilities::Properties* properties,

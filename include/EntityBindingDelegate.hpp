@@ -52,6 +52,7 @@ template <class C>
 void registerComponentHandle(ice_engine::scripting::IScriptingEngine* scriptingEngine, const std::string& name)
 {
 	scriptingEngine->registerObjectType("ComponentHandle" + name, sizeof(entityx::ComponentHandle<C>), asOBJ_VALUE | asOBJ_APP_CLASS_ALLINTS | asGetTypeTraits<entityx::ComponentHandle<C>>());
+//	scriptingEngine->debugger()->registerToStringCallback("ComponentHandle" + name, scriptingEngineDebuggerToStringCallback<entityx::ComponentHandle<C>>());
 	scriptingEngine->registerObjectBehaviour("ComponentHandle" + name, asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(DefaultConstructor<entityx::ComponentHandle<C>>), asCALL_CDECL_OBJFIRST);
 	/* scriptingEngine->registerObjectBehaviour("ComponentHandle" + name, asBEHAVE_CONSTRUCT, "void f(const uint64)", asFUNCTION(InitConstructor<T>), asCALL_CDECL_OBJFIRST); */
 	scriptingEngine->registerObjectBehaviour("ComponentHandle" + name, asBEHAVE_CONSTRUCT, "void f(const ComponentHandle" + name + "& in)", asFUNCTION(CopyConstructor<entityx::ComponentHandle<C>>), asCALL_CDECL_OBJFIRST);
@@ -140,9 +141,10 @@ void registerEntityComponentMethods(ice_engine::scripting::IScriptingEngine* scr
 }
 
 template <class C, typename ... Args>
-void registerComponent(ice_engine::scripting::IScriptingEngine* scriptingEngine, const std::string& name, const std::vector<std::pair<std::string, size_t>>& memberVariables, const std::string& params)
+void registerComponent(ice_engine::scripting::IScriptingEngine* scriptingEngine, const std::string& name, const std::vector<std::pair<std::string, int32>>& memberVariables, const std::string& params)
 {
 	scriptingEngine->registerObjectType(name, sizeof(C), asOBJ_VALUE | asOBJ_APP_CLASS_ALLINTS | asGetTypeTraits<C>());
+//	scriptingEngine->debugger()->registerToStringCallback(name, scriptingEngineDebuggerToStringCallback<C>());
 
 	for (const auto& memberVariable : memberVariables)
 	{
@@ -156,9 +158,10 @@ void registerComponent(ice_engine::scripting::IScriptingEngine* scriptingEngine,
 }
 
 template <class C, typename ... Args>
-void registerComponent(ice_engine::scripting::IScriptingEngine* scriptingEngine, const std::string& name, const std::vector<std::pair<std::string, size_t>>& memberVariables)
+void registerComponent(ice_engine::scripting::IScriptingEngine* scriptingEngine, const std::string& name, const std::vector<std::pair<std::string, int32>>& memberVariables)
 {
 	scriptingEngine->registerObjectType(name, sizeof(C), asOBJ_VALUE | asOBJ_APP_CLASS_ALLINTS | asGetTypeTraits<C>());
+//	scriptingEngine->debugger()->registerToStringCallback(name, scriptingEngineDebuggerToStringCallback<C>());
 
 	std::vector<std::string> parameters;
 

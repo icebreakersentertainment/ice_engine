@@ -139,7 +139,7 @@ private:
 		{
 			FreeImage_SetOutputMessage(FreeImageErrorHandler);
 
-			stream = FreeImage_OpenMemory((BYTE*)&data[0], data.size() * sizeof(byte));
+			stream = FreeImage_OpenMemory((BYTE*)&data[0], static_cast<DWORD>(data.size() * sizeof(byte)));
 			FREE_IMAGE_FORMAT format = FreeImage_GetFileTypeFromMemory(stream, 0);
 			bitmap =  FreeImage_LoadFromMemory(format, stream);
 

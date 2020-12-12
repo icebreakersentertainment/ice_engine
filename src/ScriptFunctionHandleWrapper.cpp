@@ -1,5 +1,3 @@
-#include <iostream>
-
 #include "ScriptFunctionHandleWrapper.hpp"
 
 namespace ice_engine

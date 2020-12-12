@@ -40,10 +40,12 @@
 #define CATCH_COPY_AND_RETHROW() \
 catch (const ice_engine::Exception& e) \
 { \
+    LOG_ERROR(logger_, "Error: %s", boost::diagnostic_information(e)); \
 	throw ice_engine::Exception(e); \
 } \
 catch (const std::exception& e) \
 { \
+    LOG_ERROR(logger_, "Error: %s", boost::diagnostic_information(e)); \
 	throw ice_engine::Exception(e); \
 }
 
@@ -52,11 +54,13 @@ namespace ice_engine
 
 GameEngine::GameEngine(
 	std::unique_ptr<utilities::Properties> properties,
+    std::unique_ptr<fs::IFileSystem> fileSystem,
 	std::unique_ptr<ice_engine::IPluginManager> pluginManager,
 	std::unique_ptr<ice_engine::logger::ILogger> logger
 )
 	:
 	properties_(std::move(properties)),
+	fileSystem_(std::move(fileSystem)),
 	pluginManager_(std::move(pluginManager)),
 	logger_(std::move(logger))
 {
@@ -69,6 +73,7 @@ GameEngine::GameEngine(
 
 GameEngine::GameEngine(
 	std::unique_ptr<utilities::Properties> properties,
+    std::unique_ptr<fs::IFileSystem> fileSystem,
 	std::unique_ptr<ice_engine::logger::ILogger> logger,
 	std::unique_ptr<ice_engine::IPluginManager> pluginManager,
 	std::unique_ptr<graphics::IGraphicsEngineFactory> graphicsEngineFactory,
@@ -76,6 +81,7 @@ GameEngine::GameEngine(
 )
 	:
 	properties_(std::move(properties)),
+    fileSystem_(std::move(fileSystem)),
 	logger_(std::move(logger)),
 	pluginManager_(std::move(pluginManager)),
 	graphicsEngineFactory_(std::move(graphicsEngineFactory)),
@@ -87,6 +93,20 @@ GameEngine::GameEngine(
 GameEngine::~GameEngine()
 {
 	LOG_INFO(logger_, "Shutting down.");
+
+    if (debuggerExecutionContext_)
+    {
+        scriptingEngine_->destroyExecutionContext(debuggerExecutionContext_);
+    }
+
+    while (!temporaryExecutionContexts_.empty())
+    {
+        const auto context = temporaryExecutionContexts_.front();
+
+        scriptingEngine_->destroyExecutionContext(context);
+
+        temporaryExecutionContexts_.pop();
+    }
 
 	// Make sure the GUIs get deleted before the GUI plugins are deleted
 	guis_.clear();
@@ -222,18 +242,14 @@ std::shared_future<void> GameEngine::postWorkToOpenGlWorker(void* object) {
     return sharedFuture;
 }
 
-    void GameEngine::tick(const float32 delta)
+void GameEngine::tick(const float32 delta)
 {
-	//graphicsEngine_->setMouseRelativeMode(true);
-	//graphicsEngine_->setWindowGrab(false);
-	//graphicsEngine_->setCursorVisible(true);
-
 	handleEvents();
 
 	scripting::ParameterList params;
 	params.add(delta);
 
-	scriptingEngine_->execute(scriptObjectHandle_, std::string("void tick(const float)"), params);
+	scriptingEngine_->execute(scriptObjectHandle_, "void tick(const float)", params);
 
 	std::vector<std::future<void>> futures;
 	for (auto& scene : scenes_)
@@ -265,6 +281,27 @@ std::shared_future<void> GameEngine::postWorkToOpenGlWorker(void* object) {
 		gui->tick(delta);
 	}
 
+    // We do the creation and destruction asynchronously so that we don't concurrently modify the guis_ vector
+    {
+        std::lock_guard<std::mutex> lockGuard(guisCreatedMutex_);
+        for (auto& gui : guisCreated_)
+        {
+            guis_.push_back(std::move(gui));
+        }
+
+        guisCreated_.clear();
+    }
+
+    {
+        std::lock_guard<std::mutex> lockGuard(guisDeletedMutex_);
+        for (const auto gui : guisDeleted_)
+        {
+            internalDestroyGui(gui);
+        }
+
+        guisDeleted_.clear();
+    }
+
 	// Load any opengl assets (this needs work...)
 	if (openGlLoader_->getWorkQueueCount() != 0u)
 	{
@@ -277,6 +314,25 @@ std::shared_future<void> GameEngine::postWorkToOpenGlWorker(void* object) {
 	}
 }
 
+void GameEngine::render()
+{
+    graphicsEngine_->beginRender();
+
+    for (auto& scene : scenes_)
+    {
+        scene->render();
+    }
+
+    debugRenderer_->render();
+
+    for (auto& gui : guis_)
+    {
+        gui->render();
+    }
+
+    graphicsEngine_->endRender();
+}
+
 void GameEngine::destroy()
 {
 }
@@ -285,7 +341,7 @@ void GameEngine::initialize()
 {
 	running_ = true;
 
-	bootstrapScriptName_ = std::string("bootstrap.as");
+	bootstrapScriptName_ = "bootstrap.as";
 
 	initializeLoggingSubSystem();
 
@@ -328,9 +384,9 @@ void GameEngine::initialize()
 void GameEngine::initializeLoggingSubSystem()
 {
 	// Initialize the log using the specified log file
-	if (logger_.get() == nullptr)
+	if (!logger_)
 	{
-		logger_ = std::make_unique< logger::Logger >( std::string("ice_engine.log") );
+		logger_ = std::make_unique<logger::Logger>("ice_engine.log");
 	}
 }
 
@@ -338,7 +394,10 @@ void GameEngine::initializeFileSystemSubSystem()
 {
 	LOG_INFO(logger_, "initialize file system." );
 
-	fileSystem_ = std::make_unique<fs::FileSystem>();
+    if (!fileSystem_)
+    {
+        fileSystem_ = std::make_unique<fs::FileSystem>();
+    }
 }
 
 void GameEngine::initializeInputSubSystem()
@@ -360,7 +419,7 @@ void GameEngine::initializePhysicsSubSystem()
 
 		if (physicsPlugin)
 		{
-			LOG_INFO(logger_, "initializing physics plugin " + physicsPlugin->getName() + "." );
+			LOG_INFO(logger_, "initializing physics plugin %s.", physicsPlugin->getName());
 			physicsEngineFactory_ = physicsPlugin->createFactory();
 
 			physicsEngine_ = physicsEngineFactory_->create( properties_.get(), fileSystem_.get(), logger_.get() );
@@ -385,7 +444,7 @@ void GameEngine::initializePathfindingSubSystem()
 
 		if (pathfindingPlugin)
 		{
-			LOG_INFO(logger_, "initializing pathfinding plugin " + pathfindingPlugin->getName() + "." );
+			LOG_INFO(logger_, "initializing pathfinding plugin %s.", pathfindingPlugin->getName());
 			pathfindingEngineFactory_ = pathfindingPlugin->createFactory();
 
 			pathfindingEngine_ = pathfindingEngineFactory_->create( properties_.get(), fileSystem_.get(), logger_.get() );
@@ -410,7 +469,7 @@ void GameEngine::initializeGraphicsSubSystem()
 
 		if (graphicsPlugin)
 		{
-			LOG_INFO(logger_, "initializing graphics plugin " + graphicsPlugin->getName() + "." );
+			LOG_INFO(logger_, "initializing graphics plugin %s.", graphicsPlugin->getName());
 			graphicsEngineFactory_ = graphicsPlugin->createFactory();
 
 			graphicsEngine_ = graphicsEngineFactory_->create( properties_.get(), fileSystem_.get(), logger_.get() );
@@ -429,7 +488,7 @@ void GameEngine::initializeGraphicsSubSystem()
 
 void GameEngine::initializeTerrainSubSystem()
 {
-	LOG_INFO(logger_, "initializing terrain." );
+	LOG_INFO(logger_, "initializing terrain.");
 
 	if (!terrainFactory_)
 	{
@@ -441,7 +500,7 @@ void GameEngine::initializeTerrainSubSystem()
 
 void GameEngine::initializeModuleSubSystem()
 {
-	LOG_INFO(logger_, "initializing modules." );
+	LOG_INFO(logger_, "initializing modules.");
 
 	const auto& modulePlugins = pluginManager_->getModulePlugins();
 
@@ -454,7 +513,7 @@ void GameEngine::initializeModuleSubSystem()
 
 void GameEngine::initializeAudioSubSystem()
 {
-	LOG_INFO(logger_, "initializing audio." );
+	LOG_INFO(logger_, "initializing audio.");
 
 	if (!audioEngineFactory_)
 	{
@@ -462,7 +521,7 @@ void GameEngine::initializeAudioSubSystem()
 
 		if (audioPlugin)
 		{
-			LOG_INFO(logger_, "initializing audio plugin " + audioPlugin->getName() + "." );
+			LOG_INFO(logger_, "initializing audio plugin %s.", audioPlugin->getName());
 			audioEngineFactory_ = audioPlugin->createFactory();
 
 			audioEngine_ = audioEngineFactory_->create( properties_.get(), fileSystem_.get(), logger_.get() );
@@ -485,7 +544,7 @@ void GameEngine::initializeNetworkingSubSystem()
 
 		if (networkingPlugin)
 		{
-			LOG_INFO(logger_, "initializing networking plugin " + networkingPlugin->getName() + "." );
+			LOG_INFO(logger_, "initializing networking plugin %s.", networkingPlugin->getName());
 			networkingEngineFactory_ = networkingPlugin->createFactory();
 
 			networkingEngine_ = networkingEngineFactory_->create( properties_.get(), fileSystem_.get(), logger_.get() );
@@ -513,13 +572,17 @@ void GameEngine::initializeScriptingSubSystem()
 
 	for (auto scriptingEngineBindingPlugin : scriptingEngineBindingPlugins)
 	{
-		LOG_INFO(logger_, "initializing scripting engine binding plugin " + scriptingEngineBindingPlugin->getName() + "." );
+		LOG_INFO(logger_, "initializing scripting engine binding plugin %s.", scriptingEngineBindingPlugin->getName());
 		auto scriptingEngineBindingFactory = scriptingEngineBindingPlugin->createFactory();
 
 		auto scriptingEngineBinding = scriptingEngineBindingFactory->create(properties_.get(), fileSystem_.get(), logger_.get(), graphicsEngine_.get(), pathfindingEngine_.get(), physicsEngine_.get(), scriptingEngine_.get(), audioEngine_.get(), networkingEngine_.get(), this);
 		scriptingEngineBinding->bind();
 		scriptingEngineBindings_.push_back(std::move(scriptingEngineBinding));
 	}
+
+	scriptingEngine_->debugger()->addDebugEventListener(this);
+
+    debuggerExecutionContext_ = scriptingEngine_->createExecutionContext();
 
 	for (int i=0; i < 2; ++i)
 	{
@@ -586,7 +649,7 @@ void GameEngine::loadUserInterface()
 		guiObject->addFunction(std::wstring(L"getX"), function);
 		function = [this]() { return camera_->getCamera()->getCamera()->getPosition().y; };
 		guiObject->addFunction(std::wstring(L"getY"), function);
-		function = [this]() { return camera_->getCamera()->getCamera()->getPosition().z; };
+		function = [this]() { return camera_->getCamera()->getCamera()->position().z; };
 		guiObject->addFunction(std::wstring(L"getZ"), function);
 	}
 
@@ -658,35 +721,142 @@ void GameEngine::loadUserInterface()
 	*/
 }
 
+void GameEngine::processEvent(const scripting::DebugEvent& event)
+{
+    auto debugger = scriptingEngine_->debugger();
+
+    switch (event.type)
+    {
+        case scripting::HIT_BREAKPOINT:
+            {
+                LOG_DEBUG(logger_, "Processing breakpoint in file '%s' line %s.", debugger->filename(), debugger->line())
+                std::cout << "HIT_BREAKPOINT"
+                << " | " << debugger->filename()
+                << " | " << debugger->line()
+                << std::endl;
+
+                auto beginFpsTime = std::chrono::high_resolution_clock::now();
+                auto endFpsTime = std::chrono::high_resolution_clock::now();
+                auto previousFpsTime = beginFpsTime;
+                float32 currentFps = 0.0f;
+                float32 tempFps = 0.0f;
+                float32 delta = 0.0f;
+                float32 cumulativeDelta = 0.0f;
+
+//                graphicsEngine_->setWindowGrab(false);
+                const bool cursorVisible = graphicsEngine_->cursorVisible();
+                graphicsEngine_->setCursorVisible(true);
+
+                while (debugger->running())
+                {
+                    beginFpsTime = std::chrono::high_resolution_clock::now();
+                    delta = std::chrono::duration<float32>(beginFpsTime - endFpsTime).count();
+                    cumulativeDelta += delta;
+
+                    if (std::chrono::duration<float32>(beginFpsTime - previousFpsTime).count() > 1.0f)
+                    {
+                        previousFpsTime = beginFpsTime;
+                        currentFps = tempFps;
+                        tempFps = 0;
+                    }
+
+                    const float32 updateFrequency = 1.0f / 60.0f;
+                    int a = 0;
+                    while (cumulativeDelta >= updateFrequency && a < 3)
+                    {
+                        for (auto handler : scriptingEngineDebugHandlers_)
+                        {
+                            handler->tick(delta);
+                        }
+
+                        for (const auto& data : scriptScriptingEngineDebugHandlers_)
+                        {
+                            scripting::ParameterList arguments;
+                            arguments.add(delta);
+
+//                            debugger->setEnabled(false);
+                            scriptingEngine_->execute(data.first, data.second, arguments, debuggerExecutionContext_);
+//                            debugger->setEnabled(true);
+                        }
+
+                        handleEvents();
+
+                        for (auto& gui : guis_)
+                        {
+                            gui->tick(delta);
+                        }
+
+                        cumulativeDelta -= updateFrequency;
+                        a++;
+                    }
+
+                    render();
+
+                    endFpsTime = beginFpsTime;
+                }
+
+                std::cout << "DONE " << std::endl;
+
+                graphicsEngine_->setCursorVisible(cursorVisible);
+            }
+            break;
+
+        case scripting::DONE:
+
+            break;
+
+        default:
+            break;
+    }
+}
+
 Scene* GameEngine::createScene(const std::string& name, const std::vector<std::string>& scriptData, const std::string& initializationFunctionName)
 {
-	LOG_DEBUG(logger_, "Create Scene with name: " + name );
+	LOG_DEBUG(logger_, "Create Scene with name '%s'", name);
 
 	auto scene = std::make_unique<Scene>(name, scriptData, initializationFunctionName, this, terrainFactory_.get(), properties_.get(), fileSystem_.get(), logger_.get());
 
-	for (auto callback : preSerializeCallbacks_)
-	{
-		scene->addPreSerializeCallback(callback);
-	}
-
-	for (auto callback : postSerializeCallbacks_)
-	{
-		scene->addPostSerializeCallback(callback);
-	}
-
-	for (auto callback : preDeserializeCallbacks_)
-	{
-		scene->addPreDeserializeCallback(callback);
-	}
-
-	for (auto callback : postDeserializeCallbacks_)
-	{
-		scene->addPostDeserializeCallback(callback);
-	}
+    internalInitializeScene(scene);
 
 	scenes_.push_back(std::move(scene));
 
 	return scenes_.back().get();
+}
+
+Scene* GameEngine::createScene(const std::string& name, const scripting::ModuleHandle moduleHandle, const std::string& initializationFunctionName)
+{
+	LOG_DEBUG(logger_, "Create Scene with name '%s' and module handle '%s'", name, moduleHandle);
+
+	auto scene = std::make_unique<Scene>(name, moduleHandle, initializationFunctionName, this, terrainFactory_.get(), properties_.get(), fileSystem_.get(), logger_.get());
+
+    internalInitializeScene(scene);
+
+	scenes_.push_back(std::move(scene));
+
+	return scenes_.back().get();
+}
+
+void GameEngine::internalInitializeScene(std::unique_ptr<Scene>& scene)
+{
+    for (auto callback : preSerializeCallbacks_)
+    {
+        scene->addPreSerializeCallback(callback);
+    }
+
+    for (auto callback : postSerializeCallbacks_)
+    {
+        scene->addPostSerializeCallback(callback);
+    }
+
+    for (auto callback : preDeserializeCallbacks_)
+    {
+        scene->addPreDeserializeCallback(callback);
+    }
+
+    for (auto callback : postDeserializeCallbacks_)
+    {
+        scene->addPostDeserializeCallback(callback);
+    }
 }
 
 void GameEngine::destroyScene(const std::string& name)
@@ -699,7 +869,7 @@ void GameEngine::destroyScene(const std::string& name)
 	}
 }
 
-void GameEngine::destroyScene(Scene* scene)
+void GameEngine::destroyScene(const Scene* scene)
 {
 	auto func = [scene](const std::unique_ptr<Scene>& s) {
 		return s.get() == scene;
@@ -840,11 +1010,21 @@ graphics::gui::IGui* GameEngine::createGui(const std::string& name)
 	}
 
 	auto gui = (*guiPlugin)->createFactory()->create(properties_.get(), fileSystem_.get(), logger_.get(), graphicsEngine_.get());
-	guis_.push_back(std::move(gui));
-	return guis_.back().get();
+    auto ptr = gui.get();
+
+    std::lock_guard<std::mutex> lockGuard(guisCreatedMutex_);
+    guisCreated_.push_back( std::move(gui) );
+
+	return ptr;
 }
 
 void GameEngine::destroyGui(const graphics::gui::IGui* gui)
+{
+    std::lock_guard<std::mutex> lockGuard(guisDeletedMutex_);
+    guisDeleted_.push_back(gui);
+}
+
+void GameEngine::internalDestroyGui(const graphics::gui::IGui* gui)
 {
 	auto it = std::find_if(guis_.begin(), guis_.end(), [gui](const auto& guiUniquePtr) -> bool { return guiUniquePtr.get() == gui; });
 	if (it != guis_.end())
@@ -868,6 +1048,32 @@ void GameEngine::setCallback(graphics::gui::IButton* button, void* object)
 	};
 
 	button->setCallback(func);
+}
+
+void GameEngine::setOnChangeCallback(graphics::gui::ITextField* textField, void* object)
+{
+    scripting::ScriptFunctionHandle scriptFunctionHandle(object);
+
+    auto scriptFunctionHandleWrapper = ScriptFunctionHandleWrapper(scriptingEngine_.get(), scriptFunctionHandle);
+
+    std::function<void (void)> func = [&scriptingEngine_ = scriptingEngine_, scriptFunctionHandleWrapper = scriptFunctionHandleWrapper]() {
+        scriptingEngine_->execute(scriptFunctionHandleWrapper.get());
+    };
+
+    textField->setOnChangeCallback(func);
+}
+
+void GameEngine::setOnChangeCallback(graphics::gui::ITextArea* textArea, void* object)
+{
+    scripting::ScriptFunctionHandle scriptFunctionHandle(object);
+
+    auto scriptFunctionHandleWrapper = ScriptFunctionHandleWrapper(scriptingEngine_.get(), scriptFunctionHandle);
+
+    std::function<void (void)> func = [&scriptingEngine_ = scriptingEngine_, scriptFunctionHandleWrapper = scriptFunctionHandleWrapper]() {
+        scriptingEngine_->execute(scriptFunctionHandleWrapper.get());
+    };
+
+    textArea->setOnChangeCallback(func);
 }
 
 void GameEngine::setCallback(graphics::gui::IMenuItem* menuItem, void* object)
@@ -917,7 +1123,7 @@ void GameEngine::setCallback(graphics::gui::ITreeView* treeView, void* object)
 
 Audio* GameEngine::loadAudio(const std::string& name, const std::string& filename)
 {
-	LOG_DEBUG(logger_, "Loading audio: " + filename);
+	LOG_DEBUG(logger_, "Loading audio: %s", filename);
 	if (!fileSystem_->exists(filename))
 	{
 		throw std::runtime_error("Audio file '" + filename + "' does not exist.");
@@ -926,7 +1132,7 @@ Audio* GameEngine::loadAudio(const std::string& name, const std::string& filenam
 	auto file = fileSystem_->open(filename, fs::FileFlags::READ | fs::FileFlags::BINARY);
 	resourceCache_.addAudio( name, std::make_unique<Audio>(file->getInputStream()) );
 
-	LOG_DEBUG(logger_, "Done loading audio: " + filename);
+	LOG_DEBUG(logger_, "Done loading audio: %s", filename);
 
 	return resourceCache_.getAudio(name);
 }
@@ -936,9 +1142,23 @@ std::shared_future<Audio*> GameEngine::loadAudioAsync(const std::string& name, c
 	auto promise = std::make_shared<std::promise<Audio*>>();
 	auto sharedFuture = promise->get_future().share();
 
-	std::function<void()> func = [=, promise = promise, sharedFuture = sharedFuture, name = name, filename = filename]() {
-		auto audio = this->loadAudio(name, filename);
-		promise->set_value(audio);
+	std::function<void()> func = [=, &logger = logger_, promise = promise, sharedFuture = sharedFuture, name = name, filename = filename]() {
+        try
+        {
+            auto audio = this->loadAudio(name, filename);
+            promise->set_value(audio);
+        }
+        catch (const Exception& e)
+        {
+            promise->set_exception(std::current_exception());
+            LOG_ERROR(logger, "Error while importing audio: %s", boost::diagnostic_information(e));
+        }
+        catch (const std::exception& e)
+        {
+            promise->set_exception(std::current_exception());
+            LOG_ERROR(logger, "Error while importing audio: %s", boost::diagnostic_information(e));
+        }
+
 	};
 
 	backgroundThreadPool_->postWork(std::move(func));
@@ -948,7 +1168,7 @@ std::shared_future<Audio*> GameEngine::loadAudioAsync(const std::string& name, c
 
 IImage* GameEngine::loadImage(const std::string& name, const std::string& filename)
 {
-	LOG_DEBUG(logger_, "Loading image: " + filename);
+	LOG_DEBUG(logger_, "Loading image: %s", filename);
 	if (!fileSystem_->exists(filename))
 	{
 		throw std::runtime_error("Image file '" + filename + "' does not exist.");
@@ -957,7 +1177,7 @@ IImage* GameEngine::loadImage(const std::string& name, const std::string& filena
 	auto file = fileSystem_->open(filename, fs::FileFlags::READ | fs::FileFlags::BINARY);
 	resourceCache_.addImage( name, std::make_unique<Image>(file->getInputStream()) );
 
-	LOG_DEBUG(logger_, "Done loading image: " + filename);
+	LOG_DEBUG(logger_, "Done loading image: %s", filename);
 
 	return resourceCache_.getImage(name);
 }
@@ -967,9 +1187,22 @@ std::shared_future<IImage*> GameEngine::loadImageAsync(const std::string& name, 
 	auto promise = std::make_shared<std::promise<IImage*>>();
 	auto sharedFuture = promise->get_future().share();
 
-	std::function<void()> func = [=, promise = promise, sharedFuture = sharedFuture, name = name, filename = filename]() {
-		auto image = this->loadImage(name, filename);
-		promise->set_value(image);
+	std::function<void()> func = [=, &logger = logger_, promise = promise, sharedFuture = sharedFuture, name = name, filename = filename]() {
+        try
+        {
+            auto image = this->loadImage(name, filename);
+            promise->set_value(image);
+        }
+        catch (const Exception& e)
+        {
+            promise->set_exception(std::current_exception());
+            LOG_ERROR(logger, "Error while importing image: %s", boost::diagnostic_information(e));
+        }
+        catch (const std::exception& e)
+        {
+            promise->set_exception(std::current_exception());
+            LOG_ERROR(logger, "Error while importing image: %s", boost::diagnostic_information(e));
+        }
 	};
 
 	backgroundThreadPool_->postWork(std::move(func));
@@ -1013,12 +1246,12 @@ std::shared_future<Model*> GameEngine::importModelAsync(const std::string& name,
 		catch (const Exception& e)
 		{
 			promise->set_exception(std::current_exception());
-			logger->error("Error while importing model: " + boost::diagnostic_information(e));
+            LOG_ERROR(logger, "Error while importing model: %s", boost::diagnostic_information(e));
 		}
 		catch (const std::exception& e)
 		{
 			promise->set_exception(std::current_exception());
-			logger->error("Error while importing model: " + boost::diagnostic_information(e));
+            LOG_ERROR(logger, "Error while importing model: %s", boost::diagnostic_information(e));
 		}
 	};
 
@@ -1080,9 +1313,22 @@ std::shared_future<ModelHandle> GameEngine::loadStaticModelAsync(const Model* mo
 	auto promise = std::make_shared<std::promise<ModelHandle>>();
 	auto sharedFuture = promise->get_future().share();
 
-	std::function<void()> func = [=, promise = promise, sharedFuture = sharedFuture, model = model]() {
-		auto modelHandle = this->loadStaticModel(model);
-		promise->set_value(modelHandle);
+	std::function<void()> func = [=, &logger = logger_, promise = promise, sharedFuture = sharedFuture, model = model]() {
+        try
+        {
+            auto modelHandle = this->loadStaticModel(model);
+            promise->set_value(modelHandle);
+        }
+        catch (const Exception& e)
+        {
+            promise->set_exception(std::current_exception());
+            LOG_ERROR(logger, "Error while importing model: %s", boost::diagnostic_information(e));
+        }
+        catch (const std::exception& e)
+        {
+            promise->set_exception(std::current_exception());
+            LOG_ERROR(logger, "Error while importing model: %s", boost::diagnostic_information(e));
+        }
 	};
 
 	openGlLoader_->postWork(std::move(func));
@@ -1092,7 +1338,7 @@ std::shared_future<ModelHandle> GameEngine::loadStaticModelAsync(const Model* mo
 
 graphics::VertexShaderHandle GameEngine::createVertexShader(const std::string& name, const std::string& filename)
 {
-	LOG_DEBUG(logger_, "Loading vertex shader '" + name + "': " + filename);
+	LOG_DEBUG(logger_, "Loading vertex shader '%s': %s", name, filename);
 
 	auto shaderSource = fileSystem_->readAll(filename);
 
@@ -1104,9 +1350,23 @@ std::shared_future<graphics::VertexShaderHandle> GameEngine::createVertexShaderA
 	auto promise = std::make_shared<std::promise<graphics::VertexShaderHandle>>();
 	auto sharedFuture = promise->get_future().share();
 
-	std::function<void()> func = [=, promise = promise, sharedFuture = sharedFuture, name = name, filename = filename]() {
-		auto shaderHandle = this->createVertexShader(name, filename);
-		promise->set_value(shaderHandle);
+	std::function<void()> func = [=, &logger = logger_, promise = promise, sharedFuture = sharedFuture, name = name, filename = filename]() {
+        try
+        {
+            auto shaderHandle = this->createVertexShader(name, filename);
+            promise->set_value(shaderHandle);
+        }
+        catch (const Exception& e)
+        {
+            promise->set_exception(std::current_exception());
+            LOG_ERROR(logger, "Error while creating vertex shader: %s", boost::diagnostic_information(e));
+        }
+        catch (const std::exception& e)
+        {
+            promise->set_exception(std::current_exception());
+            LOG_ERROR(logger, "Error while creating vertex shader: %s", boost::diagnostic_information(e));
+        }
+
 	};
 
 	openGlLoader_->postWork(std::move(func));
@@ -1116,7 +1376,7 @@ std::shared_future<graphics::VertexShaderHandle> GameEngine::createVertexShaderA
 
 graphics::VertexShaderHandle GameEngine::createVertexShaderFromSource(const std::string& name, const std::string& data)
 {
-	LOG_DEBUG(logger_, "Creating vertex shader from source: " + data);
+	LOG_DEBUG(logger_, "Creating vertex shader from source: %s", data);
 
 	if (graphicsEngine_->valid(getVertexShader(name)))
 	{
@@ -1135,9 +1395,22 @@ std::shared_future<graphics::VertexShaderHandle> GameEngine::createVertexShaderF
 	auto promise = std::make_shared<std::promise<graphics::VertexShaderHandle>>();
 	auto sharedFuture = promise->get_future().share();
 
-	std::function<void()> func = [=, promise = promise, sharedFuture = sharedFuture, name = name, data = data]() {
-		auto shaderHandle = this->createVertexShaderFromSource(name, data);
-		promise->set_value(shaderHandle);
+	std::function<void()> func = [=, &logger = logger_, promise = promise, sharedFuture = sharedFuture, name = name, data = data]() {
+        try
+        {
+            auto shaderHandle = this->createVertexShaderFromSource(name, data);
+            promise->set_value(shaderHandle);
+        }
+        catch (const Exception& e)
+        {
+            promise->set_exception(std::current_exception());
+            LOG_ERROR(logger, "Error while creating vertex shader from source: %s", boost::diagnostic_information(e));
+        }
+        catch (const std::exception& e)
+        {
+            promise->set_exception(std::current_exception());
+            LOG_ERROR(logger, "Error while creating vertex shader from source: %s", boost::diagnostic_information(e));
+        }
 	};
 
 	openGlLoader_->postWork(std::move(func));
@@ -1147,7 +1420,7 @@ std::shared_future<graphics::VertexShaderHandle> GameEngine::createVertexShaderF
 
 graphics::FragmentShaderHandle GameEngine::createFragmentShader(const std::string& name, const std::string& filename)
 {
-	LOG_DEBUG(logger_, "Loading fragment shader '" + name + "': " + filename);
+	LOG_DEBUG(logger_, "Loading fragment shader '%s': %s", name, filename);
 
 	auto shaderSource = fileSystem_->readAll(filename);
 
@@ -1159,9 +1432,22 @@ std::shared_future<graphics::FragmentShaderHandle> GameEngine::createFragmentSha
 	auto promise = std::make_shared<std::promise<graphics::FragmentShaderHandle>>();
 	auto sharedFuture = promise->get_future().share();
 
-	std::function<void()> func = [=, promise = promise, sharedFuture = sharedFuture, name = name, filename = filename]() {
-		auto shaderHandle = this->createFragmentShader(name, filename);
-		promise->set_value(shaderHandle);
+	std::function<void()> func = [=, &logger = logger_, promise = promise, sharedFuture = sharedFuture, name = name, filename = filename]() {
+        try
+        {
+            auto shaderHandle = this->createFragmentShader(name, filename);
+            promise->set_value(shaderHandle);
+        }
+        catch (const Exception& e)
+        {
+            promise->set_exception(std::current_exception());
+            LOG_ERROR(logger, "Error while creating fragment shader: %s", boost::diagnostic_information(e));
+        }
+        catch (const std::exception& e)
+        {
+            promise->set_exception(std::current_exception());
+            LOG_ERROR(logger, "Error while creating fragment shader: %s", boost::diagnostic_information(e));
+        }
 	};
 
 	openGlLoader_->postWork(std::move(func));
@@ -1171,7 +1457,7 @@ std::shared_future<graphics::FragmentShaderHandle> GameEngine::createFragmentSha
 
 graphics::FragmentShaderHandle GameEngine::createFragmentShaderFromSource(const std::string& name, const std::string& data)
 {
-	LOG_DEBUG(logger_, "Creating fragment shader from source: " + data);
+	LOG_DEBUG(logger_, "Creating fragment shader from source: %s", data);
 
 	if (graphicsEngine_->valid(getFragmentShader(name)))
 	{
@@ -1190,9 +1476,22 @@ std::shared_future<graphics::FragmentShaderHandle> GameEngine::createFragmentSha
 	auto promise = std::make_shared<std::promise<graphics::FragmentShaderHandle>>();
 	auto sharedFuture = promise->get_future().share();
 
-	std::function<void()> func = [=, promise = promise, sharedFuture = sharedFuture, name = name, data = data]() {
-		auto shaderHandle = this->createFragmentShaderFromSource(name, data);
-		promise->set_value(shaderHandle);
+	std::function<void()> func = [=, &logger = logger_, promise = promise, sharedFuture = sharedFuture, name = name, data = data]() {
+        try
+        {
+            auto shaderHandle = this->createFragmentShaderFromSource(name, data);
+            promise->set_value(shaderHandle);
+        }
+        catch (const Exception& e)
+        {
+            promise->set_exception(std::current_exception());
+            LOG_ERROR(logger, "Error while creating fragment shader from source: %s", boost::diagnostic_information(e));
+        }
+        catch (const std::exception& e)
+        {
+            promise->set_exception(std::current_exception());
+            LOG_ERROR(logger, "Error while creating fragment shader from source: %s", boost::diagnostic_information(e));
+        }
 	};
 
 	openGlLoader_->postWork(std::move(func));
@@ -1224,7 +1523,7 @@ graphics::FragmentShaderHandle GameEngine::getFragmentShader(const std::string& 
 
 void GameEngine::destroyShader(const std::string& name)
 {
-	LOG_DEBUG(logger_, "Destroying shader '" + name + "'");
+	LOG_DEBUG(logger_, "Destroying shader '%s'", name);
 	/*
 	auto it = shaderHandles_.find(name);
 	if (it != shaderHandles_.end())
@@ -1234,14 +1533,14 @@ void GameEngine::destroyShader(const std::string& name)
 	}
 	else
 	{
-		LOG_WARN(logger_, "Cannot destroy shader '" + name + "' - shader was not found.");
+		LOG_WARN(logger_, "Cannot destroy shader '%s' - shader was not found.", name);
 	}
 	*/
 }
 
 void GameEngine::destroyShader(const graphics::VertexShaderHandle& shaderHandle)
 {
-	LOG_DEBUG(logger_, "Destroying vertex shader with id '" + std::to_string(shaderHandle.id()) + "'");
+	LOG_DEBUG(logger_, "Destroying vertex shader with id '%s'", std::to_string(shaderHandle.id()));
 
 	auto func = [&shaderHandle](const auto& pair) {
 		return pair.second == shaderHandle;
@@ -1256,13 +1555,13 @@ void GameEngine::destroyShader(const graphics::VertexShaderHandle& shaderHandle)
 	}
 	else
 	{
-		LOG_WARN(logger_, "Cannot destroy vertex shader with id '" + std::to_string(shaderHandle.id()) + "' - shader was not found.");
+		LOG_WARN(logger_, "Cannot destroy vertex shader with id '%s' - shader was not found.", std::to_string(shaderHandle.id()));
 	}
 }
 
 void GameEngine::destroyShader(const graphics::FragmentShaderHandle& shaderHandle)
 {
-	LOG_DEBUG(logger_, "Destroying fragment shader with id '" + std::to_string(shaderHandle.id()) + "'");
+	LOG_DEBUG(logger_, "Destroying fragment shader with id '%s'", std::to_string(shaderHandle.id()));
 
 	auto func = [&shaderHandle](const auto& pair) {
 		return pair.second == shaderHandle;
@@ -1277,14 +1576,14 @@ void GameEngine::destroyShader(const graphics::FragmentShaderHandle& shaderHandl
 	}
 	else
 	{
-		LOG_WARN(logger_, "Cannot destroy fragment shader with id '" + std::to_string(shaderHandle.id()) + "' - shader was not found.");
+		LOG_WARN(logger_, "Cannot destroy fragment shader with id '%s' - shader was not found.", std::to_string(shaderHandle.id()));
 	}
 }
 
 
 graphics::ShaderProgramHandle GameEngine::createShaderProgram(const std::string& name, const graphics::VertexShaderHandle& vertexShaderHandle, const graphics::FragmentShaderHandle& fragmentShaderHandle)
 {
-	LOG_DEBUG(logger_, "Creating shader program '" + name + "' from vertex id '" + std::to_string(vertexShaderHandle.id()) + "' and fragment id '" + std::to_string(fragmentShaderHandle.id()) + "'");
+	LOG_DEBUG(logger_, "Creating shader program '%s' from vertex id '%s' and fragment id '%s'", name, std::to_string(vertexShaderHandle.id()), std::to_string(fragmentShaderHandle.id()));
 
 	if (graphicsEngine_->valid(getShaderProgram(name)))
 	{
@@ -1303,9 +1602,22 @@ std::shared_future<graphics::ShaderProgramHandle> GameEngine::createShaderProgra
 	auto promise = std::make_shared<std::promise<graphics::ShaderProgramHandle>>();
 	auto sharedFuture = promise->get_future().share();
 
-	std::function<void()> func = [=, promise = promise, sharedFuture = sharedFuture, name = name, vertexShaderHandle = vertexShaderHandle, fragmentShaderHandle = fragmentShaderHandle]() {
-		auto shaderProgramHandle = this->createShaderProgram(name, vertexShaderHandle, fragmentShaderHandle);
-		promise->set_value(shaderProgramHandle);
+	std::function<void()> func = [=, &logger = logger_, promise = promise, sharedFuture = sharedFuture, name = name, vertexShaderHandle = vertexShaderHandle, fragmentShaderHandle = fragmentShaderHandle]() {
+        try
+        {
+            auto shaderProgramHandle = this->createShaderProgram(name, vertexShaderHandle, fragmentShaderHandle);
+            promise->set_value(shaderProgramHandle);
+        }
+        catch (const Exception& e)
+        {
+            promise->set_exception(std::current_exception());
+            LOG_ERROR(logger, "Error while creating shader program: %s", boost::diagnostic_information(e));
+        }
+        catch (const std::exception& e)
+        {
+            promise->set_exception(std::current_exception());
+            LOG_ERROR(logger, "Error while creating shader program: %s", boost::diagnostic_information(e));
+        }
 	};
 
 	openGlLoader_->postWork(std::move(func));
@@ -1336,13 +1648,13 @@ void GameEngine::destroyShaderProgram(const std::string& name)
 	}
 	else
 	{
-		LOG_WARN(logger_, "Cannot destroy shader program '" + name + "' - shader program was not found.");
+		LOG_WARN(logger_, "Cannot destroy shader program '%s' - shader program was not found.", name);
 	}
 }
 
 void GameEngine::destroyShaderProgram(const graphics::ShaderProgramHandle& shaderProgramHandle)
 {
-	LOG_DEBUG(logger_, "Destroying shader program with id '" + std::to_string(shaderProgramHandle.id()) + "'");
+	LOG_DEBUG(logger_, "Destroying shader program with id '%s'", std::to_string(shaderProgramHandle.id()));
 
 	auto func = [&shaderProgramHandle](const auto& pair) {
 		return pair.second == shaderProgramHandle;
@@ -1357,7 +1669,7 @@ void GameEngine::destroyShaderProgram(const graphics::ShaderProgramHandle& shade
 	}
 	else
 	{
-		LOG_WARN(logger_, "Cannot destroy shader program with id '" + std::to_string(shaderProgramHandle.id()) + "' - shader program was not found.");
+		LOG_WARN(logger_, "Cannot destroy shader program with id '%s' - shader program was not found.", std::to_string(shaderProgramHandle.id()));
 	}
 }
 
@@ -1388,8 +1700,8 @@ graphics::RenderableHandle GameEngine::createRenderable(
 }
 
 void GameEngine::animateSkeleton(
-	std::vector< glm::mat4 >& transformations,
-	float32 runningTime,
+	std::vector<glm::mat4>& transformations,
+    const float32 runningTime,
 	const graphics::MeshHandle& meshHandle,
 	const AnimationHandle& animationHandle,
 	const SkeletonHandle& skeletonHandle
@@ -1414,10 +1726,10 @@ void GameEngine::animateSkeleton(
 }
 
 void GameEngine::animateSkeleton(
-	std::vector< glm::mat4 >& transformations,
-	float32 runningTime,
-	uint32 startFrame,
-	uint32 endFrame,
+	std::vector<glm::mat4>& transformations,
+    const float32 runningTime,
+    const uint32 startFrame,
+    const uint32 endFrame,
 	const graphics::MeshHandle& meshHandle,
 	const AnimationHandle& animationHandle,
 	const SkeletonHandle& skeletonHandle
@@ -1738,11 +2050,44 @@ void GameEngine::removeMessageEventListener(void* object)
 
 }
 
+void GameEngine::addScriptingEngineDebugHandler(IScriptingEngineDebugHandler* handler)
+{
+    if (std::find(scriptingEngineDebugHandlers_.begin(), scriptingEngineDebugHandlers_.end(), handler) != scriptingEngineDebugHandlers_.end())
+    {
+        throw std::runtime_error("Scripting engine debug handler already exists.");
+    }
+
+    scriptingEngineDebugHandlers_.push_back(handler);
+}
+
+void GameEngine::removeScriptingEngineDebugHandler(const IScriptingEngineDebugHandler* handler)
+{
+    auto it = std::find(scriptingEngineDebugHandlers_.begin(), scriptingEngineDebugHandlers_.end(), handler);
+    if (it != scriptingEngineDebugHandlers_.end())
+    {
+        scriptingEngineDebugHandlers_.erase(it);
+    }
+}
+
+void GameEngine::addScriptingEngineDebugHandler(void* object)
+{
+    scripting::ScriptObjectHandle listener(object);
+    auto scriptObjectFunctionHandle = scriptingEngine_->getScriptObjectFunction(listener, "void tick(const float)");
+
+    scriptScriptingEngineDebugHandlers_.push_back( std::make_pair(listener, scriptObjectFunctionHandle) );
+}
+
+void GameEngine::removeScriptingEngineDebugHandler(const void* object)
+{
+
+}
+
+
 bool GameEngine::processEvent(const graphics::Event& event)
 {
 	bool consumed = false;
 
-	switch(event.type)
+	switch (event.type)
 	{
 		case graphics::QUIT:
 			std::cout << "Processing quit event." << std::endl;
@@ -1751,111 +2096,84 @@ bool GameEngine::processEvent(const graphics::Event& event)
 			break;
 
 		case graphics::WINDOWEVENT:
+            switch (event.window.eventType)
+            {
+                case graphics::WINDOWEVENT_RESIZED:
+                    graphicsEngine_->setViewport(event.window.data1, event.window.data2);
+
+                default:
+                    break;
+            }
+
 			for (auto listener : windowEventListeners_)
 			{
-				if (consumed) break;
-				consumed = listener->processEvent(event.window);
+				if (listener->processEvent(event.window)) break;
 			}
-
-			if (consumed) break;
 
 			for (const auto& data : scriptWindowEventListeners_)
 			{
-				if (consumed) break;
-
 				scripting::ParameterList arguments;
 				arguments.addRef(event.window);
 				uint8 returnValue = false;
 
 				scriptingEngine_->execute(data.first, data.second, arguments, returnValue);
 
-				consumed = returnValue;
+                if (returnValue) break;
 			}
-
-			if (consumed) break;
 
 			for (auto& gui : guis_)
 			{
-				if (consumed) break;
-
-				consumed = gui->processEvent(event.window);
-			}
-
-			switch(event.window.eventType)
-			{
-				case graphics::WINDOWEVENT_RESIZED:
-					graphicsEngine_->setViewport(event.window.data1, event.window.data2);
-
-				default:
-					break;
+                if (gui->processEvent(event.window)) break;
 			}
 
 			break;
 
 		case graphics::TEXTINPUT:
-            for (auto& gui : guis_)
-            {
-                if (consumed) break;
-                consumed = gui->processEvent(event.text);
-            }
-
-            if (consumed) break;
-
             for (auto listener : textInputEventListeners_)
             {
-                if (consumed) break;
-                consumed = listener->processEvent(event.text);
+                if (listener->processEvent(event.text)) break;
             }
-
-            if (consumed) break;
 
             for (const auto& data : scriptTextInputEventListeners_)
             {
-                if (consumed) break;
-
                 scripting::ParameterList arguments;
                 arguments.addRef(event.text);
                 uint8 returnValue = false;
 
                 scriptingEngine_->execute(data.first, data.second, arguments, returnValue);
 
-                consumed = returnValue;
+                if (returnValue) break;
+            }
+
+            for (auto& gui : guis_)
+            {
+                if (gui->processEvent(event.text)) break;
             }
 
             break;
 
 		case graphics::KEYDOWN:
 		case graphics::KEYUP:
-			for (auto& gui : guis_)
-    {
-        if (consumed) break;
-        consumed = gui->processEvent(event.key);
-    }
-
-            if (consumed) break;
-
-            for (auto listener : keyboardEventListeners_)
+			for (auto listener : keyboardEventListeners_)
             {
-                if (consumed) break;
-                consumed = listener->processEvent(event.key);
+                if (listener->processEvent(event.key)) break;
             }
-
-            if (consumed) break;
 
             for (const auto& data : scriptKeyboardEventListeners_)
             {
-                if (consumed) break;
-
                 scripting::ParameterList arguments;
                 arguments.addRef(event.key);
                 uint8 returnValue = false;
 
                 scriptingEngine_->execute(data.first, data.second, arguments, returnValue);
 
-                consumed = returnValue;
+                if (returnValue) break;
             }
 
-            if (consumed) break;
+            for (auto& gui : guis_)
+            {
+                if (gui->processEvent(event.key)) break;
+            }
 
             if (event.key.keySym.scancode == graphics::SCANCODE_ESCAPE)
             {
@@ -1866,97 +2184,75 @@ bool GameEngine::processEvent(const graphics::Event& event)
             break;
 
 		case graphics::MOUSEMOTION:
-			for (auto& gui : guis_)
-			{
-				if (consumed) break;
-				consumed = gui->processEvent(event.motion);
-			}
-
 			for (auto listener : mouseMotionEventListeners_)
 			{
-				if (consumed) break;
-				consumed = listener->processEvent(event.motion);
+                if (listener->processEvent(event.motion)) break;
 			}
 
 			for (const auto& data : scriptMouseMotionEventListeners_)
 			{
-				if (consumed) break;
-
 				scripting::ParameterList arguments;
 				arguments.addRef(event.motion);
 				uint8 returnValue = false;
 
 				scriptingEngine_->execute(data.first, data.second, arguments, returnValue);
 
-				consumed = returnValue;
+                if (returnValue) break;
 			}
 
-			if (consumed) break;
+            for (auto& gui : guis_)
+            {
+                if (gui->processEvent(event.motion)) break;
+            }
 
 			break;
 
 		case graphics::MOUSEBUTTONDOWN:
 		case graphics::MOUSEBUTTONUP:
-			for (auto& gui : guis_)
-			{
-				if (consumed) break;
-				consumed = gui->processEvent(event.button);
-			}
-
-			if (consumed) break;
-
 			for (auto listener : mouseButtonEventListeners_)
 			{
-				if (consumed) break;
-				consumed = listener->processEvent(event.button);
+				if (listener->processEvent(event.button)) break;
 			}
-
-			if (consumed) break;
 
 			for (const auto& data : scriptMouseButtonEventListeners_)
 			{
-				if (consumed) break;
-
 				scripting::ParameterList arguments;
 				arguments.addRef(event.button);
 				uint8 returnValue = false;
 
 				scriptingEngine_->execute(data.first, data.second, arguments, returnValue);
 
-				consumed = returnValue;
+                if (returnValue) break;
 			}
+
+            for (auto& gui : guis_)
+            {
+                if (gui->processEvent(event.button)) break;
+            }
 
 			break;
 
 		case graphics::MOUSEWHEEL:
-			for (auto& gui : guis_)
-			{
-				if (consumed) break;
-				consumed = gui->processEvent(event.wheel);
-			}
-
-			if (consumed) break;
-
 			for (auto listener : mouseWheelEventListeners_)
 			{
-				if (consumed) break;
-				consumed = listener->processEvent(event.wheel);
+				if (listener->processEvent(event.wheel)) break;
 			}
-
-			if (consumed) break;
 
 			for (const auto& data : scriptMouseWheelEventListeners_)
 			{
-				if (consumed) break;
-
 				scripting::ParameterList arguments;
 				arguments.addRef(event.wheel);
 				uint8 returnValue = false;
 
 				scriptingEngine_->execute(data.first, data.second, arguments, returnValue);
 
-				consumed = returnValue;
+                if (returnValue) break;
 			}
+
+            for (auto& gui : guis_)
+            {
+                if (gui->processEvent(event.wheel)) break;
+            }
 
 			break;
 
@@ -1969,7 +2265,7 @@ bool GameEngine::processEvent(const graphics::Event& event)
 
 bool GameEngine::processEvent(const networking::ConnectEvent& event)
 {
-	switch(event.type)
+	switch (event.type)
 	{
 		case networking::SERVERCONNECT:
 		case networking::SERVERCONNECTFAILED:
@@ -1999,7 +2295,7 @@ bool GameEngine::processEvent(const networking::ConnectEvent& event)
 
 bool GameEngine::processEvent(const networking::DisconnectEvent& event)
 {
-	switch(event.type)
+	switch (event.type)
 	{
 		case networking::SERVERDISCONNECT:
 		case networking::CLIENTDISCONNECT:
@@ -2028,7 +2324,7 @@ bool GameEngine::processEvent(const networking::DisconnectEvent& event)
 
 bool GameEngine::processEvent(const networking::MessageEvent& event)
 {
-	switch(event.type)
+	switch (event.type)
 	{
 		case networking::SERVERMESSAGE:
 		case networking::CLIENTMESSAGE:
@@ -2078,23 +2374,24 @@ void GameEngine::run()
 		float32 cumulativeDelta = 0.0f;
 
 		//float32 runningTime;
-		//std::vector< glm::mat4 > transformations;
+		//std::vector<glm::mat4> transformations;
 
 		{
-			auto filename = std::string("../data/scripts/") + bootstrapScriptName_;
-			if (!fileSystem_->exists(filename))
-			{
-				throw std::runtime_error("Script file '" + filename + "' does not exist.");
-			}
+//			auto filename = std::string("../data/scripts/") + bootstrapScriptName_;
+//			const auto filename = bootstrapScriptName_;
+//			if (!fileSystem_->exists(filename))
+//			{
+//				throw std::runtime_error("Script file '" + filename + "' does not exist.");
+//			}
 
-			auto source = fileSystem_->readAll(filename, fs::FileFlags::READ);
+            const auto source = fileSystem_->readAll(bootstrapScriptName_, fs::FileFlags::READ);
 
 			bootstrapModuleHandle_ = scriptingEngine_->createModule("", {source});
 		}
 
-		scriptingEngine_->execute(bootstrapModuleHandle_, std::string("void main()"));
+		scriptingEngine_->execute(bootstrapModuleHandle_, "void main()");
 
-		scriptingEngine_->execute(scriptObjectHandle_, std::string("void initialize()"));
+		scriptingEngine_->execute(scriptObjectHandle_, "void initialize()");
 
 		while ( running_ )
 		{
@@ -2123,39 +2420,11 @@ void GameEngine::run()
 			}
 	//		tick(delta);
 
-			// test animation
-			/*
-			transformations = std::vector< glm::mat4 >(100, glm::mat4(1.0));
-			auto animatedBoneNodes = animations[0].animatedBoneNodes;
-			auto duration = animations[0].duration;
-			auto ticksPerSecond = animations[0].ticksPerSecond;
-			runningTime += 0.01;
-			graphics::model::animateSkeleton(transformations, globalInverseTransformation, animatedBoneNodes, rootBoneNode, boneData[0], duration, ticksPerSecond, runningTime, 0, 0);
-			graphicsEngine_->update(skeletonHandle, &transformations[0], 100 * sizeof(glm::mat4));
-			*/
-
-			//transformations = std::vector< glm::mat4 >(100, glm::mat4(1.0));
-			//graphicsEngine_->update(skeletonHandle, &transformations[0], 100 * sizeof(glm::mat4));
-
 			auto beginRenderTime = std::chrono::high_resolution_clock::now();
 
-			graphicsEngine_->beginRender();
+            render();
 
-			for (auto& scene : scenes_)
-			{
-				scene->render();
-			}
-
-			debugRenderer_->render();
-
-			for (auto& gui : guis_)
-			{
-				gui->render();
-			}
-
-			graphicsEngine_->endRender();
-
-			auto endRenderTime = std::chrono::high_resolution_clock::now();
+            auto endRenderTime = std::chrono::high_resolution_clock::now();
 
 			engineStatistics_.renderTime = std::chrono::duration<float32>(endRenderTime - beginRenderTime).count();
 

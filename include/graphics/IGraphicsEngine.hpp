@@ -54,10 +54,7 @@ struct DisplacementMap
 class IGraphicsEngine
 {
 public:
-	virtual ~IGraphicsEngine()
-	{
-	}
-	;
+	virtual ~IGraphicsEngine() = default;
 
 	virtual void setViewport(const uint32 width, const uint32 height) = 0;
 	virtual glm::uvec2 getViewport() const = 0;
@@ -213,6 +210,7 @@ public:
 
 	virtual void setMouseRelativeMode(const bool enabled) = 0;
 	virtual void setWindowGrab(const bool enabled) = 0;
+	virtual bool cursorVisible() const = 0;
 	virtual void setCursorVisible(const bool visible) = 0;
 
 	virtual void processEvents() = 0;

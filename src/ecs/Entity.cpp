@@ -242,17 +242,12 @@ entityx::ComponentHandle<ChildrenComponent> Entity::assign<ChildrenComponent>();
 template <>
 entityx::ComponentHandle<ParentComponent> Entity::assign<ParentComponent, Entity>(Entity&& entity)
 {
-	std::cout << "1: " << entity_ << std::endl;
-
 	entityx::ComponentHandle<ParentComponent> componentHandle;
 
 	if (entity_.has_component<ParentComponent>()) entity_.remove<ParentComponent>();
 
-	std::cout << "PARENT C" << std::endl;
-	std::cout << "entity " << Entity(entity).id() << std::endl;
-	std::cout << "PARENT C" << std::endl;
 	componentHandle = entity_.assign<ParentComponent>(std::forward<Entity>(entity));
-	std::cout << "entity " << componentHandle->entity << std::endl;
+
 	if (componentHandle->entity)
 	{
 		auto childrenComponent = componentHandle->entity.component<ChildrenComponent>();
@@ -271,55 +266,42 @@ entityx::ComponentHandle<ParentComponent> Entity::assign<ParentComponent, Entity
 template <>
 entityx::ComponentHandle<ParentComponent> Entity::assign<ParentComponent, Entity&&>(Entity&& entity)
 {
-	std::cout << entity_ << std::endl;
 	return assign<ParentComponent, Entity>(std::forward<Entity>(entity));
 }
 
 template <>
 entityx::ComponentHandle<ParentComponent> Entity::assign<ParentComponent, Entity&>(Entity& entity)
 {
-	std::cout << "PARENT C 2" << std::endl;
-		std::cout << entity << std::endl;
 	return assign<ParentComponent>(Entity(entity));
 }
 
 template <>
 entityx::ComponentHandle<ParentComponent> Entity::assign<ParentComponent, const Entity&>(const Entity& entity)
 {
-	std::cout << "PARENT C 3" << std::endl;
-		std::cout << entity << std::endl;
 	return assign<ParentComponent>(Entity(entity));
 }
 
 template <>
 entityx::ComponentHandle<ParentComponent> Entity::assign<ParentComponent, ParentComponent>(ParentComponent&& parentComponent)
 {
-	std::cout << "PARENT C 4" << std::endl;
-		std::cout << parentComponent.entity << std::endl;
 	return assign<ParentComponent>(parentComponent.entity);
 }
 
 template <>
 entityx::ComponentHandle<ParentComponent> Entity::assign<ParentComponent, ParentComponent&&>(ParentComponent&& parentComponent)
 {
-	std::cout << "PARENT C 5" << std::endl;
-		std::cout << parentComponent.entity << std::endl;
 	return assign<ParentComponent>(parentComponent.entity);
 }
 
 template <>
 entityx::ComponentHandle<ParentComponent> Entity::assign<ParentComponent, ParentComponent&>(ParentComponent& parentComponent)
 {
-	std::cout << "PARENT C 6" << std::endl;
-		std::cout << parentComponent.entity << std::endl;
 	return assign<ParentComponent>(parentComponent.entity);
 }
 
 template <>
 entityx::ComponentHandle<ParentComponent> Entity::assign<ParentComponent, const ParentComponent&>(const ParentComponent& parentComponent)
 {
-	std::cout << "PARENT C 7" << std::endl;
-			std::cout << parentComponent.entity << std::endl;
 	return assign<ParentComponent>(parentComponent.entity);
 }
 
@@ -332,13 +314,10 @@ entityx::ComponentHandle<ParentComponent> Entity::assign<ParentComponent>()
 template <>
 entityx::ComponentHandle<ChildrenComponent> Entity::assign<ChildrenComponent, std::vector<Entity>>(std::vector<Entity>&& children)
 {
-	std::cout << entity_ << std::endl;
-
 	entityx::ComponentHandle<ChildrenComponent> componentHandle;
 
 	if (entity_.has_component<ChildrenComponent>()) entity_.remove<ChildrenComponent>();
 
-	std::cout << "CHILDREN C" << std::endl;
 	componentHandle = entity_.assign<ChildrenComponent>(std::forward<std::vector<Entity>>(children));
 
 	for (auto& childEntity : componentHandle->children)
@@ -399,8 +378,6 @@ entityx::ComponentHandle<ChildrenComponent> Entity::assign<ChildrenComponent>()
 
 entityx::ComponentHandle<ParentBoneAttachmentComponent> Entity::assignParentBoneAttachmentComponent(std::string boneName, glm::ivec4 boneIds, glm::vec4 boneWeights)
 {
-	std::cout << entity_ << std::endl;
-
 	entityx::ComponentHandle<ParentBoneAttachmentComponent> componentHandle;
 
 	auto gc = entity_.component<ecs::GraphicsComponent>();
@@ -421,7 +398,6 @@ entityx::ComponentHandle<ParentBoneAttachmentComponent> Entity::assignParentBone
 
 	if (entity_.has_component<ParentBoneAttachmentComponent>()) entity_.remove<ParentBoneAttachmentComponent>();
 
-	std::cout << "P BONE ATTACHMENT C" << std::endl;
 	componentHandle = entity_.assign<ParentBoneAttachmentComponent>(
 		std::forward<std::string>(boneName),
 		std::forward<glm::ivec4>(boneIds),

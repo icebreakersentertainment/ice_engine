@@ -24,10 +24,7 @@ class GameEngine;
 class IScriptingEngineBindingFactory
 {
 public:
-	virtual ~IScriptingEngineBindingFactory()
-	{
-	}
-	;
+	virtual ~IScriptingEngineBindingFactory() = default;
 	
 	virtual std::unique_ptr<IScriptingEngineBinding> create(
 		utilities::Properties* properties,

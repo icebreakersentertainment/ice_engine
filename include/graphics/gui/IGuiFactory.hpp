@@ -20,10 +20,7 @@ namespace gui
 class IGuiFactory
 {
 public:
-	virtual ~IGuiFactory()
-	{
-	}
-	;
+	virtual ~IGuiFactory() = default;
 	
 	virtual std::unique_ptr<IGui> create(
 		utilities::Properties* properties,

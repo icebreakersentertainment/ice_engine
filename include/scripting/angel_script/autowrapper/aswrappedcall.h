@@ -559,7 +559,7 @@ Id<T> id(T /*fn_ptr*/) { return Id<T>(); }
 	// hopefully upcoming versions won't need it either
 	#define TMPL template
 #else
-	#define TMPL template
+	#define TMPL
 #endif
 
 #define WRAP_FN(name)             (::gw::id(name).TMPL f< name >())

@@ -2,7 +2,7 @@
 #define MESH_H_
 
 #include <vector>
-#include <map>
+#include <unordered_map>
 #include <string>
 
 #define GLM_FORCE_RADIANS
@@ -34,7 +34,7 @@ struct Bone
 struct BoneData
 {
 	std::string name;
-	std::map< std::string, uint32 > boneIndexMap;
+	std::unordered_map< std::string, uint32 > boneIndexMap;
 	std::vector< Bone > boneTransform;
 };
 
@@ -97,19 +97,16 @@ private:
 		{
 			auto it = boneData.boneIndexMap.find(mesh->mBones[i]->mName.C_Str());
 
-			if (it == boneData.boneIndexMap.end())
-			{
-				continue;
-			}
+			if (it == boneData.boneIndexMap.end()) continue;
 
 			uint32 boneIndex = it->second;
 
-			for (uint32 j = 0; j < mesh->mBones[i]->mNumWeights; j++)
+			for (uint32 j = 0; j < mesh->mBones[i]->mNumWeights; ++j)
 			{
 				const uint32 vertexID = mesh->mBones[i]->mWeights[j].mVertexId;
 				const float32 weight = mesh->mBones[i]->mWeights[j].mWeight;
 
-				for (uint32 i = 0; i < 4; i++)
+				for (uint32 i = 0; i < 4; ++i)
 				{
 					if (boneWeights_[vertexID][i] == 0.0f)
 					{
@@ -213,13 +210,13 @@ private:
 
 	void importBones(const std::string& name, const std::string& filename, uint32 index, const aiMesh* mesh, logger::ILogger* logger, fs::IFileSystem* fileSystem)
 	{
-		assert( mesh != nullptr );
+		assert(mesh != nullptr);
 
 		boneData_ = BoneData();
 
-		logger->debug( "importing boneData." );
+        LOG_DEBUG(logger, "Importing boneData for mesh '%s' for model '%s'." , filename, name);
 
-		for (uint32 i = 0; i < mesh->mNumBones; i++) {
+		for (uint32 i = 0; i < mesh->mNumBones; ++i) {
 			Bone data = Bone();
 			uint32 boneIndex = 0;
 
@@ -233,11 +230,11 @@ private:
 				data.name = std::string( name ) + "_bone_" + std::to_string(index);
 			}
 
-			logger->debug( "bone name: " + data.name );
+            LOG_DEBUG(logger, "Found bone with name '%s' for model '%s'." , data.name, name);
 
 			if (boneData_.boneIndexMap.find(data.name) == boneData_.boneIndexMap.end())
 			{
-				boneIndex = boneData_.boneIndexMap.size();
+				boneIndex = static_cast<uint32>(boneData_.boneIndexMap.size());
 				boneData_.boneTransform.push_back(data);
 			}
 			else
@@ -249,12 +246,12 @@ private:
 			boneData_.boneTransform[boneIndex].boneOffset = detail::convertAssImpMatrix( &(mesh->mBones[i]->mOffsetMatrix) );
 		}
 
-		logger->debug( "done importing boneData." );
+        LOG_DEBUG(logger, "Done importing boneData for mesh '%s' for model '%s'." , filename, name);
 	}
 
 	void import(const std::string& name, const std::string& filename, const uint32 index, const aiMesh* mesh, logger::ILogger* logger, fs::IFileSystem* fileSystem)
 	{
-		logger->debug( "importing mesh '" + filename + "'." );
+        LOG_DEBUG(logger, "Importing mesh '%s' for model '%s'.", filename, name);
 
 		importBones( name, filename, index, mesh, logger, fileSystem );
 
@@ -268,11 +265,11 @@ private:
 			name_ = name + "_mesh_" + std::to_string(index);
 		}
 
-		logger->debug( "mesh name: " + name_ );
+        LOG_DEBUG(logger, "Mesh name is '%s' for model '%s'." , name_, name);
 
 		if (mesh->mNormals == 0)
 		{
-			logger->warn( "Unable to import mesh - it does not have any normals." );
+            LOG_WARN(logger, "Unable to import mesh '%s' for model '%s' - it does not have any normals." , filename, name);
 			return;
 		}
 
@@ -325,12 +322,12 @@ private:
 		// If we have any bones, load them
 		if (mesh->mNumBones > 0)
 		{
-			vertexBoneData_ = VertexBoneData( name, filename, index, mesh, boneData_, vertices_.size(), logger, fileSystem );
+			vertexBoneData_ = VertexBoneData( name, filename, index, mesh, boneData_, static_cast<uint32>(vertices_.size()), logger, fileSystem );
 		}
 
 		//std::cout << "Load results: " << mesh->mNumVertices << " " << mesh->mNumBones << " " << temp << " " << data.bones.size() << std::endl;
 
-		logger->debug( "done importing mesh '" + filename + "'." );
+        LOG_DEBUG(logger, "Done importing mesh '%s' for model '%s'." , filename, name);
 	}
 };
 

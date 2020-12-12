@@ -14,7 +14,7 @@ void Texture::import(const std::string& name,
 {
 	assert( material != nullptr );
 
-	LOG_DEBUG(logger, "Loading texture %s with filename %s.", name, filename);
+	LOG_DEBUG(logger, "Loading texture '%s' with filename '%s'.", name, filename);
 
 	aiReturn texFound = AI_SUCCESS;
 	aiString texPath;
@@ -26,19 +26,19 @@ void Texture::import(const std::string& name,
 		// Error check
 		if (texFound != AI_SUCCESS)
 		{
-			logger->warn( "Texture not found for model filename: " + filename );
+            LOG_WARN(logger, "Texture not found for model '%s'.", filename);
 			return;
 		}
 
 		auto basePath = fileSystem->getBasePath(filename);
 		auto fullPath = basePath + fileSystem->getDirectorySeperator() + texPath.data;
 
-		LOG_DEBUG(logger, "Texture has filename: %s", fullPath);
+		LOG_DEBUG(logger, "Texture has filename '%s' for model '%s'", fullPath, filename);
 
 		auto image = resourceCache->getImage(fullPath);
 		if (image != nullptr)
 		{
-			LOG_DEBUG(logger, "Image found in cache");
+			LOG_DEBUG(logger, "Image found in cache for texture with filename '%s'", fullPath);
 			image_ = image;
 		}
 		else
@@ -60,7 +60,7 @@ void Texture::import(const std::string& name,
 	}
 	else
 	{
-		LOG_DEBUG(logger, "No texture specified.");
+		LOG_DEBUG(logger, "No texture specified for model '%s'.", filename);
 	}
 }
 

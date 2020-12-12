@@ -2,7 +2,8 @@
 #define BINDINGDELEGATEUTILITIES_H_
 
 #include <string>
-#include <map>
+#include <sstream>
+#include <unordered_map>
 #include <list>
 #include <chrono>
 #include <future>
@@ -43,27 +44,27 @@ class VectorRegisterHelper
 public:
 	static void DefaultConstructor(T* memory) { new(memory) T(); }
 	static void CopyConstructor(const T& other, T* memory) { new(memory) T(other); }
-	static void InitConstructor(int size, T* memory) { new(memory) T(size); }
+	static void InitConstructor(uint64 size, T* memory) { new(memory) T(static_cast<size_t>(size)); }
 	static void DefaultDestructor(T* memory) { ((T*)memory)->~T(); }
 
 	static T& assignmentOperator(const T& other, T* v) { (*v) = other; return *v; }
 
-	static void assign(int count, const V& value, T* v) { v->assign(count, value); }
-	static int size(T* v) { return v->size(); }
-	static void resize(int size, T* v) { v->resize(size); }
-	static V& at(int i, T* v) { return v->at(i); }
-	static V& index(int i, T* v) { return (*v)[i]; }
+	static void assign(uint64 count, const V& value, T* v) { v->assign(static_cast<size_t>(count), value); }
+    static uint64 size(T* v) { return static_cast<uint64>(v->size()); }
+	static void resize(uint64 size, T* v) { v->resize(static_cast<size_t>(size)); }
+	static V& at(uint64 i, T* v) { return v->at(static_cast<size_t>(i)); }
+	static V& index(uint64 i, T* v) { return (*v)[static_cast<size_t>(i)]; }
 	static V& front(T* v) { return v->front(); }
 	static V& back(T* v) { return v->back(); }
 	static void push_back(const V& value, T* v) { v->push_back(value); }
 	static void pop_back(T* v) { v->pop_back(); }
-	static void erase(int i, T* v) { v->erase(v->begin() + i); }
-	static void insert(int i, const V& value, T* v) { v->insert(v->begin() + i, value); }
+	static void erase(uint64 i, T* v) { v->erase(v->begin() + static_cast<size_t>(i)); }
+	static void insert(uint64 i, const V& value, T* v) { v->insert(v->begin() + static_cast<size_t>(i), value); }
 	static void clear(T* v) { v->clear(); }
 	static bool empty(T* v) { return v->empty(); }
-	static int max_size(T* v) { return v->max_size(); }
-	static void reserve(int size, T* v) { v->reserve(size); }
-	static int capacity(T* v) { return v->capacity(); }
+	static uint64 max_size(T* v) { return static_cast<uint64>(v->max_size()); }
+	static void reserve(uint64 size, T* v) { v->reserve(static_cast<size_t>(size)); }
+	static uint64 capacity(T* v) { return static_cast<uint64>(v->capacity()); }
 };
 
 
@@ -81,28 +82,28 @@ void registerVectorBindings(scripting::IScriptingEngine* scriptingEngine, const 
 	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(VectorBase::DefaultConstructor), asCALL_CDECL_OBJLAST);
 	auto copyConstructorString = std::string("void f(const ") + name + "& in)";
 	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, copyConstructorString.c_str(), asFUNCTION(VectorBase::CopyConstructor), asCALL_CDECL_OBJLAST);
-	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f(int)", asFUNCTION(VectorBase::InitConstructor), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f(uint64)", asFUNCTION(VectorBase::InitConstructor), asCALL_CDECL_OBJLAST);
 	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_DESTRUCT, "void f()", asFUNCTION(VectorBase::DefaultDestructor), asCALL_CDECL_OBJLAST);
 
-	auto assignFunctionString = std::string("void assign(int, const ") + type + "& in)";
+	auto assignFunctionString = std::string("void assign(uint64, const ") + type + "& in)";
 	scriptingEngine->registerObjectMethod(name.c_str(), assignFunctionString.c_str(), asFUNCTION(VectorBase::assign), asCALL_CDECL_OBJLAST);
 	auto assignmentOperatorFunctionString = name + std::string("& opAssign(const ") + name + "& in)";
 	scriptingEngine->registerObjectMethod(name.c_str(), assignmentOperatorFunctionString.c_str(), asFUNCTION(VectorBase::assignmentOperator), asCALL_CDECL_OBJLAST);
 	auto pushBackFunctionString = "void push_back(" + type + "& in)";
 	scriptingEngine->registerObjectMethod(name.c_str(), pushBackFunctionString.c_str(), asFUNCTION(VectorBase::push_back), asCALL_CDECL_OBJLAST);
-	scriptingEngine->registerObjectMethod(name.c_str(), "void erase(int)", asFUNCTION(VectorBase::erase), asCALL_CDECL_OBJLAST);
-	auto insertFunctionString = "void insert(int, const " + type + "& in)";
+	scriptingEngine->registerObjectMethod(name.c_str(), "void erase(uint64)", asFUNCTION(VectorBase::erase), asCALL_CDECL_OBJLAST);
+	auto insertFunctionString = "void insert(uint64, const " + type + "& in)";
 	scriptingEngine->registerObjectMethod(name.c_str(), insertFunctionString.c_str(), asFUNCTION(VectorBase::insert), asCALL_CDECL_OBJLAST);
 	scriptingEngine->registerObjectMethod(name.c_str(), "void pop_back()", asFUNCTION(VectorBase::pop_back), asCALL_CDECL_OBJLAST);
-	scriptingEngine->registerObjectMethod(name.c_str(), "int size() const", asFUNCTION(VectorBase::size), asCALL_CDECL_OBJLAST);
-	scriptingEngine->registerObjectMethod(name.c_str(), "void resize(int)", asFUNCTION(VectorBase::resize), asCALL_CDECL_OBJLAST);
-	auto atFunctionString = type + "& at(int)";
+	scriptingEngine->registerObjectMethod(name.c_str(), "uint64 size() const", asFUNCTION(VectorBase::size), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectMethod(name.c_str(), "void resize(uint64)", asFUNCTION(VectorBase::resize), asCALL_CDECL_OBJLAST);
+	auto atFunctionString = type + "& at(uint64)";
 	scriptingEngine->registerObjectMethod(name.c_str(), atFunctionString.c_str(), asFUNCTION(VectorBase::at), asCALL_CDECL_OBJLAST);
-	auto atConstFunctionString = std::string("const ") + type + "& at(int) const";
+	auto atConstFunctionString = std::string("const ") + type + "& at(uint64) const";
 	scriptingEngine->registerObjectMethod(name.c_str(), atConstFunctionString.c_str(), asFUNCTION(VectorBase::at), asCALL_CDECL_OBJLAST);
-	auto indexFunctionString = type + "& opIndex(int)";
+	auto indexFunctionString = type + "& opIndex(uint64)";
 	scriptingEngine->registerObjectMethod(name.c_str(), indexFunctionString.c_str(), asFUNCTION(VectorBase::index), asCALL_CDECL_OBJLAST);
-	auto indexConstFunctionString = std::string("const ") + type + "& opIndex(int) const";
+	auto indexConstFunctionString = std::string("const ") + type + "& opIndex(uint64) const";
 	scriptingEngine->registerObjectMethod(name.c_str(), indexConstFunctionString.c_str(), asFUNCTION(VectorBase::index), asCALL_CDECL_OBJLAST);
 	auto frontFunctionString = type + "& front()";
 	scriptingEngine->registerObjectMethod(name.c_str(), frontFunctionString.c_str(), asFUNCTION(VectorBase::front), asCALL_CDECL_OBJLAST);
@@ -114,13 +115,13 @@ void registerVectorBindings(scripting::IScriptingEngine* scriptingEngine, const 
 	scriptingEngine->registerObjectMethod(name.c_str(), backConstFunctionString.c_str(), asFUNCTION(VectorBase::back), asCALL_CDECL_OBJLAST);
 	scriptingEngine->registerObjectMethod(name.c_str(), "void clear()", asFUNCTION(VectorBase::clear), asCALL_CDECL_OBJLAST);
 	scriptingEngine->registerObjectMethod(name.c_str(), "bool empty() const", asFUNCTION(VectorBase::empty), asCALL_CDECL_OBJLAST);
-	scriptingEngine->registerObjectMethod(name.c_str(), "int max_size() const", asFUNCTION(VectorBase::max_size), asCALL_CDECL_OBJLAST);
-	scriptingEngine->registerObjectMethod(name.c_str(), "void reserve(int)", asFUNCTION(VectorBase::reserve), asCALL_CDECL_OBJLAST);
-	scriptingEngine->registerObjectMethod(name.c_str(), "int capacity() const", asFUNCTION(VectorBase::capacity), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectMethod(name.c_str(), "uint64 max_size() const", asFUNCTION(VectorBase::max_size), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectMethod(name.c_str(), "void reserve(uint64)", asFUNCTION(VectorBase::reserve), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectMethod(name.c_str(), "uint64 capacity() const", asFUNCTION(VectorBase::capacity), asCALL_CDECL_OBJLAST);
 }
 
 template<typename T, typename K, typename V>
-class MapRegisterHelper
+class UnorderedMapRegisterHelper
 {
 public:
 	static void DefaultConstructor(T* memory) { new(memory) T(); }
@@ -129,44 +130,44 @@ public:
 
 	static T& assignmentOperator(const T& other, T* m) { (*m) = other; return *m; }
 
-	static int size(T* m) { return m->size(); }
+	static uint64 size(T* m) { return static_cast<uint64>(m->size()); }
 	static V& at(const K& k, T* m) { return m->at(k); }
 	static V& index(const K& k, T* m) { return (*m)[k]; }
 	static void clear(T* m) { m->clear(); }
 	static bool empty(T* m) { return m->empty(); }
-	static int max_size(T* m) { return m->max_size(); }
+	static uint64 max_size(T* m) { return static_cast<uint64>(m->max_size()); }
 };
 
 /**
  * Register our map bindings.
  */
 template<typename K, typename V>
-void registerMapBindings(scripting::IScriptingEngine* scriptingEngine, const std::string& name, const std::string& keyType, const std::string& valueType, asEObjTypeFlags objectTypeFlags = asOBJ_APP_CLASS_ALLINTS)
+void registerUnorderedMapBindings(scripting::IScriptingEngine* scriptingEngine, const std::string& name, const std::string& keyType, const std::string& valueType, asEObjTypeFlags objectTypeFlags = asOBJ_APP_CLASS_ALLINTS)
 {
 
-	typedef MapRegisterHelper<std::map<K, V>, K, V> MapBase;
+	typedef UnorderedMapRegisterHelper<std::unordered_map<K, V>, K, V> UnorderedMapBase;
 
-	scriptingEngine->registerObjectType(name.c_str(), sizeof(std::map<K, V>), asOBJ_VALUE | objectTypeFlags | asGetTypeTraits<std::map<K, V>>());
+	scriptingEngine->registerObjectType(name.c_str(), sizeof(std::unordered_map<K, V>), asOBJ_VALUE | objectTypeFlags | asGetTypeTraits<std::unordered_map<K, V>>());
 
-	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(MapBase::DefaultConstructor), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(UnorderedMapBase::DefaultConstructor), asCALL_CDECL_OBJLAST);
 	auto copyConstructorString = std::string("void f(const ") + name + "& in)";
-	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, copyConstructorString.c_str(), asFUNCTION(MapBase::CopyConstructor), asCALL_CDECL_OBJLAST);
-	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_DESTRUCT, "void f()", asFUNCTION(MapBase::DefaultDestructor), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, copyConstructorString.c_str(), asFUNCTION(UnorderedMapBase::CopyConstructor), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_DESTRUCT, "void f()", asFUNCTION(UnorderedMapBase::DefaultDestructor), asCALL_CDECL_OBJLAST);
 
 	auto assignmentOperatorFunctionString = name + std::string("& opAssign(const ") + name + "& in)";
-	scriptingEngine->registerObjectMethod(name.c_str(), assignmentOperatorFunctionString.c_str(), asFUNCTION(MapBase::assignmentOperator), asCALL_CDECL_OBJLAST);
-	scriptingEngine->registerObjectMethod(name.c_str(), "int size() const", asFUNCTION(MapBase::size), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectMethod(name.c_str(), assignmentOperatorFunctionString.c_str(), asFUNCTION(UnorderedMapBase::assignmentOperator), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectMethod(name.c_str(), "uint64 size() const", asFUNCTION(UnorderedMapBase::size), asCALL_CDECL_OBJLAST);
 	auto atFunctionString = valueType + "& at(" + keyType + ")";
-	scriptingEngine->registerObjectMethod(name.c_str(), atFunctionString.c_str(), asFUNCTION(MapBase::at), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectMethod(name.c_str(), atFunctionString.c_str(), asFUNCTION(UnorderedMapBase::at), asCALL_CDECL_OBJLAST);
 	auto atConstFunctionString = std::string("const ") + valueType + "& at(" + keyType + ") const";
-	scriptingEngine->registerObjectMethod(name.c_str(), atConstFunctionString.c_str(), asFUNCTION(MapBase::at), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectMethod(name.c_str(), atConstFunctionString.c_str(), asFUNCTION(UnorderedMapBase::at), asCALL_CDECL_OBJLAST);
 	auto indexFunctionString = valueType + "& opIndex(" + keyType + ")";
-	scriptingEngine->registerObjectMethod(name.c_str(), indexFunctionString.c_str(), asFUNCTION(MapBase::index), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectMethod(name.c_str(), indexFunctionString.c_str(), asFUNCTION(UnorderedMapBase::index), asCALL_CDECL_OBJLAST);
 	auto indexConstFunctionString = std::string("const ") + valueType + "& opIndex(" + keyType + ") const";
-	scriptingEngine->registerObjectMethod(name.c_str(), indexConstFunctionString.c_str(), asFUNCTION(MapBase::index), asCALL_CDECL_OBJLAST);
-	scriptingEngine->registerObjectMethod(name.c_str(), "void clear()", asFUNCTION(MapBase::clear), asCALL_CDECL_OBJLAST);
-	scriptingEngine->registerObjectMethod(name.c_str(), "bool empty() const", asFUNCTION(MapBase::empty), asCALL_CDECL_OBJLAST);
-	scriptingEngine->registerObjectMethod(name.c_str(), "int max_size() const", asFUNCTION(MapBase::max_size), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectMethod(name.c_str(), indexConstFunctionString.c_str(), asFUNCTION(UnorderedMapBase::index), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectMethod(name.c_str(), "void clear()", asFUNCTION(UnorderedMapBase::clear), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectMethod(name.c_str(), "bool empty() const", asFUNCTION(UnorderedMapBase::empty), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectMethod(name.c_str(), "uint64 max_size() const", asFUNCTION(UnorderedMapBase::max_size), asCALL_CDECL_OBJLAST);
 }
 
 template<typename T, typename V>
@@ -356,12 +357,15 @@ void registerHandleBindings(scripting::IScriptingEngine* scriptingEngine, const 
 	typedef HandleRegisterHelper<T> HandleBase;
 
 	scriptingEngine->registerObjectType(name.c_str(), sizeof(T), asOBJ_VALUE | asOBJ_APP_CLASS_ALLINTS | asGetTypeTraits<T>());
+    scriptingEngine->debugger()->registerToStringCallback(name.c_str(), scriptingEngineDebuggerToStringCallback<T>());
 	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(HandleBase::DefaultConstructor), asCALL_CDECL_OBJFIRST);
 	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f(const uint64)", asFUNCTION(HandleBase::InitConstructor), asCALL_CDECL_OBJFIRST);
 	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f(const " + name + "& in)", asFUNCTION(HandleBase::CopyConstructor), asCALL_CDECL_OBJFIRST);
 	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_DESTRUCT, "void f()", asFUNCTION(HandleBase::DefaultDestructor), asCALL_CDECL_OBJFIRST);
 	scriptingEngine->registerClassMethod(name.c_str(), name + "& opAssign(const " + name + "& in)", asMETHODPR(T, operator=, (const T&), T&));
 	scriptingEngine->registerClassMethod(name.c_str(), "uint64 id() const", asMETHODPR(T, id, () const, uint64));
+	scriptingEngine->registerClassMethod(name.c_str(), "uint32 index() const", asMETHODPR(T, index, () const, uint32));
+	scriptingEngine->registerClassMethod(name.c_str(), "uint32 version() const", asMETHODPR(T, version, () const, uint32));
 	scriptingEngine->registerClassMethod(name.c_str(), "bool opImplConv() const", asMETHODPR(T, operator bool, () const, bool ));
 	scriptingEngine->registerClassMethod(name.c_str(), "bool opEquals(const " + name + "& in) const", asMETHODPR(T, operator==, (const T&) const, bool));
 }
@@ -416,6 +420,16 @@ void registerPointerHandleBindings(scripting::IScriptingEngine* scriptingEngine,
 	scriptingEngine->registerClassMethod(name.c_str(), "const " + scriptTypeName + "@+ get() const", asMETHODPR(T, get, () const, void*));
 	scriptingEngine->registerClassMethod(name.c_str(), "bool opImplConv() const", asMETHODPR(T, operator bool, () const, bool ));
 	scriptingEngine->registerClassMethod(name.c_str(), "bool opEquals(const " + name + "& in) const", asMETHODPR(T, operator==, (const T&) const, bool));
+}
+
+template<typename T>
+std::function<std::string(void*)> scriptingEngineDebuggerToStringCallback()
+{
+    return [](void* value) {
+        std::stringstream ss;
+        ss << *static_cast<T*>(value);
+        return ss.str();
+    };
 }
 
 template<class A, class B>

@@ -16,10 +16,7 @@ namespace gui
 class IMainMenuBar : public virtual IComponent
 {
 public:
-	virtual ~IMainMenuBar()
-	{
-	}
-	;
+	virtual ~IMainMenuBar() = default;
 
 	virtual IMenu* createMenu(const std::string& label) = 0;
 	virtual IMenu* getMenu(const std::string& label) const  = 0;

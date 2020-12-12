@@ -32,10 +32,7 @@ enum WindowFlags : uint32
 class IWindow : public virtual IComponent, public virtual IGenericComponentContainer
 {
 public:
-	virtual ~IWindow()
-	{
-	}
-	;
+	virtual ~IWindow() = default;
 
 	// fix issue with other destroy functions not being seen
 	using IGenericComponentContainer::destroy;
@@ -46,7 +43,7 @@ public:
 	virtual void destroy(const IRectangle* rectangle) = 0;
 
 	virtual void setTitle(const std::string& title) = 0;
-	virtual const std::string& getTitle() const  = 0;
+	virtual const std::string& title() const  = 0;
 
 	virtual void setBackgroundAlpha(const float32 alpha) = 0;
 };

@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <unordered_map>
 #include <functional>
 
 #include <angelscript/angelscript.h>
@@ -15,6 +16,7 @@
 #include "scripting/ScriptFunctionHandle.hpp"
 #include "scripting/ScriptObjectFunctionHandle.hpp"
 #include "scripting/ParameterList.hpp"
+#include "scripting/IScriptingEngineDebugger.hpp"
 
 #include "Types.hpp"
 
@@ -26,10 +28,7 @@ namespace scripting
 class IScriptingEngine
 {
 public:
-	virtual ~IScriptingEngine()
-	{
-	}
-	;
+	virtual ~IScriptingEngine() = default;
 	
 	virtual void run(const std::string& filename, const std::string& function, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) = 0;
 	virtual void run(const std::string& filename, const std::string& function, ParameterList& arguments, const ExecutionContextHandle& executionContextHandle = ExecutionContextHandle(0)) = 0;
@@ -177,7 +176,8 @@ public:
 
 	virtual ScriptObjectHandle createUninitializedScriptObject(const ModuleHandle& moduleHandle, const std::string& name) = 0;
 
-	virtual ModuleHandle createModule(const std::string& name, const std::vector<std::string>& scriptData) = 0;
+	virtual ModuleHandle createModule(const std::string& name, const std::vector<std::string>& scriptData, const std::unordered_map<std::string, std::string>& includeOverrides = {}) = 0;
+	virtual ModuleHandle getModule(const std::string& name) const = 0;
 	virtual void destroyModule(const ModuleHandle& moduleHandle) = 0;
 	virtual void destroyAllModules() = 0;
 
@@ -221,6 +221,8 @@ public:
 	virtual void registerObjectMethod(const std::string& obj, const std::string& declaration, const asSFuncPtr& funcPointer, asDWORD callConv, void* auxiliary = nullptr) = 0;
 	virtual void registerObjectProperty(const std::string& obj, const std::string& declaration, int32 byteOffset) = 0;
 	virtual void registerObjectBehaviour(const std::string& obj, asEBehaviours behaviour, const std::string& declaration, const asSFuncPtr& funcPointer, asDWORD callConv) = 0;
+
+	virtual IScriptingEngineDebugger* debugger() = 0;
 
 	virtual void MessageCallback(const asSMessageInfo* msg, void* param) = 0;
 

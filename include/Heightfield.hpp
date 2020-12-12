@@ -40,14 +40,15 @@ public:
 
     virtual uint32 height() const override
     {
-        return 15.0f;
+//        return 15.0f;
+        return 15;
     }
 
 private:
 	std::vector<byte> data_;
-	uint32 width_ = 0.0f;
-	uint32 length_ = 0.0f;
-	uint32 height_ = 0.0f;
+	uint32 width_ = 0;
+	uint32 length_ = 0;
+	uint32 height_ = 0;
 
 	void generateHeightfield(const IImage& image)
 	{

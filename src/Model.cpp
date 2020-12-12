@@ -102,7 +102,7 @@ public:
 	{
 	}
 
-	~IoSystem() = default;
+	~IoSystem() override = default;
 
 	bool ComparePaths(const char *one, const char *second) const override
 	{
@@ -153,7 +153,7 @@ public:
 	{
 	}
 
-	virtual ~Logger() = default;
+	~Logger() override = default;
 
 	bool attachStream(Assimp::LogStream *pStream, unsigned int severity=Debugging|Err|Warn|Info) override
 	{
@@ -196,7 +196,7 @@ void Model::import(const std::string& filename, IResourceCache* resourceCache,
 {
 	auto name = fileSystem->getFilenameWithoutExtension(filename);
 
-	logger->debug( "Importing model '" + name + "' - " + filename + "." );
+    LOG_DEBUG(logger, "Importing model '%s' - %s.", name, filename);
 
 	// get a handle to the predefined STDOUT log stream and attach
 	// it to the logging system. It remains active for all further
@@ -209,8 +209,8 @@ void Model::import(const std::string& filename, IResourceCache* resourceCache,
 
 	try
 	{
-		//	Assimp::DefaultLogger::create("", Assimp::Logger::VERBOSE);
-		//	Assimp::DefaultLogger::set(new Logger(logger));
+        Assimp::DefaultLogger::create("", Assimp::Logger::VERBOSE);
+        Assimp::DefaultLogger::set(new Logger(logger));
 
 		Assimp::Importer importer;
 		importer.SetIOHandler(new IoSystem(fileSystem));
@@ -220,16 +220,15 @@ void Model::import(const std::string& filename, IResourceCache* resourceCache,
 		const aiScene* scene = importer.ReadFile(filename, aiProcessPreset_TargetRealtime_MaxQuality ^ aiProcess_FindInvalidData);
 
 		// Error checking
-		if ( scene == nullptr )
+		if (scene == nullptr)
 		{
 			std::stringstream ss;
 			ss << "Unable to import model data from file '" << filename << "': " << importer.GetErrorString();
 			throw RuntimeException(ss.str());
 		}
-		else if ( scene->HasTextures() )
+		else if (scene->HasTextures())
 		{
-			std::string msg = std::string("Support for meshes with embedded textures is not implemented.");
-			throw RuntimeException(msg);
+			throw RuntimeException("Support for meshes with embedded textures is not implemented.");
 		}
 
 		meshes_.resize( scene->mNumMeshes );
@@ -275,11 +274,9 @@ void Model::import(const std::string& filename, IResourceCache* resourceCache,
 		}
 		*/
 
-		std::stringstream msg;
-		msg << "Model has " << meshes_.size() << " meshes.";
-		logger->debug( msg.str() );
+        LOG_DEBUG(logger, "Model '%s' has %s meshes.", name, meshes_.size());
 
-		for ( uint32 i=0; i < meshes_.size(); i++ )
+		for (uint32 i=0; i < meshes_.size(); i++)
 		{
 //				meshes_[i] = Mesh();
 //				materials[i] = Material();
@@ -303,12 +300,10 @@ void Model::import(const std::string& filename, IResourceCache* resourceCache,
 
 		if (!hasTextures)
 		{
-			logger->warn( "Model does not have any texture - either assign it a texture, or use a shader that doesn't need textures." );
+            LOG_WARN(logger, "Model '%s' does not have any texture - either assign it a texture, or use a shader that doesn't need textures.", name);
 		}
 
-
-
-		logger->debug( "Done importing model '" + name + "'." );
+        LOG_DEBUG(logger, "Done importing model '%s'.", name);
 	}
 	catch (const Exception& e)
 	{
@@ -349,11 +344,9 @@ void Model::importAnimations(const std::string& name,
 		const std::string& filename, const aiScene* scene,
 		logger::ILogger* logger, fs::IFileSystem* fileSystem)
 {
-	assert( scene != nullptr );
+	assert(scene != nullptr);
 
-	std::stringstream msg;
-	msg << "importing " << scene->mNumAnimations << " animation(s).";
-	logger->debug( msg.str() );
+    LOG_DEBUG(logger, "Importing %s animation(s) for model '%s'.", scene->mNumAnimations, name);
 
 	for (uint32 i = 0; i < scene->mNumAnimations; i++)
 	{
@@ -367,11 +360,11 @@ void Model::importAnimations(const std::string& name,
 		else
 		{
 			// Warning - animation already exists!
-			logger->warn( "Animation with name '" + animation.name() + "' already exists!" );
+            LOG_WARN(logger, "Animation with name '%s' already exists for model '%s'!", animation.name(), name);
 		}
 	}
 
-	logger->debug( "done importing animation(s)." );
+    LOG_DEBUG(logger, "Done importing animation(s) for model '%s'.", name);
 }
 
 }

@@ -35,6 +35,8 @@
 #include "IDisconnectEventListener.hpp"
 #include "IMessageEventListener.hpp"
 
+#include "IScriptingEngineDebugHandler.hpp"
+
 #include "graphics/model/Model.hpp"
 
 #include "physics/IPhysicsEngine.hpp"
@@ -95,16 +97,18 @@ namespace ecs
 class EntityComponentSystem;
 }
 
-class GameEngine : public graphics::IEventListener, public networking::IEventListener
+class GameEngine : public graphics::IEventListener, public networking::IEventListener, public scripting::IDebugEventListener
 {
 public:
 	GameEngine(
 		std::unique_ptr<utilities::Properties> properties,
+        std::unique_ptr<fs::IFileSystem> fileSystem,
 		std::unique_ptr<ice_engine::IPluginManager> pluginManager,
 		std::unique_ptr<ice_engine::logger::ILogger> logger
 	);
 	GameEngine(
 		std::unique_ptr<utilities::Properties> properties,
+        std::unique_ptr<fs::IFileSystem> fileSystem,
 		std::unique_ptr<ice_engine::logger::ILogger> logger,
 		std::unique_ptr<ice_engine::IPluginManager> pluginManager,
 		std::unique_ptr<graphics::IGraphicsEngineFactory> graphicsEngineFactory,
@@ -152,6 +156,8 @@ public:
 	void destroyGui(const graphics::gui::IGui* gui);
 
 	void setCallback(graphics::gui::IButton* button, void* object);
+    void setOnChangeCallback(graphics::gui::ITextField* textField, void* object);
+    void setOnChangeCallback(graphics::gui::ITextArea* textArea, void* object);
 	void setCallback(graphics::gui::IMenuItem* menuItem, void* object);
 	void setCallback(graphics::gui::IComboBox* comboBox, void* object);
 	void setCallback(graphics::gui::ITreeView* treeView, void* object);
@@ -236,8 +242,9 @@ public:
 	void destroyShaderProgram(const graphics::ShaderProgramHandle& shaderProgramHandle);
 
 	Scene* createScene(const std::string& name, const std::vector<std::string>& scriptData = {}, const std::string& initializationFunctionName = "");
+	Scene* createScene(const std::string& name, const scripting::ModuleHandle, const std::string& initializationFunctionName = "");
 	void destroyScene(const std::string& name);
-	void destroyScene(Scene* scene);
+	void destroyScene(const Scene* scene);
 	Scene* getScene(const std::string& name) const;
 	std::vector<Scene*> getAllScenes() const;
 
@@ -324,6 +331,12 @@ public:
 	void removeDisconnectEventListener(void* disconnectEventListener);
 	void removeMessageEventListener(void* messageEventListener);
 
+	void addScriptingEngineDebugHandler(IScriptingEngineDebugHandler* handler);
+	void removeScriptingEngineDebugHandler(const IScriptingEngineDebugHandler* handler);
+
+	void addScriptingEngineDebugHandler(void* object);
+	void removeScriptingEngineDebugHandler(const void* object);
+
 	std::shared_future<void> postWorkToBackgroundThreadPool(void* object);
 	std::shared_future<void> postWorkToForegroundThreadPool(void* object);
 	std::shared_future<void> postWorkToOpenGlWorker(void* object);
@@ -405,7 +418,7 @@ public:
 
 	void destroyStaticShape(const std::string& name)
 	{
-		auto handle = resourceHandleCache_.getCollisionShapeHandle(name);
+		const auto handle = resourceHandleCache_.getCollisionShapeHandle(name);
 		if (handle)
 		{
 			resourceHandleCache_.removeCollisionShapeHandle(name);
@@ -426,292 +439,322 @@ public:
 		return resourceHandleCache_.getCollisionShapeHandle(name);
 	}
 
-		ModelHandle createStaticModel(const std::string& name, const Model& model)
-		{
-			auto meshHandle = graphicsEngine_->createStaticMesh(&model.meshes()[0]);
-			auto textureHandle = graphicsEngine_->createTexture2d(&model.textures()[0]);
-
-			staticModels_.push_back(std::make_pair(meshHandle, textureHandle));
-
-			auto index = staticModels_.size() - 1;
-			auto handle = ModelHandle(index);
-
-			resourceHandleCache_.addModelHandle(name, handle);
-
-			return handle;
-		}
-
-		void destroyStaticModel(const std::string& name)
-		{
-			auto handle = resourceHandleCache_.getModelHandle(name);
-			if (handle)
-			{
-				resourceHandleCache_.removeModelHandle(name);
-
-				auto staticModel = staticModels_[handle.index()];
-
-				//graphicsEngine_->destroy(staticModel->first);
-				//graphicsEngine_->destroy(staticModel->second);
-			}
-		}
-
-		void destroyAllStaticModels()
-		{
-			resourceHandleCache_.removeAllModelHandles();
-
-			//physicsEngine_->destroyAllStaticModels();
-		}
-
-		ModelHandle getStaticModel(const std::string& name) const
-		{
-			return resourceHandleCache_.getModelHandle(name);
-		}
-
-		SkeletonHandle createSkeleton(const std::string& name, const Skeleton& skeleton)
-		{
-			auto handle = skeletons_.create();
-			skeletons_[handle] = Skeleton(skeleton);
-
-			resourceHandleCache_.addSkeletonHandle(name, handle);
-
-			return handle;
-		}
-
-		void animateSkeleton(
-			std::vector< glm::mat4 >& transformations,
-			float32 runningTime,
-			const graphics::MeshHandle& meshHandle,
-			const AnimationHandle& animationHandle,
-			const SkeletonHandle& skeletonHandle
-		);
-
-		void animateSkeleton(
-			std::vector< glm::mat4 >& transformations,
-			float32 runningTime,
-			uint32 startFrame,
-			uint32 endFrame,
-			const graphics::MeshHandle& meshHandle,
-			const AnimationHandle& animationHandle,
-			const SkeletonHandle& skeletonHandle
-		);
-
-		void destroySkeleton(const std::string& name)
-		{
-			auto handle = resourceHandleCache_.getSkeletonHandle(name);
-			if (handle)
-			{
-				resourceHandleCache_.removeSkeletonHandle(name);
-
-				skeletons_.destroy(handle);
-
-				//graphicsEngine_->destroy(staticSkeleton->first);
-				//graphicsEngine_->destroy(staticSkeleton->second);
-			}
-		}
-
-		void destroyAllSkeletons()
-		{
-			resourceHandleCache_.removeAllSkeletonHandles();
-
-			//physicsEngine_->destroyAllSkeletons();
-		}
-
-		SkeletonHandle getSkeleton(const std::string& name) const
-		{
-			return resourceHandleCache_.getSkeletonHandle(name);
-		}
-
-		void createSkeleton(const graphics::MeshHandle& meshHandle, const graphics::ISkeleton& skeleton)
-		{
-			graphicsEngine_->createSkeleton(meshHandle, &skeleton);
-		}
-
-		AnimationHandle createAnimation(const std::string& name, const Animation& animation)
-		{
-			auto handle = animations_.create();
-			animations_[handle] = Animation(animation);
+    ModelHandle createStaticModel(const std::string& name, const Model& model)
+    {
+        auto meshHandle = graphicsEngine_->createStaticMesh(&model.meshes()[0]);
+        auto textureHandle = graphicsEngine_->createTexture2d(&model.textures()[0]);
+
+        staticModels_.push_back(std::make_pair(meshHandle, textureHandle));
+
+        auto index = staticModels_.size() - 1;
+        auto handle = ModelHandle(index);
+
+        resourceHandleCache_.addModelHandle(name, handle);
+
+        return handle;
+    }
+
+    void destroyStaticModel(const std::string& name)
+    {
+        const auto handle = resourceHandleCache_.getModelHandle(name);
+        if (handle)
+        {
+            resourceHandleCache_.removeModelHandle(name);
+
+            auto staticModel = staticModels_[handle.index()];
+
+            //graphicsEngine_->destroy(staticModel->first);
+            //graphicsEngine_->destroy(staticModel->second);
+        }
+    }
+
+    void destroyAllStaticModels()
+    {
+        resourceHandleCache_.removeAllModelHandles();
+
+        //physicsEngine_->destroyAllStaticModels();
+    }
+
+    ModelHandle getStaticModel(const std::string& name) const
+    {
+        return resourceHandleCache_.getModelHandle(name);
+    }
+
+    SkeletonHandle createSkeleton(const std::string& name, const Skeleton& skeleton)
+    {
+        auto handle = skeletons_.create();
+        skeletons_[handle] = Skeleton(skeleton);
+
+        resourceHandleCache_.addSkeletonHandle(name, handle);
+
+        return handle;
+    }
+
+    void animateSkeleton(
+        std::vector<glm::mat4>& transformations,
+        const float32 runningTime,
+        const graphics::MeshHandle& meshHandle,
+        const AnimationHandle& animationHandle,
+        const SkeletonHandle& skeletonHandle
+    );
+
+    void animateSkeleton(
+        std::vector<glm::mat4>& transformations,
+        const float32 runningTime,
+        const uint32 startFrame,
+        const uint32 endFrame,
+        const graphics::MeshHandle& meshHandle,
+        const AnimationHandle& animationHandle,
+        const SkeletonHandle& skeletonHandle
+    );
+
+    void destroySkeleton(const std::string& name)
+    {
+        const auto handle = resourceHandleCache_.getSkeletonHandle(name);
+        if (handle)
+        {
+            resourceHandleCache_.removeSkeletonHandle(name);
+
+            skeletons_.destroy(handle);
+
+            //graphicsEngine_->destroy(staticSkeleton->first);
+            //graphicsEngine_->destroy(staticSkeleton->second);
+        }
+    }
+
+    void destroyAllSkeletons()
+    {
+        resourceHandleCache_.removeAllSkeletonHandles();
+
+        //physicsEngine_->destroyAllSkeletons();
+    }
+
+    SkeletonHandle getSkeleton(const std::string& name) const
+    {
+        return resourceHandleCache_.getSkeletonHandle(name);
+    }
+
+    void createSkeleton(const graphics::MeshHandle& meshHandle, const graphics::ISkeleton& skeleton)
+    {
+        graphicsEngine_->createSkeleton(meshHandle, &skeleton);
+    }
+
+    AnimationHandle createAnimation(const std::string& name, const Animation& animation)
+    {
+        auto handle = animations_.create();
+        animations_[handle] = Animation(animation);
 
-			resourceHandleCache_.addAnimationHandle(name, handle);
+        resourceHandleCache_.addAnimationHandle(name, handle);
 
-			return handle;
-		}
-
-		void destroyAnimation(const std::string& name)
-		{
-			auto handle = resourceHandleCache_.getAnimationHandle(name);
-			if (handle)
-			{
-				resourceHandleCache_.removeAnimationHandle(name);
+        return handle;
+    }
+
+    void destroyAnimation(const std::string& name)
+    {
+        const auto handle = resourceHandleCache_.getAnimationHandle(name);
+        if (handle)
+        {
+            resourceHandleCache_.removeAnimationHandle(name);
 
-				animations_.destroy(handle);
-			}
-		}
+            animations_.destroy(handle);
+        }
+    }
 
-		void destroyAllAnimations()
-		{
-			resourceHandleCache_.removeAllAnimationHandles();
+    void destroyAllAnimations()
+    {
+        resourceHandleCache_.removeAllAnimationHandles();
 
-			//physicsEngine_->destroyAllAnimations();
-		}
+        //physicsEngine_->destroyAllAnimations();
+    }
 
-		AnimationHandle getAnimation(const std::string& name) const
-		{
-			return resourceHandleCache_.getAnimationHandle(name);
-		}
+    AnimationHandle getAnimation(const std::string& name) const
+    {
+        return resourceHandleCache_.getAnimationHandle(name);
+    }
 
-		graphics::MeshHandle createStaticMesh(const std::string& name, const Mesh& mesh)
-		{
-			auto handle = graphicsEngine_->createStaticMesh(&mesh);
+    graphics::MeshHandle createStaticMesh(const std::string& name, const Mesh& mesh)
+    {
+        auto handle = graphicsEngine_->createStaticMesh(&mesh);
 
-			resourceHandleCache_.addMeshHandle(name, handle);
-
-			meshes_[handle] = mesh;
+        resourceHandleCache_.addMeshHandle(name, handle);
+
+        meshes_[handle] = mesh;
 
-			return handle;
-		}
+        return handle;
+    }
 
-		void destroyStaticMesh(const std::string& name)
-		{
-			auto handle = resourceHandleCache_.getMeshHandle(name);
-			if (handle)
-			{
-				resourceHandleCache_.removeMeshHandle(name);
+    void destroyStaticMesh(const std::string& name)
+    {
+        const auto handle = resourceHandleCache_.getMeshHandle(name);
+        if (handle)
+        {
+            resourceHandleCache_.removeMeshHandle(name);
 
-				//auto staticMesh = staticMeshs_[handle.index()];
+            //auto staticMesh = staticMeshs_[handle.index()];
 
-				//graphicsEngine_->destroy(staticMesh->first);
-				//graphicsEngine_->destroy(staticMesh->second);
-			}
-		}
-
-		void destroyAllStaticMeshs()
-		{
-			resourceHandleCache_.removeAllMeshHandles();
+            //graphicsEngine_->destroy(staticMesh->first);
+            //graphicsEngine_->destroy(staticMesh->second);
+        }
+    }
+
+    void destroyAllStaticMeshes()
+    {
+        resourceHandleCache_.removeAllMeshHandles();
 
-			//physicsEngine_->destroyAllStaticMeshs();
-		}
+        //physicsEngine_->destroyAllStaticMeshs();
+    }
 
-		graphics::MeshHandle getStaticMesh(const std::string& name) const
-		{
-			return resourceHandleCache_.getMeshHandle(name);
-		}
-
-		uint32 getBoneId(const graphics::MeshHandle meshHandle, const std::string& name) const
-		{
-			auto it = meshes_.find(meshHandle);
-
-			if (it != meshes_.end())
-			{
-				const Mesh& mesh = it->second;
-
-				auto boneIndexMapIterator = mesh.boneData().boneIndexMap.find(name);
-				if (boneIndexMapIterator != mesh.boneData().boneIndexMap.end())
-				{
-					return boneIndexMapIterator->second;
-				}
-			}
+    graphics::MeshHandle getStaticMesh(const std::string& name) const
+    {
+        return resourceHandleCache_.getMeshHandle(name);
+    }
+
+    uint32 getBoneId(const graphics::MeshHandle meshHandle, const std::string& name) const
+    {
+        auto it = meshes_.find(meshHandle);
+
+        if (it != meshes_.end())
+        {
+            const Mesh& mesh = it->second;
+
+            auto boneIndexMapIterator = mesh.boneData().boneIndexMap.find(name);
+            if (boneIndexMapIterator != mesh.boneData().boneIndexMap.end())
+            {
+                return boneIndexMapIterator->second;
+            }
+        }
 
-			return 0;
-		}
-
-		graphics::TextureHandle createTexture(const std::string& name, const Texture& texture)
-		{
-			auto handle = graphicsEngine_->createTexture2d(&texture);
-
-			resourceHandleCache_.addTextureHandle(name, handle);
-
-			return handle;
-		}
-
-		void destroyTexture(const std::string& name)
-		{
-			auto handle = resourceHandleCache_.getTextureHandle(name);
-			if (handle)
-			{
-				resourceHandleCache_.removeTextureHandle(name);
-
-				//auto staticTexture = staticTextures_[handle.index()];
-
-				//graphicsEngine_->destroy(staticTexture->first);
-				//graphicsEngine_->destroy(staticTexture->second);
-			}
-		}
-
-		void destroyAllTextures()
-		{
-			resourceHandleCache_.removeAllTextureHandles();
-
-			//physicsEngine_->destroyAllStaticTextures();
-		}
-
-		graphics::TextureHandle getTexture(const std::string& name) const
-		{
-			return resourceHandleCache_.getTextureHandle(name);
-		}
-
-		graphics::TerrainHandle createStaticTerrain(const std::string& name, const HeightMap& heightMap, const SplatMap& splatMap, const DisplacementMap& displacementMap)
-				{
-					auto handle = graphicsEngine_->createStaticTerrain(&heightMap, &splatMap, &displacementMap);
-
-					resourceHandleCache_.addTerrainHandle(name, handle);
-
-			return handle;
-		}
-
-		void destroyStaticTerrain(const std::string& name)
-		{
-			auto handle = resourceHandleCache_.getTerrainHandle(name);
-			if (handle)
-			{
-				resourceHandleCache_.removeTerrainHandle(name);
-
-				graphicsEngine_->destroy(handle);
-			}
-		}
-
-		void destroyAllStaticTerrains()
-		{
-			resourceHandleCache_.removeAllTerrainHandles();
-
-			//graphicsEngine_->destroyAllStaticTerrains();
-		}
-
-		graphics::TerrainHandle getStaticTerrain(const std::string& name) const
-		{
-			return resourceHandleCache_.getTerrainHandle(name);
-		}
-
-		graphics::SkyboxHandle createStaticSkybox(const std::string& name, const IImage& back, const IImage& down, const IImage& front, const IImage& left, const IImage& right, const IImage& up)
-		{
-            auto handle = graphicsEngine_->createStaticSkybox(back, down, front, left, right, up);
-
-			resourceHandleCache_.addSkyboxHandle(name, handle);
-
-			return handle;
-		}
-
-		void destroyStaticSkybox(const std::string& name)
-		{
-			auto handle = resourceHandleCache_.getSkyboxHandle(name);
-			if (handle)
-			{
-				resourceHandleCache_.removeSkyboxHandle(name);
-
-				graphicsEngine_->destroy(handle);
-			}
-		}
-
-		void destroyAllStaticSkyboxes()
-		{
-			resourceHandleCache_.removeAllSkyboxHandles();
-
-			//graphicsEngine_->destroyAllStaticSkyboxes();
-		}
-
-		graphics::SkyboxHandle getStaticSkybox(const std::string& name) const
-		{
-			return resourceHandleCache_.getSkyboxHandle(name);
-		}
+        return 0;
+    }
+
+    graphics::TextureHandle createTexture(const std::string& name, const Texture& texture)
+    {
+        auto handle = graphicsEngine_->createTexture2d(&texture);
+
+        resourceHandleCache_.addTextureHandle(name, handle);
+
+        return handle;
+    }
+
+    void destroyTexture(const std::string& name)
+    {
+        const auto handle = resourceHandleCache_.getTextureHandle(name);
+        if (handle)
+        {
+            resourceHandleCache_.removeTextureHandle(name);
+
+            //auto staticTexture = staticTextures_[handle.index()];
+
+            //graphicsEngine_->destroy(staticTexture->first);
+            //graphicsEngine_->destroy(staticTexture->second);
+        }
+    }
+
+    void destroyAllTextures()
+    {
+        resourceHandleCache_.removeAllTextureHandles();
+
+        //physicsEngine_->destroyAllStaticTextures();
+    }
+
+    graphics::TextureHandle getTexture(const std::string& name) const
+    {
+        return resourceHandleCache_.getTextureHandle(name);
+    }
+
+    graphics::TerrainHandle createStaticTerrain(const std::string& name, const HeightMap& heightMap, const SplatMap& splatMap, const DisplacementMap& displacementMap)
+    {
+        auto handle = graphicsEngine_->createStaticTerrain(&heightMap, &splatMap, &displacementMap);
+
+        resourceHandleCache_.addTerrainHandle(name, handle);
+
+        return handle;
+    }
+
+    void destroyStaticTerrain(const std::string& name)
+    {
+        const auto handle = resourceHandleCache_.getTerrainHandle(name);
+        if (handle)
+        {
+            resourceHandleCache_.removeTerrainHandle(name);
+
+            graphicsEngine_->destroy(handle);
+        }
+    }
+
+    void destroyAllStaticTerrains()
+    {
+        resourceHandleCache_.removeAllTerrainHandles();
+
+        //graphicsEngine_->destroyAllStaticTerrains();
+    }
+
+    graphics::TerrainHandle getStaticTerrain(const std::string& name) const
+    {
+        return resourceHandleCache_.getTerrainHandle(name);
+    }
+
+    graphics::SkyboxHandle createStaticSkybox(const std::string& name, const IImage& back, const IImage& down, const IImage& front, const IImage& left, const IImage& right, const IImage& up)
+    {
+        auto handle = graphicsEngine_->createStaticSkybox(back, down, front, left, right, up);
+
+        resourceHandleCache_.addSkyboxHandle(name, handle);
+
+        return handle;
+    }
+
+    void destroyStaticSkybox(const std::string& name)
+    {
+        const auto handle = resourceHandleCache_.getSkyboxHandle(name);
+        if (handle)
+        {
+            resourceHandleCache_.removeSkyboxHandle(name);
+
+            graphicsEngine_->destroy(handle);
+        }
+    }
+
+    void destroyAllStaticSkyboxes()
+    {
+        resourceHandleCache_.removeAllSkyboxHandles();
+
+        //graphicsEngine_->destroyAllStaticSkyboxes();
+    }
+
+    graphics::SkyboxHandle getStaticSkybox(const std::string& name) const
+    {
+        return resourceHandleCache_.getSkyboxHandle(name);
+    }
+
+    audio::SoundHandle createSound(const std::string& name, const Audio& audio)
+    {
+        auto handle = audioEngine_->createSound(audio);
+
+        resourceHandleCache_.addSoundHandle(name, handle);
+
+        return handle;
+    }
+
+    void destroySound(const std::string& name)
+    {
+        const auto handle = resourceHandleCache_.getSoundHandle(name);
+        if (handle)
+        {
+            resourceHandleCache_.removeSoundHandle(name);
+
+            audioEngine_->destroy(handle);
+        }
+    }
+
+    void destroyAllSound()
+    {
+        resourceHandleCache_.removeAllSoundHandles();
+    }
+
+    audio::SoundHandle getSound(const std::string& name) const
+    {
+        return resourceHandleCache_.getSoundHandle(name);
+    }
 
 	template <typename ... Args>
 	pathfinding::PolygonMeshHandle createPolygonMesh(const std::string& name, const Args ... args)
@@ -734,7 +777,7 @@ public:
 
 	void destroyPolygonMesh(const std::string& name)
 	{
-		auto handle = resourceHandleCache_.getPolygonMeshHandle(name);
+		const auto handle = resourceHandleCache_.getPolygonMeshHandle(name);
 		if (handle)
 		{
 			resourceHandleCache_.removePolygonMeshHandle(name);
@@ -769,7 +812,7 @@ public:
 
 	void destroyNavigationMesh(const std::string& name)
 	{
-		auto handle = resourceHandleCache_.getNavigationMeshHandle(name);
+		const auto handle = resourceHandleCache_.getNavigationMeshHandle(name);
 		if (handle)
 		{
 			resourceHandleCache_.removeNavigationMeshHandle(name);
@@ -802,6 +845,10 @@ private:
 	std::unique_ptr<graphics::IGraphicsEngineFactory> graphicsEngineFactory_;
 	std::unique_ptr< graphics::IGraphicsEngine > graphicsEngine_;
 	std::vector<std::unique_ptr< graphics::gui::IGui >> guis_;
+    std::mutex guisCreatedMutex_;
+    std::vector<std::unique_ptr<graphics::gui::IGui>> guisCreated_;
+    std::mutex guisDeletedMutex_;
+    std::vector<const graphics::gui::IGui*> guisDeleted_;
 
 	std::unique_ptr<ITerrainFactory> terrainFactory_;
 
@@ -839,6 +886,9 @@ private:
 	std::vector<std::pair<scripting::ScriptObjectHandle, scripting::ScriptObjectFunctionHandle>> scriptDisconnectEventListeners_;
 	std::vector<std::pair<scripting::ScriptObjectHandle, scripting::ScriptObjectFunctionHandle>> scriptMessageEventListeners_;
 
+    std::vector<IScriptingEngineDebugHandler*> scriptingEngineDebugHandlers_;
+    std::vector<std::pair<scripting::ScriptObjectHandle, scripting::ScriptObjectFunctionHandle>> scriptScriptingEngineDebugHandlers_;
+
 	std::unordered_map<graphics::MeshHandle, Mesh> meshes_;
 	handles::HandleVector<Skeleton, SkeletonHandle> skeletons_;
 	handles::HandleVector<Animation, AnimationHandle> animations_;
@@ -859,11 +909,14 @@ private:
 	EngineStatistics engineStatistics_;
 
 	void tick(const float32 delta);
+    void render();
 	void initialize();
 	void destroy();
 	void exit();
 
 	void handleEvents();
+
+    void internalDestroyGui(const graphics::gui::IGui* gui);
 
 	static float32 rotationX;
 	static float32 rotationY;
@@ -895,8 +948,15 @@ private:
 	void loadEssentialGameData();
 	void loadUserInterface();
 
+	void internalInitializeScene(std::unique_ptr<Scene>& scene);
+
+	// Script debugging stuff
+    void processEvent(const scripting::DebugEvent& event) override;
+
 	std::mutex temporaryExecutionContextMutex_;
 	std::queue<scripting::ExecutionContextHandle> temporaryExecutionContexts_;
+
+	scripting::ExecutionContextHandle debuggerExecutionContext_;
 
 	scripting::ExecutionContextHandle acquireTemporaryExecutionContext();
 	void releaseTemporaryExecutionContext(const scripting::ExecutionContextHandle& executionContextHandle);

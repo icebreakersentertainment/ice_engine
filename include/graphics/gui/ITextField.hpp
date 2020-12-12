@@ -19,7 +19,9 @@ public:
     virtual ~ITextField() = default;
 
     virtual void setText(const std::string& text) = 0;
-    virtual std::string getText() const  = 0;
+    virtual const std::string& text() const  = 0;
+
+    virtual void setOnChangeCallback(std::function<void()>& onChangeCallback) = 0;
 };
 
 }

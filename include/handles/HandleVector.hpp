@@ -52,11 +52,13 @@ public:
 		}
 		else
 		{
-			handleData.handle = HandleType(handleData_.size(), currentVersion_);
+		    assert(handleData_.size() < std::numeric_limits<uint32>::max());
+
+			handleData.handle = HandleType(static_cast<uint32>(handleData_.size()), currentVersion_);
 			handleData_.push_back(handleData);
 		}
 		
-		currentVersion_++;
+		++currentVersion_;
 		
 		return handleData.handle;
 	}
@@ -88,20 +90,14 @@ public:
 	{
 		auto h = HandleType(id);
 		
-		if (valid(h))
-		{
-			return handleData_[h.index()].handle;
-		}
+		if (valid(h)) return handleData_[h.index()].handle;
 		
 		return HandleType();
 	}
 	
 	HandleType handle(const uint32 index) const
 	{
-		if (valid(index))
-		{
-			return handleData_[index].handle;
-		}
+		if (valid(index)) return handleData_[index].handle;
 		
 		return HandleType();
 	}
@@ -121,10 +117,7 @@ public:
 	
 	T* get(const HandleType& handle) const
 	{
-		if (!valid(handle))
-		{
-			return nullptr;
-		}
+		if (!valid(handle)) return nullptr;
 		
 		return handleData_[handle.index()].pointer;
 	}
@@ -189,14 +182,11 @@ private:
 	
 	uint32 currentVersion_ = 1;
 	
-	uint32 findIndexOfFirstValidHandle() const
+	size_t findIndexOfFirstValidHandle() const
 	{
 		for (uint32 i=0; i < handleData_.size(); ++i)
 		{
-			if (valid(i))
-			{
-				return i;
-			}
+			if (valid(i)) return i;
 		}
 		
 		return handleData_.size();
@@ -204,15 +194,14 @@ private:
 	
 	bool valid(const uint32 index) const
 	{
+	    assert(index < handleData_.size());
+
 		return (handleData_[index].handle.version() != 0);
 	}
 	
 	T* get(const uint32 index) const
 	{
-		if (!valid(index))
-		{
-			return nullptr;
-		}
+		if (!valid(index)) return nullptr;
 		
 		return handleData_[index].pointer;
 	}
@@ -222,7 +211,7 @@ template <typename T, typename HandleType>
 class HandleVectorIterator
 {
 public:
-	HandleVectorIterator(HandleVector<T, HandleType>& handleManager, uint32 index)
+	HandleVectorIterator(HandleVector<T, HandleType>& handleManager, size_t index)
 		:
 		handleManager_(handleManager), index_(index)
 	{
@@ -247,7 +236,7 @@ public:
 	{
 		return index_ == other.index_;
 	}
-	
+
 	bool operator!=(HandleVectorIterator other) const
 	{
 		return index_ != other.index_;
@@ -255,21 +244,21 @@ public:
 	
 	T& operator*() const
 	{
-		return handleManager_[index_];
+		return handleManager_[static_cast<uint32>(index_)];
 	}
 	
 	T* operator->() const
 	{
-		return &handleManager_[index_];
+		return &handleManager_[static_cast<uint32>(index_)];
 	}
 	
 	HandleVectorIterator<T, HandleType>& operator++()
 	{
 		do
 		{
-			index_++;
+			++index_;
 		}
-		while (!handleManager_.valid(index_) && index_ < handleManager_.handleData_.size());
+		while (index_ < handleManager_.handleData_.size() && !handleManager_.valid(static_cast<uint32>(index_)));
 		
 		return *this;
 	}
@@ -280,28 +269,28 @@ public:
 		
 		do
 		{
-			index_++;
+			++index_;
 		}
-		while (!handleManager_.valid(index_) && index_ < handleManager_.handleData_.size());
+		while (index_ < handleManager_.handleData_.size() && !handleManager_.valid(static_cast<uint32>(index_)));
 		
 		return clone;
 	}
 	
 	HandleType handle() const
 	{
-		return handleManager_.handle(index_);
+		return handleManager_.handle(static_cast<uint32>(index_));
 	}
 	
 private:
 	HandleVector<T, HandleType>& handleManager_;
-	uint32 index_ = 0;
+    size_t index_ = 0;
 };
 
 template <typename T, typename HandleType>
 class HandleVectorConstIterator
 {
 public:
-	HandleVectorConstIterator(const HandleVector<T, HandleType>& handleManager, uint32 index)
+	HandleVectorConstIterator(const HandleVector<T, HandleType>& handleManager, size_t index)
 		:
 		handleManager_(handleManager), index_(index)
 	{
@@ -320,12 +309,12 @@ public:
 	
 	const T& operator*() const
 	{
-		return handleManager_[index_];
+		return handleManager_[static_cast<uint32>(index_)];
 	}
 	
 	const T* operator->() const
 	{
-		return &handleManager_[index_];
+		return &handleManager_[static_cast<uint32>(index_)];
 	}
 	
 	HandleVectorConstIterator<T, HandleType>& operator++()
@@ -333,9 +322,9 @@ public:
 		const auto size = handleManager_.handleData_.size();
 		do
 		{
-			index_++;
+			++index_;
 		}
-		while (!handleManager_.valid(index_) && index_ < size);
+		while (index_ < size && !handleManager_.valid(static_cast<uint32>(index_)));
 		
 		return *this;
 	}
@@ -347,21 +336,21 @@ public:
 		const auto size = handleManager_.handleData_.size();
 		do
 		{
-			index_++;
+			++index_;
 		}
-		while (!handleManager_.valid(index_) && index_ < size);
+		while (index_ < size && !handleManager_.valid(static_cast<uint32>(index_)));
 		
 		return clone;
 	}
 	
 	HandleType handle() const
 	{
-		return handleManager_.handle(index_);
+		return handleManager_.handle(static_cast<uint32>(index_));
 	}
 	
 private:
 	const HandleVector<T, HandleType>& handleManager_;
-	uint32 index_ = 0;
+	size_t index_ = 0;
 };
 
 }

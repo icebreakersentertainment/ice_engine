@@ -13,20 +13,18 @@ class DebugRenderer : public IDebugRenderer
 public:
 	DebugRenderer(graphics::IGraphicsEngine* graphicsEngine) : graphicsEngine_(graphicsEngine)
 	{
-		}
+    }
 	
-	virtual ~DebugRenderer()
-	{
-	}
+	~DebugRenderer() override = default;
 	
-	virtual void pushLine(const glm::vec3& from, const glm::vec3& to, const glm::vec3& color) override
+	void pushLine(const glm::vec3& from, const glm::vec3& to, const glm::vec3& color) override
 	{
 		lineData_.push_back(std::tuple<glm::vec3, glm::vec3, glm::vec3>(from, to, color));
 	};
-	
-	virtual void pushLines(const std::vector<std::tuple<glm::vec3, glm::vec3, glm::vec3>>& lineData) override {};
 
-	virtual void render() override
+	void pushLines(const std::vector<std::tuple<glm::vec3, glm::vec3, glm::vec3>>& lineData) override {};
+
+	void render() override
 	{
 		graphicsEngine_->renderLines(lineData_);
 		

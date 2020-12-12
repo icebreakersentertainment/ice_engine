@@ -2,7 +2,7 @@
 #define gBONEDATA_H_
 
 #include <string>
-#include <map>
+#include <unordered_map>
 #include <vector>
 
 #include "Types.hpp"
@@ -19,7 +19,7 @@ namespace model
 struct BoneData
 {
 	std::string name;
-	std::map< std::string, uint32 > boneIndexMap;
+	std::unordered_map< std::string, uint32 > boneIndexMap;
 	std::vector< Bone > boneTransform;
 };
 

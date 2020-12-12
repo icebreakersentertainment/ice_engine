@@ -43,12 +43,10 @@ namespace pathfinding
 class IPathfindingEngine
 {
 public:
-	virtual ~IPathfindingEngine()
-	{
-	}
-	;
+	virtual ~IPathfindingEngine() = default;
 	
 	virtual void tick(const PathfindingSceneHandle& pathfindingSceneHandle, const float32 delta) = 0;
+    virtual void renderDebug(const PathfindingSceneHandle& pathfindingSceneHandle) = 0;
 	
 	virtual PathfindingSceneHandle createPathfindingScene() = 0;
 	virtual void destroyPathfindingScene(const PathfindingSceneHandle& pathfindingSceneHandle) = 0;

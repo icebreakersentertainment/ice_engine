@@ -16,11 +16,8 @@ namespace ice_engine
 class IDebugRenderer : virtual public physics::IPhysicsDebugRenderer, virtual public pathfinding::IPathfindingDebugRenderer
 {
 public:
-	virtual ~IDebugRenderer()
-	{
-	}
-	;
-	
+	~IDebugRenderer() override = default;
+
 	virtual void pushLine(const glm::vec3& from, const glm::vec3& to, const glm::vec3& color) = 0;
 	virtual void pushLines(const std::vector<std::tuple<glm::vec3, glm::vec3, glm::vec3>>& lineData) = 0;
 	

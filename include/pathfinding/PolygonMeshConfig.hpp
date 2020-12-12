@@ -1,6 +1,8 @@
 #ifndef POLYGONMESHCONFIG_H_
 #define POLYGONMESHCONFIG_H_
 
+#include "detail/DebugSerializer.hpp"
+
 #include "Types.hpp"
 
 namespace ice_engine
@@ -37,6 +39,32 @@ struct PolygonMeshConfig
 
 	int maxObstacles = 128;
 };
+
+inline std::ostream& operator<<(std::ostream& os, const PolygonMeshConfig& data)
+{
+    os << "PolygonMeshConfig("
+    PRINT_TO_STREAM(data, width)
+    PRINT_DELIMITER() PRINT_TO_STREAM(data, height)
+    PRINT_DELIMITER() PRINT_TO_STREAM(data, tileSize)
+    PRINT_DELIMITER() PRINT_TO_STREAM(data, borderSize)
+    PRINT_DELIMITER() PRINT_TO_STREAM(data, cellSize)
+    PRINT_DELIMITER() PRINT_TO_STREAM(data, cellHeight)
+    PRINT_DELIMITER() PRINT_TO_STREAM(data, walkableSlopeAngle)
+    PRINT_DELIMITER() PRINT_TO_STREAM(data, walkableHeight)
+    PRINT_DELIMITER() PRINT_TO_STREAM(data, walkableClimb)
+    PRINT_DELIMITER() PRINT_TO_STREAM(data, walkableRadius)
+    PRINT_DELIMITER() PRINT_TO_STREAM(data, maxEdgeLength)
+    PRINT_DELIMITER() PRINT_TO_STREAM(data, maxSimplificationError)
+    PRINT_DELIMITER() PRINT_TO_STREAM(data, minRegionArea)
+    PRINT_DELIMITER() PRINT_TO_STREAM(data, mergeRegionArea)
+    PRINT_DELIMITER() PRINT_TO_STREAM(data, maxVertsPerPoly)
+    PRINT_DELIMITER() PRINT_TO_STREAM(data, detailSampleDist)
+    PRINT_DELIMITER() PRINT_TO_STREAM(data, detailSampleMaxError)
+    PRINT_DELIMITER() PRINT_TO_STREAM(data, maxObstacles)
+            << ")";
+
+    return os;
+}
 
 }
 }
