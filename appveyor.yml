@@ -11,11 +11,13 @@ version: '{build}'
 stack: python 3.9
 
 install:
-  - ls C:/Python39-x64
-  - ls C:/Python39-x64/Tools
-  - ls C:/Python39-x64/libs
-  - C:/Python39-x64/python.exe -m pip --version
-  - C:/Python39-x64/python.exe -m pip install conan
+  - set PYTHON=C:/Python39-x64
+#  - ls C:/Python39-x64
+#  - ls C:/Python39-x64/Tools
+#  - ls C:/Python39-x64/libs
+  - set PATH=%PATH%;%PYTHON%/Scripts/
+  - pip --version
+  - pip install conan
 
 build_script:
   - cd %APPVEYOR_BUILD_FOLDER%
