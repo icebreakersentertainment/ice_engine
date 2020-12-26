@@ -1,7 +1,7 @@
 #ifndef GLMVEC3_H_
 #define GLMVEC3_H_
 
-#include <angelscript/angelscript.h>
+#include <angelscript.h>
 
 #include <glm/glm.hpp>
 

@@ -4,11 +4,6 @@
 #include <vector>
 #include <string>
 
-#define GLM_FORCE_RADIANS
-#include <glm/glm.hpp>
-
-#include <assimp/material.h>
-
 #include "graphics/ITexture.hpp"
 
 #include "logger/ILogger.hpp"
@@ -17,6 +12,8 @@
 #include "Image.hpp"
 
 #include "Types.hpp"
+
+struct aiMaterial;
 
 namespace ice_engine
 {

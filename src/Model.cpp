@@ -167,22 +167,26 @@ public:
 
 	void OnInfo (const char *message) override
 	{
-		LOG_INFO(logger_, message);
+//		LOG_INFO(logger_, message);
+		logger_->info(message);
 	}
 
 	void OnDebug (const char *message) override
 	{
-		LOG_DEBUG(logger_, message);
+//		LOG_DEBUG(logger_, message);
+        logger_->debug(message);
 	}
 
 	void OnWarn (const char *message) override
 	{
-		LOG_WARN(logger_, message);
+//		LOG_WARN(logger_, message);
+        logger_->warn(message);
 	}
 
 	void OnError (const char *message) override
 	{
-		LOG_ERROR(logger_, message);
+//		LOG_ERROR(logger_, message);
+        logger_->error(message);
 	}
 
 private:
@@ -209,10 +213,11 @@ void Model::import(const std::string& filename, IResourceCache* resourceCache,
 
 	try
 	{
+        Assimp::Importer importer;
+
         Assimp::DefaultLogger::create("", Assimp::Logger::VERBOSE);
         Assimp::DefaultLogger::set(new Logger(logger));
 
-		Assimp::Importer importer;
 		importer.SetIOHandler(new IoSystem(fileSystem));
 
 		// We don't currently support aiProcess_JoinIdenticalVertices or aiProcess_FindInvalidData

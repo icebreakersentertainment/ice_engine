@@ -1151,12 +1151,12 @@ std::shared_future<Audio*> GameEngine::loadAudioAsync(const std::string& name, c
         catch (const Exception& e)
         {
             promise->set_exception(std::current_exception());
-            LOG_ERROR(logger, "Error while importing audio: %s", boost::diagnostic_information(e));
+            LOG_ERROR(logger, "Error while importing audio '%s' with filename '%s': %s", name, filename, boost::diagnostic_information(e));
         }
         catch (const std::exception& e)
         {
             promise->set_exception(std::current_exception());
-            LOG_ERROR(logger, "Error while importing audio: %s", boost::diagnostic_information(e));
+            LOG_ERROR(logger, "Error while importing audio '%s' with filename '%s': %s", name, filename, boost::diagnostic_information(e));
         }
 
 	};
@@ -1196,12 +1196,12 @@ std::shared_future<IImage*> GameEngine::loadImageAsync(const std::string& name, 
         catch (const Exception& e)
         {
             promise->set_exception(std::current_exception());
-            LOG_ERROR(logger, "Error while importing image: %s", boost::diagnostic_information(e));
+            LOG_ERROR(logger, "Error while importing image '%s' with filename '%s': %s", name, filename, boost::diagnostic_information(e));
         }
         catch (const std::exception& e)
         {
             promise->set_exception(std::current_exception());
-            LOG_ERROR(logger, "Error while importing image: %s", boost::diagnostic_information(e));
+            LOG_ERROR(logger, "Error while importing image '%s' with filename '%s': %s", name, filename, boost::diagnostic_information(e));
         }
 	};
 
@@ -1246,12 +1246,12 @@ std::shared_future<Model*> GameEngine::importModelAsync(const std::string& name,
 		catch (const Exception& e)
 		{
 			promise->set_exception(std::current_exception());
-            LOG_ERROR(logger, "Error while importing model: %s", boost::diagnostic_information(e));
+            LOG_ERROR(logger, "Error while importing model '%s' with filename '%s': %s", name, filename, boost::diagnostic_information(e));
 		}
 		catch (const std::exception& e)
 		{
 			promise->set_exception(std::current_exception());
-            LOG_ERROR(logger, "Error while importing model: %s", boost::diagnostic_information(e));
+            LOG_ERROR(logger, "Error while importing model '%s' with filename '%s': %s", name, filename, boost::diagnostic_information(e));
 		}
 	};
 

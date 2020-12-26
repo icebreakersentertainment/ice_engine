@@ -15,7 +15,15 @@ To clone:
 
 Get/build prerequisites:
 
-    python setup.py
+    mkdir build
+    cd build
+    
+    conan export ../conan/ctpl icebreakersentertainment/stable
+    conan export ../conan/entityx icebreakersentertainment/stable
+    conan export ../conan/angelscript icebreakersentertainment/stable
+    conan export ../conan/freeimage icebreakersentertainment/stable
+    
+    conan install ..
 
 To build on Linux:
 
@@ -37,13 +45,14 @@ To build on Windows:
     mkdir build
     cd build
     
-    cmake -DCMAKE_BUILD_TYPE=Release ..
+    cmake -G "Visual Studio 16 2019" -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE="conan_paths.cmake" ..
     msbuild /p:Configuration=Release ice_engine.sln
 
 To test on Windows:
 
     mkdir build
+    cd build
     
-    cmake -DCMAKE_BUILD_TYPE=Release -DICEENGINE_BUILD_TESTS=1 -DICEENGINE_BUILD_AS_LIBRARY=1 ..
+    cmake -G "Visual Studio 16 2019" -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE="conan_paths.cmake" -DICEENGINE_BUILD_TESTS=1 -DICEENGINE_BUILD_AS_LIBRARY=1 ..
     msbuild /p:Configuration=Release ice_engine.sln
     ctest

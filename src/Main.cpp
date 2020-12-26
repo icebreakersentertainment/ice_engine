@@ -21,7 +21,7 @@ int main()
 {
 	auto logger = std::make_unique< ice_engine::logger::Logger >();
 	auto fileSystem = std::make_unique< ice_engine::fs::FileSystem >();
-	
+
 	
 	// Try to load our config data
 	std::string configData;
@@ -40,7 +40,7 @@ int main()
 	// Start the game engine
 	try
 	{
-		auto gameEngine = ice_engine::GameFactory::createGameEngine(std::move(properties), std::move(pluginManager), std::move(logger));
+		auto gameEngine = ice_engine::GameFactory::createGameEngine(std::move(properties), std::move(fileSystem), std::move(pluginManager), std::move(logger));
 		
 		gameEngine->run();
 	}
