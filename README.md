@@ -1,7 +1,7 @@
 Ice Engine
 --------
 
-[![Build Status](https://travis-ci.org/icebreakersentertainment/ice_engine.svg?branch=master)](https://travis-ci.org/icebreakersentertainment/ice_engine)
+[![Build Status](https://travis-ci.com/icebreakersentertainment/ice_engine.svg?branch=master)](https://travis-ci.org/icebreakersentertainment/ice_engine)
 [![Build status](https://ci.appveyor.com/api/projects/status/2tqewfhy60mxv429/branch/master?svg=true)](https://ci.appveyor.com/project/icebreakersentertainment/ice-engine/branch/master)
 [![Documentation Status](https://readthedocs.org/projects/ice-engine/badge/?version=latest)](http://ice-engine.readthedocs.io/en/latest/?badge=latest)
 
