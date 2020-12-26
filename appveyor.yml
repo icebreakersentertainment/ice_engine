@@ -14,8 +14,8 @@ install:
   - ls C:/Python39-x64
   - ls C:/Python39-x64/Tools
   - ls C:/Python39-x64/libs
-  - C:/Python39-x64/python.exe pip --version
-  - pip install conan
+  - C:/Python39-x64/python.exe -m pip --version
+  - C:/Python39-x64/python.exe -m pip install conan
 
 build_script:
   - cd %APPVEYOR_BUILD_FOLDER%
