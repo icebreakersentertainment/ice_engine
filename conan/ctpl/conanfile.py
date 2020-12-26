@@ -9,7 +9,8 @@ class CtplConan(ConanFile):
     url = "https://github.com/icebreakersentertainment/CTPL"
     description = "<Description of Ctpl here>"
     topics = ("<Put some tag here>", "<here>", "<and here>")
-    requires = "boost/[>=1.69.0]"
+#     requires = "boost/[>=1.69.0]"
+    requires = "boost/1.69.0"
     exports_sources = "include/*"
     no_copy_source = True
 
