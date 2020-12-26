@@ -15,8 +15,9 @@ install: |
     brew update
     pip install conan
   elif [ "$TRAVIS_OS_NAME" == "linux" ]; then
-    apt-get update
-    apt-get install -y python3
+    sudo apt-get update
+    
+    pip install conan
   fi
 
 script: |
