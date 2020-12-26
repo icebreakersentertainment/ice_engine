@@ -4,7 +4,7 @@
 #include <new>
 #include <chrono>
 
-#include <angelscript/angelscript.h>
+#include <angelscript.h>
 
 BEGIN_AS_NAMESPACE
 

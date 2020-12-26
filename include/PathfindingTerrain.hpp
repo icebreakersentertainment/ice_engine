@@ -19,14 +19,14 @@ public:
 		generatePathfindingTerrain(heightMap);
 	}
 	
-	virtual ~PathfindingTerrain() override = default;
+	~PathfindingTerrain() override = default;
 
-	virtual const std::vector<glm::vec3>& vertices() const override
+	const std::vector<glm::vec3>& vertices() const override
 	{
 		return vertices_;
 	}
 
-    virtual const std::vector<uint32>& indices() const override
+    const std::vector<uint32>& indices() const override
     {
         return indices_;
     }

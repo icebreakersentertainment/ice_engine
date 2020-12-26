@@ -30,9 +30,9 @@ void AudioEngineBindingDelegate::bind()
 	registerHandleBindings<audio::ListenerHandle>(scriptingEngine_, "ListenerHandle");
 
 	scriptingEngine_->registerObjectType("IAudio", 0, asOBJ_REF | asOBJ_NOCOUNT);
-	
+
 	//registerSharedFutureBindings<audio::IAudio*>(scriptingEngine_, "shared_futureIAudio", "IAudio@");
-	
+
 	// IAudioEngine
 	scriptingEngine_->registerObjectType("IAudioEngine", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	scriptingEngine_->registerGlobalProperty("IAudioEngine audio", audioEngine_);

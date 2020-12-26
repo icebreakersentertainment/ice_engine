@@ -1,3 +1,5 @@
+#include <assimp/material.h>
+
 #include "Texture.hpp"
 
 #include "IResourceCache.hpp"

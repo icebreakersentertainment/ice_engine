@@ -3,20 +3,6 @@
 
 #include <vector>
 
-// C++ importer interface
-#include <assimp/cimport.h>
-#include <assimp/scene.h>
-#include <assimp/Importer.hpp>
-#include <assimp/postprocess.h>
-#include <assimp/DefaultLogger.hpp>
-#include <assimp/IOStream.hpp>
-#include <assimp/IOSystem.hpp>
-
-#define GLM_FORCE_RADIANS
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtx/string_cast.hpp>
-
 #include "Mesh.hpp"
 #include "Texture.hpp"
 #include "Animation.hpp"

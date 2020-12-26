@@ -1,3 +1,11 @@
+#include <vector>
+#include <tuple>
+
+#define GLM_FORCE_RADIANS
+#include <glm/glm.hpp>
+
+#include "Types.hpp"
+
 namespace ice_engine
 {
 namespace detail

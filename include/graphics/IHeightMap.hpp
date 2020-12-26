@@ -13,10 +13,7 @@ namespace graphics
 class IHeightMap
 {
 public:
-	virtual ~IHeightMap()
-	{
-	}
-	;
+	virtual ~IHeightMap() = default;
 	
 	virtual const IImage* image() const = 0;
 };

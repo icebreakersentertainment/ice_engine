@@ -20,7 +20,7 @@ before_install: |
 install: |
   if [ "$TRAVIS_OS_NAME" == "osx" ]; then
     brew update
-    python setup.py
+    pip install conan
   elif [ "$TRAVIS_OS_NAME" == "linux" ]; then
     docker exec -t ubuntu-test bash -c "apt-get -qq update;
     apt-get install -y software-properties-common python-software-properties;
@@ -50,6 +50,14 @@ script: |
   if [ "$TRAVIS_OS_NAME" == "osx" ]; then
     mkdir build
     cd build
+
+    conan export ../conan/ctpl icebreakersentertainment/stable
+    conan export ../conan/entityx icebreakersentertainment/stable
+    conan export ../conan/angelscript icebreakersentertainment/stable
+    conan export ../conan/freeimage icebreakersentertainment/stable
+
+    conan install ..
+
     cmake -DCMAKE_BUILD_TYPE=Release -DICEENGINE_BUILD_BENCHMARKS=1 -DICEENGINE_BUILD_TESTS=1 -DICEENGINE_BUILD_AS_LIBRARY=1 ..
     make
     ctest
@@ -63,6 +71,11 @@ script: |
     gcc -v &&
     mkdir build &&
     cd build &&
+    conan export ../conan/ctpl icebreakersentertainment/stable &&
+    conan export ../conan/entityx icebreakersentertainment/stable &&
+    conan export ../conan/angelscript icebreakersentertainment/stable &&
+    conan export ../conan/freeimage icebreakersentertainment/stable &&
+    conan install .. &&
     cmake -DCMAKE_BUILD_TYPE=Release -DICEENGINE_BUILD_BENCHMARKS=1 -DICEENGINE_BUILD_TESTS=1 -DICEENGINE_BUILD_AS_LIBRARY=1 .. &&
     make &&
     ctest"

@@ -6,7 +6,7 @@
 #include <unordered_map>
 #include <functional>
 
-#include <angelscript/angelscript.h>
+#include <angelscript.h>
 
 #include "scripting/angel_script/autowrapper/aswrappedcall.h"
 
