@@ -8,9 +8,11 @@ clone_depth: 5
 
 version: '{build}'
 
+stack: python 3.9
+
 install:
   - choco install -y python
-  - pip3 install conan
+  - pip install conan
 
 build_script:
   - cd %APPVEYOR_BUILD_FOLDER%
