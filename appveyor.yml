@@ -11,10 +11,10 @@ version: '{build}'
 stack: python 3.9
 
 install:
-  - ls
   - ls C:/Python39-x64
-  - ls C:/Python39-x64/bin
-  - pip --version
+  - ls C:/Python39-x64/Tools
+  - ls C:/Python39-x64/libs
+  - C:/Python39-x64/python.exe pip --version
   - pip install conan
 
 build_script:
