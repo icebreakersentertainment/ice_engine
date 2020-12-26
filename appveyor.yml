@@ -15,7 +15,7 @@ install:
 #  - ls C:/Python39-x64
 #  - ls C:/Python39-x64/Tools
   - ls C:/Python39-x64/Scripts
-  - set PATH=%PATH%;%PYTHON%/Scripts/
+  - set PATH=%PYTHON%/Scripts/;%PATH%
   - pip --version
   - pip install conan
 
