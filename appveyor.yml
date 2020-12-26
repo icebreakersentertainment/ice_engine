@@ -10,7 +10,7 @@ version: '{build}'
 
 install:
   - choco install -y python
-  - pip install conan
+  - pip3 install conan
 
 build_script:
   - cd %APPVEYOR_BUILD_FOLDER%
