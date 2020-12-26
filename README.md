@@ -17,11 +17,14 @@ Get/build prerequisites:
 
     mkdir build
     cd build
+
+    conan remote add bincrafters https://api.bintray.com/conan/bincrafters/public-conan
     
-    conan export ../conan/ctpl icebreakersentertainment/stable
-    conan export ../conan/entityx icebreakersentertainment/stable
-    conan export ../conan/angelscript icebreakersentertainment/stable
-    conan export ../conan/freeimage icebreakersentertainment/stable
+    conan create ../conan/ctpl icebreakersentertainment/stable
+    conan create ../conan/entityx icebreakersentertainment/stable
+    conan create ../conan/angelscript icebreakersentertainment/stable
+    conan create ../conan/freeimage icebreakersentertainment/stable
+    conan create ../conan/celero icebreakersentertainment/stable
     
     conan install ..
 

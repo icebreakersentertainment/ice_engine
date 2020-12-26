@@ -14,7 +14,7 @@ CELERO_MAIN
 class Fixture : public celero::TestFixture
 {
 public:
-	virtual void setUp(int64_t experimentValue) override
+	void setUp(const celero::TestFixture::ExperimentValue& experimentValue) override
 	{
 		fileSystem = ice_engine::fs::FileSystem();
 		properties = ice_engine::utilities::Properties();
@@ -32,7 +32,7 @@ public:
 class FixtureCallback : public Fixture
 {
 public:
-	virtual void setUp(int64_t experimentValue) override
+	void setUp(const celero::TestFixture::ExperimentValue& experimentValue) override
 	{
 		Fixture::setUp(experimentValue);
 		
@@ -70,7 +70,7 @@ void main()
 		scriptObjectFunctionHandle = scriptingEngine->getScriptObjectFunction(scriptObjectHandle, std::string("void tick(const float)"));
 	}
 	
-	virtual void tearDown() override
+	void tearDown() override
 	{
 		Fixture::tearDown();
 
