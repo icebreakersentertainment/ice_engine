@@ -11,7 +11,9 @@ version: '{build}'
 stack: python 3.9
 
 install:
-  - python --version
+  - ls
+  - ls C:/Python39-x64
+  - ls C:/Python39-x64/bin
   - pip --version
   - pip install conan
 
