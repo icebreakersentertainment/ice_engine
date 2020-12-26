@@ -11,7 +11,8 @@ version: '{build}'
 stack: python 3.9
 
 install:
-  - choco install -y python
+  - python --version
+  - pip --version
   - pip install conan
 
 build_script:
