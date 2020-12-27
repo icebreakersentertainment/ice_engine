@@ -1,5 +1,5 @@
 image:
-  - Ubuntu
+  - Ubuntu2004
   - Visual Studio 2019
 
 branches:
@@ -11,14 +11,18 @@ clone_depth: 5
 version: '{build}'
 
 environment:
-  PYTHON: C:/Python39-x64
-  PATH: $(PYTHON)/Scripts/;$(PATH)
+  matrix:
+    - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
+      PYTHON: C:/Python39-x64
+      PATH: $(PYTHON)/Scripts/;$(PATH)
+    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2004
 
 install:
   - pip install conan
 
 build_script:
-  - cd %APPVEYOR_BUILD_FOLDER%
+  - sh: cd ${APPVEYOR_BUILD_FOLDER}
+  - cmd: cd %APPVEYOR_BUILD_FOLDER%
   - mkdir build
   - cd build
   - conan remote add bincrafters https://api.bintray.com/conan/bincrafters/public-conan
