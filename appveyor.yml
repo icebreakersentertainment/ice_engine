@@ -1,7 +1,3 @@
-image:
-  - Ubuntu2004
-  - Visual Studio 2019
-
 branches:
   only:
   - master
@@ -9,6 +5,8 @@ branches:
 clone_depth: 5
 
 version: '{build}'
+
+stack: python 3.9
 
 environment:
   matrix:
