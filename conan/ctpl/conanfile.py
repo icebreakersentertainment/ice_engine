@@ -25,7 +25,7 @@ class CtplConan(ConanFile):
 # conan_basic_setup()''')
 
     def package(self):
-        self.copy("*.h", dst="include", src="")
+        self.copy("*.h", dst="include", src="CTPL")
         pass
 
     def package_id(self):

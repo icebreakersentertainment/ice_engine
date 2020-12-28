@@ -3,7 +3,7 @@ from conans import ConanFile, CMake, tools
 
 class EntityxConan(ConanFile):
     name = "entityx"
-    version = "1.3.0"
+    version = "master"
     license = "MIT"
     author = "<Put your name here> <And your email here>"
     url = "https://github.com/alecthomas/entityx"
@@ -19,7 +19,7 @@ class EntityxConan(ConanFile):
             del self.options.fPIC
 
     def source(self):
-        self.run("git clone https://github.com/alecthomas/entityx.git --branch {0}".format(self.version))
+        self.run("git clone https://github.com/icebreakersentertainment/entityx.git --branch {0}".format(self.version))
         # This small hack might be useful to guarantee proper /MT /MD linkage
         # in MSVC if the packaged project doesn't have variables to set it
         # properly
@@ -53,4 +53,3 @@ class EntityxConan(ConanFile):
 
     def package_info(self):
         self.cpp_info.libs = ["entityx"]
-

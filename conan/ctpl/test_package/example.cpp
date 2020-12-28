@@ -1,4 +1,4 @@
-#include <ctpl/ctpl.h>
+#include <ctpl.h>
 
 int main() {
 //    hello();

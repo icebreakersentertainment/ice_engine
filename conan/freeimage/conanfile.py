@@ -1,4 +1,5 @@
-from conans import ConanFile, CMake, MSBuild, tools
+from conans import ConanFile, AutoToolsBuildEnvironment, MSBuild, tools
+from conans import tools
 
 
 class FreeimageConan(ConanFile):
@@ -37,16 +38,13 @@ class FreeimageConan(ConanFile):
 # conan_basic_setup()''')
 
     def build(self):
-        msbuild = MSBuild(self)
-        msbuild.build("FreeImage/FreeImage.2013.sln", upgrade_project=False, use_env=False)
-        # cmake = CMake(self)
-        # cmake.configure(source_folder="freeimage")
-        # cmake.build()
-
-        # Explicit way:
-        # self.run('cmake %s/freeimage %s'
-        #          % (self.source_folder, cmake.command_line))
-        # self.run("cmake --build . %s" % cmake.build_config)
+        if self.settings.os == "Windows":
+            msbuild = MSBuild(self)
+            msbuild.build("FreeImage/FreeImage.2013.sln", upgrade_project=False, use_env=False)
+        elif self.settings.os == "Linux":
+            with tools.chdir("FreeImage"):
+                atools = AutoToolsBuildEnvironment(self)
+                atools.make()
 
     def package(self):
         self.copy("*.h", dst="include", src="FreeImage/Dist", keep_path=False)
@@ -58,4 +56,3 @@ class FreeimageConan(ConanFile):
 
     def package_info(self):
         self.cpp_info.libs = ["freeimage"]
-

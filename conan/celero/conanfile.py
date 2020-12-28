@@ -31,11 +31,11 @@ class CeleroConan(ConanFile):
     def build(self):
         cmake = CMake(self)
         cmake.definitions["CELERO_COMPILE_DYNAMIC_LIBRARIES"] = "0"
-        cmake.configure(source_folder="celero")
+        cmake.configure(source_folder="Celero")
         cmake.build()
 
         cmake = CMake(self)
-        cmake.configure(source_folder="celero")
+        cmake.configure(source_folder="Celero")
         cmake.build()
 
         # Explicit way:
@@ -53,4 +53,3 @@ class CeleroConan(ConanFile):
 
     def package_info(self):
         self.cpp_info.libs = ["celero"]
-
