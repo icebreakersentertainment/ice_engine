@@ -32,14 +32,14 @@ To build on Linux:
 
     mkdir build
     cd build
-    cmake -DCMAKE_BUILD_TYPE=Release ..
+    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE="conan_paths.cmake" ..
     make
 
 To test on Linux:
 
     mkdir build
     cd build
-    cmake -DCMAKE_BUILD_TYPE=Release -DICEENGINE_BUILD_TESTS=1 -DICEENGINE_BUILD_AS_LIBRARY=1 ..
+    cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE="conan_paths.cmake" -DICEENGINE_BUILD_TESTS=1 -DICEENGINE_BUILD_AS_LIBRARY=1 ..
     make
     ctest
 

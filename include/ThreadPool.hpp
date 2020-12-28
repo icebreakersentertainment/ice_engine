@@ -1,9 +1,14 @@
 #ifndef THREADPOOL_H_
 #define THREADPOOL_H_
 
-#include <ctpl/ctpl.h>
+#include <memory>
 
 #include "IThreadPool.hpp"
+
+namespace ctpl
+{
+class thread_pool;
+}
 
 namespace ice_engine
 {
@@ -13,20 +18,20 @@ class ThreadPool : public IThreadPool
 public:
 	ThreadPool();
 	ThreadPool(uint32 numThreads);
-	virtual ~ThreadPool();
+	~ThreadPool() override;
 	
-	virtual std::future<void> postWork(const std::function<void()>& work) override;
-	virtual std::future<void> postWork(std::function<void()>&& work) override;
-	virtual void waitAll() override;
-	virtual void joinAll() override;
+	std::future<void> postWork(const std::function<void()>& work) override;
+	std::future<void> postWork(std::function<void()>&& work) override;
+	void waitAll() override;
+	void joinAll() override;
 	
-	virtual uint32 getActiveWorkerCount() const override;
-	virtual uint32 getInactiveWorkerCount() const override;
+	uint32 getActiveWorkerCount() const override;
+	uint32 getInactiveWorkerCount() const override;
 	
-	virtual uint32 getWorkQueueCount() const override;
-	virtual uint32 getWorkQueueSize() const override;
-	virtual void increaseWorkerCountBy(uint32 n) override;
-	virtual void decreaseWorkerCountBy(uint32 n) override;
+	uint32 getWorkQueueCount() const override;
+	uint32 getWorkQueueSize() const override;
+	void increaseWorkerCountBy(uint32 n) override;
+	void decreaseWorkerCountBy(uint32 n) override;
 	
 	//void postWork(const std::function<void()>& work) override;
 	

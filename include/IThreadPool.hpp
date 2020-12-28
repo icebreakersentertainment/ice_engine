@@ -12,10 +12,7 @@ namespace ice_engine
 class IThreadPool
 {
 public:
-	virtual ~IThreadPool()
-	{
-	}
-	;
+	virtual ~IThreadPool() = default;
 	
 	virtual std::future<void> postWork(const std::function<void()>& work) = 0;
 	virtual std::future<void> postWork(std::function<void()>&& work) = 0;
