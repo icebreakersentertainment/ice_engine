@@ -49,8 +49,7 @@ class FreeimageConan(ConanFile):
         # self.run("cmake --build . %s" % cmake.build_config)
 
     def package(self):
-        self.copy("*.h", dst="include", src="FreeImage/Dist/x64")
-        self.copy("*.h", dst="include", src="FreeImage/Dist/x86")
+        self.copy("*.h", dst="include", src="FreeImage/Dist", keep_path=False)
         self.copy("*freeimage.lib", dst="lib", keep_path=False)
         self.copy("*.dll", dst="bin", keep_path=False)
         self.copy("*.so", dst="lib", keep_path=False)
