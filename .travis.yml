@@ -17,6 +17,8 @@ install: |
   elif [ "$TRAVIS_OS_NAME" == "linux" ]; then
     sudo apt-get update
 
+    sudo apt install -y libgl-dev libglu1-mesa-dev
+
     pip install conan
   fi
 
