@@ -930,12 +930,12 @@ void BindingDelegate::bind()
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
-	scriptingEngine_->registerGlobalFunction(
-		"CollisionShapeHandle createStaticSphereShape(const string& in, const float)",
-		asMETHODPR(GameEngine, createStaticSphereShape, (const std::string&, const float32), physics::CollisionShapeHandle),
-		asCALL_THISCALL_ASGLOBAL,
-		gameEngine_
-	);
+	// scriptingEngine_->registerGlobalFunction(
+	// 	"CollisionShapeHandle createStaticSphereShape(const string& in, const float)",
+	// 	asMETHODPR(GameEngine, createStaticSphereShape, (const std::string&, const float32), physics::CollisionShapeHandle),
+	// 	asCALL_THISCALL_ASGLOBAL,
+	// 	gameEngine_
+	// );
 	scriptingEngine_->registerGlobalFunction(
 			"CollisionShapeHandle getStaticShape(const string& in)",
 			asMETHODPR(GameEngine, getStaticShape, (const std::string&) const, physics::CollisionShapeHandle),

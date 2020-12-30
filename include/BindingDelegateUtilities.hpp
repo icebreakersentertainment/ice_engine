@@ -23,6 +23,16 @@ namespace ice_engine
 
 #define COMMA ,
 
+template<typename T>
+std::function<std::string(void*)> scriptingEngineDebuggerToStringCallback()
+{
+    return [](void* value) {
+        std::stringstream ss;
+        ss << *static_cast<T*>(value);
+        return ss.str();
+    };
+}
+
 template<class T>
 static void DefaultConstructor(T* memory) { new(memory) T(); }
 
@@ -420,16 +430,6 @@ void registerPointerHandleBindings(scripting::IScriptingEngine* scriptingEngine,
 	scriptingEngine->registerClassMethod(name.c_str(), "const " + scriptTypeName + "@+ get() const", asMETHODPR(T, get, () const, void*));
 	scriptingEngine->registerClassMethod(name.c_str(), "bool opImplConv() const", asMETHODPR(T, operator bool, () const, bool ));
 	scriptingEngine->registerClassMethod(name.c_str(), "bool opEquals(const " + name + "& in) const", asMETHODPR(T, operator==, (const T&) const, bool));
-}
-
-template<typename T>
-std::function<std::string(void*)> scriptingEngineDebuggerToStringCallback()
-{
-    return [](void* value) {
-        std::stringstream ss;
-        ss << *static_cast<T*>(value);
-        return ss.str();
-    };
 }
 
 template<class A, class B>

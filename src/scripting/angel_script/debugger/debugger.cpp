@@ -90,7 +90,7 @@ string CDebugger::ToString(void *value, asUINT typeId, int expandMembers, asIScr
 			value = *(void**)value;
 
 		asIScriptObject *obj = (asIScriptObject *)value;
-
+		
 		// Print the address of the object
 		s << "{" << obj << "}";
 
@@ -147,25 +147,6 @@ string CDebugger::ToString(void *value, asUINT typeId, int expandMembers, asIScr
 					string str = it->second(value, expandMembers, this);
 					s << str;
 				}
-//				else
-//                {
-//                    // Attempt to print out the properties of the type
-//                    type->
-//                    asIScriptObject *obj = (asIScriptObject *)value;
-//                    for( asUINT n = 0; n < type->GetPropertyCount(); n++ )
-//                    {
-//                        if( n == 0 )
-//                            s << " ";
-//                        else
-//                            s << ", ";
-//
-//                        const auto decl = type->GetPropertyDeclaration(n);
-//                        auto addr = obj->GetAddressOfProperty(n);
-//                        const auto typeId = obj->GetPropertyTypeId(n);
-//                        const auto str = ToString(addr, typeId, expandMembers - 1, type->GetEngine());
-//                        s << decl << " = " << str;
-//                    }
-//                }
 			}
 		}
 		else
@@ -220,7 +201,7 @@ void CDebugger::LineCallback(asIScriptContext *ctx)
 	{
 		CheckBreakPoint(ctx);
 
-		// Always break, but we call the check break point anyway
+		// Always break, but we call the check break point anyway 
 		// to tell user when break point has been reached
 	}
 
@@ -228,7 +209,7 @@ void CDebugger::LineCallback(asIScriptContext *ctx)
 	const char *file = 0;
 	int lineNbr = ctx->GetLineNumber(0, 0, &file);
 	s << (file ? file : "{unnamed}") << ":" << lineNbr << "; " << ctx->GetFunction()->GetDeclaration() << endl;
-//	Output(s.str());
+	Output(s.str());
 
 	TakeCommands(ctx);
 }
@@ -358,8 +339,9 @@ bool CDebugger::InterpretCommand(const string &cmd, asIScriptContext *ctx)
 	case 'b':
 		{
 			// Set break point
-			size_t div = cmd.find(':');
-			if( div != string::npos && div > 2 )
+			size_t p = cmd.find_first_not_of(" \t", 1);
+			size_t div = cmd.find(':'); 
+			if( div != string::npos && div > 2 && p > 1 )
 			{
 				string file = cmd.substr(2, div-2);
 				string line = cmd.substr(div+1);
@@ -368,9 +350,9 @@ bool CDebugger::InterpretCommand(const string &cmd, asIScriptContext *ctx)
 
 				AddFileBreakPoint(file, nbr);
 			}
-			else if( div == string::npos && (div = cmd.find_first_not_of(" \t", 1)) != string::npos )
+			else if( div == string::npos && p != string::npos && p > 1 )
 			{
-				string func = cmd.substr(div);
+				string func = cmd.substr(p);
 
 				AddFuncBreakPoint(func);
 			}
@@ -387,7 +369,8 @@ bool CDebugger::InterpretCommand(const string &cmd, asIScriptContext *ctx)
 	case 'r':
 		{
 			// Remove break point
-			if( cmd.length() > 2 )
+			size_t p = cmd.find_first_not_of(" \t", 1);
+			if( cmd.length() > 2 && p != string::npos && p > 1 )
 			{
 				string br = cmd.substr(2);
 				if( br == "all" )
@@ -417,7 +400,7 @@ bool CDebugger::InterpretCommand(const string &cmd, asIScriptContext *ctx)
 			// List something
 			bool printHelp = false;
 			size_t p = cmd.find_first_not_of(" \t", 1);
-			if( p != string::npos )
+			if( p != string::npos && p > 1 )
 			{
 				if( cmd[p] == 'b' )
 				{
@@ -473,9 +456,9 @@ bool CDebugger::InterpretCommand(const string &cmd, asIScriptContext *ctx)
 
 	case 'p':
 		{
-			// Print a value
+			// Print a value 
 			size_t p = cmd.find_first_not_of(" \t", 1);
-			if( p != string::npos )
+			if( p != string::npos && p > 1 )
 			{
 				PrintValue(cmd.substr(p), ctx);
 			}
@@ -530,7 +513,7 @@ void CDebugger::PrintValue(const std::string &expr, asIScriptContext *ctx)
 	string name;
 	string str = expr;
 	asETokenClass t = engine->ParseToken(str.c_str(), 0, &len);
-	while( t == asTC_IDENTIFIER || (t == asTC_KEYWORD && len == 2 && str.compare("::")) )
+	while( t == asTC_IDENTIFIER || (t == asTC_KEYWORD && len == 2 && str.compare(0, 2, "::") == 0) )
 	{
 		if( t == asTC_KEYWORD )
 		{
@@ -640,13 +623,19 @@ void CDebugger::PrintValue(const std::string &expr, asIScriptContext *ctx)
 		if( ptr )
 		{
 			// TODO: If there is a . after the identifier, check for members
-			// TODO: If there is a [ after the identifier try to call the 'opIndex(expr) const' method
-
-			stringstream s;
-			// TODO: Allow user to set if members should be expanded
-			// Expand members by default to 3 recursive levels only
-			s << ToString(ptr, typeId, 3, engine) << endl;
-			Output(s.str());
+			// TODO: If there is a [ after the identifier try to call the 'opIndex(expr) const' method 
+			if( str != "" )
+			{
+				Output("Invalid expression. Expression doesn't end after symbol\n");
+			}
+			else
+			{
+				stringstream s;
+				// TODO: Allow user to set if members should be expanded
+				// Expand members by default to 3 recursive levels only
+				s << ToString(ptr, typeId, 3, engine) << endl;
+				Output(s.str());
+			}
 		}
 		else
 		{
@@ -750,7 +739,7 @@ void CDebugger::ListStatistics(asIScriptContext *ctx)
 	}
 
 	asIScriptEngine *engine = ctx->GetEngine();
-
+	
 	asUINT gcCurrSize, gcTotalDestr, gcTotalDet, gcNewObjects, gcTotalNewDestr;
 	engine->GetGCStatistics(&gcCurrSize, &gcTotalDestr, &gcTotalDet, &gcNewObjects, &gcTotalNewDestr);
 
@@ -779,8 +768,7 @@ void CDebugger::PrintCallstack(asIScriptContext *ctx)
 	for( asUINT n = 0; n < ctx->GetCallstackSize(); n++ )
 	{
 		lineNbr = ctx->GetLineNumber(n, 0, &file);
-		const char* decl = lineNbr > 0 ? ctx->GetFunction(n)->GetDeclaration() : "{unknown}";
-		s << (file ? file : "{unnamed}") << ":" << lineNbr << "; " << decl << endl;
+		s << (file ? file : "{unnamed}") << ":" << lineNbr << "; " << ctx->GetFunction(n)->GetDeclaration() << endl;
 	}
 	Output(s.str());
 }

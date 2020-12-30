@@ -17,12 +17,15 @@ environment:
 
 install:
   - pip install conan
+  - sh: sudo apt install -y libgl-dev libglu1-mesa-dev
 
 build_script:
   - sh: cd ${APPVEYOR_BUILD_FOLDER}
   - cmd: cd %APPVEYOR_BUILD_FOLDER%
   - mkdir build
   - cd build
+  - sh: conan profile new default --detect
+  - sh: conan profile update settings.compiler.libcxx=libstdc++11 default
   - conan remote add bincrafters https://api.bintray.com/conan/bincrafters/public-conan
   - conan create ../conan/ctpl icebreakersentertainment/stable
   - conan create ../conan/entityx icebreakersentertainment/stable

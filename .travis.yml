@@ -16,7 +16,7 @@ install: |
     pip install conan
   elif [ "$TRAVIS_OS_NAME" == "linux" ]; then
     sudo apt-get update
-    
+
     pip install conan
   fi
 
@@ -40,20 +40,23 @@ script: |
     ctest
   elif [ "$TRAVIS_OS_NAME" == "linux" ]; then
     cd /travis
-  
+
     mkdir build
     cd build
-    
+
+    conan profile new default --detect
+    conan profile update settings.compiler.libcxx=libstdc++11 default
+
     conan remote add bincrafters https://api.bintray.com/conan/bincrafters/public-conan
-    
+
     conan create ../conan/ctpl icebreakersentertainment/stable
     conan create ../conan/entityx icebreakersentertainment/stable
     conan create ../conan/angelscript icebreakersentertainment/stable
     conan create ../conan/freeimage icebreakersentertainment/stable
     conan create ../conan/celero icebreakersentertainment/stable
-    
+
     conan install ..
-    
+
     cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE="conan_paths.cmake" -DICEENGINE_BUILD_BENCHMARKS=1 -DICEENGINE_BUILD_TESTS=1 -DICEENGINE_BUILD_AS_LIBRARY=1 ..
     make
     ctest

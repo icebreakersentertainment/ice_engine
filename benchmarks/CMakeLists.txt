@@ -4,12 +4,13 @@ project(ice_engine_benchmarks)
 
 option(ICEENGINE_BENCHMARKS_EXPORT_TO_CSV "ICEENGINE_BENCHMARKS_EXPORT_TO_CSV" FALSE)
 
+set(Boost_USE_STATIC_LIBS ON)
+find_package(Boost REQUIRED)
 find_package(freeimage REQUIRED)
 find_package(angelscript REQUIRED)
 find_package(entityx REQUIRED)
 find_package(ctpl REQUIRED)
 find_package(celero REQUIRED)
-find_package(Boost REQUIRED)
 
 if(WIN32)
   configure_file(${freeimage_LIB_DIRS}/../bin/FreeImage.dll ./ COPYONLY)
@@ -40,7 +41,7 @@ macro(create_benchmark BENCHMARK_NAME EXECUTABLE_NAME SOURCE)
   target_include_directories(${EXECUTABLE_NAME} PRIVATE ${Boost_INCLUDE_DIRS})
 
   target_compile_options(${EXECUTABLE_NAME} PRIVATE -DCELERO_STATIC)
-  
+
   add_dependencies(${EXECUTABLE_NAME} ice_engine)
 
   target_link_libraries(${EXECUTABLE_NAME} PRIVATE ice_engine)
@@ -62,7 +63,7 @@ macro(create_benchmark BENCHMARK_NAME EXECUTABLE_NAME SOURCE)
       target_link_libraries(${EXECUTABLE_NAME} PUBLIC Threads::Threads)
       target_link_libraries(${EXECUTABLE_NAME} PUBLIC ${CMAKE_DL_LIBS})
   endif()
-  
+
   if(WIN32)
     target_link_libraries(${EXECUTABLE_NAME} PRIVATE winmm)
     target_link_libraries(${EXECUTABLE_NAME} PRIVATE imm32)
@@ -70,14 +71,14 @@ macro(create_benchmark BENCHMARK_NAME EXECUTABLE_NAME SOURCE)
     target_link_libraries(${EXECUTABLE_NAME} PRIVATE Psapi)
     target_link_libraries(${EXECUTABLE_NAME} PRIVATE PowrProf)
   endif()
-  
+
   if(ICEENGINE_BENCHMARKS_EXPORT_TO_CSV)
     add_test(${BENCHMARK_NAME} ${EXECUTABLE_NAME} -t ${BENCHMARK_NAME}.csv)
   else()
     add_test(${BENCHMARK_NAME} ${EXECUTABLE_NAME})
   endif()
-  
-  
+
+
 endmacro()
 
 create_benchmark(ScriptingEngineBenchmarks ScriptingEngineBenchmarks ScriptingEngine.cpp)

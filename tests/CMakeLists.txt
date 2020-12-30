@@ -2,11 +2,12 @@ cmake_minimum_required(VERSION 3.1.0)
 
 project(ice_engine_tests)
 
+set(Boost_USE_STATIC_LIBS ON)
+find_package(Boost REQUIRED COMPONENTS unit_test_framework)
 find_package(freeimage REQUIRED)
 find_package(angelscript REQUIRED)
 find_package(entityx REQUIRED)
 find_package(ctpl REQUIRED)
-find_package(Boost REQUIRED COMPONENTS unit_test_framework)
 
 if(APPLE)
   find_library(BOOST_TIMER_LIBRARY NAMES
@@ -56,7 +57,7 @@ macro(create_test TEST_NAME EXECUTABLE_NAME SOURCE)
   if(MSVC)
 #    target_link_libraries(${EXECUTABLE_NAME} ../${CMAKE_BUILD_TYPE}/ice_engine)
   else()
-    target_compile_definitions(${EXECUTABLE_NAME} PRIVATE -DBOOST_TEST_DYN_LINK)
+#    target_compile_definitions(${EXECUTABLE_NAME} PRIVATE -DBOOST_TEST_DYN_LINK)
 #    target_link_libraries(${EXECUTABLE_NAME} ice_engine)
   endif()
 
@@ -74,14 +75,14 @@ macro(create_test TEST_NAME EXECUTABLE_NAME SOURCE)
     target_link_libraries(${EXECUTABLE_NAME} PUBLIC Threads::Threads)
     target_link_libraries(${EXECUTABLE_NAME} PUBLIC ${CMAKE_DL_LIBS})
   endif()
-  
+
   if(WIN32)
     target_link_libraries(${EXECUTABLE_NAME} PRIVATE winmm)
     target_link_libraries(${EXECUTABLE_NAME} PRIVATE imm32)
     target_link_libraries(${EXECUTABLE_NAME} PRIVATE version)
     target_link_libraries(${EXECUTABLE_NAME} PRIVATE Psapi)
   endif()
-  
+
   add_test(${TEST_NAME} ${EXECUTABLE_NAME})
 endmacro()
 

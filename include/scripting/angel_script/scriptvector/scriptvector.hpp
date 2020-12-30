@@ -13,9 +13,6 @@ template<typename T, typename V>
 class VectorRegisterHelper
 {
 public:
-	template<typename V>
-	static std::string print1(const V& value) { return ""; }
-	static std::string print1(const std::string& value) { return value; }
 	static void DefaultConstructor(T* memory) { new(memory) T(); }
 	static void CopyConstructor(const T& other, T* memory) { new(memory) T(other); }
 	static void InitConstructor(int size, T* memory) { new(memory) T(size); }
