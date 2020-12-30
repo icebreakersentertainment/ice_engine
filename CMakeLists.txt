@@ -61,9 +61,6 @@ elseif(APPLE)
 endif()
 
 if(WIN32)
-#  configure_file(deps/freeimage/lib/FreeImage.dll ./ COPYONLY)
-#  configure_file(deps/assimp/lib/assimp-vc142-mt.dll ./ COPYONLY)
-
   configure_file(${freeimage_LIB_DIRS}/../bin/FreeImage.dll ./ COPYONLY)
 endif()
 
@@ -122,12 +119,7 @@ target_link_libraries(ice_engine PRIVATE angelscript::angelscript)
 target_link_libraries(ice_engine PRIVATE entityx::entityx)
 target_link_libraries(ice_engine PRIVATE ctpl::ctpl)
 
-if(WIN32)
-  target_link_libraries(ice_engine PRIVATE winmm)
-  target_link_libraries(ice_engine PRIVATE imm32)
-  target_link_libraries(ice_engine PRIVATE version)
-  target_link_libraries(ice_engine PRIVATE Psapi)
-elseif(APPLE)
+if(APPLE)
   target_link_libraries(ice_engine PUBLIC ${QUARTZCORE_LIBRARY})
   target_link_libraries(ice_engine PUBLIC ${METAL_LIBRARY})
   target_link_libraries(ice_engine PUBLIC ${APPKIT_LIBRARY})
