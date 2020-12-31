@@ -36,7 +36,7 @@ build_script:
   - conan create ../conan/angelscript icebreakersentertainment/stable
   - conan create ../conan/freeimage icebreakersentertainment/stable
   - conan create ../conan/celero icebreakersentertainment/stable
-  - conan install ..
+  - conan install .. --build missing
   - cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE="conan_paths.cmake" -DICEENGINE_BUILD_BENCHMARKS=1 -DICEENGINE_BUILD_TESTS=1 -DICEENGINE_BUILD_AS_LIBRARY=1 ..
   - sh: make
   - cmd: msbuild /p:Configuration=Release ice_engine.sln
