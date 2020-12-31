@@ -239,7 +239,7 @@ void BindingDelegate::bind()
 	pathfindingEngineBindingDelegate.bind();
 
 	// TEST
-	scriptingEngine_->registerGlobalFunction("void terminate()", asFUNCTION(std::terminate), asCALL_CDECL);
+	scriptingEngine_->registerGlobalFunction("void terminate()", asFUNCTIONPR(std::terminate, (), void), asCALL_CDECL);
 	scriptingEngine_->registerGlobalFunction("void testFunction(const AgentParams& in)", asFUNCTION(testFunction), asCALL_CDECL);
 	scriptingEngine_->registerGlobalFunction("void testFunction2(const AgentParams)", WRAP_FN(testFunction2), asCALL_GENERIC);
 	scriptingEngine_->registerGlobalFunction("void testFunction3(AgentParams)", WRAP_FN(testFunction3), asCALL_GENERIC);
