@@ -4,7 +4,7 @@ matrix:
   include:
   - os: osx
     osx_image:
-    - xcode10.1
+    - xcode9.4
     - xcode11.3
     - xcode12.2
     compiler: clang
