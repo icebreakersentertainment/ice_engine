@@ -11,18 +11,24 @@ matrix:
     compiler: g++
 
 install: |
+  set -e
+
   if [ "$TRAVIS_OS_NAME" == "osx" ]; then
     brew update
     pip install conan
   elif [ "$TRAVIS_OS_NAME" == "linux" ]; then
     sudo apt-get update
 
+    sudo apt install -y python3
+
     sudo apt install -y libgl-dev libglu1-mesa-dev
 
-    pip install conan
+    pip3 install conan
   fi
 
 script: |
+  set -e
+  
   if [ "$TRAVIS_OS_NAME" == "osx" ]; then
     mkdir build
     cd build
