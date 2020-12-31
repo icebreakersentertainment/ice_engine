@@ -3,10 +3,13 @@ language: cpp
 matrix:
   include:
   - os: osx
-    osx_image:
-    - xcode10.1
-    - xcode11.3
-    - xcode12.2
+    osx_image: xcode10.1
+    compiler: clang
+  - os: osx
+    osx_image: xcode11.3
+    compiler: clang
+  - os: osx
+    osx_image: xcode12.2
     compiler: clang
   - os: linux
     dist: focal
