@@ -18,7 +18,7 @@ environment:
 
 install:
   - pip install conan
-  - sh: sudo apt install -y libgl-dev libglu1-mesa-dev
+  - sh: if [ "${APPVEYOR_BUILD_WORKER_IMAGE}" == "Ubuntu2004" ]; then sudo apt install -y libgl-dev libglu1-mesa-dev; fi
 
 build_script:
   - sh: cd ${APPVEYOR_BUILD_FOLDER}
