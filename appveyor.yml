@@ -10,14 +10,18 @@ stack: python 3.9
 
 environment:
   matrix:
+    - APPVEYOR_BUILD_WORKER_IMAGE: macOS
     - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2004
+    - APPVEYOR_BUILD_WORKER_IMAGE: Ubuntu2004
+      CC: clang
+      CXX: clang++
     - APPVEYOR_BUILD_WORKER_IMAGE: Visual Studio 2019
       PYTHON: C:/Python39-x64
       PATH: $(PYTHON)/Scripts/;$(PATH)
 
 install:
   - pip install conan
-  - sh: sudo apt install -y libgl-dev libglu1-mesa-dev
+  - sh: if [ "${APPVEYOR_BUILD_WORKER_IMAGE}" == "Ubuntu2004" ]; then sudo apt install -y libgl-dev libglu1-mesa-dev; fi
 
 build_script:
   - sh: cd ${APPVEYOR_BUILD_FOLDER}
@@ -25,14 +29,14 @@ build_script:
   - mkdir build
   - cd build
   - sh: conan profile new default --detect
-  - sh: conan profile update settings.compiler.libcxx=libstdc++11 default
+  - sh: if [ "${APPVEYOR_BUILD_WORKER_IMAGE}" == "Ubuntu2004" ]; then conan profile update settings.compiler.libcxx=libstdc++11 default; fi
   - conan remote add bincrafters https://api.bintray.com/conan/bincrafters/public-conan
-  - conan create ../conan/ctpl icebreakersentertainment/stable
+  - conan create ../conan/ctpl icebreakersentertainment/stable --build missing
   - conan create ../conan/entityx icebreakersentertainment/stable
   - conan create ../conan/angelscript icebreakersentertainment/stable
   - conan create ../conan/freeimage icebreakersentertainment/stable
   - conan create ../conan/celero icebreakersentertainment/stable
-  - conan install ..
+  - conan install .. --build missing
   - cmake -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE="conan_paths.cmake" -DICEENGINE_BUILD_BENCHMARKS=1 -DICEENGINE_BUILD_TESTS=1 -DICEENGINE_BUILD_AS_LIBRARY=1 ..
   - sh: make
   - cmd: msbuild /p:Configuration=Release ice_engine.sln

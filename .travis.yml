@@ -3,7 +3,13 @@ language: cpp
 matrix:
   include:
   - os: osx
-    osx_image: xcode8
+    osx_image: xcode10.1
+    compiler: clang
+  - os: osx
+    osx_image: xcode11.3
+    compiler: clang
+  - os: osx
+    osx_image: xcode12.2
     compiler: clang
   - os: linux
     dist: focal
@@ -17,9 +23,11 @@ install: |
   elif [ "$TRAVIS_OS_NAME" == "linux" ]; then
     sudo apt-get update
 
+    sudo apt install -y python3
+
     sudo apt install -y libgl-dev libglu1-mesa-dev
 
-    pip install conan
+    pip3 install conan
   fi
 
 script: |
