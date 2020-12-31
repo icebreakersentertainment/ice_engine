@@ -17,8 +17,6 @@ matrix:
     compiler: g++
 
 install: |
-  set -e
-
   if [ "$TRAVIS_OS_NAME" == "osx" ]; then
     brew update
     pip install conan
@@ -33,8 +31,6 @@ install: |
   fi
 
 script: |
-  set -e
-  
   if [ "$TRAVIS_OS_NAME" == "osx" ]; then
     mkdir build
     cd build
