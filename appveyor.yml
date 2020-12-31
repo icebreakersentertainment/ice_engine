@@ -31,7 +31,7 @@ build_script:
   - sh: conan profile new default --detect
   - sh: if [ "${APPVEYOR_BUILD_WORKER_IMAGE}" == "Ubuntu2004" ]; then conan profile update settings.compiler.libcxx=libstdc++11 default; fi
   - conan remote add bincrafters https://api.bintray.com/conan/bincrafters/public-conan
-  - conan create ../conan/ctpl icebreakersentertainment/stable
+  - conan create ../conan/ctpl icebreakersentertainment/stable --build missing
   - conan create ../conan/entityx icebreakersentertainment/stable
   - conan create ../conan/angelscript icebreakersentertainment/stable
   - conan create ../conan/freeimage icebreakersentertainment/stable
