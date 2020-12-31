@@ -8,7 +8,7 @@ freeimage/3.18.0@icebreakersentertainment/stable
 angelscript/2.35.0@icebreakersentertainment/stable
 entityx/master@icebreakersentertainment/stable
 ctpl/0.0.2@icebreakersentertainment/stable
-celero/2.6.0@icebreakersentertainment/stable
+celero/master@icebreakersentertainment/stable
 
 [generators]
 cmake_paths
