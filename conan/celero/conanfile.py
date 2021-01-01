@@ -52,4 +52,7 @@ class CeleroConan(ConanFile):
         self.copy("*.a", dst="lib", keep_path=False)
 
     def package_info(self):
-        self.cpp_info.libs = ["celero.dll.lib"]
+        if self.settings.os == "Windows":
+            self.cpp_info.libs = ["celero.dll.lib"]
+        else:
+            self.cpp_info.libs = ["celero"]
