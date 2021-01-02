@@ -369,6 +369,15 @@ public:
 		return handle;
 	}
 
+	physics::CollisionShapeHandle createStaticSphereShape(const std::string& name, const float32 radius)
+	{
+		auto handle = physicsEngine_->createStaticSphereShape(radius);
+
+		resourceHandleCache_.addCollisionShapeHandle(name, handle);
+
+		return handle;
+	}
+
 	template <typename ... Args>
 	physics::CollisionShapeHandle createStaticSphereShape(const std::string& name, const Args ... args)
 	{
