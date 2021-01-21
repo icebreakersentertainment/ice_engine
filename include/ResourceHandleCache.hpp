@@ -41,7 +41,7 @@ public:
 
 		if (collisionShapeHandleMap_.find(name) != collisionShapeHandleMap_.end())
 		{
-			throw Exception(std::string("Resource with name '") + name + "' already exists.");
+			throw RuntimeException(detail::format("Resource with name '%s' already exists.", name));
 		}
 
 		collisionShapeHandleMap_[name] = handle;
@@ -81,7 +81,7 @@ public:
 
         if (modelHandleMap_.find(name) != modelHandleMap_.end())
         {
-            throw Exception(std::string("Resource with name '") + name + "' already exists.");
+            throw RuntimeException(detail::format("Resource with name '%s' already exists.", name));
         }
 
         modelHandleMap_[name] = handle;
@@ -121,7 +121,7 @@ public:
 
         if (skeletonHandleMap_.find(name) != skeletonHandleMap_.end())
         {
-            throw Exception(std::string("Resource with name '") + name + "' already exists.");
+            throw RuntimeException(detail::format("Resource with name '%s' already exists.", name));
         }
 
         skeletonHandleMap_[name] = handle;
@@ -161,7 +161,7 @@ public:
 
         if (animationHandleMap_.find(name) != animationHandleMap_.end())
         {
-            throw Exception(std::string("Resource with name '") + name + "' already exists.");
+            throw RuntimeException(detail::format("Resource with name '%s' already exists.", name));
         }
 
         animationHandleMap_[name] = handle;
@@ -201,7 +201,7 @@ public:
 
         if (meshHandleMap_.find(name) != meshHandleMap_.end())
         {
-            throw Exception(std::string("Resource with name '") + name + "' already exists.");
+            throw RuntimeException(detail::format("Resource with name '%s' already exists.", name));
         }
 
         meshHandleMap_[name] = handle;
@@ -241,7 +241,7 @@ public:
 
         if (textureHandleMap_.find(name) != textureHandleMap_.end())
         {
-            throw Exception(std::string("Resource with name '") + name + "' already exists.");
+            throw RuntimeException(detail::format("Resource with name '%s' already exists.", name));
         }
 
         textureHandleMap_[name] = handle;
@@ -281,7 +281,7 @@ public:
 
         if (terrainHandleMap_.find(name) != terrainHandleMap_.end())
         {
-            throw Exception(std::string("Resource with name '") + name + "' already exists.");
+            throw RuntimeException(detail::format("Resource with name '%s' already exists.", name));
         }
 
         terrainHandleMap_[name] = handle;
@@ -321,7 +321,7 @@ public:
 
 		if (skyboxHandleMap_.find(name) != skyboxHandleMap_.end())
 		{
-			throw Exception(std::string("Resource with name '") + name + "' already exists.");
+			throw RuntimeException(detail::format("Resource with name '%s' already exists.", name));
 		}
 
 		skyboxHandleMap_[name] = handle;
@@ -361,7 +361,7 @@ public:
 
 		if (soundHandleMap_.find(name) != soundHandleMap_.end())
 		{
-			throw Exception(std::string("Resource with name '") + name + "' already exists.");
+			throw RuntimeException(detail::format("Resource with name '%s' already exists.", name));
 		}
 
 		soundHandleMap_[name] = handle;
@@ -401,7 +401,7 @@ public:
 
 		if (polygonMeshHandleMap_.find(name) != polygonMeshHandleMap_.end())
 		{
-			throw Exception(std::string("Resource with name '") + name + "' already exists.");
+			throw RuntimeException(detail::format("Resource with name '%s' already exists.", name));
 		}
 
 		polygonMeshHandleMap_[name] = handle;
@@ -441,7 +441,7 @@ public:
 
 		if (navigationMeshHandleMap_.find(name) != navigationMeshHandleMap_.end())
 		{
-			throw Exception(std::string("Resource with name '") + name + "' already exists.");
+			throw RuntimeException(detail::format("Resource with name '%s' already exists.", name));
 		}
 
 		navigationMeshHandleMap_[name] = handle;
@@ -588,7 +588,7 @@ private:
 //
 //        if (resourceMap_.find(name) != resourceMap_.end())
 //        {
-//            throw Exception(std::string("Resource with name '") + name + "' already exists.");
+//            throw RuntimeException(detail::format("Resource with name '%s' already exists.", name));
 //        }
 //
 //        resourceMap_[name] = resource;

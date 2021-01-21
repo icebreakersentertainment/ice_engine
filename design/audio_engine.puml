@@ -1,0 +1,36 @@
+@startuml
+
+interface IAudioEngine
+{
+    + AudioSceneHandle createAudioScene()
+    + void destroy(const AudioSceneHandle& audioSceneHandle)
+    
+    + void tick(const AudioSceneHandle& audioSceneHandle, const float32 delta)
+
+    + void beginRender()
+    + void render(const AudioSceneHandle& audioSceneHandle)
+    + void endRender()
+    
+    + AudioSourceHandle createAudioSource(const AudioSceneHandle& audioSceneHandle, const AudioHandle& audioHandle, const glm::vec3& position)
+    + void destroy(const AudioSourceHandle& audioSourceHandle)
+    
+    + void play(const AudioSceneHandle& audioSceneHandle, const AudioSourceHandle& audioSourceHandle)
+    + void stop(const AudioSceneHandle& audioSceneHandle, const AudioSourceHandle& audioSourceHandle)
+    + void stopAll(const AudioSceneHandle& audioSceneHandle)
+    
+    + AudioHandle createAudio(const IAudio& audio)
+    + void destroy(const AudioHandle& audioHandle)
+
+    + ListenerHandle createListener(const AudioSceneHandle& audioSceneHandle, const glm::vec3& position)
+    + void destroy(const ListenerHandle& listenerHandle)
+    
+    + void setPosition(const AudioSceneHandle& audioSceneHandle, const AudioSourceHandle& audioSourceHandle, const float32 x, const float32 y, const float32 z)
+    + void setPosition(const AudioSceneHandle& audioSceneHandle, const AudioSourceHandle& audioSourceHandle, const glm::vec3& position)
+    + const glm::vec3& position(const AudioSceneHandle& audioSceneHandle, const AudioSourceHandle& audioSourceHandle) const
+    
+    + void setPosition(const AudioSceneHandle& audioSceneHandle, const ListenerHandle& listenerHandle, const float32 x, const float32 y, const float32 z)
+    + void setPosition(const AudioSceneHandle& audioSceneHandle, const ListenerHandle& listenerHandle, const glm::vec3& position)
+    + const glm::vec3& position(const AudioSceneHandle& audioSceneHandle, const ListenerHandle& listenerHandle) const
+}
+
+@enduml

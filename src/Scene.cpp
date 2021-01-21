@@ -21,6 +21,8 @@
 #include "IceEnginePathfindingAgentStateChangeListener.hpp"
 #include "IceEnginePathfindingMovementRequestStateChangeListener.hpp"
 
+#include "detail/Format.hpp"
+
 namespace ice_engine
 {
 
@@ -173,8 +175,8 @@ void Scene::destroy()
 	LOG_DEBUG(logger_, "Destroying scene: %s", name_);
 
 	audioEngine_->destroyAudioScene(audioSceneHandle_);
-	graphicsEngine_->destroyRenderScene(renderSceneHandle_);
-	physicsEngine_->destroyPhysicsScene(physicsSceneHandle_);
+    graphicsEngine_->destroy(renderSceneHandle_);
+    physicsEngine_->destroy(physicsSceneHandle_);
 	pathfindingEngine_->destroyPathfindingScene(pathfindingSceneHandle_);
 	scriptingEngine_->destroyExecutionContext(executionContextHandle_);
 
@@ -454,15 +456,14 @@ void Scene::tickAnimations(const float32 delta)
 {
     for (auto e : entityComponentSystem_->entitiesWithComponents<ecs::GraphicsComponent, ecs::AnimationComponent>())
     {
-        auto graphicsComponent = e.component<ecs::GraphicsComponent>();
-        auto skeletonComponent = e.component<ecs::SkeletonComponent>();
+        const auto graphicsComponent = e.component<ecs::GraphicsComponent>();
+        const auto skeletonComponent = e.component<ecs::SkeletonComponent>();
         auto animationComponent = e.component<ecs::AnimationComponent>();
 
         if (graphicsComponent->renderableHandle && animationComponent->animationHandle)
         {
-            auto& transformations = animationComponent->transformations;
-            gameEngine_->foregroundThreadPool()->postWork([=, &transformations = animationComponent->transformations]() {
-                gameEngine_->animateSkeleton(transformations, animationComponent->runningTime, animationComponent->startFrame, animationComponent->endFrame, graphicsComponent->meshHandle, animationComponent->animationHandle, skeletonComponent->skeletonHandle);
+            gameEngine_->foregroundThreadPool()->postWork([=, &transformations = animationComponent->transformations, runningTime = animationComponent->runningTime]() {
+                gameEngine_->animateSkeleton(transformations, runningTime, animationComponent->startFrame, animationComponent->endFrame, graphicsComponent->meshHandle, animationComponent->animationHandle, skeletonComponent->skeletonHandle);
                 gameEngine_->foregroundGraphicsThreadPool()->postWork([=]() {
                     graphicsEngine_->update(renderSceneHandle_, graphicsComponent->renderableHandle, animationComponent->bonesHandle, animationComponent->transformations);
                 });
@@ -548,6 +549,11 @@ void Scene::setDebugRendering(const bool enabled)
 
 	physicsEngine_->setDebugRendering(physicsSceneHandle_, debugRendering_);
 	pathfindingEngine_->setDebugRendering(pathfindingSceneHandle_, debugRendering_);
+}
+
+bool Scene::debugRendering() const
+{
+    return debugRendering_;
 }
 
 void Scene::createResources(const ecs::Entity& entity)
@@ -836,7 +842,7 @@ ecs::Entity Scene::createEntity()
 {
 	ecs::Entity e = entityComponentSystem_->create();
 
-	LOG_DEBUG(logger_, "Created entity with id: " + std::to_string(e.id().id()) );
+	LOG_DEBUG(logger_, "Created entity with id: %s", e.id().id());
 
 	return e;
 }
@@ -1001,7 +1007,7 @@ void normalizeHandles(
 		}
 		catch (const std::out_of_range&)
 		{
-			throw Exception("Unable to find mesh handle " + std::to_string(component.meshHandle.id()));
+            throw Exception(detail::format("Unable to find mesh handle %s", component.meshHandle.id()));
 		}
 
 		try
@@ -1010,7 +1016,7 @@ void normalizeHandles(
 		}
 		catch (const std::out_of_range&)
 		{
-			throw Exception("Unable to find texture handle " + std::to_string(component.textureHandle.id()));
+			throw Exception(detail::format("Unable to find texture handle %s", component.textureHandle.id()));
 		}
 
 		entity.assign<ecs::GraphicsComponent>(component);
@@ -1190,7 +1196,7 @@ void normalizeHandles(
 
 		auto scriptObjectName = scriptObjectHandleMap.at(componentHandle->scriptObjectHandle);
 
-		LOG_DEBUG(logger, "Re-creating script object");
+		LOG_DEBUG(logger, "Re-creating script object with name '%s' in module '%s'", scriptObjectName, moduleHandle);
 		componentHandle->scriptObjectHandle = scriptingEngine->createUninitializedScriptObject(moduleHandle, scriptObjectName);
 
 		scripting::ParameterList params;

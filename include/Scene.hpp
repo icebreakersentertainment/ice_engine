@@ -9,6 +9,7 @@
 #include <glm/glm.hpp>
 
 #include <boost/optional.hpp>
+#include <boost/type_index.hpp>
 
 #include "Types.hpp"
 
@@ -109,6 +110,7 @@ public:
 	void setSceneThingyInstance(void* object);
 
 	void setDebugRendering(const bool enabled);
+	bool debugRendering() const;
 
 	void createResources(const ecs::Entity& entity);
 	void destroyResources(const ecs::Entity& entity);
@@ -544,6 +546,7 @@ private:
 			auto it = newMap.find(kv.first);
 			if (it != newMap.end())
 			{
+                LOG_DEBUG(logger, "Mapping handle %s %s with id %s to %s with id %s", boost::typeindex::type_id<Handle>().pretty_name(), kv.first, std::to_string(kv.second.id()), it->first, std::to_string(it->second.id()));
 				normalizedMap[kv.second] = it->second;
 			}
 			else

@@ -4,15 +4,19 @@
 #include <ostream>
 #include <utility>
 
+#include <boost/type_index.hpp>
+
 #include "Types.hpp"
 
 namespace ice_engine
 {
 namespace handles
-
 {
+
+class BaseHandle {};
+
 template <typename T>
-class Handle
+class Handle : BaseHandle
 {
 public:
 	Handle() = default;
@@ -100,7 +104,13 @@ public:
 
 	friend std::ostream& operator<<(std::ostream& os, const T& other)
 	{
-		os << "Id: " << other.id_ << ", Index: " << other.index() << ", Version: " << other.version();
+		os << "(" << boost::typeindex::type_id<Handle>().pretty_name() << ")["
+           << "id: " << other.id_
+           << ", index: " << other.index()
+           << ", version: " << other.version()
+           << "]"
+           ;
+
 		return os;
 	}
 

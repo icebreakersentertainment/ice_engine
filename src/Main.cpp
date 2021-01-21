@@ -20,6 +20,9 @@ Main::~Main()
 int main()
 {
 	auto logger = std::make_unique< ice_engine::logger::Logger >();
+
+	setGlobalLogger(logger.get());
+
 	auto fileSystem = std::make_unique< ice_engine::fs::FileSystem >();
 
 	

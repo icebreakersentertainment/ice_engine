@@ -29,7 +29,7 @@ struct PositionOrientationComponent
 	};
 	
 	glm::vec3 position;
-	glm::quat orientation;
+	glm::quat orientation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
 };
 
 }

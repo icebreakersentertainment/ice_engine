@@ -168,13 +168,14 @@ namespace glmquat
 void DefaultConstructor(void* memory) { new(memory) glm::quat(); }
 void CopyConstructor(const glm::quat& other, void* memory) { new(memory) glm::quat(other); }
 //void DefaultDestructor(void* memory) { ((glm::quat*)memory)->~glm::quat(); }
-void InitConstructor(float x, float y, float z, float w, void* memory) { new(memory) glm::quat(x,y,z,w); }
+void InitConstructor(float w, float x, float y, float z, void* memory) { new(memory) glm::quat(w,x,y,z); }
+void InitConstructor(float w, const glm::vec3& v, void* memory) { new(memory) glm::quat(w,v); }
 
-static glm::quat operator+(const glm::quat& a, const glm::quat& b) { return glm::quat(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w); }
-static glm::quat operator-(const glm::quat& a, const glm::quat& b) { return glm::quat(a.x - b.x, a.y - b.y, a.z - b.z, a.w - b.w); }
-static glm::quat operator*(const glm::quat& a, const glm::quat& b) { return glm::quat(a.x * b.x, a.y * b.y, a.z * b.z, a.w * b.w); }
-static glm::quat operator/(const glm::quat& a, const glm::quat& b) { return glm::quat(a.x / b.x, a.y / b.y, a.z / b.z, a.w / b.w); }
-static bool operator==(const glm::quat& a, const glm::quat& b) { return (a.x == b.x && a.y == b.y && a.z == b.z && a.w == b.w); }
+static glm::quat operator+(const glm::quat& a, const glm::quat& b) { return glm::quat(a.w + b.w, a.x + b.x, a.y + b.y, a.z + b.z); }
+static glm::quat operator-(const glm::quat& a, const glm::quat& b) { return glm::quat(a.w - b.w, a.x - b.x, a.y - b.y, a.z - b.z); }
+static glm::quat operator*(const glm::quat& a, const glm::quat& b) { return glm::quat(a.w * b.w, a.x * b.x, a.y * b.y, a.z * b.z); }
+static glm::quat operator/(const glm::quat& a, const glm::quat& b) { return glm::quat(a.w / b.w, a.x / b.x, a.y / b.y, a.z / b.z); }
+static bool operator==(const glm::quat& a, const glm::quat& b) { return (a.w == b.w && a.x == b.x && a.y == b.y && a.z == b.z); }
 
 // glm::vec3 * glm::quat
 static glm::vec3 TimesVec3(const glm::vec3& a, const glm::quat& b) { return a * b; }
@@ -186,7 +187,7 @@ static glm::vec3 TimesVec3(const glm::vec3& a, const glm::quat& b) { return a * 
 void RegisterGlmBindings(asIScriptEngine* engine)
 {
 	int r = 0;
-	
+
 	// glm::vec2
 	r = engine->RegisterObjectType("vec2", sizeof(glm::vec2), asOBJ_VALUE | asOBJ_POD | asOBJ_APP_CLASS_ALLFLOATS | asGetTypeTraits<glm::vec2>()); assert( r >= 0 );
 	r = engine->RegisterObjectProperty("vec2", "float x", asOFFSET(glm::vec2, x)); assert( r >= 0 );
@@ -424,7 +425,8 @@ void RegisterGlmBindings(asIScriptEngine* engine)
 	r = engine->RegisterObjectProperty("quat", "float w", asOFFSET(glm::quat, w)); assert( r >= 0 );
 	r = engine->RegisterObjectBehaviour("quat", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(glmquat::DefaultConstructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 	r = engine->RegisterObjectBehaviour("quat", asBEHAVE_CONSTRUCT, "void f(const quat &in)", asFUNCTION(glmquat::CopyConstructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
-	r = engine->RegisterObjectBehaviour("quat", asBEHAVE_CONSTRUCT, "void f(float, float, float)", asFUNCTION(glmquat::InitConstructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("quat", asBEHAVE_CONSTRUCT, "void f(float, float, float, float)", asFUNCTIONPR(glmquat::InitConstructor, (float, float, float, float, void*), void), asCALL_CDECL_OBJLAST); assert( r >= 0 );
+	r = engine->RegisterObjectBehaviour("quat", asBEHAVE_CONSTRUCT, "void f(float, const vec3& in)", asFUNCTIONPR(glmquat::InitConstructor, (float, const glm::vec3&, void*), void), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 	//r = engine->RegisterObjectBehaviour("quat", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(glmquat::DefaultDestructor), asCALL_CDECL_OBJLAST); assert( r >= 0 );
 	
 	r = engine->RegisterObjectMethod("quat", "quat opAdd_r(const quat& in) const", asFUNCTIONPR(glmquat::operator+, (const glm::quat&, const glm::quat&), glm::quat), asCALL_CDECL_OBJLAST); assert( r >= 0 );

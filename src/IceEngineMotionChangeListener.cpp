@@ -20,7 +20,7 @@ void IceEngineMotionChangeListener::update(const glm::vec3& position, const glm:
 	auto oc = entity_.component<ecs:: OrientationComponent>();
 
 	pc->position = position;
-	oc->orientation = glm::normalize( orientation );
+	oc->orientation = glm::normalize(orientation);
 
 	if (entity_.hasComponent<ecs::DirtyComponent>())
 	{

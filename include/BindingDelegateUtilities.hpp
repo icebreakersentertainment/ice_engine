@@ -7,6 +7,7 @@
 #include <list>
 #include <chrono>
 #include <future>
+#include <type_traits>
 
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
@@ -236,7 +237,21 @@ public:
 
 	static T& assignmentOperator(const T& other, T* v) { (*v) = other; return *v; }
 
-	static V get(T* v) { return v->get(); }
+    template <typename V1 = V>
+    static
+    typename std::enable_if<std::is_void<V1>::value, void>::type
+    get(const T* v) { v->get(); }
+
+    template <typename V1 = V>
+	static const
+    typename std::enable_if<std::is_pointer<V1>::value, V1>::type
+    get(const T* v) { return v->get(); }
+
+    template <typename V1 = V>
+	static const
+    typename std::enable_if<!std::is_void<V1>::value && !std::is_pointer<V1>::value, V1>::type&
+    get(const T* v) { return v->get(); }
+
 	static bool valid(T* v) { return v->valid(); }
 	static void wait(T* v) { v->wait(); }
 	static std::future_status wait_for(const std::chrono::seconds& s, T* v) { return v->wait_for(s); }
@@ -262,8 +277,23 @@ void registerSharedFutureBindings(scripting::IScriptingEngine* scriptingEngine, 
 
 	auto assignmentOperatorFunctionString = name + std::string("& opAssign(const ") + name + "& in)";
 	scriptingEngine->registerObjectMethod(name.c_str(), assignmentOperatorFunctionString.c_str(), asFUNCTION(SharedFutureBase::assignmentOperator), asCALL_CDECL_OBJLAST);
-	auto getFunctionString = type + " get()";
-	scriptingEngine->registerObjectMethod(name.c_str(), getFunctionString.c_str(), asFUNCTION(SharedFutureBase::get), asCALL_CDECL_OBJLAST);
+
+	if (type == "void")
+    {
+        auto getFunctionString = type + " get() const";
+        scriptingEngine->registerObjectMethod(name.c_str(), getFunctionString.c_str(), asFUNCTION(SharedFutureBase:: template get<>), asCALL_CDECL_OBJLAST);
+    }
+	else if (type.find("@") > 0)
+    {
+        auto getFunctionString = type + " get() const";
+        scriptingEngine->registerObjectMethod(name.c_str(), getFunctionString.c_str(), asFUNCTION(SharedFutureBase:: template get<>), asCALL_CDECL_OBJLAST);
+    }
+	else
+    {
+        auto getFunctionString = "const " + type + "& get() const";
+        scriptingEngine->registerObjectMethod(name.c_str(), getFunctionString.c_str(), asFUNCTION(SharedFutureBase:: template get<>), asCALL_CDECL_OBJLAST);
+    }
+
 	scriptingEngine->registerObjectMethod(name.c_str(), "bool valid() const", asFUNCTION(SharedFutureBase::valid), asCALL_CDECL_OBJLAST);
 	scriptingEngine->registerObjectMethod(name.c_str(), "void wait() const", asFUNCTION(SharedFutureBase::wait), asCALL_CDECL_OBJLAST);
 	scriptingEngine->registerObjectMethod(name.c_str(), "future_status wait_for(const chrono::seconds& in) const", asFUNCTION(SharedFutureBase::wait_for), asCALL_CDECL_OBJLAST);
@@ -376,6 +406,7 @@ void registerHandleBindings(scripting::IScriptingEngine* scriptingEngine, const 
 	scriptingEngine->registerClassMethod(name.c_str(), "uint64 id() const", asMETHODPR(T, id, () const, uint64));
 	scriptingEngine->registerClassMethod(name.c_str(), "uint32 index() const", asMETHODPR(T, index, () const, uint32));
 	scriptingEngine->registerClassMethod(name.c_str(), "uint32 version() const", asMETHODPR(T, version, () const, uint32));
+	scriptingEngine->registerClassMethod(name.c_str(), "bool valid() const", asMETHODPR(T, valid, () const, bool));
 	scriptingEngine->registerClassMethod(name.c_str(), "bool opImplConv() const", asMETHODPR(T, operator bool, () const, bool ));
 	scriptingEngine->registerClassMethod(name.c_str(), "bool opEquals(const " + name + "& in) const", asMETHODPR(T, operator==, (const T&) const, bool));
 }

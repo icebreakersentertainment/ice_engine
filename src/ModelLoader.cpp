@@ -326,7 +326,7 @@ namespace model
 //	return std::move(data);
 //}
 //
-//glm::mat4 convertAssImpMatrix(const aiMatrix4x4* m)
+//glm::mat4 toGlm(const aiMatrix4x4* m)
 //{
 //	return glm::mat4(
 //		m->a1, m->b1, m->c1, m->d1,
@@ -356,7 +356,7 @@ namespace model
 //	data.diffuse[3] = 1.0f;
 //	if ( AI_SUCCESS == aiGetMaterialColor(material, AI_MATKEY_COLOR_DIFFUSE, &c) )
 //	{
-//		utilities::color4ToVec4(&c, data.diffuse);
+//		utilities::toGlm(&c, data.diffuse);
 //	}
 //
 //	//utilities::setFloat4(c, 0.0f, 0.0f, 0.0f, 1.0f);
@@ -366,7 +366,7 @@ namespace model
 //	data.specular[3] = 1.0f;
 //	if ( AI_SUCCESS == aiGetMaterialColor(material, AI_MATKEY_COLOR_SPECULAR, &c) )
 //	{
-//		utilities::color4ToVec4(&c, data.specular);
+//		utilities::toGlm(&c, data.specular);
 //	}
 //
 //	//utilities::setFloat4(c, 0.2f, 0.2f, 0.2f, 1.0f);
@@ -376,7 +376,7 @@ namespace model
 //	data.ambient[3] = 1.0f;
 //	if ( AI_SUCCESS == aiGetMaterialColor(material, AI_MATKEY_COLOR_AMBIENT, &c) )
 //	{
-//		utilities::color4ToVec4(&c, data.ambient);
+//		utilities::toGlm(&c, data.ambient);
 //	}
 //
 //	//utilities::setFloat4(c, 0.0f, 0.0f, 0.0f, 1.0f);
@@ -386,7 +386,7 @@ namespace model
 //	data.emission[3] = 1.0f;
 //	if ( AI_SUCCESS == aiGetMaterialColor(material, AI_MATKEY_COLOR_EMISSIVE, &c) )
 //	{
-//		utilities::color4ToVec4(&c, data.emission);
+//		utilities::toGlm(&c, data.emission);
 //	}
 //
 //	logger->debug( "done importing material." );
@@ -429,7 +429,7 @@ namespace model
 //		}
 //
 //		boneData.boneIndexMap[data.name] = boneIndex;
-//		boneData.boneTransform[boneIndex].boneOffset = convertAssImpMatrix( &(mesh->mBones[i]->mOffsetMatrix) );
+//		boneData.boneTransform[boneIndex].boneOffset = toGlm( &(mesh->mBones[i]->mOffsetMatrix) );
 //	}
 //
 //	logger->debug( "done importing boneData." );
@@ -441,7 +441,7 @@ namespace model
 //{
 //	BoneNode boneNode = BoneNode();
 //	boneNode.name = std::string( node->mName.C_Str() );
-//	boneNode.transformation = convertAssImpMatrix( &(node->mTransformation) );
+//	boneNode.transformation = toGlm( &(node->mTransformation) );
 //
 //	for (uint32 i = 0; i < node->mNumChildren; i++)
 //	{
@@ -461,7 +461,7 @@ namespace model
 //	msg << "importing " << scene->mNumAnimations << " animation(s).";
 //	logger->debug( msg.str() );
 //
-//	glm::mat4 globalInverseTransformation = convertAssImpMatrix( &(scene->mRootNode->mTransformation) );
+//	glm::mat4 globalInverseTransformation = toGlm( &(scene->mRootNode->mTransformation) );
 //	globalInverseTransformation = glm::inverse( globalInverseTransformation );
 //
 //	animationSet.globalInverseTransformation = globalInverseTransformation;

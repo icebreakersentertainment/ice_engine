@@ -35,7 +35,6 @@ private:
 	mutable std::recursive_mutex audioMutex_;
 	mutable std::recursive_mutex imageMutex_;
 	mutable std::recursive_mutex modelMutex_;
-
 };
 
 }

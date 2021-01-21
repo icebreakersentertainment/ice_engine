@@ -9,7 +9,7 @@ void ResourceCache::addAudio(const std::string& name, std::unique_ptr<Audio> aud
 	
 	if (getAudio(name) != nullptr)
 	{
-		throw std::runtime_error("Audio with name '" + name + "' already exists.");
+		throw RuntimeException(detail::format("Audio with name '%s' already exists.", name));
 	}
 	
 	audios_[name] = std::move(audio);
@@ -21,7 +21,7 @@ void ResourceCache::addImage(const std::string& name, std::unique_ptr<Image> ima
 	
 	if (getImage(name) != nullptr)
 	{
-		throw std::runtime_error("Image with name '" + name + "' already exists.");
+		throw RuntimeException(detail::format("Image with name '%s' already exists.", name));
 	}
 	
 	images_[name] = std::move(image);
@@ -33,7 +33,7 @@ void ResourceCache::addModel(const std::string& name, std::unique_ptr<Model> mod
 	
 	if (getModel(name) != nullptr)
 	{
-		throw std::runtime_error("Model with name '" + name + "' already exists.");
+		throw RuntimeException(detail::format("Model with name '%s' already exists.", name));
 	}
 	
 	models_[name] = std::move(model);

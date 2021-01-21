@@ -38,7 +38,7 @@ public:
 	virtual void renderDebug(const PhysicsSceneHandle& physicsSceneHandle) = 0;
 
 	virtual PhysicsSceneHandle createPhysicsScene() = 0;
-	virtual void destroyPhysicsScene(const PhysicsSceneHandle& physicsSceneHandle) = 0;
+	virtual void destroy(const PhysicsSceneHandle& physicsSceneHandle) = 0;
 	
 	virtual void setGravity(const PhysicsSceneHandle& physicsSceneHandle, const glm::vec3& gravity) = 0;
 	
@@ -48,8 +48,8 @@ public:
 	virtual CollisionShapeHandle createStaticPlaneShape(const glm::vec3& planeNormal, const float32 planeConstant) = 0;
 	virtual CollisionShapeHandle createStaticBoxShape(const glm::vec3& dimensions) = 0;
 	virtual CollisionShapeHandle createStaticSphereShape(const float32 radius) = 0;
-	virtual CollisionShapeHandle createStaticTerrainShape(const IHeightfield* heightfield) = 0;
-	virtual void destroyStaticShape(const CollisionShapeHandle& collisionShapeHandle) = 0;
+	virtual CollisionShapeHandle createStaticTerrainShape(const IHeightfield& heightfield) = 0;
+	virtual void destroy(const CollisionShapeHandle& collisionShapeHandle) = 0;
 	virtual void destroyAllStaticShapes() = 0;
 	
 	virtual RigidBodyObjectHandle createRigidBodyObject(

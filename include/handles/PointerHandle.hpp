@@ -10,8 +10,10 @@ namespace ice_engine
 namespace handles
 {
 
+class BasePointerHandle {};
+
 template <typename T>
-class PointerHandle
+class PointerHandle : BasePointerHandle
 {
 public:
 	PointerHandle() = default;

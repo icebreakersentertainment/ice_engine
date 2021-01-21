@@ -3,7 +3,6 @@
 
 #include <glm/gtx/string_cast.hpp>
 
-#include <boost/format.hpp>
 #include <boost/exception/diagnostic_information.hpp>
 
 #include "scripting/angel_script/ScriptingEngine.hpp"
@@ -646,10 +645,7 @@ asIScriptObject* ScriptingEngine::callFunctionWithReturnValue(asIScriptContext* 
         if ( r == asEXECUTION_EXCEPTION )
         {
             // An exception occurred, let the script writer know what happened so it can be corrected.
-            msg = std::string("An exception occurred: ");
-            msg += GetExceptionInfo(context, true);
-            //msg += std::string(context->GetExceptionString());
-            throw Exception("ScriptEngine: " + msg);
+            throw Exception(detail::format("ScriptEngine: An exception occurred: %s is not valid.", GetExceptionInfo(context, true)));
         }
 
         assertNoAngelscriptError(r);
@@ -2354,15 +2350,15 @@ void ScriptingEngine::MessageCallback(const asSMessageInfo* msg, void* param)
 {
 	if ( msg->type == asMSGTYPE_WARNING )
 	{
-		LOG_WARN(logger_, boost::format("%s (%d, %d) : %s") % msg->section %  msg->row %  msg->col %  msg->message );
+		LOG_WARN(logger_, "%s (%d, %d) : %s", msg->section, msg->row, msg->col, msg->message);
 	}
 	else if ( msg->type == asMSGTYPE_INFORMATION )
 	{
-		LOG_INFO(logger_, boost::format("%s (%d, %d) : %s") % msg->section %  msg->row %  msg->col %  msg->message );
+		LOG_INFO(logger_, "%s (%d, %d) : %s", msg->section, msg->row, msg->col, msg->message);
 	}
 	else
 	{
-		LOG_ERROR(logger_, boost::format("%s (%d, %d) : %s") % msg->section %  msg->row %  msg->col %  msg->message );
+		LOG_ERROR(logger_, "%s (%d, %d) : %s", msg->section, msg->row, msg->col, msg->message);
 		printf("%s (%d, %d) : %s : %s\n", msg->section, msg->row, msg->col, "ERR", msg->message);
 	}
 }

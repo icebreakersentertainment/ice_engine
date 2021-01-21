@@ -8,7 +8,7 @@ namespace ice_engine
 namespace detail
 {
 
-#define ASSERT(condition) if (!(condition)) \
+#define ICE_ENGINE_ASSERT(condition) if (!(condition)) \
 { \
 	std::cerr << __FILE__ << " (" << __LINE__ << "): Assert " << #condition << " failed" << std::endl; \
 	std::abort(); \

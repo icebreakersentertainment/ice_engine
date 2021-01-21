@@ -130,7 +130,7 @@ private:
 		data.emission[3] = 1.0f;
 		if ( AI_SUCCESS == aiGetMaterialColor(material, AI_MATKEY_COLOR_EMISSIVE, &c) )
 		{
-			utilities::color4ToVec4(&c, data.emission);
+			utilities::toGlm(&c, data.emission);
 		}
 
 		logger->debug( "done importing material." );

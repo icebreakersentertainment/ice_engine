@@ -139,11 +139,8 @@ void SceneBindingDelegate::bind()
 		"const SceneStatistics@ getSceneStatistics()",
 		asMETHODPR(Scene, getSceneStatistics, () const, const SceneStatistics&)
 	);
-	scriptingEngine_->registerClassMethod(
-		"Scene",
-		"void setDebugRendering(const bool)",
-		asMETHODPR(Scene, setDebugRendering, (const bool), void )
-	);
+	scriptingEngine_->registerClassMethod("Scene", "void setDebugRendering(const bool)", asMETHOD(Scene, setDebugRendering));
+	scriptingEngine_->registerClassMethod("Scene", "bool debugRendering() const", asMETHOD(Scene, debugRendering));
 	scriptingEngine_->registerClassMethod("Scene", "CrowdHandle createCrowd(const NavigationMeshHandle& in, const CrowdConfig& in)", asMETHOD(Scene, createCrowd));
 	scriptingEngine_->registerClassMethod(
 		"Scene",

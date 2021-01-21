@@ -1,0 +1,90 @@
+@startuml
+
+'class Image
+'class Audio
+'class Model
+
+interface "IResourceLoader<T>" as IResourceLoader_t
+{
+    + std::unique_ptr<T> load(const std::string& name, const std::string& filename)
+}
+
+interface "IResourceImporter<T>" as IResourceImporter_t
+{
+    + std::unique_ptr<T> import(const std::string& name, const std::string& filename)
+}
+
+interface "IResourceLoader<Model>" as IResourceLoader_Image
+IResourceLoader_t <|-- IResourceLoader_Image
+
+interface "IResourceLoader<Audio>" as IResourceLoader_Audio
+IResourceLoader_t <|-- IResourceLoader_Audio
+
+interface "IResourceLoader<Model>" as IResourceLoader_Model
+IResourceLoader_t <|-- IResourceLoader_Model
+
+interface "IResourceImporter<Image>" as IResourceImporter_Image
+IResourceImporter_t <|-- IResourceImporter_Image
+
+interface "IResourceImporter<Audio>" as IResourceImporter_Audio
+IResourceImporter_t <|-- IResourceImporter_Audio
+
+interface "IResourceImporter<Model>" as IResourceImporter_Model
+IResourceImporter_t <|-- IResourceImporter_Model
+
+class "ResourceManager<T>" as ResourceManager_t
+{
+    - IResourceLoader<T>* loader_
+    - IResourceImporter<T>* importer_
+    - std::unordered_map<std::string, std::unique_ptr<T>> map_
+    - std::mutex mutex_
+
+    + T* import(const std::string& name, const std::string& filename)
+    + T* load(const std::string& name, const std::string& filename)
+    + void destroy(const std::string& name)
+    + void destroy(const T* image)
+    + void destroyAll()
+    + T* get(const std::string& name) const
+}
+
+class "ResourceManager<Image>" as ResourceManager_Image
+ResourceManager_t <|-- ResourceManager_Image
+
+class "ResourceManager<Audio>" as ResourceManager_Audio
+ResourceManager_t <|-- ResourceManager_Audio
+
+class "ResourceManager<Model>" as ResourceManager_Model
+ResourceManager_t <|-- ResourceManager_Model
+
+'class "EngineResourceCache<T>" as EngineResourceCache_t
+'{
+'    - std::unordered_map<std::string, T> map_
+'    - std::mutex mutex_
+'
+'    + void add(const std::string& name, const T& resource)
+'    + void remove(const std::string& name)
+'    + void removeAll()
+'    + bool exists(const std::string& name) const
+'    + const T& get(const std::string& name) const
+'    + const std::unordered_map<std::string, T>& map() const
+'}
+
+'class MeshHandle
+
+class "EngineResourceManager<T>" as EngineResourceManager_t
+{
+    - std::unordered_map <std::string, T> map_
+    - mutable std::recursive_mutex mutex_
+
+    + const T& create(const std::string& name, const Args& ...)
+    + void destroy(const std::string& name)
+    + void destroy(const T& resource)
+    + void destroyAll()
+    + bool exists(const std::string& name) const
+    + const T& get(const std::string& name) const
+}
+
+class "EngineResourceManager<MeshHandle>" as EngineResourceManager_MeshHandle
+EngineResourceManager_t <|-- EngineResourceManager_MeshHandle
+
+@enduml

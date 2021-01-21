@@ -2,6 +2,10 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/string_cast.hpp>
 
+#include "detail/Assert.hpp"
+
+#include "exceptions/RuntimeException.hpp"
+
 #include "Animate.hpp"
 
 namespace ice_engine
@@ -11,7 +15,7 @@ namespace
 
 uint32 findPosition(const float32 animationTime, const AnimatedBoneNode& animatedBoneNode, std::vector<uint32>& indexCache)
 {
-	assert(animatedBoneNode.positionTimes.size() > 0);
+	ICE_ENGINE_ASSERT(animatedBoneNode.positionTimes.size() > 0);
 	
 	//if (indexCache[0] >= animatedBoneNode.positionTimes.size())
 	//{
@@ -20,7 +24,7 @@ uint32 findPosition(const float32 animationTime, const AnimatedBoneNode& animate
 	
 	// Not all animated bone nodes have the same number of 'times', so sometimes the cache index value can
 	// be larger than the size, but that's ok, it will reset to a valid value once the second for loop runs.
-	//assert( indexCache[0] >= 0 && indexCache[0] < animatedBoneNode.positionTimes.size() );
+	//ICE_ENGINE_ASSERT( indexCache[0] >= 0 && indexCache[0] < animatedBoneNode.positionTimes.size() );
 	
 	// Search first from cache position
 //	for (uint32 i = indexCache[0]; i < animatedBoneNode.positionTimes.size() - 1; ++i)
@@ -42,12 +46,12 @@ uint32 findPosition(const float32 animationTime, const AnimatedBoneNode& animate
 		}
 	}
 
-	throw std::runtime_error(std::string("Unable to find appropriate position time - this shouldn't happen."));
+	throw RuntimeException("Unable to find appropriate position time - this shouldn't happen.");
 }
 
 uint32 findRotation(const float32 animationTime, const AnimatedBoneNode& animatedBoneNode, std::vector<uint32>& indexCache)
 {
-	assert(animatedBoneNode.rotationTimes.size() > 0);
+	ICE_ENGINE_ASSERT(animatedBoneNode.rotationTimes.size() > 0);
 	
 	//if (indexCache[1] >= animatedBoneNode.rotationTimes.size())
 	//{
@@ -56,7 +60,7 @@ uint32 findRotation(const float32 animationTime, const AnimatedBoneNode& animate
 	
 	// Not all animated bone nodes have the same number of 'times', so sometimes the cache index value can
 	// be larger than the size, but that's ok, it will reset to a valid value once the second for loop runs.
-	//assert( indexCache[1] >= 0 && indexCache[1] < animatedBoneNode.rotationTimes.size() );
+	//ICE_ENGINE_ASSERT( indexCache[1] >= 0 && indexCache[1] < animatedBoneNode.rotationTimes.size() );
 	
 	// Search first from cache position
 //	for (uint32 i = indexCache[1]; i < animatedBoneNode.rotationTimes.size() - 1; ++i)
@@ -78,13 +82,13 @@ uint32 findRotation(const float32 animationTime, const AnimatedBoneNode& animate
 		}
 	}
 
-	throw std::runtime_error(std::string("Unable to find appropriate rotation time - this shouldn't happen."));
+	throw RuntimeException("Unable to find appropriate rotation time - this shouldn't happen.");
 }
 
 
 uint32 findScaling(const float32 animationTime, const AnimatedBoneNode& animatedBoneNode, std::vector<uint32>& indexCache)
 {
-	assert(animatedBoneNode.scalingTimes.size() > 0);
+	ICE_ENGINE_ASSERT(animatedBoneNode.scalingTimes.size() > 0);
 	
 	//if (indexCache[2] >= animatedBoneNode.scalingTimes.size())
 	//{
@@ -93,7 +97,7 @@ uint32 findScaling(const float32 animationTime, const AnimatedBoneNode& animated
 	
 	// Not all animated bone nodes have the same number of 'times', so sometimes the cache index value can
 	// be larger than the size, but that's ok, it will reset to a valid value once the second for loop runs.
-	//assert( indexCache[2] >= 0 && indexCache[2] < animatedBoneNode.scalingTimes.size() );
+	//ICE_ENGINE_ASSERT( indexCache[2] >= 0 && indexCache[2] < animatedBoneNode.scalingTimes.size() );
 	
 	// Search first from cache position
 //	for (uint32 i = indexCache[2]; i < animatedBoneNode.scalingTimes.size() - 1; ++i)
@@ -115,7 +119,7 @@ uint32 findScaling(const float32 animationTime, const AnimatedBoneNode& animated
 		}
 	}
 
-	throw std::runtime_error(std::string("Unable to find appropriate scaling time - this shouldn't happen."));
+	throw RuntimeException("Unable to find appropriate scaling time - this shouldn't happen.");
 }
 
 glm::vec3 calcInterpolatedPosition(const float32 animationTime, const AnimatedBoneNode& animatedBoneNode, std::vector<uint32>& indexCache)
@@ -131,12 +135,12 @@ glm::vec3 calcInterpolatedPosition(const float32 animationTime, const AnimatedBo
 	const uint32 positionIndex = findPosition(animationTime, animatedBoneNode, indexCache);
 	const uint32 nextPositionIndex = (positionIndex + 1);
 	
-	assert(nextPositionIndex < animatedBoneNode.positionTimes.size());
+	ICE_ENGINE_ASSERT(nextPositionIndex < animatedBoneNode.positionTimes.size());
 	
 	const float32 deltaTime = (float32)(animatedBoneNode.positionTimes[nextPositionIndex] - animatedBoneNode.positionTimes[positionIndex]);
 	const float32 factor = (animationTime - (float32)animatedBoneNode.positionTimes[positionIndex]) / deltaTime;
 	
-	assert(factor >= 0.0f && factor <= 1.0f);
+	ICE_ENGINE_ASSERT(factor >= 0.0f && factor <= 1.0f);
 	const glm::vec3& start = animatedBoneNode.positions[positionIndex];
 	const glm::vec3& end = animatedBoneNode.positions[nextPositionIndex];
 	const glm::vec3 delta = end - start;
@@ -160,17 +164,17 @@ glm::quat calcInterpolatedRotation(const float32 animationTime, const AnimatedBo
 	const uint32 rotationIndex = findRotation(animationTime, animatedBoneNode, indexCache);
 	const uint32 nextRotationIndex = (rotationIndex + 1);
 	
-	assert(nextRotationIndex < animatedBoneNode.rotationTimes.size());
+	ICE_ENGINE_ASSERT(nextRotationIndex < animatedBoneNode.rotationTimes.size());
 	
 	const float32 deltaTime = (float32)(animatedBoneNode.rotationTimes[nextRotationIndex] - animatedBoneNode.rotationTimes[rotationIndex]);
 	const float32 factor = (animationTime - (float32)animatedBoneNode.rotationTimes[rotationIndex]) / deltaTime;
-	assert(factor >= 0.0f && factor <= 1.0f);
+	ICE_ENGINE_ASSERT(factor >= 0.0f && factor <= 1.0f);
 	const glm::quat& startRotationQuat = animatedBoneNode.rotations[rotationIndex];
 	const glm::quat& endRotationQuat   = animatedBoneNode.rotations[nextRotationIndex];
 	
 	result = glm::slerp(startRotationQuat, endRotationQuat, factor);
 	// TODO: I might not need to normalize the quaternion here...might already have been done in glm::mix??
-	result = glm::normalize( result );
+	result = glm::normalize(result);
 
 	return result;
 }
@@ -189,11 +193,11 @@ glm::vec3 calcInterpolatedScaling(const float32 animationTime, const AnimatedBon
 	const uint32 scalingIndex = findScaling(animationTime, animatedBoneNode, indexCache);
 	const uint32 nextScalingIndex = (scalingIndex + 1);
 	
-	assert(nextScalingIndex < animatedBoneNode.scalingTimes.size());
+	ICE_ENGINE_ASSERT(nextScalingIndex < animatedBoneNode.scalingTimes.size());
 	
 	const float32 deltaTime = (float32)(animatedBoneNode.scalingTimes[nextScalingIndex] - animatedBoneNode.scalingTimes[scalingIndex]);
 	const float32 factor = (animationTime - (float32)animatedBoneNode.scalingTimes[scalingIndex]) / deltaTime;
-	assert(factor >= 0.0f && factor <= 1.0f);
+	ICE_ENGINE_ASSERT(factor >= 0.0f && factor <= 1.0f);
 	const glm::vec3& start = animatedBoneNode.scalings[scalingIndex];
 	const glm::vec3& end   = animatedBoneNode.scalings[nextScalingIndex];
     const glm::vec3 delta = end - start;
@@ -220,48 +224,51 @@ glm::mat4 calculateNodeTransformation(const float32 animationTime, const Animate
 	return translationM * rotationM * scalingM;
 }
 
-void readNodeHeirarchy(std::vector<glm::mat4>& transformations, float32 animationTime, const glm::mat4& globalInverseTransform, const std::unordered_map< std::string, AnimatedBoneNode >& animatedBoneNodes, const BoneNode& rootBoneNode, const BoneData& boneData, const glm::mat4& parentTransform, std::vector<uint32>& indexCache)
+void readNodeHeirarchy(std::vector<glm::mat4>& transformations, const float32 animationTime, const glm::mat4& globalInverseTransform, const std::unordered_map< std::string, AnimatedBoneNode >& animatedBoneNodes, const BoneNode& rootBoneNode, const BoneData& boneData, const glm::mat4& parentTransform, std::vector<uint32>& indexCache)
 {
 	glm::mat4 nodeTransformation = glm::mat4( rootBoneNode.transformation );
 
 	{
-        const auto it = animatedBoneNodes.find( rootBoneNode.name );
+        const auto it = animatedBoneNodes.find(rootBoneNode.name);
 
-		if ( it != animatedBoneNodes.end() )
+		if (it != animatedBoneNodes.end())
 		{
 			const AnimatedBoneNode& animatedBoneNode = it->second;
-			const float32 animationTimeTemp = animationTime;
+//			const float32 animationTimeTemp = animationTime;
 
 			nodeTransformation = calculateNodeTransformation(animationTime, animatedBoneNode, indexCache);
 		}
 	}
 
-	glm::mat4 globalTransformation = parentTransform * nodeTransformation;
+	const glm::mat4 globalTransformation = parentTransform * nodeTransformation;
 
 	{
-        const auto it = boneData.boneIndexMap.find( rootBoneNode.name );
+        const auto it = boneData.boneIndexMap.find(rootBoneNode.name);
 
-		if ( it != boneData.boneIndexMap.end() )
+		if (it != boneData.boneIndexMap.end())
 		{
             const uint32 boneIndex = it->second;
 			transformations[boneIndex] = globalInverseTransform * globalTransformation * boneData.boneTransform[boneIndex].boneOffset;
 		}
 	}
 
-	for (uint32 i = 0; i < rootBoneNode.children.size(); ++i)
+    for (const auto& boneNode : rootBoneNode.children)
 	{
-		readNodeHeirarchy(transformations, animationTime, globalInverseTransform, animatedBoneNodes, rootBoneNode.children[i], boneData, globalTransformation, indexCache);
+		readNodeHeirarchy(transformations, animationTime, globalInverseTransform, animatedBoneNodes, boneNode, boneData, globalTransformation, indexCache);
 	}
 }
 
 void readNodeHeirarchy(std::vector<glm::mat4>& transformations, const float32 animationTime, const glm::mat4& globalInverseTransform, const std::unordered_map< std::string, AnimatedBoneNode >& animatedBoneNodes, const BoneNode& rootBoneNode, const BoneData& boneData, const uint32 startFrame, const uint32 endFrame, const glm::mat4& parentTransform, std::vector<uint32>& indexCache)
 {
 	glm::mat4 nodeTransformation = glm::mat4(rootBoneNode.transformation);
-	
-	{
-        const auto it = animatedBoneNodes.find( rootBoneNode.name );
 
-		if ( it != animatedBoneNodes.end() )
+	// animatedBoneNodes = Animation
+	// rootBoneNode = Joint
+
+	{
+        const auto it = animatedBoneNodes.find(rootBoneNode.name);
+
+		if (it != animatedBoneNodes.end())
 		{
 			const AnimatedBoneNode& animatedBoneNode = it->second;
 
@@ -273,11 +280,11 @@ void readNodeHeirarchy(std::vector<glm::mat4>& transformations, const float32 an
 					const float32 st = (float32)animatedBoneNode.positionTimes[startFrame];
                     const float32 et = (float32)animatedBoneNode.positionTimes[endFrame];
 
-//					std::cout << "A " << animationTimeTemp << " " << startFrame << " " << st << " " << endFrame << " " << et << std::endl;
+//					std::cout << "A " << clampedAnimationTime << " " << startFrame << " " << st << " " << endFrame << " " << et << std::endl;
 
-                    const float32 animationTimeTemp = fmod(animationTime, et - st) + st;
+                    const float32 clampedAnimationTime = fmod(animationTime, et - st) + st;
 
-//					std::cout << "B " << animationTimeTemp2 << " " << animationTimeTemp << " " << startFrame << " " << st << " " << endFrame << " " << et << std::endl;
+//					std::cout << "B " << animationTimeTemp2 << " " << clampedAnimationTime << " " << startFrame << " " << st << " " << endFrame << " " << et << std::endl;
 
 //					if (st == et)
 //					{
@@ -288,9 +295,9 @@ void readNodeHeirarchy(std::vector<glm::mat4>& transformations, const float32 an
 //						}
 //					}
 
-//					std::cout << "animationTimeTemp " << animationTimeTemp << std::endl;
+//					std::cout << "clampedAnimationTime " << clampedAnimationTime << std::endl;
 
-					nodeTransformation = calculateNodeTransformation(animationTimeTemp, animatedBoneNode, indexCache);
+					nodeTransformation = calculateNodeTransformation(clampedAnimationTime, animatedBoneNode, indexCache);
 				}
 			}
 			else
@@ -305,18 +312,18 @@ void readNodeHeirarchy(std::vector<glm::mat4>& transformations, const float32 an
     const glm::mat4 globalTransformation = parentTransform * nodeTransformation;
 
 	{
-        const auto it = boneData.boneIndexMap.find( rootBoneNode.name );
+        const auto it = boneData.boneIndexMap.find(rootBoneNode.name);
 
-		if ( it != boneData.boneIndexMap.end() )
+		if (it != boneData.boneIndexMap.end())
 		{
-			uint32 boneIndex = it->second;
+            const uint32 boneIndex = it->second;
 			transformations[boneIndex] = globalInverseTransform * globalTransformation * boneData.boneTransform[boneIndex].boneOffset;
 		}
 	}
-	
-	for (uint32 i = 0; i < rootBoneNode.children.size(); ++i)
+
+	for (const auto& boneNode : rootBoneNode.children)
 	{
-		readNodeHeirarchy(transformations, animationTime, globalInverseTransform, animatedBoneNodes, rootBoneNode.children[i], boneData, startFrame, endFrame, globalTransformation, indexCache);
+		readNodeHeirarchy(transformations, animationTime, globalInverseTransform, animatedBoneNodes, boneNode, boneData, startFrame, endFrame, globalTransformation, indexCache);
 	}
 }
 
@@ -336,28 +343,28 @@ void animateSkeleton(std::vector<glm::mat4>& transformations, const glm::mat4& g
 
 void animateSkeleton(std::vector<glm::mat4>& transformations, const glm::mat4& globalInverseTransformation, const std::unordered_map< std::string, AnimatedBoneNode >& animatedBoneNodes, const BoneNode& rootBoneNode, const BoneData& boneData, const float64 duration, const float64 ticksPerSecond, const float32 runningTime, std::vector<uint32>& indexCache)
 {
-	assert(transformations.size() >= boneData.boneTransform.size());
-	assert(indexCache.size() == 3);
+	ICE_ENGINE_ASSERT(transformations.size() >= boneData.boneTransform.size());
+	ICE_ENGINE_ASSERT(indexCache.size() == 3);
 
     const float32 timeInTicks = runningTime * ticksPerSecond;
 	const float32 animationTime = fmod(timeInTicks, (float32)duration);
 
 //	std::cout << animationTime << std::endl;
 
-	readNodeHeirarchy( transformations, animationTime, globalInverseTransformation, animatedBoneNodes, rootBoneNode, boneData, glm::mat4(), indexCache );
+	readNodeHeirarchy( transformations, animationTime, globalInverseTransformation, animatedBoneNodes, rootBoneNode, boneData, glm::mat4(1.0f), indexCache );
 }
 
 void animateSkeleton(std::vector<glm::mat4>& transformations, const glm::mat4& globalInverseTransformation, const std::unordered_map< std::string, AnimatedBoneNode >& animatedBoneNodes, const BoneNode& rootBoneNode, const BoneData& boneData, const float64 duration, const float64 ticksPerSecond, const float32 runningTime, std::vector<uint32>& indexCache, const uint32 startFrame, const uint32 endFrame)
 {
-	assert(transformations.size() >= boneData.boneTransform.size());
-	assert(indexCache.size() == 3);
+	ICE_ENGINE_ASSERT(transformations.size() >= boneData.boneTransform.size());
+	ICE_ENGINE_ASSERT(indexCache.size() == 3);
 
     const float32 timeInTicks = runningTime * ticksPerSecond;
 	const float32 animationTime = fmod(timeInTicks, (float32)duration);
 
 //	std::cout << animationTime << std::endl;
 
-	readNodeHeirarchy( transformations, animationTime, globalInverseTransformation, animatedBoneNodes, rootBoneNode, boneData, startFrame, endFrame, glm::mat4(), indexCache );
+	readNodeHeirarchy( transformations, animationTime, globalInverseTransformation, animatedBoneNodes, rootBoneNode, boneData, startFrame, endFrame, glm::mat4(1.0f), indexCache );
 }
 
 }

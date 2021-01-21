@@ -56,7 +56,7 @@ public:
 		std::string name,
 		float64 duration,
 		float64 ticksPerSecond,
-		std::unordered_map< std::string, AnimatedBoneNode > animatedBoneNodes
+		std::unordered_map<std::string, AnimatedBoneNode> animatedBoneNodes
 	)
 	:
 		name_(std::move(name)),

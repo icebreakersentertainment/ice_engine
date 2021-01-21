@@ -22,7 +22,7 @@ struct OrientationComponent
 	
 	static uint8 id()  { return 2; }
 
-	glm::quat orientation;
+	glm::quat orientation = glm::quat(1.0f, 0.0f, 0.0f, 0.0f);
 };
 
 }

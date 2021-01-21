@@ -70,20 +70,28 @@ public:
 	virtual void endRender() = 0;
 
 	virtual RenderSceneHandle createRenderScene() = 0;
-	virtual void destroyRenderScene(const RenderSceneHandle& renderSceneHandle) = 0;
+	virtual bool valid(const RenderSceneHandle& renderSceneHandle) const = 0;
+	virtual void destroy(const RenderSceneHandle& renderSceneHandle) = 0;
 
 	virtual CameraHandle createCamera(const glm::vec3& position, const glm::vec3& lookAt = glm::vec3(0.0f, 0.0f, 0.0f)) = 0;
+    virtual bool valid(const CameraHandle& cameraHandle) const = 0;
+    virtual void destroy(const CameraHandle& cameraHandle) = 0;
 
 	virtual PointLightHandle createPointLight(const RenderSceneHandle& renderSceneHandle, const glm::vec3& position) = 0;
+	virtual bool valid(const RenderSceneHandle& renderSceneHandle, const PointLightHandle& pointLightHandle) const = 0;
 	virtual void destroy(const RenderSceneHandle& renderSceneHandle, const PointLightHandle& pointLightHandle) = 0;
 
-	virtual MeshHandle createStaticMesh(const IMesh* mesh) = 0;
-	virtual MeshHandle createDynamicMesh(const IMesh* mesh) = 0;
+	virtual MeshHandle createStaticMesh(const IMesh& mesh) = 0;
+	virtual MeshHandle createDynamicMesh(const IMesh& mesh) = 0;
+    virtual bool valid(const MeshHandle& meshHandle) const = 0;
+    virtual void destroy(const MeshHandle& meshHandle) = 0;
 
-	virtual SkeletonHandle createSkeleton(const MeshHandle& meshHandle, const ISkeleton* skelton) = 0;
+	virtual SkeletonHandle createSkeleton(const MeshHandle& meshHandle, const ISkeleton& skeleton) = 0;
+    virtual bool valid(const SkeletonHandle& skeletonHandle) const = 0;
 	virtual void destroy(const SkeletonHandle& skeletonHandle) = 0;
 
 	virtual BonesHandle createBones(const uint32 maxNumberOfBones) = 0;
+    virtual bool valid(const BonesHandle& bonesHandle) const = 0;
 	virtual void destroy(const BonesHandle& bonesHandle) = 0;
 
 	virtual void attach(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle, const BonesHandle& bonesHandle) = 0;
@@ -98,18 +106,24 @@ public:
 	) = 0;
 	virtual void detachBoneAttachment(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle) = 0;
 
-	virtual TextureHandle createTexture2d(const ITexture* texture) = 0;
+	virtual TextureHandle createTexture2d(const ITexture& texture) = 0;
+    virtual bool valid(const TextureHandle& textureHandle) const = 0;
+    virtual void destroy(const TextureHandle& textureHandle) = 0;
 
-	virtual MaterialHandle createMaterial(const IPbrMaterial* pbrMaterial) = 0;
+	virtual MaterialHandle createMaterial(const IPbrMaterial& pbrMaterial) = 0;
+    virtual bool valid(const MaterialHandle& materialHandle) const = 0;
+    virtual void destroy(const MaterialHandle& materialHandle) = 0;
 
 	virtual TerrainHandle createStaticTerrain(
-			const IHeightMap* heightMap,
-			const ISplatMap* splatMap,
-			const IDisplacementMap* displacementMap
+            const IHeightMap& heightMap,
+            const ISplatMap& splatMap,
+            const IDisplacementMap& displacementMap
 		) = 0;
+    virtual bool valid(const TerrainHandle& terrainHandle) const = 0;
 	virtual void destroy(const TerrainHandle& terrainHandle) = 0;
 
 	virtual SkyboxHandle createStaticSkybox(const IImage& back, const IImage& down, const IImage& front, const IImage& left, const IImage& right, const IImage& up) = 0;
+    virtual bool valid(const SkyboxHandle& skyboxHandle) const = 0;
 	virtual void destroy(const SkyboxHandle& skyboxHandle) = 0;
 
 	virtual VertexShaderHandle createVertexShader(const std::string& data) = 0;
@@ -120,10 +134,10 @@ public:
 	virtual bool valid(const FragmentShaderHandle& shaderHandle) const = 0;
 	virtual bool valid(const TessellationControlShaderHandle& shaderHandle) const = 0;
 	virtual bool valid(const TessellationEvaluationShaderHandle& shaderHandle) const = 0;
-	virtual void destroyShader(const VertexShaderHandle& shaderHandle) = 0;
-	virtual void destroyShader(const FragmentShaderHandle& shaderHandle) = 0;
-	virtual void destroyShader(const TessellationControlShaderHandle& shaderHandle) = 0;
-	virtual void destroyShader(const TessellationEvaluationShaderHandle& shaderHandle) = 0;
+	virtual void destroy(const VertexShaderHandle& shaderHandle) = 0;
+	virtual void destroy(const FragmentShaderHandle& shaderHandle) = 0;
+	virtual void destroy(const TessellationControlShaderHandle& shaderHandle) = 0;
+	virtual void destroy(const TessellationEvaluationShaderHandle& shaderHandle) = 0;
 	virtual ShaderProgramHandle createShaderProgram(const VertexShaderHandle& vertexShaderHandle, const FragmentShaderHandle& fragmentShaderHandle) = 0;
 	virtual ShaderProgramHandle createShaderProgram(
 		const VertexShaderHandle& vertexShaderHandle,
@@ -132,7 +146,7 @@ public:
 		const FragmentShaderHandle& fragmentShaderHandle
 	) = 0;
 	virtual bool valid(const ShaderProgramHandle& shaderProgramHandle) const = 0;
-	virtual void destroyShaderProgram(const ShaderProgramHandle& shaderProgramHandle) = 0;
+	virtual void destroy(const ShaderProgramHandle& shaderProgramHandle) = 0;
 
 	virtual RenderableHandle createRenderable(
 		const RenderSceneHandle& renderSceneHandle,
@@ -151,15 +165,18 @@ public:
 		const glm::quat& orientation,
 		const glm::vec3& scale = glm::vec3(1.0f)
 	) = 0;
+    virtual bool valid(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle) const = 0;
 	virtual void destroy(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle) = 0;
 
 	virtual TerrainRenderableHandle createTerrainRenderable(
 		const RenderSceneHandle& renderSceneHandle,
 		const TerrainHandle& terrainHandle
 	) = 0;
+    virtual bool valid(const RenderSceneHandle& renderSceneHandle, const TerrainRenderableHandle& terrainRenderableHandle) const = 0;
 	virtual void destroy(const RenderSceneHandle& renderSceneHandle, const TerrainRenderableHandle& terrainRenderableHandle) = 0;
 
 	virtual SkyboxRenderableHandle createSkyboxRenderable(const RenderSceneHandle& renderSceneHandle, const SkyboxHandle& skyboxHandle) = 0;
+    virtual bool valid(const RenderSceneHandle& renderSceneHandle, const SkyboxRenderableHandle& skyboxRenderableHandle) const = 0;
 	virtual void destroy(const RenderSceneHandle& renderSceneHandle, const SkyboxRenderableHandle& skyboxRenderableHandle) = 0;
 
 	virtual void rotate(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle, const glm::quat& quaternion, const TransformSpace& relativeTo = TransformSpace::TS_LOCAL) = 0;

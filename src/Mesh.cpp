@@ -3,6 +3,7 @@
 #include "Mesh.hpp"
 
 #include "detail/AssImpUtilities.hpp"
+#include "detail/Assert.hpp"
 
 namespace ice_engine
 {
@@ -13,13 +14,13 @@ void VertexBoneData::import(const std::string& name, const std::string& filename
     boneWeights_.resize(numberOfVertices);
 
     // Load bone data
-    for (uint32 i = 0; i < mesh->mNumBones; i++)
+    for (uint32 i = 0; i < mesh->mNumBones; ++i)
     {
-        auto it = boneData.boneIndexMap.find(mesh->mBones[i]->mName.C_Str());
+        const auto it = boneData.boneIndexMap.find(mesh->mBones[i]->mName.C_Str());
 
         if (it == boneData.boneIndexMap.end()) continue;
 
-        uint32 boneIndex = it->second;
+        const uint32 boneIndex = it->second;
 
         for (uint32 j = 0; j < mesh->mBones[i]->mNumWeights; ++j)
         {
@@ -33,7 +34,8 @@ void VertexBoneData::import(const std::string& name, const std::string& filename
                     boneIds_[vertexID][i] = boneIndex;
                     boneWeights_[vertexID][i] = weight;
 
-                    assert( boneWeights_[vertexID][0] + boneWeights_[vertexID][1] + boneWeights_[vertexID][2] + boneWeights_[vertexID][3] >= 1.01f );
+//                    assert(boneWeights_[vertexID][0] + boneWeights_[vertexID][1] + boneWeights_[vertexID][2] + boneWeights_[vertexID][3] >= 1.01f);
+//                    ICE_ENGINE_ASSERT(boneWeights_[vertexID][0] + boneWeights_[vertexID][1] + boneWeights_[vertexID][2] + boneWeights_[vertexID][3] <= 1.0f);
 
                     break;
                 }
@@ -44,7 +46,7 @@ void VertexBoneData::import(const std::string& name, const std::string& filename
 
 void Mesh::importBones(const std::string& name, const std::string& filename, uint32 index, const aiMesh* mesh, logger::ILogger* logger, fs::IFileSystem* fileSystem)
 {
-    assert(mesh != nullptr);
+    ICE_ENGINE_ASSERT(mesh != nullptr);
 
     boneData_ = BoneData();
 
@@ -57,11 +59,11 @@ void Mesh::importBones(const std::string& name, const std::string& filename, uin
         // Set the bone name
         if (mesh->mBones[i]->mName.length > 0)
         {
-            data.name = std::string( mesh->mBones[i]->mName.C_Str() );
+            data.name = std::string(mesh->mBones[i]->mName.C_Str());
         }
         else
         {
-            data.name = std::string( name ) + "_bone_" + std::to_string(index);
+            data.name = detail::format("%s_bone_%s", name, index);
         }
 
         LOG_DEBUG(logger, "Found bone with name '%s' for model '%s'." , data.name, name);
@@ -77,7 +79,7 @@ void Mesh::importBones(const std::string& name, const std::string& filename, uin
         }
 
         boneData_.boneIndexMap[data.name] = boneIndex;
-        boneData_.boneTransform[boneIndex].boneOffset = detail::convertAssImpMatrix( &(mesh->mBones[i]->mOffsetMatrix) );
+        boneData_.boneTransform[boneIndex].boneOffset = detail::toGlm(mesh->mBones[i]->mOffsetMatrix);
     }
 
     LOG_DEBUG(logger, "Done importing boneData for mesh '%s' for model '%s'." , filename, name);
@@ -92,11 +94,11 @@ void Mesh::import(const std::string& name, const std::string& filename, const ui
     // Set the mesh name
     if (mesh->mName.length > 0)
     {
-        name_ = std::string( mesh->mName.C_Str() );
+        name_ = std::string(mesh->mName.C_Str());
     }
     else
     {
-        name_ = name + "_mesh_" + std::to_string(index);
+        name_ = detail::format("%s_mesh_%s", name, index);
     }
 
     LOG_DEBUG(logger, "Mesh name is '%s' for model '%s'." , name_, name);
@@ -113,37 +115,31 @@ void Mesh::import(const std::string& name, const std::string& filename, const ui
     textureCoordinates_.resize(mesh->mNumVertices);
     colors_.resize(mesh->mNumVertices);
 
-    for ( uint32 i = 0; i < mesh->mNumVertices; i++ )
+    for (uint32 i = 0; i < mesh->mNumVertices; ++i)
     {
-        vertices_[i] = glm::vec3(mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z);
-        normals_[i] = glm::vec3(mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z);
+        vertices_[i] = detail::toGlm(mesh->mVertices[i]);
+        normals_[i] = detail::toGlm(mesh->mNormals[i]);
 
-        if ( mesh->HasTextureCoords(0))
+        if (mesh->HasTextureCoords(0))
         {
             textureCoordinates_[i] = glm::vec2(mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y);
         }
 
-        if ( mesh->mColors[0] != 0 )
+        if (mesh->mColors[0] != 0)
         {
-            colors_[i] = glm::vec4(
-                    (float)mesh->mColors[0][i].a,
-                    (float)mesh->mColors[0][i].b,
-                    (float)mesh->mColors[0][i].g,
-                    (float)mesh->mColors[0][i].r
-            );
+            colors_[i] = detail::toGlm(mesh->mColors[0][i]);
         }
     }
 
     indices_.reserve(mesh->mNumVertices);
 
-    for ( uint32 i = 0; i < mesh->mNumFaces; i++ )
+    for (uint32 i = 0; i < mesh->mNumFaces; ++i)
     {
         const aiFace& face = mesh->mFaces[i];
 
-        if ( face.mNumIndices != 3 )
+        if (face.mNumIndices != 3)
         {
-            const auto msg = std::string("Unable to import model...Unsupported number of indices per face (") + std::to_string(face.mNumIndices) + std::string(").");
-            throw RuntimeException(msg);
+            throw RuntimeException(detail::format("Unable to import model...Unsupported number of indices per face (%s).", face.mNumIndices));
         }
 
         indices_.push_back(face.mIndices[0]);
@@ -156,7 +152,7 @@ void Mesh::import(const std::string& name, const std::string& filename, const ui
     // If we have any bones, load them
     if (mesh->mNumBones > 0)
     {
-        vertexBoneData_ = VertexBoneData( name, filename, index, mesh, boneData_, static_cast<uint32>(vertices_.size()), logger, fileSystem );
+        vertexBoneData_ = VertexBoneData(name, filename, index, mesh, boneData_, static_cast<uint32>(vertices_.size()), logger, fileSystem);
     }
 
     //std::cout << "Load results: " << mesh->mNumVertices << " " << mesh->mNumBones << " " << temp << " " << data.bones.size() << std::endl;

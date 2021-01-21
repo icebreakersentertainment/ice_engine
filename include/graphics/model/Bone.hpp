@@ -16,7 +16,7 @@ namespace model
 struct Bone
 {
 	std::string name;
-	glm::mat4 boneOffset;
+	glm::mat4 boneOffset = glm::mat4(1.0f);
 };
 
 }

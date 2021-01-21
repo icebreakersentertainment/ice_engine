@@ -6,6 +6,7 @@
 #include <assimp/DefaultLogger.hpp>
 #include <assimp/IOStream.hpp>
 #include <assimp/IOSystem.hpp>
+#include <assimp/version.h>
 
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
@@ -13,6 +14,9 @@
 #include <glm/gtx/string_cast.hpp>
 
 #include "Model.hpp"
+
+#include "detail/Format.hpp"
+#include "detail/Assert.hpp"
 
 #include "exceptions/RuntimeException.hpp"
 
@@ -134,7 +138,7 @@ public:
 
 		if (strlen(pMode) > 1 && pMode[1] == 'b') flags |= fs::FileFlags::BINARY;
 
-		return new IoStream( fileSystem_->open(pFile, flags) );
+		return new IoStream(fileSystem_->open(pFile, flags));
 	}
 
 	void Close(Assimp::IOStream* pFile) override
@@ -198,7 +202,7 @@ private:
 void Model::import(const std::string& filename, IResourceCache* resourceCache,
 		logger::ILogger* logger, fs::IFileSystem* fileSystem)
 {
-	auto name = fileSystem->getFilenameWithoutExtension(filename);
+	const auto name = fileSystem->getFilenameWithoutExtension(filename);
 
     LOG_DEBUG(logger, "Importing model '%s' - %s.", name, filename);
 
@@ -215,7 +219,19 @@ void Model::import(const std::string& filename, IResourceCache* resourceCache,
 	{
         Assimp::Importer importer;
 
-        Assimp::DefaultLogger::create("", Assimp::Logger::VERBOSE);
+        std::string extensionsSupported;
+        importer.GetExtensionList(extensionsSupported);
+
+        LOG_DEBUG(logger, "Importing using AssImp version %s.%s.%s", aiGetVersionMajor(), aiGetVersionMinor(), aiGetVersionRevision());
+        LOG_DEBUG(logger, "Supported extensions are %s", extensionsSupported);
+
+#if defined(DEBUG) || defined(ICEENGINE_ENABLE_DEBUG_LOGGING)
+        Assimp::Logger::LogSeverity logSeverity = Assimp::Logger::LogSeverity::VERBOSE;
+#else
+        Assimp::Logger::LogSeverity logSeverity = Assimp::Logger::LogSeverity::NORMAL;
+#endif
+
+        Assimp::DefaultLogger::create("", logSeverity);
         Assimp::DefaultLogger::set(new Logger(logger));
 
 		importer.SetIOHandler(new IoSystem(fileSystem));
@@ -227,9 +243,7 @@ void Model::import(const std::string& filename, IResourceCache* resourceCache,
 		// Error checking
 		if (scene == nullptr)
 		{
-			std::stringstream ss;
-			ss << "Unable to import model data from file '" << filename << "': " << importer.GetErrorString();
-			throw RuntimeException(ss.str());
+			throw RuntimeException(detail::format("Unable to import model data from file '%s': %s", filename, importer.GetErrorString()));
 		}
 		else if (scene->HasTextures())
 		{
@@ -281,22 +295,22 @@ void Model::import(const std::string& filename, IResourceCache* resourceCache,
 
         LOG_DEBUG(logger, "Model '%s' has %s meshes.", name, meshes_.size());
 
-		for (uint32 i=0; i < meshes_.size(); i++)
+		for (size_t i=0; i < meshes_.size(); ++i)
 		{
 //				meshes_[i] = Mesh();
 //				materials[i] = Material();
 //				textures_[i] = Texture();
 //				boneData[i] = BoneData();
 
-			meshes_[i] = Mesh( name, filename, i, scene->mMeshes[i], logger, fileSystem );
-//				materials[i] = importMaterial( name, filename, i, scene->mMaterials[ scene->mMeshes[i]->mMaterialIndex ], logger, fileSystem );
-			textures_[i] = Texture( name, filename, i, scene->mMaterials[ scene->mMeshes[i]->mMaterialIndex ], resourceCache, logger, fileSystem );
+			meshes_[i] = Mesh(name, filename, i, scene->mMeshes[i], logger, fileSystem);
+//				materials[i] = importMaterial(name, filename, i, scene->mMaterials[ scene->mMeshes[i]->mMaterialIndex ], logger, fileSystem);
+			textures_[i] = Texture(name, filename, i, scene->mMaterials[ scene->mMeshes[i]->mMaterialIndex ], resourceCache, logger, fileSystem);
 		}
 
 		bool hasTextures = false;
-		for ( uint32 i=0; i < meshes_.size(); i++ )
+		for (const auto& texture : textures_)
 		{
-			if (textures_[i].name() != std::string(""))
+			if (texture.name() != std::string(""))
 			{
 				hasTextures = true;
 				break;
@@ -305,7 +319,7 @@ void Model::import(const std::string& filename, IResourceCache* resourceCache,
 
 		if (!hasTextures)
 		{
-            LOG_WARN(logger, "Model '%s' does not have any texture - either assign it a texture, or use a shader that doesn't need textures.", name);
+            LOG_WARN(logger, "Model '%s' does not have any textures - either assign it a texture, or use a shader that doesn't need textures.", name);
 		}
 
         LOG_DEBUG(logger, "Done importing model '%s'.", name);
@@ -349,18 +363,18 @@ void Model::importAnimations(const std::string& name,
 		const std::string& filename, const aiScene* scene,
 		logger::ILogger* logger, fs::IFileSystem* fileSystem)
 {
-	assert(scene != nullptr);
+    ICE_ENGINE_ASSERT(scene != nullptr);
 
     LOG_DEBUG(logger, "Importing %s animation(s) for model '%s'.", scene->mNumAnimations, name);
 
-	for (uint32 i = 0; i < scene->mNumAnimations; i++)
+	for (uint32 i = 0; i < scene->mNumAnimations; ++i)
 	{
 		auto animation = Animation(name, filename, scene->mAnimations[i], logger, fileSystem);
 
 		// Add animation to animation data
-		if( animations_.find( animation.name() ) == animations_.end() )
+		if (animations_.find(animation.name()) == animations_.end())
 		{
-			animations_[ animation.name() ] = std::move(animation);
+			animations_[animation.name()] = std::move(animation);
 		}
 		else
 		{

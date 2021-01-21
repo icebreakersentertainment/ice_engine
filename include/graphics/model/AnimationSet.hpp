@@ -23,7 +23,7 @@ struct AnimationSet
 	
 	BoneNode rootBoneNode;
 	std::unordered_map< std::string, Animation > animations;
-	glm::mat4 globalInverseTransformation;
+	glm::mat4 globalInverseTransformation = glm::mat4(1.0f);
 };
 
 }

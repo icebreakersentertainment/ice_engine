@@ -50,6 +50,8 @@
 
 #include "GameEngine.hpp"
 
+#include "resources/EngineResourceManager.MeshHandle.hpp"
+
 #include "noise/Noise.hpp"
 
 namespace ice_engine
@@ -139,6 +141,102 @@ void registerUniquePtrBindings(scripting::IScriptingEngine* scriptingEngine, con
 	// scriptingEngine->registerClassMethod(name.c_str(), "const " + scriptTypeName + "@+ get() const", asMETHODPR(T, get, () const, void*));
 	// scriptingEngine->registerClassMethod(name.c_str(), "bool opImplConv() const", asMETHODPR(T, operator bool, () const, bool ));
 	// scriptingEngine->registerClassMethod(name.c_str(), "bool opEquals(const " + name + "& in) const", asMETHODPR(T, operator==, (const T&) const, bool));
+}
+
+template<typename T>
+class TemplateTypeRegisterHelper
+{
+public:
+    static void DefaultConstructor(T* memory) { new(memory) T(); }
+
+    static void InitConstructor(T* memory, const uint64 id) { new(memory) T(id); }
+
+    static void CopyConstructor(T* memory, const T& other) { new(memory) T(other); }
+    static void DefaultDestructor(T* memory) { ((T*)memory)->~T(); }
+};
+
+/**
+ * Register our template type bindings.
+ */
+template<typename T = std::nullptr_t>
+void registerTemplateTypeBindings(scripting::IScriptingEngine* scriptingEngine, const std::string& name, const std::string& scriptTypeName, const asDWORD objectTypeFlags = asOBJ_REF | asOBJ_NOCOUNT, const asEObjTypeFlags objectTypeTraitsFlag = asOBJ_APP_CLASS_ALLINTS)
+{
+    const int32 size = objectTypeFlags & asOBJ_REF ? 0 : sizeof(T);
+    const asDWORD typeFlags = objectTypeFlags | asOBJ_TEMPLATE | (objectTypeFlags & asOBJ_REF ? 0 : objectTypeTraitsFlag | asGetTypeTraits<T>());
+    scriptingEngine->registerObjectType(name.c_str(), size, typeFlags);
+
+    if ((objectTypeFlags & asOBJ_NOCOUNT) == 0)
+    {
+//        scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(TemplateTypeRegisterHelper::DefaultConstructor), asCALL_CDECL_OBJFIRST);
+//    	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f(ref@)", asFUNCTION(HandleBase::InitConstructor), asCALL_CDECL_OBJFIRST);
+//    	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f(const " + name + "& in)", asFUNCTION(HandleBase::CopyConstructor), asCALL_CDECL_OBJFIRST);
+    }
+}
+
+/**
+ * Register our template type specialization bindings.
+ */
+template<typename T = std::nullptr_t>
+void registerTemplateTypeSpecializationBindings(scripting::IScriptingEngine* scriptingEngine, const std::string& name, const std::string& scriptTypeName, const asDWORD objectTypeFlags = asOBJ_REF | asOBJ_NOCOUNT, const asEObjTypeFlags objectTypeTraitsFlag = asOBJ_APP_CLASS_ALLINTS)
+{
+    const int32 size = objectTypeFlags & asOBJ_REF ? 0 : sizeof(T);
+    const asDWORD typeFlags = objectTypeFlags | (objectTypeFlags & asOBJ_REF ? 0 : objectTypeTraitsFlag | asGetTypeTraits<T>());
+    scriptingEngine->registerObjectType(name.c_str(), size, typeFlags);
+
+    if ((objectTypeFlags & asOBJ_NOCOUNT) == 0)
+    {
+//        scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(TemplateTypeRegisterHelper::DefaultConstructor), asCALL_CDECL_OBJFIRST);
+//    	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f(ref@)", asFUNCTION(HandleBase::InitConstructor), asCALL_CDECL_OBJFIRST);
+//    	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f(const " + name + "& in)", asFUNCTION(HandleBase::CopyConstructor), asCALL_CDECL_OBJFIRST);
+    }
+}
+
+/**
+ * Register our EngineResourceManager template type bindings.
+ */
+void registerEngineResourceManagerTemplateTypeBindings(scripting::IScriptingEngine* scriptingEngine)
+{
+    const std::string className = "EngineResourceManager<class T>";
+    registerTemplateTypeBindings(scriptingEngine, className.c_str(), "IFile");
+}
+
+//template class EngineResourceManager<graphics::MeshHandle>;
+//template const graphics::MeshHandle& EngineResourceManager<graphics::MeshHandle>::create(const std::string&, const graphics::IMesh&);
+
+//template<typename T>
+//class EngineResourceManagerTemplateTypeRegisterHelper
+//{
+//public:
+//    static const graphics::MeshHandle& create(EngineResourceManager<graphics::MeshHandle>* engineResourceManager, const std::string& name, const graphics::IMesh& mesh)
+//    {
+//        printf("TRYING...\n");
+//        return engineResourceManager->create(name, mesh);
+//    }
+//};
+
+/**
+ * Register our EngineResourceManager template type specialization bindings.
+ */
+template<typename T>
+void registerEngineResourceManagerTemplateTypeSpecializationBindings(scripting::IScriptingEngine* scriptingEngine, const std::string& name)
+{
+    const std::string className = detail::format("EngineResourceManager<%s>", name);
+//    registerTemplateTypeBindings(scriptingEngine, className.c_str(), "IFile");
+
+    registerTemplateTypeSpecializationBindings(scriptingEngine, className, "IFile");
+//    EngineResourceManager<T>, create, (const std::string&, const graphics::IMesh&), const T&
+
+//    template class EngineResourceManager<T>::create<const graphics::IMesh&>;
+
+//    scriptingEngine->registerClassMethod(className.c_str(), detail::format("const %s& create(const string& in, const IMesh& in)", name), asMETHODPR(EngineResourceManager<T>, create, (const std::string&, const graphics::IMesh&), const T&));
+
+//    scriptingEngine->registerObjectMethod(className.c_str(), detail::format("const %s& create(const string& in, const IMesh& in)", name), asFUNCTION(EngineResourceManagerTemplateTypeRegisterHelper::create), asCALL_CDECL_OBJFIRST);
+
+    scriptingEngine->registerClassMethod(className.c_str(), "void destroy(const string& in)", asMETHODPR(EngineResourceManager<T>, destroy, (const std::string&), void));
+    scriptingEngine->registerClassMethod(className.c_str(), detail::format("void destroy(const %s& in)", name), asMETHODPR(EngineResourceManager<T>, destroy, (const T&), void));
+    scriptingEngine->registerClassMethod(className.c_str(), "void destroyAll()", asMETHOD(EngineResourceManager<T>, destroyAll));
+    scriptingEngine->registerClassMethod(className.c_str(), "bool exists(const string& in) const", asMETHODPR(EngineResourceManager<T>, exists, (const std::string&) const, bool));
+    scriptingEngine->registerClassMethod(className.c_str(), detail::format("const %s& get(const string& in) const", name), asMETHODPR(EngineResourceManager<T>, get, (const std::string&) const, const T&));
 }
 
 void mrtest(int* a, std::string* errs)
@@ -260,6 +358,8 @@ void BindingDelegate::bind()
 	scriptingEngine_->registerObjectBehaviour("Mesh", asBEHAVE_CONSTRUCT, "void f(string, vectorVec3, vectorUInt32, vectorVec4, vectorVec3, vectorVec2, VertexBoneData = VertexBoneData(), BoneData = BoneData())", asFUNCTION(InitConstructorMesh), asCALL_CDECL_OBJFIRST);
 	scriptingEngine_->registerObjectBehaviour("Mesh", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DefaultDestructor<Mesh>), asCALL_CDECL_OBJLAST);
 	scriptingEngine_->registerClassMethod("Mesh", "Mesh& opAssign(const Mesh& in)", asMETHODPR(Mesh, operator=, (const Mesh&), Mesh&));
+    scriptingEngine_->registerObjectMethod("Mesh", "IMesh@ opImplCast()", asFUNCTION((refCast<Mesh, graphics::IMesh>)), asCALL_CDECL_OBJLAST);
+    scriptingEngine_->registerObjectMethod("Mesh", "const IMesh@ opImplCast() const", asFUNCTION((refCast<Mesh, graphics::IMesh>)), asCALL_CDECL_OBJLAST);
 	scriptingEngine_->registerClassMethod("Mesh", "const VertexBoneData& vertexBoneData() const", asMETHOD(Mesh, vertexBoneData));
 
 	scriptingEngine_->registerObjectType("Texture", sizeof(Texture), asOBJ_VALUE | asGetTypeTraits<Texture>());
@@ -725,6 +825,38 @@ void BindingDelegate::bind()
             asCALL_THISCALL_ASGLOBAL,
             gameEngine_
     );
+
+
+
+
+
+
+    // EngineResourceManager<graphics::MeshHandle>
+//    registerTemplateTypeBindings(scriptingEngine_, "EngineResourceManager<class T>", "IFile");
+//    registerTemplateTypeSpecializationBindings(scriptingEngine_, "EngineResourceManager<MeshHandle>", "IFile");
+    registerEngineResourceManagerTemplateTypeBindings(scriptingEngine_);
+    registerEngineResourceManagerTemplateTypeSpecializationBindings<graphics::MeshHandle>(scriptingEngine_, "MeshHandle");
+    scriptingEngine_->registerClassMethod("EngineResourceManager<MeshHandle>", detail::format("const %s& create(const string& in, const IMesh& in)", "MeshHandle"), asMETHODPR(EngineResourceManager<graphics::MeshHandle>, create, (const std::string&, const graphics::IMesh&), const graphics::MeshHandle&));
+
+//    scriptingEngine_->registerObjectMethod("EngineResourceManager<MeshHandle>", detail::format("const %s& create(const string& in, const IMesh& in)", "MeshHandle"), asFUNCTION(EngineResourceManagerTemplateTypeRegisterHelper::create), asCALL_CDECL_OBJFIRST);
+
+    scriptingEngine_->registerGlobalFunction(
+            "EngineResourceManager<MeshHandle>@ engineResourceManagerMeshHandle()",
+            asMETHOD(GameEngine, engineResourceManager<graphics::MeshHandle>),
+            asCALL_THISCALL_ASGLOBAL,
+            gameEngine_
+    );
+
+
+
+
+
+
+
+
+
+
+
 	scriptingEngine_->registerGlobalFunction(
 		"Model@ importModel(const string& in, const string& in)",
 		asMETHOD(GameEngine, importModel),
@@ -870,19 +1002,19 @@ void BindingDelegate::bind()
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
-		"void destroyShader(const string& in)",
+		"void destroy(const string& in)",
 		asMETHODPR(GameEngine, destroyShader, (const std::string&), void),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
-		"void destroyShader(const VertexShaderHandle& in)",
+		"void destroy(const VertexShaderHandle& in)",
 		asMETHODPR(GameEngine, destroyShader, (const graphics::VertexShaderHandle&), void),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
 	scriptingEngine_->registerGlobalFunction(
-		"void destroyShader(const FragmentShaderHandle& in)",
+		"void destroy(const FragmentShaderHandle& in)",
 		asMETHODPR(GameEngine, destroyShader, (const graphics::FragmentShaderHandle&), void),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
@@ -905,14 +1037,14 @@ void BindingDelegate::bind()
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
 	);
+//	scriptingEngine_->registerGlobalFunction(
+//		"void destroy(const string& in)",
+//		asMETHODPR(GameEngine, destroyShaderProgram, (const std::string&), void),
+//		asCALL_THISCALL_ASGLOBAL,
+//		gameEngine_
+//	);
 	scriptingEngine_->registerGlobalFunction(
-		"void destroyShaderProgram(const string& in)",
-		asMETHODPR(GameEngine, destroyShaderProgram, (const std::string&), void),
-		asCALL_THISCALL_ASGLOBAL,
-		gameEngine_
-	);
-	scriptingEngine_->registerGlobalFunction(
-		"void destroyShaderProgram(const ShaderProgramHandle& in)",
+		"void destroy(const ShaderProgramHandle& in)",
 		asMETHODPR(GameEngine, destroyShaderProgram, (const graphics::ShaderProgramHandle&), void),
 		asCALL_THISCALL_ASGLOBAL,
 		gameEngine_
@@ -949,8 +1081,8 @@ void BindingDelegate::bind()
 		gameEngine_
 	);
 //	scriptingEngine_->registerGlobalFunction(
-//		"void destroyStaticShape(const CollisionShapeHandle& in)",
-//		asMETHODPR(GameEngine, destroyStaticShape, (const physics::CollisionShapeHandle&), void)
+//		"void destroy(const CollisionShapeHandle& in)",
+//		asMETHODPR(GameEngine, destroy, (const physics::CollisionShapeHandle&), void)
 //	);
 	scriptingEngine_->registerGlobalFunction(
 		"void destroyAllStaticShapes()",

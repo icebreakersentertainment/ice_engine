@@ -28,7 +28,7 @@ struct Model
 	std::vector<BoneData> boneData;
 	std::vector<Animation> animations;
 	BoneNode rootBoneNode;
-	glm::mat4 globalInverseTransformation;
+	glm::mat4 globalInverseTransformation = glm::mat4(1.0f);
 };
 
 }

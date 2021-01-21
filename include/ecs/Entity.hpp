@@ -166,451 +166,457 @@ public:
 	Entity(const Entity& other) = default;
 	Entity &operator = (const Entity& other) = default;
 
-    operator bool() const {
+    operator bool() const
+    {
         return valid();
-      }
+    }
 
-      bool operator == (const Entity& other) const
+    bool operator == (const Entity& other) const
     {
         return other.entity_ == entity_;
-      }
+    }
 
-      bool operator != (const Entity& other) const {
+    bool operator != (const Entity& other) const
+    {
         return !(other.entity_ == entity_);
-      }
+    }
 
-      bool operator < (const Entity &other) const {
+    bool operator < (const Entity &other) const
+    {
         return other.entity_ < entity_;
-      }
-
-      bool valid() const
-      {
-    	  return entity_.valid() && scene_ != nullptr;
-      }
-
-      void invalidate()
-      {
-         	  entity_.invalidate();
-         	 scene_ = nullptr;
-      }
-
-      Scene* scene() const
-      {
-         	return scene_;
-      }
-
-      entityx::Entity::Id id() const { return entity_.id(); }
-
-      template <typename C>
-      typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<ParentComponent>>::value, entityx::ComponentHandle<C>>::type
-      assign(const ParentComponent& parentComponent);
-
-        template <typename C, typename ... Args>
-        typename std::enable_if<
-			!std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<GraphicsComponent>>::value
-			&& !std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<AnimationComponent>>::value
-			&& !std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<PointLightComponent>>::value
-			&& !std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<GraphicsTerrainComponent>>::value
-			&& !std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<GraphicsSkyboxComponent>>::value
-			&& !std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<RigidBodyObjectComponent>>::value
-			&& !std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<GhostObjectComponent>>::value
-			&& !std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<PathfindingCrowdComponent>>::value
-			&& !std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<PathfindingAgentComponent>>::value
-			&& !std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<PathfindingObstacleComponent>>::value
-			&& !std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<ParentComponent>>::value
-			&& !std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<ChildrenComponent>>::value
-			&& !std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<ParentBoneAttachmentComponent>>::value
-			, entityx::ComponentHandle<C>>::type
-        assign(Args && ... args)
-		{
-          return entity_.assign<C>(std::forward<Args>(args) ...);
-        }
-
-        template <typename C, typename ... Args>
-        typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<ParentComponent>>::value, entityx::ComponentHandle<C>>::type
-		assign(Args && ... args);
-//        {
-//        	//static_assert(0);
-////        	BOOST_STATIC_ASSERT(0);
-//        	return {};
-//        }
-
-        template <typename C, typename ... Args>
-        typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<ChildrenComponent>>::value, entityx::ComponentHandle<C>>::type
-		assign(Args && ... args);
-//        {
-//        	//static_assert(0);
-//        	//        	BOOST_STATIC_ASSERT(0);
-//			return {};
-//        }
-
-        template <typename C, typename ... Args>
-        typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<ParentBoneAttachmentComponent>>::value, entityx::ComponentHandle<C>>::type
-		assign(Args && ... args);
-//        {
-//        	//static_assert(0);
-//        	//        	BOOST_STATIC_ASSERT(0);
-//			return {};
-//        }
-
-//        template <typename C, typename ... Args>
-//        typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<ParentBoneAttachmentComponent>>::value, entityx::ComponentHandle<C>>::type
-//		assign(Args & ... args);
-//        {
-//        	//static_assert(0);
-//        	//        	BOOST_STATIC_ASSERT(0);
-//			return {};
-//        }
-
-//        template <typename C, typename ... Args>
-//        typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<ChildrenComponent>>::value, entityx::ComponentHandle<C>>::type
-//        assign();
-//
-//        template <typename C, typename ... Args>
-//        typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<ChildrenComponent>>::value, entityx::ComponentHandle<C>>::type
-//        assign(std::vector<Entity> children);
-
-//        template <typename C, typename ... Args>
-//        typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<ParentBoneAttachmentComponent>>::value, entityx::ComponentHandle<C>>::type
-//        assign(std::string&& boneName = {},  glm::ivec4&& boneIds = {}, glm::vec4&& boneWeights = {});
-
-        template <typename C, typename ... Args>
-        typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<GraphicsComponent>>::value, entityx::ComponentHandle<C>>::type
-        assign(Args && ... args)
-		{
-        	entityx::ComponentHandle<C> componentHandle;
-
-        	if (entity_.has_component<C>()) entity_.remove<C>();
-
-        	componentHandle = entity_.assign<C>(std::forward<Args>(args) ...);
-
-        	if (!componentHandle->renderableHandle)
-        	{
-        		auto pc = entity_.component<PositionComponent>();
-        		auto oc = entity_.component<OrientationComponent>();
-        		componentHandle->renderableHandle = sceneDelegate_.createRenderable(componentHandle->meshHandle, componentHandle->textureHandle, pc->position, oc->orientation, componentHandle->scale);
-        	}
-
-        	return componentHandle;
-        }
-
-        template <typename C, typename ... Args>
-        typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<AnimationComponent>>::value, entityx::ComponentHandle<C>>::type
-        assign(Args && ... args)
-		{
-        	entityx::ComponentHandle<C> componentHandle;
-
-        	auto gc = entity_.component<ecs::GraphicsComponent>();
-
-        	if (!gc) throw RuntimeException("cannot assign animation component - graphics component does not exist");
-        	if (!gc->renderableHandle) throw RuntimeException("cannot assign animation component - renderableHandle is not valid");
-
-        	if (entity_.has_component<C>()) entity_.remove<C>();
-
-        	componentHandle = entity_.assign<C>(std::forward<Args>(args) ...);
-
-        	if (!componentHandle->bonesHandle)
-        	{
-        		componentHandle->bonesHandle = sceneDelegate_.createBones(100);
-        		sceneDelegate_.attach(gc->renderableHandle, componentHandle->bonesHandle);
-        	}
-
-        	return componentHandle;
-        }
-
-        template <typename C, typename ... Args>
-        typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<PointLightComponent>>::value, entityx::ComponentHandle<C>>::type
-        assign(Args && ... args)
-		{
-        	entityx::ComponentHandle<C> componentHandle;
-
-        	if (entity_.has_component<C>())
-        	{
-        		auto c = entity_.component<C>();
-        		if (c->pointLightHandle) sceneDelegate_.destroy(c->pointLightHandle);
-        	}
-
-        	componentHandle = entity_.assign<C>(std::forward<Args>(args) ...);
-
-        	if (!componentHandle->pointLightHandle)
-        	{
-        		auto pc = entity_.component<PositionComponent>();
-        		componentHandle->pointLightHandle = sceneDelegate_.createPointLight(pc->position);
-        	}
-
-        	return componentHandle;
-        }
-
-        template <typename C, typename ... Args>
-        typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<GraphicsTerrainComponent>>::value, entityx::ComponentHandle<C>>::type
-        assign(Args && ... args)
-		{
-        	entityx::ComponentHandle<C> componentHandle;
-
-        	if (entity_.has_component<C>())
-        	{
-        		auto c = entity_.component<C>();
-        		if (c->terrainRenderableHandle) sceneDelegate_.destroy(c->terrainRenderableHandle);
-        	}
-
-        	componentHandle = entity_.assign<C>(std::forward<Args>(args) ...);
-
-        	if (!componentHandle->terrainRenderableHandle)
-        	{
-        		auto pc = entity_.component<PositionComponent>();
-        		componentHandle->terrainRenderableHandle = sceneDelegate_.createTerrainRenderable(
-        			componentHandle->terrainHandle
-				);
-        	}
-
-        	return componentHandle;
-        }
-
-				template <typename C, typename ... Args>
-        typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<GraphicsSkyboxComponent>>::value, entityx::ComponentHandle<C>>::type
-        assign(Args && ... args)
-		{
-        	entityx::ComponentHandle<C> componentHandle;
-
-        	if (entity_.has_component<C>())
-        	{
-        		auto c = entity_.component<C>();
-        		if (c->skyboxRenderableHandle) sceneDelegate_.destroy(c->skyboxRenderableHandle);
-        	}
-
-        	componentHandle = entity_.assign<C>(std::forward<Args>(args) ...);
-
-        	if (!componentHandle->skyboxRenderableHandle)
-        	{
-        		// auto pc = entity_.component<PositionComponent>();
-        		componentHandle->skyboxRenderableHandle = sceneDelegate_.createSkyboxRenderable(
-        			componentHandle->skyboxHandle
-				);
-        	}
-
-        	return componentHandle;
-        }
-
-        template <typename C, typename ... Args>
-        typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<RigidBodyObjectComponent>>::value, entityx::ComponentHandle<C>>::type
-        assign(Args && ... args)
-		{
-        	entityx::ComponentHandle<C> componentHandle;
-
-        	if (entity_.has_component<C>()) entity_.remove<C>();
-
-        	componentHandle = entity_.assign<C>(std::forward<Args>(args) ...);
-
-        	if (!componentHandle->rigidBodyObjectHandle)
-        	{
-        		auto pc = entity_.component<PositionComponent>();
-				auto oc = entity_.component<OrientationComponent>();
-
-        		componentHandle->rigidBodyObjectHandle = sceneDelegate_.createRigidBodyObject(
-					componentHandle->collisionShapeHandle,
-					pc->position,
-					oc->orientation,
-					componentHandle->mass,
-					componentHandle->friction,
-					componentHandle->restitution
-				);
-
-        		if (entity_.has_component<DirtyComponent>())
-        		{
-        			auto dirtyComponent = entity_.component<DirtyComponent>();
-        			dirtyComponent->dirty |= DirtyFlags::DIRTY_SOURCE_SCRIPT | DirtyFlags::DIRTY_RIGID_BODY_OBJECT;
-        		}
-        		else
-        		{
-        			entity_.assign<DirtyComponent>(DirtyFlags::DIRTY_SOURCE_SCRIPT | DirtyFlags::DIRTY_RIGID_BODY_OBJECT);
-        		}
-        	}
-
-        	return componentHandle;
-        }
-
-        template <typename C, typename ... Args>
-        typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<GhostObjectComponent>>::value, entityx::ComponentHandle<C>>::type
-        assign(Args && ... args)
-		{
-        	entityx::ComponentHandle<C> componentHandle;
-
-        	if (entity_.has_component<C>()) entity_.remove<C>();
-
-        	componentHandle = entity_.assign<C>(std::forward<Args>(args) ...);
-
-        	if (!componentHandle->ghostObjectHandle)
-        	{
-        		auto pc = entity_.component<PositionComponent>();
-        		        		auto oc = entity_.component<OrientationComponent>();
-
-        		componentHandle->ghostObjectHandle = sceneDelegate_.createGhostObject(
-					componentHandle->collisionShapeHandle,
-					pc->position,
-					oc->orientation
-				);
-
-        		if (entity_.has_component<DirtyComponent>())
-        		{
-        			auto dirtyComponent = entity_.component<DirtyComponent>();
-        			dirtyComponent->dirty |= DirtyFlags::DIRTY_SOURCE_SCRIPT | DirtyFlags::DIRTY_GHOST_OBJECT;
-        		}
-        		else
-        		{
-        			entity_.assign<DirtyComponent>(DirtyFlags::DIRTY_SOURCE_SCRIPT | DirtyFlags::DIRTY_GHOST_OBJECT);
-        		}
-        	}
-
-        	return componentHandle;
-        }
-
-        template <typename C, typename ... Args>
-        typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<PathfindingCrowdComponent>>::value, entityx::ComponentHandle<C>>::type
-        assign(Args && ... args)
-		{
-        	entityx::ComponentHandle<C> componentHandle;
-
-        	if (entity_.has_component<C>()) entity_.remove<C>();
-
-        	componentHandle = entity_.assign<C>(std::forward<Args>(args) ...);
-
-        	if (!componentHandle->crowdHandle)
-        	{
-        		auto pc = entity_.component<PositionComponent>();
-				auto oc = entity_.component<OrientationComponent>();
-
-        		componentHandle->crowdHandle = sceneDelegate_.createCrowd(
-					componentHandle->navigationMeshHandle,
-					componentHandle->crowdConfig
-				);
-        	}
-
-        	return componentHandle;
-        }
-
-        template <typename C, typename ... Args>
-        typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<PathfindingAgentComponent>>::value, entityx::ComponentHandle<C>>::type
-        assign(Args && ... args)
-		{
-        	entityx::ComponentHandle<C> componentHandle;
-
-        	if (entity_.has_component<C>()) entity_.remove<C>();
-
-        	componentHandle = entity_.assign<C>(std::forward<Args>(args) ...);
-
-        	if (!componentHandle->agentHandle)
-        	{
-        		auto pc = entity_.component<PositionComponent>();
-				auto oc = entity_.component<OrientationComponent>();
-
-        		componentHandle->agentHandle = sceneDelegate_.createAgent(
-					componentHandle->crowdHandle,
-					pc->position,
-					componentHandle->agentParams
-				);
-
-        		if (entity_.has_component<DirtyComponent>())
-        		{
-        			auto dirtyComponent = entity_.component<DirtyComponent>();
-        			dirtyComponent->dirty |= DirtyFlags::DIRTY_SOURCE_SCRIPT | DirtyFlags::DIRTY_PATHFINDING_AGENT;
-        		}
-        		else
-        		{
-        			entity_.assign<DirtyComponent>(DirtyFlags::DIRTY_SOURCE_SCRIPT | DirtyFlags::DIRTY_PATHFINDING_AGENT);
-        		}
-        	}
-
-        	return componentHandle;
-        }
-
-        template <typename C, typename ... Args>
-        typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<PathfindingObstacleComponent>>::value, entityx::ComponentHandle<C>>::type
-        assign(Args && ... args)
-		{
-        	entityx::ComponentHandle<C> componentHandle;
-
-        	if (entity_.has_component<C>()) entity_.remove<C>();
-
-        	componentHandle = entity_.assign<C>(std::forward<Args>(args) ...);
-
-        	if (!componentHandle->obstacleHandle)
-        	{
-        		auto pc = entity_.component<PositionComponent>();
-
-        		componentHandle->obstacleHandle = sceneDelegate_.pathfindingEngine().createObstacle(
-					componentHandle->polygonMeshHandle,
-					pc->position,
-					componentHandle->radius,
-					componentHandle->height
-				);
-        	}
-
-        	return componentHandle;
-        }
-
-        template <typename C>
-        entityx::ComponentHandle<C> assignFromCopy(const C &component)
-		{
-          return entity_.assign_from_copy<C>(std::forward<const C &>(component));
-        }
-
-        template <typename C, typename ... Args>
-        entityx::ComponentHandle<C> replace(Args && ... args)
-		{
-          return entity_.replace<C>(std::forward<Args>(args) ...);
-        }
-
-        template <typename C>
-        void remove() {
-          entity_.remove<C>();
-        }
-
-        template <typename C, typename = typename std::enable_if<!std::is_const<C>::value>::type>
-        entityx::ComponentHandle<C> component() {
-          return entity_.component<C>();
-        }
-
-        template <typename C, typename = typename std::enable_if<std::is_const<C>::value>::type>
-        const entityx::ComponentHandle<C, const entityx::EntityManager> component() const
-		{
-          return entity_.component<C>();
-        }
-
-        template <typename ... Components>
-        std::tuple<entityx::ComponentHandle<Components>...> components() {
-          return entity_.components<Components...>();
-        }
-
-        template <typename ... Components>
-        std::tuple<entityx::ComponentHandle<const Components, const entityx::EntityManager>...> components() const
-		{
-          return entity_.components<Components...>();
-        }
-
-
-        template <typename C>
-        bool hasComponent() const
+    }
+
+    bool valid() const
+    {
+        return entity_.valid() && scene_ != nullptr;
+    }
+
+    void invalidate()
+    {
+        entity_.invalidate();
+        scene_ = nullptr;
+    }
+
+    Scene* scene() const
+    {
+        return scene_;
+    }
+
+    entityx::Entity::Id id() const
+    {
+        return entity_.id();
+    }
+
+    template <typename C>
+    typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<ParentComponent>>::value, entityx::ComponentHandle<C>>::type
+    assign(const ParentComponent& parentComponent);
+
+    template <typename C, typename ... Args>
+    typename std::enable_if<
+        !std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<GraphicsComponent>>::value
+        && !std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<AnimationComponent>>::value
+        && !std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<PointLightComponent>>::value
+        && !std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<GraphicsTerrainComponent>>::value
+        && !std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<GraphicsSkyboxComponent>>::value
+        && !std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<RigidBodyObjectComponent>>::value
+        && !std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<GhostObjectComponent>>::value
+        && !std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<PathfindingCrowdComponent>>::value
+        && !std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<PathfindingAgentComponent>>::value
+        && !std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<PathfindingObstacleComponent>>::value
+        && !std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<ParentComponent>>::value
+        && !std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<ChildrenComponent>>::value
+        && !std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<ParentBoneAttachmentComponent>>::value
+        , entityx::ComponentHandle<C>>::type
+    assign(Args && ... args)
+    {
+      return entity_.assign<C>(std::forward<Args>(args) ...);
+    }
+
+    template <typename C, typename ... Args>
+    typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<ParentComponent>>::value, entityx::ComponentHandle<C>>::type
+    assign(Args && ... args);
+    //        {
+    //        	//static_assert(0);
+    ////        	BOOST_STATIC_ASSERT(0);
+    //        	return {};
+    //        }
+
+    template <typename C, typename ... Args>
+    typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<ChildrenComponent>>::value, entityx::ComponentHandle<C>>::type
+    assign(Args && ... args);
+    //        {
+    //        	//static_assert(0);
+    //        	//        	BOOST_STATIC_ASSERT(0);
+    //			return {};
+    //        }
+
+    template <typename C, typename ... Args>
+    typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<ParentBoneAttachmentComponent>>::value, entityx::ComponentHandle<C>>::type
+    assign(Args && ... args);
+    //        {
+    //        	//static_assert(0);
+    //        	//        	BOOST_STATIC_ASSERT(0);
+    //			return {};
+    //        }
+
+    //        template <typename C, typename ... Args>
+    //        typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<ParentBoneAttachmentComponent>>::value, entityx::ComponentHandle<C>>::type
+    //		assign(Args & ... args);
+    //        {
+    //        	//static_assert(0);
+    //        	//        	BOOST_STATIC_ASSERT(0);
+    //			return {};
+    //        }
+
+    //        template <typename C, typename ... Args>
+    //        typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<ChildrenComponent>>::value, entityx::ComponentHandle<C>>::type
+    //        assign();
+    //
+    //        template <typename C, typename ... Args>
+    //        typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<ChildrenComponent>>::value, entityx::ComponentHandle<C>>::type
+    //        assign(std::vector<Entity> children);
+
+    //        template <typename C, typename ... Args>
+    //        typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<ParentBoneAttachmentComponent>>::value, entityx::ComponentHandle<C>>::type
+    //        assign(std::string&& boneName = {},  glm::ivec4&& boneIds = {}, glm::vec4&& boneWeights = {});
+
+    template <typename C, typename ... Args>
+    typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<GraphicsComponent>>::value, entityx::ComponentHandle<C>>::type
+    assign(Args && ... args)
+    {
+        entityx::ComponentHandle<C> componentHandle;
+
+        if (entity_.has_component<C>()) entity_.remove<C>();
+
+        componentHandle = entity_.assign<C>(std::forward<Args>(args) ...);
+
+        if (!componentHandle->renderableHandle)
         {
-          return entity_.has_component<C>();
+            auto pc = entity_.component<PositionComponent>();
+            auto oc = entity_.component<OrientationComponent>();
+            componentHandle->renderableHandle = sceneDelegate_.createRenderable(componentHandle->meshHandle, componentHandle->textureHandle, pc->position, oc->orientation, componentHandle->scale);
         }
 
-        template <typename A, typename ... Args>
-        void unpack(entityx::ComponentHandle<A> &a, entityx::ComponentHandle<Args> & ... args)
+        return componentHandle;
+    }
+
+    template <typename C, typename ... Args>
+    typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<AnimationComponent>>::value, entityx::ComponentHandle<C>>::type
+    assign(Args && ... args)
+    {
+        entityx::ComponentHandle<C> componentHandle;
+
+        auto gc = entity_.component<ecs::GraphicsComponent>();
+
+        if (!gc) throw RuntimeException("cannot assign animation component - graphics component does not exist");
+        if (!gc->renderableHandle) throw RuntimeException("cannot assign animation component - renderableHandle is not valid");
+
+        if (entity_.has_component<C>()) entity_.remove<C>();
+
+        componentHandle = entity_.assign<C>(std::forward<Args>(args) ...);
+
+        if (!componentHandle->bonesHandle)
         {
-          entity_.unpack(a, args ...);
+            componentHandle->bonesHandle = sceneDelegate_.createBones(100);
+            sceneDelegate_.attach(gc->renderableHandle, componentHandle->bonesHandle);
         }
 
-        void destroy()
-				{
-					entity_.destroy();
-					scene_ = nullptr;
-				}
+        return componentHandle;
+    }
 
-    	friend std::ostream& operator<<(std::ostream& os, const Entity& other)
-    	{
-    		os << "Entity(Entity: " << other.entity_ << ", Scene: " << (other.scene_ != nullptr ? other.sceneDelegate_.name() : "") << ")";
-    		return os;
-    	}
+    template <typename C, typename ... Args>
+    typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<PointLightComponent>>::value, entityx::ComponentHandle<C>>::type
+    assign(Args && ... args)
+    {
+        entityx::ComponentHandle<C> componentHandle;
+
+        if (entity_.has_component<C>())
+        {
+            auto c = entity_.component<C>();
+            if (c->pointLightHandle) sceneDelegate_.destroy(c->pointLightHandle);
+        }
+
+        componentHandle = entity_.assign<C>(std::forward<Args>(args) ...);
+
+        if (!componentHandle->pointLightHandle)
+        {
+            auto pc = entity_.component<PositionComponent>();
+            componentHandle->pointLightHandle = sceneDelegate_.createPointLight(pc->position);
+        }
+
+        return componentHandle;
+    }
+
+    template <typename C, typename ... Args>
+    typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<GraphicsTerrainComponent>>::value, entityx::ComponentHandle<C>>::type
+    assign(Args && ... args)
+    {
+        entityx::ComponentHandle<C> componentHandle;
+
+        if (entity_.has_component<C>())
+        {
+            auto c = entity_.component<C>();
+            if (c->terrainRenderableHandle) sceneDelegate_.destroy(c->terrainRenderableHandle);
+        }
+
+        componentHandle = entity_.assign<C>(std::forward<Args>(args) ...);
+
+        if (!componentHandle->terrainRenderableHandle)
+        {
+            auto pc = entity_.component<PositionComponent>();
+            componentHandle->terrainRenderableHandle = sceneDelegate_.createTerrainRenderable(
+                componentHandle->terrainHandle
+            );
+        }
+
+        return componentHandle;
+    }
+
+            template <typename C, typename ... Args>
+    typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<GraphicsSkyboxComponent>>::value, entityx::ComponentHandle<C>>::type
+    assign(Args && ... args)
+    {
+        entityx::ComponentHandle<C> componentHandle;
+
+        if (entity_.has_component<C>())
+        {
+            auto c = entity_.component<C>();
+            if (c->skyboxRenderableHandle) sceneDelegate_.destroy(c->skyboxRenderableHandle);
+        }
+
+        componentHandle = entity_.assign<C>(std::forward<Args>(args) ...);
+
+        if (!componentHandle->skyboxRenderableHandle)
+        {
+            // auto pc = entity_.component<PositionComponent>();
+            componentHandle->skyboxRenderableHandle = sceneDelegate_.createSkyboxRenderable(
+                componentHandle->skyboxHandle
+            );
+        }
+
+        return componentHandle;
+    }
+
+    template <typename C, typename ... Args>
+    typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<RigidBodyObjectComponent>>::value, entityx::ComponentHandle<C>>::type
+    assign(Args && ... args)
+    {
+        entityx::ComponentHandle<C> componentHandle;
+
+        if (entity_.has_component<C>()) entity_.remove<C>();
+
+        componentHandle = entity_.assign<C>(std::forward<Args>(args) ...);
+
+        if (!componentHandle->rigidBodyObjectHandle)
+        {
+            auto pc = entity_.component<PositionComponent>();
+            auto oc = entity_.component<OrientationComponent>();
+
+            componentHandle->rigidBodyObjectHandle = sceneDelegate_.createRigidBodyObject(
+                componentHandle->collisionShapeHandle,
+                pc->position,
+                oc->orientation,
+                componentHandle->mass,
+                componentHandle->friction,
+                componentHandle->restitution
+            );
+
+            if (entity_.has_component<DirtyComponent>())
+            {
+                auto dirtyComponent = entity_.component<DirtyComponent>();
+                dirtyComponent->dirty |= DirtyFlags::DIRTY_SOURCE_SCRIPT | DirtyFlags::DIRTY_RIGID_BODY_OBJECT;
+            }
+            else
+            {
+                entity_.assign<DirtyComponent>(DirtyFlags::DIRTY_SOURCE_SCRIPT | DirtyFlags::DIRTY_RIGID_BODY_OBJECT);
+            }
+        }
+
+        return componentHandle;
+    }
+
+    template <typename C, typename ... Args>
+    typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<GhostObjectComponent>>::value, entityx::ComponentHandle<C>>::type
+    assign(Args && ... args)
+    {
+        entityx::ComponentHandle<C> componentHandle;
+
+        if (entity_.has_component<C>()) entity_.remove<C>();
+
+        componentHandle = entity_.assign<C>(std::forward<Args>(args) ...);
+
+        if (!componentHandle->ghostObjectHandle)
+        {
+            auto pc = entity_.component<PositionComponent>();
+                            auto oc = entity_.component<OrientationComponent>();
+
+            componentHandle->ghostObjectHandle = sceneDelegate_.createGhostObject(
+                componentHandle->collisionShapeHandle,
+                pc->position,
+                oc->orientation
+            );
+
+            if (entity_.has_component<DirtyComponent>())
+            {
+                auto dirtyComponent = entity_.component<DirtyComponent>();
+                dirtyComponent->dirty |= DirtyFlags::DIRTY_SOURCE_SCRIPT | DirtyFlags::DIRTY_GHOST_OBJECT;
+            }
+            else
+            {
+                entity_.assign<DirtyComponent>(DirtyFlags::DIRTY_SOURCE_SCRIPT | DirtyFlags::DIRTY_GHOST_OBJECT);
+            }
+        }
+
+        return componentHandle;
+    }
+
+    template <typename C, typename ... Args>
+    typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<PathfindingCrowdComponent>>::value, entityx::ComponentHandle<C>>::type
+    assign(Args && ... args)
+    {
+        entityx::ComponentHandle<C> componentHandle;
+
+        if (entity_.has_component<C>()) entity_.remove<C>();
+
+        componentHandle = entity_.assign<C>(std::forward<Args>(args) ...);
+
+        if (!componentHandle->crowdHandle)
+        {
+            auto pc = entity_.component<PositionComponent>();
+            auto oc = entity_.component<OrientationComponent>();
+
+            componentHandle->crowdHandle = sceneDelegate_.createCrowd(
+                componentHandle->navigationMeshHandle,
+                componentHandle->crowdConfig
+            );
+        }
+
+        return componentHandle;
+    }
+
+    template <typename C, typename ... Args>
+    typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<PathfindingAgentComponent>>::value, entityx::ComponentHandle<C>>::type
+    assign(Args && ... args)
+    {
+        entityx::ComponentHandle<C> componentHandle;
+
+        if (entity_.has_component<C>()) entity_.remove<C>();
+
+        componentHandle = entity_.assign<C>(std::forward<Args>(args) ...);
+
+        if (!componentHandle->agentHandle)
+        {
+            auto pc = entity_.component<PositionComponent>();
+            auto oc = entity_.component<OrientationComponent>();
+
+            componentHandle->agentHandle = sceneDelegate_.createAgent(
+                componentHandle->crowdHandle,
+                pc->position,
+                componentHandle->agentParams
+            );
+
+            if (entity_.has_component<DirtyComponent>())
+            {
+                auto dirtyComponent = entity_.component<DirtyComponent>();
+                dirtyComponent->dirty |= DirtyFlags::DIRTY_SOURCE_SCRIPT | DirtyFlags::DIRTY_PATHFINDING_AGENT;
+            }
+            else
+            {
+                entity_.assign<DirtyComponent>(DirtyFlags::DIRTY_SOURCE_SCRIPT | DirtyFlags::DIRTY_PATHFINDING_AGENT);
+            }
+        }
+
+        return componentHandle;
+    }
+
+    template <typename C, typename ... Args>
+    typename std::enable_if<std::is_same<entityx::ComponentHandle<C>, entityx::ComponentHandle<PathfindingObstacleComponent>>::value, entityx::ComponentHandle<C>>::type
+    assign(Args && ... args)
+    {
+        entityx::ComponentHandle<C> componentHandle;
+
+        if (entity_.has_component<C>()) entity_.remove<C>();
+
+        componentHandle = entity_.assign<C>(std::forward<Args>(args) ...);
+
+        if (!componentHandle->obstacleHandle)
+        {
+            auto pc = entity_.component<PositionComponent>();
+
+            componentHandle->obstacleHandle = sceneDelegate_.pathfindingEngine().createObstacle(
+                componentHandle->polygonMeshHandle,
+                pc->position,
+                componentHandle->radius,
+                componentHandle->height
+            );
+        }
+
+        return componentHandle;
+    }
+
+    template <typename C>
+    entityx::ComponentHandle<C> assignFromCopy(const C &component)
+    {
+      return entity_.assign_from_copy<C>(std::forward<const C &>(component));
+    }
+
+    template <typename C, typename ... Args>
+    entityx::ComponentHandle<C> replace(Args && ... args)
+    {
+      return entity_.replace<C>(std::forward<Args>(args) ...);
+    }
+
+    template <typename C>
+    void remove() {
+      entity_.remove<C>();
+    }
+
+    template <typename C, typename = typename std::enable_if<!std::is_const<C>::value>::type>
+    entityx::ComponentHandle<C> component() {
+      return entity_.component<C>();
+    }
+
+    template <typename C, typename = typename std::enable_if<std::is_const<C>::value>::type>
+    const entityx::ComponentHandle<C, const entityx::EntityManager> component() const
+    {
+      return entity_.component<C>();
+    }
+
+    template <typename ... Components>
+    std::tuple<entityx::ComponentHandle<Components>...> components() {
+      return entity_.components<Components...>();
+    }
+
+    template <typename ... Components>
+    std::tuple<entityx::ComponentHandle<const Components, const entityx::EntityManager>...> components() const
+    {
+      return entity_.components<Components...>();
+    }
+
+
+    template <typename C>
+    bool hasComponent() const
+    {
+      return entity_.has_component<C>();
+    }
+
+    template <typename A, typename ... Args>
+    void unpack(entityx::ComponentHandle<A> &a, entityx::ComponentHandle<Args> & ... args)
+    {
+      entity_.unpack(a, args ...);
+    }
+
+    void destroy()
+            {
+                entity_.destroy();
+                scene_ = nullptr;
+            }
+
+    friend std::ostream& operator<<(std::ostream& os, const Entity& other)
+    {
+        os << "Entity(Entity: " << other.entity_ << ", Scene: " << (other.scene_ != nullptr ? other.sceneDelegate_.name() : "") << ")";
+        return os;
+    }
 
 private:
     entityx::Entity entity_;

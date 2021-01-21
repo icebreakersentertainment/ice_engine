@@ -11,11 +11,13 @@
 #include <mutex>
 #include <shared_mutex>
 #include <queue>
+#include <typeindex>
 
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
+#include <glm/glm.hpp>
 
-#include <graphics/exceptions/GraphicsException.hpp>
+#include "graphics/exceptions/GraphicsException.hpp"
 
 #include "Platform.hpp"
 #include "Types.hpp"
@@ -52,6 +54,7 @@
 
 #include "ResourceCache.hpp"
 #include "ResourceHandleCache.hpp"
+#include "resources/EngineResourceManager.hpp"
 #include "Camera.hpp"
 #include "ThreadPool.hpp"
 #include "OpenGlLoader.hpp"
@@ -152,6 +155,32 @@ public:
 	{
 		return resourceHandleCache_;
 	}
+
+	template <typename T>
+    EngineResourceManager<T>& engineResourceManager()
+    {
+        const auto it = engineResourceManagers_.find(typeid(T));
+
+        if (it != engineResourceManagers_.end())
+        {
+            return *dynamic_cast<EngineResourceManager<T>*>(it->second.get());
+        }
+
+        throw RuntimeException(detail::format("No engine resource manager found for %s", boost::typeindex::type_id<T>().pretty_name()));
+    }
+
+//    template <>
+//    EngineResourceManager<graphics::MeshHandle>& engineResourceManager()
+//	{
+//        const auto it = engineResourceManagers_.find(typeid(graphics::MeshHandle));
+//
+//        if (it != engineResourceManagers_.end())
+//        {
+//            return *dynamic_cast<EngineResourceManager<graphics::MeshHandle>*>(it->second.get());
+//        }
+//
+//        throw RuntimeException(detail::format("No engine resource manager found for %s", boost::typeindex::type_id<graphics::MeshHandle>().pretty_name()));
+//	}
 
 	graphics::gui::IGui* createGui(const std::string& name);
 	void destroyGui(const graphics::gui::IGui* gui);
@@ -419,7 +448,7 @@ public:
 
 	physics::CollisionShapeHandle createStaticTerrainShape(const std::string& name, const Heightfield& heightfield)
 	{
-		auto handle = physicsEngine_->createStaticTerrainShape(&heightfield);
+		auto handle = physicsEngine_->createStaticTerrainShape(heightfield);
 
 		resourceHandleCache_.addCollisionShapeHandle(name, handle);
 
@@ -433,7 +462,7 @@ public:
 		{
 			resourceHandleCache_.removeCollisionShapeHandle(name);
 
-			physicsEngine_->destroyStaticShape(handle);
+            physicsEngine_->destroy(handle);
 		}
 	}
 
@@ -451,8 +480,8 @@ public:
 
     ModelHandle createStaticModel(const std::string& name, const Model& model)
     {
-        auto meshHandle = graphicsEngine_->createStaticMesh(&model.meshes()[0]);
-        auto textureHandle = graphicsEngine_->createTexture2d(&model.textures()[0]);
+        auto meshHandle = graphicsEngine_->createStaticMesh(model.meshes()[0]);
+        auto textureHandle = graphicsEngine_->createTexture2d(model.textures()[0]);
 
         staticModels_.push_back(std::make_pair(meshHandle, textureHandle));
 
@@ -546,7 +575,7 @@ public:
 
     void createSkeleton(const graphics::MeshHandle& meshHandle, const graphics::ISkeleton& skeleton)
     {
-        graphicsEngine_->createSkeleton(meshHandle, &skeleton);
+        graphicsEngine_->createSkeleton(meshHandle, skeleton);
     }
 
     AnimationHandle createAnimation(const std::string& name, const Animation& animation)
@@ -584,7 +613,7 @@ public:
 
     graphics::MeshHandle createStaticMesh(const std::string& name, const Mesh& mesh)
     {
-        auto handle = graphicsEngine_->createStaticMesh(&mesh);
+        auto handle = graphicsEngine_->createStaticMesh(mesh);
 
         resourceHandleCache_.addMeshHandle(name, handle);
 
@@ -639,7 +668,7 @@ public:
 
     graphics::TextureHandle createTexture(const std::string& name, const Texture& texture)
     {
-        auto handle = graphicsEngine_->createTexture2d(&texture);
+        auto handle = graphicsEngine_->createTexture2d(texture);
 
         resourceHandleCache_.addTextureHandle(name, handle);
 
@@ -674,7 +703,7 @@ public:
 
     graphics::TerrainHandle createStaticTerrain(const std::string& name, const HeightMap& heightMap, const SplatMap& splatMap, const DisplacementMap& displacementMap)
     {
-        auto handle = graphicsEngine_->createStaticTerrain(&heightMap, &splatMap, &displacementMap);
+        auto handle = graphicsEngine_->createStaticTerrain(heightMap, splatMap, displacementMap);
 
         resourceHandleCache_.addTerrainHandle(name, handle);
 
@@ -914,6 +943,7 @@ private:
 
 	ResourceCache resourceCache_;
 	ResourceHandleCache resourceHandleCache_;
+    std::map<std::type_index, std::unique_ptr<BaseEngineResourceManager>> engineResourceManagers_;
 
 	bool running_;
 	EngineStatistics engineStatistics_;
@@ -954,9 +984,7 @@ private:
 	void initializeDataStoreSubSystem();
 	void initializeEntitySubSystem();
 	void initializeModuleSubSystem();
-
-	void loadEssentialGameData();
-	void loadUserInterface();
+	void initializeEngineResourceManagers();
 
 	void internalInitializeScene(std::unique_ptr<Scene>& scene);
 

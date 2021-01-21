@@ -1,0 +1,184 @@
+@startuml
+
+interface IGraphicsEngine
+{
+    + void setViewport(const uint32 width, const uint32 height)
+    + const glm::uvec2& viewport() const
+
+    + const glm::mat4& modelMatrix() const
+    + const glm::mat4& viewMatrix() const
+    + const glm::mat4& projectionMatrix() const
+
+    + void beginRender()
+    + void render(const RenderSceneHandle& renderSceneHandle)
+    + void renderLine(const glm::vec3& from, const glm::vec3& to, const glm::vec3& color)
+    + void renderLines(const std::vector<std::tuple<glm::vec3, glm::vec3, glm::vec3>>& lineData)
+    + void endRender()
+
+    + RenderSceneHandle createRenderScene()
+    + bool valid(const RenderSceneHandle& renderSceneHandle) const
+    + void destroy(const RenderSceneHandle& renderSceneHandle)
+
+    + CameraHandle createCamera(const glm::vec3& position, const glm::vec3& lookAt = glm::vec3(0.0f, 0.0f, 0.0f))
+    + bool valid(const CameraHandle& cameraHandle) const
+    + void destroy(const CameraHandle& cameraHandle)
+
+    + PointLightHandle createPointLight(const RenderSceneHandle& renderSceneHandle, const glm::vec3& position)
+    + DirectionalLightHandle createDirectionalLight(const RenderSceneHandle& renderSceneHandle, const glm::vec3& position)
+    + bool valid(const RenderSceneHandle& renderSceneHandle, const PointLightHandle& pointLightHandle) const
+    + bool valid(const RenderSceneHandle& renderSceneHandle, const DirectionalLightHandle& directionalLightHandle) const
+    + void destroy(const RenderSceneHandle& renderSceneHandle, const PointLightHandle& pointLightHandle)
+    + void destroy(const RenderSceneHandle& renderSceneHandle, const DirectionalLightHandle& directionalLightHandle)
+
+    + MeshHandle createStaticMesh(const IMesh& mesh)
+    + MeshHandle createDynamicMesh(const IMesh& mesh)
+    + bool valid(const MeshHandle& meshHandle) const
+    + void destroy(const MeshHandle& meshHandle)
+
+    + SkeletonHandle createSkeleton(const MeshHandle& meshHandle, const ISkeleton* skelton)
+    + bool valid(const SkeletonHandle& skeletonHandle) const
+    + void destroy(const SkeletonHandle& skeletonHandle)
+
+    + BonesHandle createBones(const uint32 maxNumberOfBones)
+    + bool valid(const BonesHandle& bonesHandle) const
+    + void destroy(const BonesHandle& bonesHandle)
+
+    + void attach(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle, const BonesHandle& bonesHandle)
+    + void detach(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle, const BonesHandle& bonesHandle)
+
+    + void attachBoneAttachment(\n\
+        const RenderSceneHandle& renderSceneHandle,\n\
+        const RenderableHandle& renderableHandle,\n\
+        const BonesHandle& bonesHandle,\n\
+        const glm::ivec4& boneIds,\n\
+        const glm::vec4& boneWeights\n\
+    )
+    + void detachBoneAttachment(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle)
+
+    + TextureHandle createTexture2d(const ITexture* texture)
+    + bool valid(const TextureHandle& textureHandle) const
+    + void destroy(const TextureHandle& textureHandle)
+
+    + MaterialHandle createMaterial(const IPbrMaterial* pbrMaterial)
+    + bool valid(const MaterialHandle& materialHandle) const
+    + void destroy(const MaterialHandle& materialHandle)
+
+    + TerrainHandle createStaticTerrain(\n\
+        const IHeightMap* heightMap,\n\
+        const ISplatMap* splatMap,\n\
+        const IDisplacementMap* displacementMap\n\
+    )
+    + bool valid(const TerrainHandle& terrainHandle) const
+    + void destroy(const TerrainHandle& terrainHandle)
+
+    + SkyboxHandle createStaticSkybox(const IImage& back, const IImage& down, const IImage& front, const IImage& left, const IImage& right, const IImage& up)
+    + bool valid(const SkyboxHandle& skyboxHandle) const
+    + void destroy(const SkyboxHandle& skyboxHandle)
+
+    + VertexShaderHandle createVertexShader(const std::string& data)
+    + FragmentShaderHandle createFragmentShader(const std::string& data)
+    + TessellationControlShaderHandle createTessellationControlShader(const std::string& data)
+    + TessellationEvaluationShaderHandle createTessellationEvaluationShader(const std::string& data)
+    + bool valid(const VertexShaderHandle& shaderHandle) const
+    + bool valid(const FragmentShaderHandle& shaderHandle) const
+    + bool valid(const TessellationControlShaderHandle& shaderHandle) const
+    + bool valid(const TessellationEvaluationShaderHandle& shaderHandle) const
+    + void destroy(const VertexShaderHandle& shaderHandle)
+    + void destroy(const FragmentShaderHandle& shaderHandle)
+    + void destroy(const TessellationControlShaderHandle& shaderHandle)
+    + void destroy(const TessellationEvaluationShaderHandle& shaderHandle)
+    + ShaderProgramHandle createShaderProgram(const VertexShaderHandle& vertexShaderHandle, const FragmentShaderHandle& fragmentShaderHandle)
+    + ShaderProgramHandle createShaderProgram(\n\
+        const VertexShaderHandle& vertexShaderHandle,\n\
+        const TessellationControlShaderHandle& tessellationControlShaderHandle,\n\
+        const TessellationEvaluationShaderHandle& tessellationEvaluationShaderHandle,\n\
+        const FragmentShaderHandle& fragmentShaderHandle\n\
+    )
+    + bool valid(const ShaderProgramHandle& shaderProgramHandle) const
+    + void destroy(const ShaderProgramHandle& shaderProgramHandle)
+
+    + RenderableHandle createRenderable(\n\
+        const RenderSceneHandle& renderSceneHandle,\n\
+        const MeshHandle& meshHandle,\n\
+        const TextureHandle& textureHandle,\n\
+        const glm::vec3& position,\n\
+        const glm::quat& orientation,\n\
+        const glm::vec3& scale = glm::vec3(1.0f),\n\
+        const ShaderProgramHandle& shaderProgramHandle = ShaderProgramHandle()\n\
+    )
+    + RenderableHandle createRenderable(\n\
+        const RenderSceneHandle& renderSceneHandle,\n\
+        const MeshHandle& meshHandle,\n\
+        const MaterialHandle& materialHandle,\n\
+        const glm::vec3& position,\n\
+        const glm::quat& orientation,\n\
+        const glm::vec3& scale = glm::vec3(1.0f)\n\
+    )
+    + bool valid(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle) const
+    + void destroy(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle)
+
+    + TerrainRenderableHandle createTerrainRenderable(const RenderSceneHandle& renderSceneHandle, const TerrainHandle& terrainHandle)
+    + bool valid(const RenderSceneHandle& renderSceneHandle, const TerrainRenderableHandle& terrainRenderableHandle) const
+    + void destroy(const RenderSceneHandle& renderSceneHandle, const TerrainRenderableHandle& terrainRenderableHandle)
+
+    + SkyboxRenderableHandle createSkyboxRenderable(const RenderSceneHandle& renderSceneHandle, const SkyboxHandle& skyboxHandle)
+    + bool valid(const RenderSceneHandle& renderSceneHandle, const SkyboxRenderableHandle& skyboxRenderableHandle) const
+    + void destroy(const RenderSceneHandle& renderSceneHandle, const SkyboxRenderableHandle& skyboxRenderableHandle)
+
+    + void rotate(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle, const glm::quat& quaternion, const TransformSpace& relativeTo = TransformSpace::TS_LOCAL)
+    + void rotate(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle, const float32 degrees, const glm::vec3& axis, const TransformSpace& relativeTo = TransformSpace::TS_LOCAL)
+    + void rotate(const CameraHandle& cameraHandle, const glm::quat& quaternion, const TransformSpace& relativeTo = TransformSpace::TS_LOCAL)
+    + void rotate(const CameraHandle& cameraHandle, const float32 degrees, const glm::vec3& axis, const TransformSpace& relativeTo = TransformSpace::TS_LOCAL)
+
+    + void setRotation(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle, const glm::quat& quaternion)
+    + void setRotation(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle, const float32 degrees, const glm::vec3& axis)
+    + glm::quat rotation(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle) const
+    + void setRotation(const CameraHandle& cameraHandle, const glm::quat& quaternion)
+    + void setRotation(const CameraHandle& cameraHandle, const float32 degrees, const glm::vec3& axis)
+    + glm::quat rotation(const CameraHandle& cameraHandle) const
+
+    + void translate(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle, const float32 x, const float32 y, const float32 z)
+    + void translate(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle, const glm::vec3& trans)
+    + void translate(const RenderSceneHandle& renderSceneHandle, const PointLightHandle& pointLightHandle, const float32 x, const float32 y, const float32 z)
+    + void translate(const RenderSceneHandle& renderSceneHandle, const PointLightHandle& pointLightHandle, const glm::vec3& trans)
+    + void translate(const CameraHandle& cameraHandle, const float32 x, const float32 y, const float32 z)
+    + void translate(const CameraHandle& cameraHandle, const glm::vec3& trans)
+
+    + void setScale(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle, const float32 x, const float32 y, const float32 z)
+    + void setScale(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle, const glm::vec3& scale)
+    + void setScale(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle, const float32 scale)
+    + glm::vec3 scale(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle) const
+
+    + void setPosition(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle, const float32 x, const float32 y, const float32 z)
+    + void setPosition(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle, const glm::vec3& position)
+    + glm::vec3 position(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle) const
+    + void setPosition(const RenderSceneHandle& renderSceneHandle, const PointLightHandle& pointLightHandle, const float32 x, const float32 y, const float32 z)
+    + void setPosition(const RenderSceneHandle& renderSceneHandle, const PointLightHandle& pointLightHandle, const glm::vec3& position)
+    + glm::vec3 position(const RenderSceneHandle& renderSceneHandle, const PointLightHandle& pointLightHandle) const
+    + void setPosition(const CameraHandle& cameraHandle, const float32 x, const float32 y, const float32 z)
+    + void setPosition(const CameraHandle& cameraHandle, const glm::vec3& position)
+    + glm::vec3 position(const CameraHandle& cameraHandle) const
+
+    + void lookAt(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle, const glm::vec3& lookAt)
+    + void lookAt(const CameraHandle& cameraHandle, const glm::vec3& lookAt)
+
+    + void assign(const RenderSceneHandle& renderSceneHandle, const RenderableHandle& renderableHandle, const SkeletonHandle& skeletonHandle)
+
+    + void update(\n\
+        const RenderSceneHandle& renderSceneHandle,\n\
+        const RenderableHandle& renderableHandle,\n\
+        const BonesHandle& bonesHandle,\n\
+        const std::vector<glm::mat4>& transformations\n\
+    )
+
+    + void setMouseRelativeMode(const bool enabled)
+    + void setWindowGrab(const bool enabled)
+    + bool cursorVisible() const
+    + void setCursorVisible(const bool visible)
+
+    + void processEvents()
+    + void addEventListener(IEventListener* eventListener)
+    + void removeEventListener(IEventListener* eventListener)
+}
+
+@enduml
