@@ -4,6 +4,7 @@
 #include <vector>
 #include <unordered_map>
 #include <string>
+#include <chrono>
 
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
@@ -21,29 +22,36 @@ struct aiAnimation;
 namespace ice_engine
 {
 
+template <typename T>
+struct KeyFrame
+{
+    KeyFrame() = default;
+
+    KeyFrame(std::chrono::duration<float32> time, T transformation) : time(std::move(time)), transformation(std::move(transformation))
+    {}
+
+    std::chrono::duration<float32> time{0.0f};
+    T transformation;
+};
+
 struct AnimatedBoneNode
 {
 	AnimatedBoneNode() = default;
 
 	AnimatedBoneNode(
 		std::string name,
-		std::vector< float64 > positionTimes,
-		std::vector< float64 > rotationTimes,
-		std::vector< float64 > scalingTimes,
-		std::vector< glm::vec3 > positions,
-		std::vector< glm::quat > rotations,
-		std::vector< glm::vec3 > scalings
-	) : name(std::move(name)), positionTimes(std::move(positionTimes)), rotationTimes(std::move(rotationTimes)), scalingTimes(std::move(scalingTimes)), positions(std::move(positions)), rotations(std::move(rotations)), scalings(std::move(scalings))
+        std::vector<KeyFrame<glm::vec3>> positionKeyFrames,
+        std::vector<KeyFrame<glm::quat>> rotationKeyFrames,
+        std::vector<KeyFrame<glm::vec3>> scalingKeyFrames
+	) : name(std::move(name)), positionKeyFrames(std::move(positionKeyFrames)), rotationKeyFrames(std::move(rotationKeyFrames)), scalingKeyFrames(std::move(scalingKeyFrames))
 	{
 	}
 
 	std::string name;
-	std::vector< float64 > positionTimes;
-	std::vector< float64 > rotationTimes;
-	std::vector< float64 > scalingTimes;
-	std::vector< glm::vec3 > positions;
-	std::vector< glm::quat > rotations;
-	std::vector< glm::vec3 > scalings;
+
+	std::vector<KeyFrame<glm::vec3>> positionKeyFrames;
+	std::vector<KeyFrame<glm::quat>> rotationKeyFrames;
+	std::vector<KeyFrame<glm::vec3>> scalingKeyFrames;
 };
 
 class Animation
@@ -51,11 +59,11 @@ class Animation
 public:
 
 	Animation() = default;
-	
+
 	Animation(
 		std::string name,
-		float64 duration,
-		float64 ticksPerSecond,
+        std::chrono::duration<float32> duration,
+		float32 ticksPerSecond,
 		std::unordered_map<std::string, AnimatedBoneNode> animatedBoneNodes
 	)
 	:
@@ -78,12 +86,12 @@ public:
 		return name_;
 	}
 
-	float64 duration() const
+    std::chrono::duration<float32> duration() const
 	{
 		return duration_;
 	}
 
-	float64 ticksPerSecond() const
+	float32 ticksPerSecond() const
 	{
 		return ticksPerSecond_;
 	}
@@ -95,8 +103,8 @@ public:
 
 private:
 	std::string name_;
-	float64 duration_ = 0;
-	float64 ticksPerSecond_ = 0;
+    std::chrono::duration<float32> duration_ = std::chrono::duration<float32>(0.0f);
+	float32 ticksPerSecond_ = 0.0f;
 	std::unordered_map< std::string, AnimatedBoneNode > animatedBoneNodes_;
 
 	void import(const std::string& name, const std::string& filename, const aiAnimation* animation, logger::ILogger* logger, fs::IFileSystem* fileSystem);

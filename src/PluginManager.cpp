@@ -7,6 +7,8 @@
 
 #include "exceptions/Exception.hpp"
 
+#include "detail/Format.hpp"
+
 #include "utilities/StringUtilities.hpp"
 
 namespace ice_engine
@@ -21,15 +23,11 @@ auto import(const std::string& path, const std::string& name, boost::dll::load_m
 	}
 	catch (const std::exception& e)
 	{
-		throw Exception("unable to load plugin " + path + ": " + e.what());
+		throw Exception(detail::format("unable to load plugin %s: %s", path, e.what()));
 	}
 }
 
-PluginManager::PluginManager(
-		utilities::Properties* properties,
-		fs::IFileSystem* fileSystem,
-		logger::ILogger* logger
-	)
+PluginManager::PluginManager(utilities::Properties* properties, fs::IFileSystem* fileSystem, logger::ILogger* logger)
 	:
 		properties_(properties),
 		fileSystem_(fileSystem),
@@ -37,24 +35,44 @@ PluginManager::PluginManager(
 {
 	LOG_INFO(logger_, "Loading plugins.");
 	
-	LOG_INFO(logger_, "Loading gui plugins.");
+	LOG_INFO(logger_, "Loading image resource importer plugins.");
+
+    {
+        std::vector<std::string> pluginNames;
+        utilities::explode(properties_->getStringValue("plugins.imageresourceimporterplugins"), ',', std::back_inserter(pluginNames));
+
+        for (const auto& pluginName : pluginNames)
+        {
+            LOG_INFO(logger_, "Loading image resource importer plugin '%s'.", pluginName);
+            auto pluginBoostSharedPtr = import<ice_engine::IResourceImporterPlugin<Image>>("./" + pluginName + "_plugin", "plugin", boost::dll::load_mode::append_decorations);
+
+            // Convert from boost::shared_ptr<T> to std::shared_ptr<T>
+            auto pluginStdSharedPtr = std::shared_ptr<ice_engine::IResourceImporterPlugin<Image>>(pluginBoostSharedPtr.get(), [pluginBoostSharedPtr](ice_engine::IResourceImporterPlugin<Image>*) {});
+
+            imageResourceImporterPlugins_.push_back(pluginStdSharedPtr);
+        }
+    }
 	
+	LOG_INFO(logger_, "Finished loading image resource importer plugins.");
+
+	LOG_INFO(logger_, "Loading gui plugins.");
+
 	std::vector<std::string> guiPluginNames;
 	utilities::explode(properties_->getStringValue("plugins.guiplugins"), ',', std::back_inserter(guiPluginNames));
-	
+
 	for (const auto& guiPluginName : guiPluginNames)
 	{
 		LOG_INFO(logger_, "Loading gui plugin '%s'.", guiPluginName);
 		auto pluginBoostSharedPtr = import<ice_engine::IGuiPlugin>("./" + guiPluginName + "_plugin", "plugin", boost::dll::load_mode::append_decorations);
-		
+
 		// Convert from boost::shared_ptr<T> to std::shared_ptr<T>
 		auto pluginStdSharedPtr = std::shared_ptr<ice_engine::IGuiPlugin>(pluginBoostSharedPtr.get(), [pluginBoostSharedPtr](ice_engine::IGuiPlugin*){});
-		
+
 		guiPlugins_.push_back( pluginStdSharedPtr );
 	}
-	
+
 	LOG_INFO(logger_, "Finished loading gui plugins.");
-	
+
 	LOG_INFO(logger_, "Loading graphics plugin.");
 
     const std::string graphicsPluginName = properties_->getStringValue("plugins.graphicsplugin");
@@ -207,6 +225,11 @@ const std::vector<std::shared_ptr<IModulePlugin>>& PluginManager::getModulePlugi
 const std::vector<std::shared_ptr<IScriptingEngineBindingPlugin>>& PluginManager::scriptingEngineBindingPlugins() const
 {
 	return scriptingEngineBindingPlugins_;
+}
+
+const std::vector<std::shared_ptr<IResourceImporterPlugin<Image>>>& PluginManager::getImageResourceImporterPlugins() const
+{
+    return imageResourceImporterPlugins_;
 }
 
 }

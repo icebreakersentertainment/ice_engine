@@ -172,7 +172,7 @@ void EntityBindingDelegate::bind()
 		{
 			{"AnimationHandle animationHandle", asOFFSET(ecs::AnimationComponent, animationHandle)},
 			{"BonesHandle bonesHandle", asOFFSET(ecs::AnimationComponent, bonesHandle)},
-			{"float runningTime", asOFFSET(ecs::AnimationComponent, runningTime)},
+			{"chrono::durationFloat runningTime", asOFFSET(ecs::AnimationComponent, runningTime)},
 			{"float speed", asOFFSET(ecs::AnimationComponent, speed)},
 			{"uint32 startFrame", asOFFSET(ecs::AnimationComponent, startFrame)},
 			{"uint32 endFrame", asOFFSET(ecs::AnimationComponent, endFrame)},

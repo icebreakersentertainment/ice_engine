@@ -26,7 +26,11 @@ namespace ice_engine
 struct Bone
 {
 	std::string name;
-	glm::mat4 boneOffset = glm::mat4(1.0f);
+
+	/**
+	 * Describes the model space transformation from the original pose position back to the origin.
+	 */
+	glm::mat4 inverseModelSpacePoseTransform = glm::mat4(1.0f);
 };
 
 struct BoneData

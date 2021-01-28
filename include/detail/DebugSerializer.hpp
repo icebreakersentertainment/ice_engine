@@ -2,6 +2,7 @@
 #define ICEENGINEDEBUGSERIALIZER_H_
 
 #include <ostream>
+#include <chrono>
 
 #include <boost/type_index.hpp>
 
@@ -16,6 +17,7 @@
 #include "fs/IFileSystem.hpp"
 #include "logger/ILogger.hpp"
 
+#define COMMA ,
 #define PRINT_HEADER_TO_STREAM(class) << "(" << boost::typeindex::type_id<class>().pretty_name() << ")["
 #define PRINT_TO_STREAM(data, name) << #name ": " << data.name
 #define PRINT_DELIMITER() << ", "
@@ -40,6 +42,28 @@ inline std::ostream& operator<<(std::ostream& os, const glm::quat& data)
 }
 
 }
+
+// chrono
+namespace std
+{
+namespace chrono
+{
+
+template <typename T, typename R>
+inline std::ostream& operator<<(std::ostream& os, const std::chrono::duration<T, R>& duration)
+{
+    os  PRINT_HEADER_TO_STREAM(std::chrono::duration<T COMMA R>)
+            PRINT_TO_STREAM(duration, count())
+            PRINT_FOOTER_TO_STREAM()
+            ;
+
+    return os;
+}
+
+}
+}
+
+using std::chrono::operator<<;
 
 // handles
 namespace ice_engine

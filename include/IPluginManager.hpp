@@ -4,6 +4,9 @@
 #include <vector>
 #include <memory>
 
+#include "Image.hpp"
+
+#include "IResourceImporterPlugin.hpp"
 #include "IGuiPlugin.hpp"
 #include "IGraphicsPlugin.hpp"
 #include "IAudioPlugin.hpp"
@@ -19,11 +22,9 @@ namespace ice_engine
 class IPluginManager
 {
 public:
-	virtual ~IPluginManager()
-	{
-	}
-	;
+	virtual ~IPluginManager() = default;
 
+	virtual const std::vector<std::shared_ptr<IResourceImporterPlugin<Image>>>& getImageResourceImporterPlugins() const = 0;
 	virtual const std::vector<std::shared_ptr<IGuiPlugin>>& getGuiPlugins() const = 0;
 	virtual std::shared_ptr<IGraphicsPlugin> getGraphicsPlugin() const = 0;
 	virtual std::shared_ptr<IAudioPlugin> getAudioPlugin() const = 0;

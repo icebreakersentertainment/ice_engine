@@ -469,7 +469,7 @@ void Scene::tickAnimations(const float32 delta)
                 });
             });
 
-            animationComponent->runningTime += delta * animationComponent->speed;
+            animationComponent->runningTime += std::chrono::duration<float32>(delta) * animationComponent->speed;
         }
     }
 }

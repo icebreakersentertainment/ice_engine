@@ -12,6 +12,7 @@
 #include <shared_mutex>
 #include <queue>
 #include <typeindex>
+#include <chrono>
 
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
@@ -54,6 +55,7 @@
 
 #include "ResourceCache.hpp"
 #include "ResourceHandleCache.hpp"
+#include "resources/ResourceManager.hpp"
 #include "resources/EngineResourceManager.hpp"
 #include "Camera.hpp"
 #include "ThreadPool.hpp"
@@ -155,6 +157,19 @@ public:
 	{
 		return resourceHandleCache_;
 	}
+
+	template <typename T>
+    ResourceManager<T>& resourceManager()
+    {
+        const auto it = resourceManagers_.find(typeid(T));
+
+        if (it != resourceManagers_.end())
+        {
+            return *dynamic_cast<ResourceManager<T>*>(it->second.get());
+        }
+
+        throw RuntimeException(detail::format("No resource manager found for %s", boost::typeindex::type_id<T>().pretty_name()));
+    }
 
 	template <typename T>
     EngineResourceManager<T>& engineResourceManager()
@@ -372,12 +387,12 @@ public:
 	std::shared_future<void> postWorkToOpenGlWorker(void* object);
 
 	// Implements the graphics::IEventListener interface
-	virtual bool processEvent(const graphics::Event& event) override;
+	bool processEvent(const graphics::Event& event) override;
 
 	// Implements the networking::IEventListener interface
-	virtual bool processEvent(const networking::ConnectEvent& event) override;
-	virtual bool processEvent(const networking::DisconnectEvent& event) override;
-	virtual bool processEvent(const networking::MessageEvent& event) override;
+	bool processEvent(const networking::ConnectEvent& event) override;
+	bool processEvent(const networking::DisconnectEvent& event) override;
+	bool processEvent(const networking::MessageEvent& event) override;
 
 	physics::CollisionShapeHandle createStaticBoxShape(const std::string& name, const glm::vec3& dimensions)
 	{
@@ -531,7 +546,7 @@ public:
 
     void animateSkeleton(
         std::vector<glm::mat4>& transformations,
-        const float32 runningTime,
+        const std::chrono::duration<float32> runningTime,
         const graphics::MeshHandle& meshHandle,
         const AnimationHandle& animationHandle,
         const SkeletonHandle& skeletonHandle
@@ -539,7 +554,7 @@ public:
 
     void animateSkeleton(
         std::vector<glm::mat4>& transformations,
-        const float32 runningTime,
+        const std::chrono::duration<float32> runningTime,
         const uint32 startFrame,
         const uint32 endFrame,
         const graphics::MeshHandle& meshHandle,
@@ -943,6 +958,7 @@ private:
 
 	ResourceCache resourceCache_;
 	ResourceHandleCache resourceHandleCache_;
+    std::map<std::type_index, std::unique_ptr<BaseResourceManager>> resourceManagers_;
     std::map<std::type_index, std::unique_ptr<BaseEngineResourceManager>> engineResourceManagers_;
 
 	bool running_;
@@ -971,7 +987,6 @@ private:
 	// Initialization stuff
 	void initializeLoggingSubSystem();
 	void initializeFileSystemSubSystem();
-	void initializeSoundSubSystem();
 	void initializePhysicsSubSystem();
 	void initializePathfindingSubSystem();
 	void initializeGraphicsSubSystem();
@@ -984,6 +999,7 @@ private:
 	void initializeDataStoreSubSystem();
 	void initializeEntitySubSystem();
 	void initializeModuleSubSystem();
+    void initializeResourceManagers();
 	void initializeEngineResourceManagers();
 
 	void internalInitializeScene(std::unique_ptr<Scene>& scene);

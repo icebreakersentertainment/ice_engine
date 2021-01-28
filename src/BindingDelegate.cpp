@@ -373,17 +373,31 @@ void BindingDelegate::bind()
 	scriptingEngine_->registerObjectBehaviour("Skeleton", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DefaultDestructor<Skeleton>), asCALL_CDECL_OBJLAST);
 	scriptingEngine_->registerClassMethod("Skeleton", "Skeleton& opAssign(const Skeleton& in)", asMETHODPR(Skeleton, operator=, (const Skeleton&), Skeleton&));
 
+    scriptingEngine_->registerObjectType("KeyFrameVec3", sizeof(KeyFrame<glm::vec3>), asOBJ_VALUE | asGetTypeTraits<KeyFrame<glm::vec3>>());
+    scriptingEngine_->registerObjectBehaviour("KeyFrameVec3", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(DefaultConstructor<KeyFrame<glm::vec3>>), asCALL_CDECL_OBJLAST);
+    scriptingEngine_->registerObjectBehaviour("KeyFrameVec3", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DefaultDestructor<KeyFrame<glm::vec3>>), asCALL_CDECL_OBJLAST);
+    scriptingEngine_->registerClassMethod("KeyFrameVec3", "KeyFrameVec3& opAssign(const KeyFrameVec3& in)", asMETHODPR(KeyFrame<glm::vec3>, operator=, (const KeyFrame<glm::vec3>&), KeyFrame<glm::vec3>&));
+    scriptingEngine_->registerObjectProperty("KeyFrameVec3", "chrono::durationFloat time", asOFFSET(KeyFrame<glm::vec3>, time));
+    scriptingEngine_->registerObjectProperty("KeyFrameVec3", "vec3 transformation", asOFFSET(KeyFrame<glm::vec3>, transformation));
+
+    scriptingEngine_->registerObjectType("KeyFrameQuat", sizeof(KeyFrame<glm::quat>), asOBJ_VALUE | asGetTypeTraits<KeyFrame<glm::quat>>());
+    scriptingEngine_->registerObjectBehaviour("KeyFrameQuat", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(DefaultConstructor<KeyFrame<glm::quat>>), asCALL_CDECL_OBJLAST);
+    scriptingEngine_->registerObjectBehaviour("KeyFrameQuat", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DefaultDestructor<KeyFrame<glm::quat>>), asCALL_CDECL_OBJLAST);
+    scriptingEngine_->registerClassMethod("KeyFrameQuat", "KeyFrameQuat& opAssign(const KeyFrameQuat& in)", asMETHODPR(KeyFrame<glm::quat>, operator=, (const KeyFrame<glm::quat>&), KeyFrame<glm::quat>&));
+    scriptingEngine_->registerObjectProperty("KeyFrameQuat", "chrono::durationFloat time", asOFFSET(KeyFrame<glm::quat>, time));
+    scriptingEngine_->registerObjectProperty("KeyFrameQuat", "quat transformation", asOFFSET(KeyFrame<glm::quat>, transformation));
+
+    registerVectorBindings<KeyFrame<glm::vec3>>(scriptingEngine_, "vectorKeyFrameVec3", "KeyFrameVec3");
+    registerVectorBindings<KeyFrame<glm::quat>>(scriptingEngine_, "vectorKeyFrameQuat", "KeyFrameQuat");
+
 	scriptingEngine_->registerObjectType("AnimatedBoneNode", sizeof(AnimatedBoneNode), asOBJ_VALUE | asGetTypeTraits<AnimatedBoneNode>());
     scriptingEngine_->registerObjectBehaviour("AnimatedBoneNode", asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(DefaultConstructor<AnimatedBoneNode>), asCALL_CDECL_OBJLAST);
     scriptingEngine_->registerObjectBehaviour("AnimatedBoneNode", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DefaultDestructor<AnimatedBoneNode>), asCALL_CDECL_OBJLAST);
     scriptingEngine_->registerClassMethod("AnimatedBoneNode", "AnimatedBoneNode& opAssign(const AnimatedBoneNode& in)", asMETHODPR(AnimatedBoneNode, operator=, (const AnimatedBoneNode&), AnimatedBoneNode&));
     scriptingEngine_->registerObjectProperty("AnimatedBoneNode", "string name", asOFFSET(AnimatedBoneNode, name));
-    scriptingEngine_->registerObjectProperty("AnimatedBoneNode", "vectorDouble positionTimes", asOFFSET(AnimatedBoneNode, positionTimes));
-    scriptingEngine_->registerObjectProperty("AnimatedBoneNode", "vectorDouble rotationTimes", asOFFSET(AnimatedBoneNode, rotationTimes));
-    scriptingEngine_->registerObjectProperty("AnimatedBoneNode", "vectorDouble scalingTimes", asOFFSET(AnimatedBoneNode, scalingTimes));
-    scriptingEngine_->registerObjectProperty("AnimatedBoneNode", "vectorVec3 positions", asOFFSET(AnimatedBoneNode, positions));
-    scriptingEngine_->registerObjectProperty("AnimatedBoneNode", "vectorQuat rotations", asOFFSET(AnimatedBoneNode, rotations));
-    scriptingEngine_->registerObjectProperty("AnimatedBoneNode", "vectorVec3 scalings", asOFFSET(AnimatedBoneNode, scalings));
+    scriptingEngine_->registerObjectProperty("AnimatedBoneNode", "vectorKeyFrameVec3 positionKeyFrames", asOFFSET(AnimatedBoneNode, positionKeyFrames));
+    scriptingEngine_->registerObjectProperty("AnimatedBoneNode", "vectorKeyFrameQuat rotationKeyFrames", asOFFSET(AnimatedBoneNode, rotationKeyFrames));
+    scriptingEngine_->registerObjectProperty("AnimatedBoneNode", "vectorKeyFrameVec3 scalingKeyFrames", asOFFSET(AnimatedBoneNode, scalingKeyFrames));
 
     registerUnorderedMapBindings<std::string, AnimatedBoneNode>(scriptingEngine_, "unordered_mapStringAnimatedBoneNode", "string", "AnimatedBoneNode");
 
@@ -392,8 +406,8 @@ void BindingDelegate::bind()
 	scriptingEngine_->registerObjectBehaviour("Animation", asBEHAVE_DESTRUCT, "void f()", asFUNCTION(DefaultDestructor<Animation>), asCALL_CDECL_OBJLAST);
 	scriptingEngine_->registerClassMethod("Animation", "Animation& opAssign(const Animation& in)", asMETHODPR(Animation, operator=, (const Animation&), Animation&));
 	scriptingEngine_->registerClassMethod("Animation", "const string& name() const", asMETHOD(Animation, name));
-	scriptingEngine_->registerClassMethod("Animation", "double duration() const", asMETHOD(Animation, duration));
-	scriptingEngine_->registerClassMethod("Animation", "double ticksPerSecond() const", asMETHOD(Animation, ticksPerSecond));
+	scriptingEngine_->registerClassMethod("Animation", "chrono::durationFloat duration() const", asMETHOD(Animation, duration));
+	scriptingEngine_->registerClassMethod("Animation", "float ticksPerSecond() const", asMETHOD(Animation, ticksPerSecond));
 	scriptingEngine_->registerClassMethod("Animation", "const unordered_mapStringAnimatedBoneNode& animatedBoneNodes() const", asMETHOD(Animation, animatedBoneNodes));
 
 	registerVectorBindings<Mesh>(scriptingEngine_, "vectorMesh", "Mesh");
@@ -620,7 +634,7 @@ void BindingDelegate::bind()
 
 	scriptingEngine_->registerObjectType("EngineStatistics", 0, asOBJ_REF | asOBJ_NOCOUNT);
 	scriptingEngine_->registerObjectProperty("EngineStatistics", "float fps", asOFFSET(EngineStatistics, fps));
-	scriptingEngine_->registerObjectProperty("EngineStatistics", "float renderTime", asOFFSET(EngineStatistics, renderTime));
+	scriptingEngine_->registerObjectProperty("EngineStatistics", "chrono::durationFloat renderTime", asOFFSET(EngineStatistics, renderTime));
 
 	// IDebugRenderer
 	scriptingEngine_->registerObjectType("IDebugRenderer", 0, asOBJ_REF | asOBJ_NOCOUNT);

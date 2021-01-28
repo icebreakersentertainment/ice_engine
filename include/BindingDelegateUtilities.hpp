@@ -254,7 +254,10 @@ public:
 
 	static bool valid(T* v) { return v->valid(); }
 	static void wait(T* v) { v->wait(); }
-	static std::future_status wait_for(const std::chrono::seconds& s, T* v) { return v->wait_for(s); }
+//	static std::future_status wait_for(const std::chrono::seconds& s, T* v) { return v->wait_for(s); }
+
+    template <typename Duration>
+	static std::future_status wait_for(const Duration& d, T* v) { return v->wait_for(d); }
 	//static std::future_status wait_until(const std::chrono::system_clock::time_point& timePoint, T* v) { return v->wait_until(timePoint); }
 };
 
@@ -265,39 +268,40 @@ template<typename V>
 void registerSharedFutureBindings(scripting::IScriptingEngine* scriptingEngine, const std::string& name, const std::string& type, asEObjTypeFlags objectTypeFlags = asOBJ_APP_CLASS_ALLINTS)
 {
 
-	typedef SharedFutureRegisterHelper<std::shared_future<V>, V> SharedFutureBase;
+	using SharedFutureType = SharedFutureRegisterHelper<std::shared_future<V>, V>;
 
 	scriptingEngine->registerObjectType(name.c_str(), sizeof(std::shared_future<V>), asOBJ_VALUE | objectTypeFlags | asGetTypeTraits<std::shared_future<V>>());
 
-	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(SharedFutureBase::DefaultConstructor), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f()", asFUNCTION(SharedFutureType::DefaultConstructor), asCALL_CDECL_OBJLAST);
 	auto copyConstructorString = std::string("void f(const ") + name + "& in)";
-	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, copyConstructorString.c_str(), asFUNCTION(SharedFutureBase::CopyConstructor), asCALL_CDECL_OBJLAST);
-	//scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f(int)", asFUNCTION(SharedFutureBase::InitConstructor), asCALL_CDECL_OBJLAST);
-	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_DESTRUCT, "void f()", asFUNCTION(SharedFutureBase::DefaultDestructor), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, copyConstructorString.c_str(), asFUNCTION(SharedFutureType::CopyConstructor), asCALL_CDECL_OBJLAST);
+	//scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_CONSTRUCT, "void f(int)", asFUNCTION(SharedFutureType::InitConstructor), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectBehaviour(name.c_str(), asBEHAVE_DESTRUCT, "void f()", asFUNCTION(SharedFutureType::DefaultDestructor), asCALL_CDECL_OBJLAST);
 
 	auto assignmentOperatorFunctionString = name + std::string("& opAssign(const ") + name + "& in)";
-	scriptingEngine->registerObjectMethod(name.c_str(), assignmentOperatorFunctionString.c_str(), asFUNCTION(SharedFutureBase::assignmentOperator), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectMethod(name.c_str(), assignmentOperatorFunctionString.c_str(), asFUNCTION(SharedFutureType::assignmentOperator), asCALL_CDECL_OBJLAST);
 
 	if (type == "void")
     {
         auto getFunctionString = type + " get() const";
-        scriptingEngine->registerObjectMethod(name.c_str(), getFunctionString.c_str(), asFUNCTION(SharedFutureBase:: template get<>), asCALL_CDECL_OBJLAST);
+        scriptingEngine->registerObjectMethod(name.c_str(), getFunctionString.c_str(), asFUNCTION(SharedFutureType:: template get<>), asCALL_CDECL_OBJLAST);
     }
 	else if (type.find("@") > 0)
     {
         auto getFunctionString = type + " get() const";
-        scriptingEngine->registerObjectMethod(name.c_str(), getFunctionString.c_str(), asFUNCTION(SharedFutureBase:: template get<>), asCALL_CDECL_OBJLAST);
+        scriptingEngine->registerObjectMethod(name.c_str(), getFunctionString.c_str(), asFUNCTION(SharedFutureType:: template get<>), asCALL_CDECL_OBJLAST);
     }
 	else
     {
         auto getFunctionString = "const " + type + "& get() const";
-        scriptingEngine->registerObjectMethod(name.c_str(), getFunctionString.c_str(), asFUNCTION(SharedFutureBase:: template get<>), asCALL_CDECL_OBJLAST);
+        scriptingEngine->registerObjectMethod(name.c_str(), getFunctionString.c_str(), asFUNCTION(SharedFutureType:: template get<>), asCALL_CDECL_OBJLAST);
     }
 
-	scriptingEngine->registerObjectMethod(name.c_str(), "bool valid() const", asFUNCTION(SharedFutureBase::valid), asCALL_CDECL_OBJLAST);
-	scriptingEngine->registerObjectMethod(name.c_str(), "void wait() const", asFUNCTION(SharedFutureBase::wait), asCALL_CDECL_OBJLAST);
-	scriptingEngine->registerObjectMethod(name.c_str(), "future_status wait_for(const chrono::seconds& in) const", asFUNCTION(SharedFutureBase::wait_for), asCALL_CDECL_OBJLAST);
-	//scriptingEngine->registerObjectMethod(name.c_str(), "future_status wait_until(chrono::system_clock::time_point) const", asFUNCTION(SharedFutureBase::wait_for), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectMethod(name.c_str(), "bool valid() const", asFUNCTION(SharedFutureType::valid), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectMethod(name.c_str(), "void wait() const", asFUNCTION(SharedFutureType::wait), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectMethod(name.c_str(), "future_status wait_for(const chrono::durationFloat& in) const", asFUNCTION(SharedFutureType::wait_for<std::chrono::duration<float32>>), asCALL_CDECL_OBJLAST);
+	scriptingEngine->registerObjectMethod(name.c_str(), "future_status wait_for(const chrono::seconds& in) const", asFUNCTION(SharedFutureType::wait_for<std::chrono::seconds>), asCALL_CDECL_OBJLAST);
+	//scriptingEngine->registerObjectMethod(name.c_str(), "future_status wait_until(chrono::system_clock::time_point) const", asFUNCTION(SharedFutureType::wait_for), asCALL_CDECL_OBJLAST);
 }
 
 template<typename T, typename ... V>

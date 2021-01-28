@@ -18,9 +18,15 @@ void VertexBoneData::import(const std::string& name, const std::string& filename
     {
         const auto it = boneData.boneIndexMap.find(mesh->mBones[i]->mName.C_Str());
 
-        if (it == boneData.boneIndexMap.end()) continue;
+        if (it == boneData.boneIndexMap.end())
+        {
+            LOG_DEBUG(logger, "Wasn't able to find bone '%s' in bone index map while importing bone data for mesh '%s' for model '%s'.", mesh->mBones[i]->mName.C_Str(), filename, name);
+            continue;
+        }
 
         const uint32 boneIndex = it->second;
+
+        LOG_DEBUG(logger, "Found bone '%s' in bone index map at index %s while importing bone data for mesh '%s' for model '%s'.", mesh->mBones[i]->mName.C_Str(), boneIndex, filename, name);
 
         for (uint32 j = 0; j < mesh->mBones[i]->mNumWeights; ++j)
         {
@@ -70,16 +76,19 @@ void Mesh::importBones(const std::string& name, const std::string& filename, uin
 
         if (boneData_.boneIndexMap.find(data.name) == boneData_.boneIndexMap.end())
         {
+            LOG_DEBUG(logger, "Found new bone '%s' while importing bone data for model '%s'.", data.name, name);
             boneIndex = static_cast<uint32>(boneData_.boneIndexMap.size());
             boneData_.boneTransform.push_back(data);
         }
         else
         {
+            LOG_DEBUG(logger, "Found duplicate bone '%s' while importing bone data for model '%s'.", data.name, name);
             boneIndex = boneData_.boneIndexMap[data.name];
         }
 
+        LOG_DEBUG(logger, "Adding bone '%s' at index %s while importing bone data for model '%s'.", data.name, boneIndex, name);
         boneData_.boneIndexMap[data.name] = boneIndex;
-        boneData_.boneTransform[boneIndex].boneOffset = detail::toGlm(mesh->mBones[i]->mOffsetMatrix);
+        boneData_.boneTransform[boneIndex].inverseModelSpacePoseTransform = detail::toGlm(mesh->mBones[i]->mOffsetMatrix);
     }
 
     LOG_DEBUG(logger, "Done importing boneData for mesh '%s' for model '%s'." , filename, name);
@@ -89,7 +98,7 @@ void Mesh::import(const std::string& name, const std::string& filename, const ui
 {
     LOG_DEBUG(logger, "Importing mesh '%s' for model '%s'.", filename, name);
 
-    importBones( name, filename, index, mesh, logger, fileSystem );
+    importBones(name, filename, index, mesh, logger, fileSystem);
 
     // Set the mesh name
     if (mesh->mName.length > 0)

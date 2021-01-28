@@ -13,14 +13,12 @@ namespace ice_engine
 class PluginManager : public IPluginManager
 {
 public:
-		PluginManager(
-		utilities::Properties* properties,
-		fs::IFileSystem* fileSystem,
-		logger::ILogger* logger
-	);
+    PluginManager(utilities::Properties* properties, fs::IFileSystem* fileSystem, logger::ILogger* logger);
 	~PluginManager() override = default;
 
-	const std::vector<std::shared_ptr<IGuiPlugin>>& getGuiPlugins() const override;
+    const std::vector<std::shared_ptr<IResourceImporterPlugin<Image>>>& getImageResourceImporterPlugins() const override;
+
+    const std::vector<std::shared_ptr<IGuiPlugin>>& getGuiPlugins() const override;
 	std::shared_ptr<IGraphicsPlugin> getGraphicsPlugin() const override;
 	std::shared_ptr<IAudioPlugin> getAudioPlugin() const override;
 	std::shared_ptr<IPathfindingPlugin> getPathfindingPlugin() const override;
@@ -34,6 +32,7 @@ private:
 	fs::IFileSystem* fileSystem_;
 	logger::ILogger* logger_;
 	
+	std::vector<std::shared_ptr<IResourceImporterPlugin<Image>>> imageResourceImporterPlugins_;
 	std::vector<std::shared_ptr<IGuiPlugin>> guiPlugins_;
 	std::shared_ptr<IGraphicsPlugin> graphicsPlugin_;
 	std::shared_ptr<IAudioPlugin> audioPlugin_;

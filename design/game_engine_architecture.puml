@@ -1,13 +1,556 @@
 @startuml
 'https://plantuml.com/class-diagram
 
-'VertexBoneData
-class Skeleton
+'VertexBoneData (Skeleton?)
+class VertexToJointMap
+{
+    + std::string name
+	+ std::vector<glm::ivec4> jointIndices
+	+ std::vector<glm::vec4> weights
+}
 
-'Bone
-class Bone
+'Bone, BoneNode
+class Joint
+{
+    'from BoneData.boneIndexMap
+    + uint32 index
+    'Bone.boneIndexMap
+    + std::string name
+    'Bone.boneOffset
+	+ glm::mat4 inverseModelSpacePoseTransform
+
+    'BoneNode.transformation
+    + glm::mat4 jointSpacePoseTransformation
+    'BoneNode.children
+    + std::vector<Joint> children
+}
 
 'BoneData
-class BoneMap
+'class BoneData
+'{
+'	std::string name
+'	std::unordered_map< std::string, uint32 > boneIndexMap
+'	std::vector< Bone > boneTransform
+'}
+
+'class BoneNode
+'{
+'	std::string name
+'	glm::mat4 transformation
+'	std::vector<BoneNode> children
+'}
+
+class Skeleton
+{
+    + std::string name
+	+ Joint rootJoint
+	+ glm::mat4 globalInverseModelSpaceTransform
+}
+
+class Animation
+{
+    + std::string name
+	+ std::chrono::duration<float32> duration
+	+ float32 ticksPerSecond
+	+ std::unordered_map<std::string, AnimatedJoint> animatedJoints
+}
+
+class AnimatedJoint
+{
+    + std::string name
+    + std::vector<KeyFrame<glm::vec3>> positionKeyFrames
+    + std::vector<KeyFrame<glm::quat>> rotationKeyFrames
+    + std::vector<KeyFrame<glm::vec3>> scalingKeyFrames
+}
+
+class "KeyFrame<T>" as KeyFrame_t
+{
+	+ std::chrono::duration<float32> time
+	+ T transformation
+}
+
+class GameEngine
+{
+	+ void run()
+
+	+ const EngineStatistics& getEngineStatistics() const
+
+	+ void setIGameInstance(void* object)
+
+	+ void setBootstrapScript(const std::string& filename)
+
+	+ audio::IAudioEngine* audioEngine() const
+	+ graphics::IGraphicsEngine* graphicsEngine() const
+	+ physics::IPhysicsEngine* physicsEngine() const
+	+ scripting::IScriptingEngine* scriptingEngine() const
+	+ IDebugRenderer* debugRenderer() const
+	+ pathfinding::IPathfindingEngine* pathfindingEngine() const
+	+ IThreadPool* backgroundThreadPool() const
+	+ IThreadPool* foregroundThreadPool() const
+	+ IOpenGlLoader* openGlLoader() const
+	+ IOpenGlLoader* foregroundGraphicsThreadPool() const
+	+ logger::ILogger* logger() const
+	+ fs::IFileSystem* fileSystem() const
+	+ ResourceCache& resourceCache()
+
+	+ ResourceHandleCache& resourceHandleCache()
+
+'	template <typename T>
+    + ResourceManager<T>& resourceManager()
+
+'	template <typename T>
+    + EngineResourceManager<T>& engineResourceManager()
+
+	+ graphics::gui::IGui* createGui(const std::string& name)
+	+ void destroyGui(const graphics::gui::IGui* gui)
+
+	+ void setCallback(graphics::gui::IButton* button, void* object)
+    + void setOnChangeCallback(graphics::gui::ITextField* textField, void* object)
+    + void setOnChangeCallback(graphics::gui::ITextArea* textArea, void* object)
+	+ void setCallback(graphics::gui::IMenuItem* menuItem, void* object)
+	+ void setCallback(graphics::gui::IComboBox* comboBox, void* object)
+	+ void setCallback(graphics::gui::ITreeView* treeView, void* object)
+
+	+ Audio* loadAudio(const std::string& name, const std::string& filename)
+	+ std::shared_future<Audio*> loadAudioAsync(const std::string& name, const std::string& filename)
+
+	+ IImage* createImage(const std::string& name, const std::vector<byte>& data, const uint32 width, const uint32 height, const IImage::Format format)
+
+	+ IImage* loadImage(const std::string& name, const std::string& filename)
+	+ std::shared_future<IImage*> loadImageAsync(const std::string& name, const std::string& filename)
+	+ Model* loadModel(const std::string& name, const std::string& filename)
+	+ std::shared_future<Model*> loadModelAsync(const std::string& name, const std::string& filename)
+	+ Model* importModel(const std::string& name, const std::string& filename)
+	+ std::shared_future<Model*> importModelAsync(const std::string& name, const std::string& filename)
+
+	+ void unloadAudio(const std::string& name)
+	+ void unloadImage(const std::string& name)
+	+ void unloadModel(const std::string& name)
+
+	+ Audio* getAudio(const std::string& name) const
+	+ IImage* getImage(const std::string& name) const
+	+ Model* getModel(const std::string& name) const
+
+	+ ModelHandle loadStaticModel(const Model* model)
+	+ std::shared_future<ModelHandle> loadStaticModelAsync(const Model* model)
+	+ graphics::RenderableHandle createRenderable(\n\
+		const graphics::RenderSceneHandle& renderSceneHandle,\n\
+		const ModelHandle& modelHandle,\n\
+		const glm::vec3& position,\n\
+		const glm::quat& orientation,\n\
+		const glm::vec3& scale = glm::vec3(1.0f)\n\
+	)
+	+ graphics::RenderableHandle createRenderable(\n\
+		const graphics::RenderSceneHandle& renderSceneHandle,\n\
+		const graphics::MeshHandle& meshHandle,\n\
+		const graphics::TextureHandle& textureHandle,\n\
+		const glm::vec3& position,\n\
+		const glm::quat& orientation,\n\
+		const glm::vec3& scale = glm::vec3(1.0f)\n\
+	)
+
+	+ graphics::VertexShaderHandle createVertexShader(const std::string& name, const std::string& filename)
+	+ std::shared_future<graphics::VertexShaderHandle> createVertexShaderAsync(const std::string& name, const std::string& filename)
+	+ graphics::VertexShaderHandle createVertexShaderFromSource(const std::string& name, const std::string& data)
+	+ std::shared_future<graphics::VertexShaderHandle> createVertexShaderFromSourceAsync(const std::string& name, const std::string& data)
+	+ graphics::FragmentShaderHandle createFragmentShader(const std::string& name, const std::string& filename)
+	+ std::shared_future<graphics::FragmentShaderHandle> createFragmentShaderAsync(const std::string& name, const std::string& filename)
+	+ graphics::FragmentShaderHandle createFragmentShaderFromSource(const std::string& name, const std::string& data)
+	+ std::shared_future<graphics::FragmentShaderHandle> createFragmentShaderFromSourceAsync(const std::string& name, const std::string& data)
+	+ graphics::VertexShaderHandle getVertexShader(const std::string& name) const
+	+ graphics::FragmentShaderHandle getFragmentShader(const std::string& name) const
+	+ void destroyShader(const std::string& name)
+	+ void destroyShader(const graphics::VertexShaderHandle& shaderHandle)
+	+ void destroyShader(const graphics::FragmentShaderHandle& shaderHandle)
+
+	+ graphics::ShaderProgramHandle createShaderProgram(const std::string& name, const graphics::VertexShaderHandle& vertexShaderHandle, const graphics::FragmentShaderHandle& fragmentShaderHandle)
+	+ std::shared_future<graphics::ShaderProgramHandle> createShaderProgramAsync(const std::string& name, const graphics::VertexShaderHandle& vertexShaderHandle, const graphics::FragmentShaderHandle& fragmentShaderHandle)
+	+ graphics::ShaderProgramHandle getShaderProgram(const std::string& name) const
+	+ void destroyShaderProgram(const std::string& name)
+	+ void destroyShaderProgram(const graphics::ShaderProgramHandle& shaderProgramHandle)
+
+	+ Scene* createScene(const std::string& name, const std::vector<std::string>& scriptData = {}, const std::string& initializationFunctionName = "")
+	+ Scene* createScene(const std::string& name, const scripting::ModuleHandle, const std::string& initializationFunctionName = "")
+	+ void destroyScene(const std::string& name)
+	+ void destroyScene(const Scene* scene)
+	+ Scene* getScene(const std::string& name) const
+	+ std::vector<Scene*> getAllScenes() const
+
+	+ void addPreSerializeCallback(std::function<void(serialization::TextOutArchive&, ecs::EntityComponentSystem&, const unsigned int)> callback)
+	+ void addPostSerializeCallback(std::function<void(serialization::TextOutArchive&, ecs::EntityComponentSystem&, const unsigned int)> callback)
+	+ void addPreDeserializeCallback(std::function<void(serialization::TextInArchive&, ecs::EntityComponentSystem&, const unsigned int)> callback)
+
+	+ void addPostDeserializeCallback(\n\
+		std::function<\n\
+			void(\n\
+				serialization::TextInArchive&,\n\
+				ecs::EntityComponentSystem&,\n\
+				const std::unordered_map<physics::CollisionShapeHandle, physics::CollisionShapeHandle>&,\n\
+				const std::unordered_map<ModelHandle, ModelHandle>&,\n\
+				const std::unordered_map<graphics::MeshHandle, graphics::MeshHandle>&,\n\
+				const std::unordered_map<graphics::TextureHandle, graphics::TextureHandle>&,\n\
+				const std::unordered_map<SkeletonHandle, SkeletonHandle>&,\n\
+				const std::unordered_map<AnimationHandle, AnimationHandle>&,\n\
+				const std::unordered_map<graphics::TerrainHandle, graphics::TerrainHandle>&,\n\
+				const std::unordered_map<std::string, pathfinding::PolygonMeshHandle>&,\n\
+				const std::unordered_map<pathfinding::NavigationMeshHandle, pathfinding::NavigationMeshHandle>&,\n\
+				const std::unordered_map<scripting::ScriptObjectHandle, std::string>&,\n\
+				const std::unordered_map<pathfinding::CrowdHandle, pathfinding::CrowdHandle>&,\n\
+				const unsigned int\n\
+			)\n\
+		>\n\
+		callback\n\
+	)
+
+
+	+ void testSerialize()
+
+	+ void addWindowEventListener(IWindowEventListener* windowEventListener)
+	+ void addKeyboardEventListener(IKeyboardEventListener* keyboardEventListener)
+	+ void addTextInputEventListener(ITextInputEventListener* textInputEventListener)
+	+ void addMouseMotionEventListener(IMouseMotionEventListener* mouseMotionEventListener)
+	+ void addMouseButtonEventListener(IMouseButtonEventListener* mouseButtonEventListener)
+	+ void addMouseWheelEventListener(IMouseWheelEventListener* mouseWheelEventListener)
+	+ void removeWindowEventListener(IWindowEventListener* windowEventListener)
+	+ void removeKeyboardEventListener(IKeyboardEventListener* keyboardEventListener)
+    + void removeTextInputEventListener(ITextInputEventListener* textInputEventListener)
+	+ void removeMouseMotionEventListener(IMouseMotionEventListener* mouseMotionEventListener)
+	+ void removeMouseButtonEventListener(IMouseButtonEventListener* mouseButtonEventListener)
+	+ void removeMouseWheelEventListener(IMouseWheelEventListener* mouseWheelEventListener)
+
+	+ void addWindowEventListener(void* windowEventListener)
+	+ void addKeyboardEventListener(void* keyboardEventListener)
+	+ void addTextInputEventListener(void* textInputEventListener)
+	+ void addMouseMotionEventListener(void* mouseMotionEventListener)
+	+ void addMouseButtonEventListener(void* mouseButtonEventListener)
+	+ void addMouseWheelEventListener(void* mouseWheelEventListener)
+	+ void removeWindowEventListener(void* windowEventListener)
+	+ void removeKeyboardEventListener(void* keyboardEventListener)
+	+ void removeTextInputEventListener(void* textInputEventListener)
+	+ void removeMouseMotionEventListener(void* mouseMotionEventListener)
+	+ void removeMouseButtonEventListener(void* mouseButtonEventListener)
+	+ void removeMouseWheelEventListener(void* mouseWheelEventListener)
+
+	+ void addConnectEventListener(IConnectEventListener* connectEventListener)
+	+ void addDisconnectEventListener(IDisconnectEventListener* disconnectEventListener)
+	+ void addMessageEventListener(IMessageEventListener* messageEventListener)
+	+ void removeConnectEventListener(IConnectEventListener* connectEventListener)
+	+ void removeDisconnectEventListener(IDisconnectEventListener* disconnectEventListener)
+	+ void removeMessageEventListener(IMessageEventListener* messageEventListener)
+
+	+ void addConnectEventListener(void* connectEventListener)
+	+ void addDisconnectEventListener(void* disconnectEventListener)
+	+ void addMessageEventListener(void* messageEventListener)
+	+ void removeConnectEventListener(void* connectEventListener)
+	+ void removeDisconnectEventListener(void* disconnectEventListener)
+	+ void removeMessageEventListener(void* messageEventListener)
+
+	+ void addScriptingEngineDebugHandler(IScriptingEngineDebugHandler* handler)
+	+ void removeScriptingEngineDebugHandler(const IScriptingEngineDebugHandler* handler)
+
+	+ void addScriptingEngineDebugHandler(void* object)
+	+ void removeScriptingEngineDebugHandler(const void* object)
+
+	+ std::shared_future<void> postWorkToBackgroundThreadPool(void* object)
+	+ std::shared_future<void> postWorkToForegroundThreadPool(void* object)
+	+ std::shared_future<void> postWorkToOpenGlWorker(void* object)
+
+	+ bool processEvent(const graphics::Event& event) override
+
+	+ bool processEvent(const networking::ConnectEvent& event) override
+	+ bool processEvent(const networking::DisconnectEvent& event) override
+	+ bool processEvent(const networking::MessageEvent& event) override
+
+	+ physics::CollisionShapeHandle createStaticBoxShape(const std::string& name, const glm::vec3& dimensions)
+
+'	template <typename ... Args>
+	+ physics::CollisionShapeHandle createStaticBoxShape(const std::string& name, const Args ... args)
+
+	+ physics::CollisionShapeHandle createStaticSphereShape(const std::string& name, const float32 radius)
+
+'	template <typename ... Args>
+	+ physics::CollisionShapeHandle createStaticSphereShape(const std::string& name, const Args ... args)
+
+	+ physics::CollisionShapeHandle createStaticPlaneShape(const std::string& name, const glm::vec3& planeNormal, const float32 planeConstant)
+
+'	template <typename ... Args>
+	+ physics::CollisionShapeHandle createStaticPlaneShape(const std::string& name, const Args ... args)
+
+'	template <typename ... Args>
+	+ physics::CollisionShapeHandle createStaticTerrainShape(const std::string& name, const Args ... args)
+
+	+ physics::CollisionShapeHandle createStaticTerrainShape(const std::string& name, const Heightfield& heightfield)
+
+	+ void destroyStaticShape(const std::string& name)
+
+	+ void destroyAllStaticShapes()
+
+	+ physics::CollisionShapeHandle getStaticShape(const std::string& name) const
+
+	+ ModelHandle createStaticModel(const std::string& name, const Model& model)
+
+	+ void destroyStaticModel(const std::string& name)
+
+	+ void destroyAllStaticModels()
+
+	+ ModelHandle getStaticModel(const std::string& name) const
+
+	+ SkeletonHandle createSkeleton(const std::string& name, const Skeleton& skeleton)
+
+	+ void animateSkeleton(\n\
+        std::vector<glm::mat4>& transformations,\n\
+        const std::chrono::duration<float32> runningTime,\n\
+        const graphics::MeshHandle& meshHandle,\n\
+        const AnimationHandle& animationHandle,\n\
+        const SkeletonHandle& skeletonHandle\n\
+    )
+
+	+ void animateSkeleton(\n\
+        std::vector<glm::mat4>& transformations,\n\
+        const std::chrono::duration<float32> runningTime,\n\
+        const uint32 startFrame,\n\
+        const uint32 endFrame,\n\
+        const graphics::MeshHandle& meshHandle,\n\
+        const AnimationHandle& animationHandle,\n\
+        const SkeletonHandle& skeletonHandle\n\
+    )
+
+	+ void destroySkeleton(const std::string& name)
+
+	+ void destroyAllSkeletons()
+
+	+ SkeletonHandle getSkeleton(const std::string& name) const
+
+	+ void createSkeleton(const graphics::MeshHandle& meshHandle, const graphics::ISkeleton& skeleton)
+
+	+ AnimationHandle createAnimation(const std::string& name, const Animation& animation)
+
+	+ void destroyAnimation(const std::string& name)
+
+	+ void destroyAllAnimations()
+
+	+ AnimationHandle getAnimation(const std::string& name) const
+
+	+ graphics::MeshHandle createStaticMesh(const std::string& name, const Mesh& mesh)
+
+	+ void destroyStaticMesh(const std::string& name)
+
+	+ void destroyAllStaticMeshes()
+
+	+ graphics::MeshHandle getStaticMesh(const std::string& name) const
+
+	+ uint32 getBoneId(const graphics::MeshHandle meshHandle, const std::string& name) const
+
+	+ graphics::TextureHandle createTexture(const std::string& name, const Texture& texture)
+
+	+ void destroyTexture(const std::string& name)
+
+	+ void destroyAllTextures()
+
+	+ graphics::TextureHandle getTexture(const std::string& name) const
+
+	+ graphics::TerrainHandle createStaticTerrain(const std::string& name, const HeightMap& heightMap, const SplatMap& splatMap, const DisplacementMap& displacementMap)
+
+	+ void destroyStaticTerrain(const std::string& name)
+
+	+ void destroyAllStaticTerrains()
+
+	+ graphics::TerrainHandle getStaticTerrain(const std::string& name) const
+
+	+ graphics::SkyboxHandle createStaticSkybox(const std::string& name, const IImage& back, const IImage& down, const IImage& front, const IImage& left, const IImage& right, const IImage& up)
+
+	+ void destroyStaticSkybox(const std::string& name)
+
+	+ void destroyAllStaticSkyboxes()
+
+	+ graphics::SkyboxHandle getStaticSkybox(const std::string& name) const
+
+    + audio::SoundHandle createSound(const std::string& name, const Audio& audio)
+
+    + void destroySound(const std::string& name)
+
+    + void destroyAllSound()
+
+    + audio::SoundHandle getSound(const std::string& name) const
+
+'	template <typename ... Args>
+	+ pathfinding::PolygonMeshHandle createPolygonMesh(const std::string& name, const Args ... args)
+
+	+ pathfinding::PolygonMeshHandle createPolygonMesh(const std::string& name, const PathfindingTerrain& pathfindingTerrain, const pathfinding::PolygonMeshConfig& polygonMeshConfig)
+
+	+ void destroyPolygonMesh(const std::string& name)
+
+	+ pathfinding::PolygonMeshHandle getPolygonMesh(const std::string& name) const
+
+	+ pathfinding::NavigationMeshHandle createNavigationMesh(const std::string& name, const pathfinding::PolygonMeshHandle& polygonMeshHandle, const pathfinding::NavigationMeshConfig& navigationMeshConfig)
+
+'	template <typename ... Args>
+	+ pathfinding::NavigationMeshHandle createNavigationMesh(const std::string& name, const Args ... args)
+
+	+ void destroyNavigationMesh(const std::string& name)
+
+	+ pathfinding::NavigationMeshHandle getNavigationMesh(const std::string& name) const
+
+'private:
+	- std::unique_ptr< utilities::Properties > properties_
+	- std::unique_ptr< logger::ILogger > logger_
+	- std::unique_ptr<fs::IFileSystem> fileSystem_
+
+	- std::unique_ptr<ice_engine::IPluginManager> pluginManager_
+	- std::vector<std::unique_ptr< IScriptingEngineBinding >> scriptingEngineBindings_
+	- std::vector<std::unique_ptr< IModule >> modules_
+
+	' Graphics
+	- std::unique_ptr<graphics::IGraphicsEngineFactory> graphicsEngineFactory_
+	- std::unique_ptr< graphics::IGraphicsEngine > graphicsEngine_
+	- std::vector<std::unique_ptr< graphics::gui::IGui >> guis_
+    - std::mutex guisCreatedMutex_
+    - std::vector<std::unique_ptr<graphics::gui::IGui>> guisCreated_
+    - std::mutex guisDeletedMutex_
+    - std::vector<const graphics::gui::IGui*> guisDeleted_
+
+	- std::unique_ptr<ITerrainFactory> terrainFactory_
+
+	- std::unique_ptr<IDebugRenderer> debugRenderer_
+
+	- std::unique_ptr<audio::IAudioEngineFactory> audioEngineFactory_
+	- std::unique_ptr< audio::IAudioEngine > audioEngine_
+
+	- std::unique_ptr<networking::INetworkingEngineFactory> networkingEngineFactory_
+	- std::unique_ptr< networking::INetworkingEngine > networkingEngine_
+
+	- std::unique_ptr<physics::IPhysicsEngineFactory> physicsEngineFactory_
+	- std::unique_ptr< physics::IPhysicsEngine > physicsEngine_
+	- std::unique_ptr<pathfinding::IPathfindingEngineFactory> pathfindingEngineFactory_
+	- std::unique_ptr< pathfinding::IPathfindingEngine > pathfindingEngine_
+	- std::unique_ptr<scripting::IScriptingEngine> scriptingEngine_
+
+	- std::vector<IWindowEventListener*> windowEventListeners_
+	- std::vector<IKeyboardEventListener*> keyboardEventListeners_
+	- std::vector<ITextInputEventListener*> textInputEventListeners_
+	- std::vector<IMouseMotionEventListener*> mouseMotionEventListeners_
+	- std::vector<IMouseButtonEventListener*> mouseButtonEventListeners_
+	- std::vector<IMouseWheelEventListener*> mouseWheelEventListeners_
+	- std::vector<std::pair<scripting::ScriptObjectHandle, scripting::ScriptObjectFunctionHandle>> scriptWindowEventListeners_
+	- std::vector<std::pair<scripting::ScriptObjectHandle, scripting::ScriptObjectFunctionHandle>> scriptKeyboardEventListeners_
+	- std::vector<std::pair<scripting::ScriptObjectHandle, scripting::ScriptObjectFunctionHandle>> scriptTextInputEventListeners_
+	- std::vector<std::pair<scripting::ScriptObjectHandle, scripting::ScriptObjectFunctionHandle>> scriptMouseMotionEventListeners_
+	- std::vector<std::pair<scripting::ScriptObjectHandle, scripting::ScriptObjectFunctionHandle>> scriptMouseButtonEventListeners_
+	- std::vector<std::pair<scripting::ScriptObjectHandle, scripting::ScriptObjectFunctionHandle>> scriptMouseWheelEventListeners_
+
+	- std::vector<IConnectEventListener*> connectEventListeners_
+	- std::vector<IDisconnectEventListener*> disconnectEventListeners_
+	- std::vector<IMessageEventListener*> messageEventListeners_
+	- std::vector<std::pair<scripting::ScriptObjectHandle, scripting::ScriptObjectFunctionHandle>> scriptConnectEventListeners_
+	- std::vector<std::pair<scripting::ScriptObjectHandle, scripting::ScriptObjectFunctionHandle>> scriptDisconnectEventListeners_
+	- std::vector<std::pair<scripting::ScriptObjectHandle, scripting::ScriptObjectFunctionHandle>> scriptMessageEventListeners_
+
+    - std::vector<IScriptingEngineDebugHandler*> scriptingEngineDebugHandlers_
+    - std::vector<std::pair<scripting::ScriptObjectHandle, scripting::ScriptObjectFunctionHandle>> scriptScriptingEngineDebugHandlers_
+
+	- std::unordered_map<graphics::MeshHandle, Mesh> meshes_
+	- handles::HandleVector<Skeleton, SkeletonHandle> skeletons_
+	- handles::HandleVector<Animation, AnimationHandle> animations_
+
+	- std::vector<std::unique_ptr<Scene>> scenes_
+
+	- std::unordered_map<std::string, graphics::VertexShaderHandle> vertexShaderHandles_
+	- std::unordered_map<std::string, graphics::FragmentShaderHandle> fragmentShaderHandles_
+	- std::unordered_map<std::string, graphics::ShaderProgramHandle> shaderProgramHandles_
+
+	- scripting::ModuleHandle bootstrapModuleHandle_
+	- scripting::ScriptObjectHandle scriptObjectHandle_
+
+	- ResourceCache resourceCache_
+	- ResourceHandleCache resourceHandleCache_
+    - std::map<std::type_index, std::unique_ptr<BaseResourceManager>> resourceManagers_
+    - std::map<std::type_index, std::unique_ptr<BaseEngineResourceManager>> engineResourceManagers_
+
+	- bool running_
+	- EngineStatistics engineStatistics_
+
+	- void tick(const float32 delta)
+    - void render()
+	- void initialize()
+	- void destroy()
+	- void exit()
+
+	- void handleEvents()
+
+    - void internalDestroyGui(const graphics::gui::IGui* gui)
+
+	- static float32 rotationX
+	- static float32 rotationY
+	- static int32 mousePosX
+	- static int32 mousePosY
+
+	- std::string bootstrapScriptName_
+
+	' Testing
+	- void test()
+
+	' Initialization stuff
+	- void initializeLoggingSubSystem()
+	- void initializeFileSystemSubSystem()
+	- void initializePhysicsSubSystem()
+	- void initializePathfindingSubSystem()
+	- void initializeGraphicsSubSystem()
+	- void initializeAudioSubSystem()
+	- void initializeNetworkingSubSystem()
+	- void initializeInputSubSystem()
+	- void initializeScriptingSubSystem()
+	- void initializeThreadingSubSystem()
+	- void initializeTerrainSubSystem()
+	- void initializeDataStoreSubSystem()
+	- void initializeEntitySubSystem()
+	- void initializeModuleSubSystem()
+    - void initializeResourceManagers()
+	- void initializeEngineResourceManagers()
+
+	- void internalInitializeScene(std::unique_ptr<Scene>& scene)
+
+	' Script debugging stuff
+    - void processEvent(const scripting::DebugEvent& event) override
+
+	- std::mutex temporaryExecutionContextMutex_
+	- std::queue<scripting::ExecutionContextHandle> temporaryExecutionContexts_
+
+	- scripting::ExecutionContextHandle debuggerExecutionContext_
+
+	- scripting::ExecutionContextHandle acquireTemporaryExecutionContext()
+	- void releaseTemporaryExecutionContext(const scripting::ExecutionContextHandle& executionContextHandle)
+
+	- std::vector<std::pair<graphics::MeshHandle, graphics::TextureHandle>> staticModels_
+	- std::vector<graphics::TerrainHandle> staticTerrain_
+
+	- std::vector<std::function<void(serialization::TextOutArchive&, ecs::EntityComponentSystem&, const unsigned int)>> preSerializeCallbacks_
+	- std::vector<std::function<void(serialization::TextOutArchive&, ecs::EntityComponentSystem&, const unsigned int)>> postSerializeCallbacks_
+	- std::vector<std::function<void(serialization::TextInArchive&, ecs::EntityComponentSystem&, const unsigned int)>> preDeserializeCallbacks_
+	- std::vector<std::function<\n\
+		void(\n\
+			serialization::TextInArchive&,\n\
+			ecs::EntityComponentSystem&,\n\
+			const std::unordered_map<physics::CollisionShapeHandle, physics::CollisionShapeHandle>&,\n\
+			const std::unordered_map<ModelHandle, ModelHandle>&,\n\
+			const std::unordered_map<graphics::MeshHandle, graphics::MeshHandle>&,\n\
+			const std::unordered_map<graphics::TextureHandle, graphics::TextureHandle>&,\n\
+			const std::unordered_map<SkeletonHandle, SkeletonHandle>&,\n\
+			const std::unordered_map<AnimationHandle, AnimationHandle>&,\n\
+			const std::unordered_map<graphics::TerrainHandle, graphics::TerrainHandle>&,\n\
+			const std::unordered_map<std::string, pathfinding::PolygonMeshHandle>&,\n\
+			const std::unordered_map<pathfinding::NavigationMeshHandle, pathfinding::NavigationMeshHandle>&,\n\
+			const std::unordered_map<scripting::ScriptObjectHandle, std::string>&,\n\
+			const std::unordered_map<pathfinding::CrowdHandle, pathfinding::CrowdHandle>&,\n\
+			const unsigned int\n\
+		)\n\
+	>>\n\
+	postDeserializeCallbacks_
+
+	' testing
+	- std::unique_ptr<ThreadPool> backgroundThreadPool_
+	- std::unique_ptr<ThreadPool> foregroundThreadPool_
+	- std::unique_ptr<OpenGlLoader> openGlLoader_
+	- std::unique_ptr<OpenGlLoader> forgroundGraphicsThreadPool_
+}
 
 @enduml

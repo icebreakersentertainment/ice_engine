@@ -380,6 +380,8 @@ void GameEngine::initialize()
 
 	initializeModuleSubSystem();
 
+    initializeResourceManagers();
+
     initializeEngineResourceManagers();
 
 	LOG_INFO(logger_, "Done initialization.");
@@ -407,10 +409,6 @@ void GameEngine::initializeFileSystemSubSystem()
 void GameEngine::initializeInputSubSystem()
 {
 	LOG_INFO(logger_, "initialize keyboard and mouse.");
-}
-void GameEngine::initializeSoundSubSystem()
-{
-	LOG_INFO(logger_, "initialize sound.");
 }
 
 void GameEngine::initializePhysicsSubSystem()
@@ -513,6 +511,29 @@ void GameEngine::initializeModuleSubSystem()
 		auto module = modulePlugin->createFactory()->create(properties_.get(), fileSystem_.get(), logger_.get(), graphicsEngine_.get(), pathfindingEngine_.get(), scriptingEngine_.get(), audioEngine_.get(), networkingEngine_.get());
 		modules_.push_back(std::move(module));
 	}
+}
+
+void GameEngine::initializeResourceManagers()
+{
+    LOG_INFO(logger_, "initializing resource managers.");
+
+    LOG_INFO(logger_, "initializing resource importers.");
+
+    LOG_INFO(logger_, "initializing image resource importers.");
+
+    std::unordered_map<std::string, std::unique_ptr<IResourceImporter<Image>>> imageResourceImporters;
+
+    const auto& imageResourceImporterPlugins = pluginManager_->getImageResourceImporterPlugins();
+
+    for (const auto imageResourceImporterPlugin : imageResourceImporterPlugins)
+    {
+        LOG_INFO(logger_, "initializing image resource importer '%s'.", imageResourceImporterPlugin->getName());
+
+        auto imageResourceImporter = imageResourceImporterPlugin->createFactory()->create(properties_.get(), fileSystem_.get(), logger_.get());
+        imageResourceImporters[imageResourceImporterPlugin->getName()] = std::move(imageResourceImporter);
+    }
+
+    resourceManagers_[typeid(Image)] = std::make_unique<ResourceManager<Image>>(std::move(imageResourceImporters));
 }
 
 void GameEngine::initializeEngineResourceManagers()
@@ -1089,8 +1110,11 @@ IImage* GameEngine::loadImage(const std::string& name, const std::string& filena
 		throw std::runtime_error(detail::format("Image file '%s' does not exist.", filename));
 	}
 
-	auto file = fileSystem_->open(filename, fs::FileFlags::READ | fs::FileFlags::BINARY);
-	resourceCache_.addImage(name, std::make_unique<Image>(file->getInputStream()));
+	auto& resourceManager = this->resourceManager<Image>();
+    auto test = std::unique_ptr<Image>(resourceManager.import(name, filename));
+
+//	auto file = fileSystem_->open(filename, fs::FileFlags::READ | fs::FileFlags::BINARY);
+	resourceCache_.addImage(name, std::move(test));
 
 	LOG_DEBUG(logger_, "Done loading image: %s", filename);
 
@@ -1609,12 +1633,16 @@ graphics::RenderableHandle GameEngine::createRenderable(
 
 void GameEngine::animateSkeleton(
 	std::vector<glm::mat4>& transformations,
-    const float32 runningTime,
+    const std::chrono::duration<float32> runningTime,
 	const graphics::MeshHandle& meshHandle,
 	const AnimationHandle& animationHandle,
 	const SkeletonHandle& skeletonHandle
 )
 {
+    detail::checkHandleValidity(*graphicsEngine_, meshHandle);
+    detail::checkHandleValidity(animations_, animationHandle);
+    detail::checkHandleValidity(skeletons_, skeletonHandle);
+
 	const auto& mesh = meshes_[meshHandle];
 	const auto& animation = animations_[animationHandle];
 	const auto& skeleton = skeletons_[skeletonHandle];
@@ -1635,7 +1663,7 @@ void GameEngine::animateSkeleton(
 
 void GameEngine::animateSkeleton(
 	std::vector<glm::mat4>& transformations,
-    const float32 runningTime,
+    const std::chrono::duration<float32> runningTime,
     const uint32 startFrame,
     const uint32 endFrame,
 	const graphics::MeshHandle& meshHandle,
@@ -2338,7 +2366,7 @@ void GameEngine::run()
 
             auto endRenderTime = std::chrono::high_resolution_clock::now();
 
-			engineStatistics_.renderTime = std::chrono::duration<float32>(endRenderTime - beginRenderTime).count();
+			engineStatistics_.renderTime = std::chrono::duration<float32>(endRenderTime - beginRenderTime);
 
 			endFpsTime = beginFpsTime;
 

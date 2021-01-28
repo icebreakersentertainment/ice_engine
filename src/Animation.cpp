@@ -2,6 +2,7 @@
 
 #include "Animation.hpp"
 
+#include "detail/DebugSerializer.hpp"
 #include "detail/AssImpUtilities.hpp"
 #include "detail/Assert.hpp"
 
@@ -32,8 +33,8 @@ void Animation::import(const std::string& name, const std::string& filename, con
         //continue;
     }
 
-    duration_ = animation->mDuration;
-    ticksPerSecond_ = animation->mTicksPerSecond;
+    duration_ = std::chrono::duration<float32>(static_cast<float32>(animation->mDuration));
+    ticksPerSecond_ = static_cast<float32>(animation->mTicksPerSecond);
 
     LOG_DEBUG(logger, "Animation has duration = %s, ticksPerSecond = %s, numChannels = %s for mesh '%s' for model '%s'.", duration_, ticksPerSecond_, animation->mNumChannels, filename, name);
 
@@ -49,25 +50,28 @@ void Animation::import(const std::string& name, const std::string& filename, con
 
         for (uint32 k = 0; k < pNodeAnim->mNumPositionKeys; ++k)
         {
-            abn.positionTimes.push_back(pNodeAnim->mPositionKeys[k].mTime);
-            abn.positions.push_back(detail::toGlm(pNodeAnim->mPositionKeys[k].mValue));
+            const std::chrono::duration<float32> time{static_cast<float32>(pNodeAnim->mPositionKeys[k].mTime)};
+            const glm::vec3 position = detail::toGlm(pNodeAnim->mPositionKeys[k].mValue);
+
+            abn.positionKeyFrames.push_back({time, position});
         }
 
         for (uint32 k = 0; k < pNodeAnim->mNumRotationKeys; ++k)
         {
             const auto& rk = pNodeAnim->mRotationKeys[k];
 
-            abn.rotationTimes.push_back(rk.mTime);
+            const std::chrono::duration<float32> time{static_cast<float32>(rk.mTime)};
+            const glm::quat rotation = glm::normalize(detail::toGlm(rk.mValue));
 
-            glm::quat rotation = detail::toGlm(rk.mValue);
-            rotation = glm::normalize(rotation);
-            abn.rotations.push_back(rotation);
+            abn.rotationKeyFrames.push_back({time, rotation});
         }
 
         for (uint32 k = 0; k < pNodeAnim->mNumScalingKeys; ++k)
         {
-            abn.scalingTimes.push_back(pNodeAnim->mScalingKeys[k].mTime);
-            abn.scalings.push_back(detail::toGlm(pNodeAnim->mScalingKeys[k].mValue));
+            const std::chrono::duration<float32> time{static_cast<float32>(pNodeAnim->mScalingKeys[k].mTime)};
+            const glm::vec3 scaling = detail::toGlm(pNodeAnim->mScalingKeys[k].mValue);
+
+            abn.scalingKeyFrames.push_back({time, scaling});
         }
 
         // Add AnimatedBoneNode to the animation

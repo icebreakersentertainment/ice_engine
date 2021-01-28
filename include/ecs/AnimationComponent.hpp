@@ -1,6 +1,8 @@
 #ifndef ANIMATIONCOMPONENT_H_
 #define ANIMATIONCOMPONENT_H_
 
+#include <chrono>
+
 #define GLM_FORCE_RADIANS
 #include <glm/glm.hpp>
 
@@ -10,6 +12,7 @@
 
 #include "serialization/std/Vector.hpp"
 #include "serialization/glm/Mat4.hpp"
+#include "serialization/std/chrono/Duration.hpp"
 
 #include "ecs/Serialization.hpp"
 
@@ -38,7 +41,7 @@ struct AnimationComponent
 
 	AnimationHandle animationHandle;
 	graphics::BonesHandle bonesHandle;
-	float32 runningTime = 0.0f;
+    std::chrono::duration<float32> runningTime = std::chrono::duration<float32>(0.0f);
 	float32 speed = 1.0f;
 	uint32 startFrame = 0;
 	uint32 endFrame = 0;

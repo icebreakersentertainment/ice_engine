@@ -429,7 +429,7 @@ namespace model
 //		}
 //
 //		boneData.boneIndexMap[data.name] = boneIndex;
-//		boneData.boneTransform[boneIndex].boneOffset = toGlm( &(mesh->mBones[i]->mOffsetMatrix) );
+//		boneData.boneTransform[boneIndex].inverseModelSpacePoseTransform = toGlm( &(mesh->mBones[i]->mOffsetMatrix) );
 //	}
 //
 //	logger->debug( "done importing boneData." );
